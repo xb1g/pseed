@@ -19,7 +19,7 @@ export function CommunitySection() {
             </p>
             <div className="flex flex-col gap-2 min-[400px]:flex-row">
               <Button asChild className="bg-red-600 hover:bg-red-700">
-                <Link href="https://discord.gg/Qw2UpDDGeZ">
+                <Link href="https://discord.gg/Qw2UpDDGeZijosaqqqqqqqqq45">
                   Join Our Community
                 </Link>
               </Button>
