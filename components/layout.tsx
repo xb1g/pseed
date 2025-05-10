@@ -1,20 +1,15 @@
-import { cookies } from "next/headers";
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { MainNav } from "@/components/main-nav";
 import { UserNav } from "@/components/user-nav";
 import { LavaFooter } from "@/components/lava-footer";
 import { Button } from "@/components/ui/button";
+import { getSession } from "@/lib/auth";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 export async function Layout({ children }: LayoutProps) {
-  const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const session = await getSession();
 
   return (
     <div className="flex min-h-screen flex-col">
