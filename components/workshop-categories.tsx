@@ -39,7 +39,7 @@ export function WorkshopCategories() {
             <CardHeader>
               <Building className="h-10 w-10 text-orange-400" />
               <CardTitle>Passion Growth (Build)</CardTitle>
-              <CardDescription className="text-white/80">Develop and strengthen your skills</CardDescription>
+              <CardDescription className="text-white/80 caption">Develop and strengthen your skills</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <p>Workshops focused on building skills and developing expertise in your chosen areas.</p>

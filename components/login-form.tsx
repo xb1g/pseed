@@ -13,10 +13,23 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { DiscIcon as Discord } from "lucide-react";
 
 export function LoginForm() {
+  // console.log(process.env.NODE_ENV == "development");
+  console.log(
+    `http://${
+      process.env.NODE_ENV == "development"
+        ? "localhost:3000"
+        : process.env.NEXT_PUBLIC_SITE_URL
+    }/auth/callback`
+  );
   const supabase = createClientComponentClient();
   async function signInWithDiscord() {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "discord",
+      redirectTo: `http://${
+        process.env.NODE_ENV == "development"
+          ? "localhost:3000"
+          : process.env.NEXT_PUBLIC_SITE_URL
+      }/auth/callback`,
     });
 
     console.log(data);

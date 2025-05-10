@@ -54,8 +54,13 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
-    font-family: "Space Mono", monospace;
+    @apply bg-background text-foreground font-sans;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sans font-bold;
+  }
+  code, pre, a{
+    @apply font-mono;
   }
 }
 
