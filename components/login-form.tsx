@@ -22,22 +22,21 @@ export function LoginForm() {
     }/auth/callback`
   );
   const supabase = createClientComponentClient();
+
   async function signInWithDiscord() {
+    const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/callback`;
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "discord",
-      redirectTo: `http://${
-        process.env.NODE_ENV == "development"
-          ? "localhost:3000"
-          : process.env.NEXT_PUBLIC_SITE_URL
-      }/auth/callback`,
+      options: {
+        redirectTo,
+      },
     });
 
-    console.log(data);
-    console.log(error);
+    if (error) {
+      console.error("Auth error:", error);
+    }
   }
-  const handleDiscordLogin = async () => {
-    await signInWithDiscord();
-  };
 
   return (
     <Card className="w-[350px] bg-gradient-to-br from-purple-950 to-purple-900 text-white border-none">
@@ -50,7 +49,7 @@ export function LoginForm() {
       <CardContent className="grid gap-4">
         <Button
           className="w-full bg-[#5865F2] hover:bg-[#4752c4] text-white"
-          onClick={handleDiscordLogin}
+          onClick={signInWithDiscord}
         >
           <Discord className="mr-2 h-4 w-4" />
           Sign in with Discord
