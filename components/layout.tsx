@@ -1,22 +1,20 @@
-import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
-import { UserPortal } from "@/components/user-portal";
 import { MainNav } from "@/components/main-nav";
-import { LavaFooter } from "@/components/lava-footer";
 import { UserNav } from "@/components/user-nav";
+import { LavaFooter } from "@/components/lava-footer";
+import { Button } from "@/components/ui/button";
 
-export default async function PortalPage() {
+interface LayoutProps {
+  children: React.ReactNode;
+}
+
+export async function Layout({ children }: LayoutProps) {
   const cookieStore = cookies();
   const supabase = createServerComponentClient({ cookies: () => cookieStore });
-
   const {
     data: { session },
   } = await supabase.auth.getSession();
-
-  if (!session) {
-    redirect("/login");
-  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -24,13 +22,22 @@ export default async function PortalPage() {
         <div className="container flex h-16 items-center">
           <MainNav />
           <div className="ml-auto flex items-center space-x-4">
-            <UserNav user={session.user} />
+            {session ? (
+              <UserNav user={session.user} />
+            ) : (
+              <>
+                <Button asChild variant="ghost">
+                  <a href="/login">Login</a>
+                </Button>
+                <Button asChild>
+                  <a href="/signup">Sign Up</a>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
-      <main className="flex-1">
-        <UserPortal userId={session.user.id} />
-      </main>
+      <main className="flex-1">{children}</main>
       <LavaFooter />
     </div>
   );
