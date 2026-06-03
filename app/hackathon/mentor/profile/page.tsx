@@ -8,7 +8,7 @@ import MentorAvailabilityGrid from "@/components/hackathon/mentor/MentorAvailabi
 import SessionTypeSelector from "@/components/hackathon/mentor/SessionTypeSelector";
 import type { MentorProfile, MentorAvailabilitySlot, MentorSessionType } from "@/types/mentor";
 
-type Slot = { day_of_week: number; hour: number };
+type Slot = { day_of_week: number; hour: number; minute: number };
 
 const PROFILE_FIELDS: Array<{
   name: "full_name" | "profession" | "institution";
@@ -99,6 +99,7 @@ export default function MentorProfilePage() {
           (data.slots ?? []).map((s: MentorAvailabilitySlot) => ({
             day_of_week: s.day_of_week,
             hour: s.hour,
+            minute: s.minute ?? 0,
           }))
         );
       });
