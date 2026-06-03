@@ -8,6 +8,7 @@ import {
   sendMentorCancellationEmail,
   sendMentorAcceptedEmail,
 } from "@/lib/hackathon/line";
+import { sendStudentConfirmedCalendarInvite } from "@/lib/hackathon/calendar";
 import type { MentorBooking, MentorProfile } from "@/types/mentor";
 
 function getClient() {
@@ -139,11 +140,19 @@ export async function updateMentorBookingStatus(
           .single();
 
         if (student?.email) {
+          const bookingWithRoom = { ...thisBooking, discord_room: thisBooking.discord_room };
           sendMentorAcceptedEmail(
             student.email,
             student.name,
             mentor,
-            { ...thisBooking, discord_room: thisBooking.discord_room }
+            bookingWithRoom
+          ).catch(console.error);
+
+          sendStudentConfirmedCalendarInvite(
+            student.email,
+            student.name,
+            mentor,
+            bookingWithRoom
           ).catch(console.error);
         }
       }

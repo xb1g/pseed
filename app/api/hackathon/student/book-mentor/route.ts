@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getSessionParticipant } from "@/lib/hackathon/db";
 import { sendMentorBookingNotification } from "@/lib/hackathon/line";
+import { sendMentorBookingCalendarInvite } from "@/lib/hackathon/calendar";
 import type { MentorBooking, MentorProfile } from "@/types/mentor";
 
 function getClient() {
@@ -89,6 +90,11 @@ export async function POST(req: NextRequest) {
   if (mentor) {
     sendMentorBookingNotification(mentor, booking as MentorBooking, participant.name).catch((err) =>
       console.error("Line notification failed:", err)
+    );
+
+    // Send calendar invite to mentor
+    sendMentorBookingCalendarInvite(mentor, booking as MentorBooking, participant.name).catch((err) =>
+      console.error("Calendar invite failed:", err)
     );
   }
 
