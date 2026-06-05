@@ -125,6 +125,13 @@ export async function sendMentorAcceptedEmail(
     return;
   }
 
+  if (!studentEmail || !studentEmail.includes("@")) {
+    console.warn("[Resend] Invalid or missing student email — skipping acceptance email");
+    return;
+  }
+
+  const safeStudentName = studentName || "Student";
+
   const resend = new Resend(process.env.RESEND_API_KEY);
   const slotDate = new Date(booking.slot_datetime);
   const dateStr = slotDate.toLocaleDateString("th-TH", {
@@ -148,7 +155,7 @@ export async function sendMentorAcceptedEmail(
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #91C4E3;">Mentor ยืนยันการนัดหมายแล้ว ✅</h1>
-          <p>สวัสดีครับ/ค่ะ คุณ${studentName},</p>
+          <p>สวัสดีครับ/ค่ะ คุณ${safeStudentName},</p>
           <p>
             <strong>${mentor.full_name}</strong> ยืนยันการนัดหมายของคุณแล้ว
           </p>
@@ -183,6 +190,18 @@ export async function sendMentorCancellationEmail(
     return;
   }
 
+  if (!studentEmail || !studentEmail.includes("@")) {
+    console.warn("[Resend] Invalid or missing student email — skipping cancellation email");
+    return;
+  }
+
+  if (!reason || reason.trim().length === 0) {
+    console.warn("[Resend] No cancellation reason provided — skipping cancellation email");
+    return;
+  }
+
+  const safeStudentName = studentName || "Student";
+
   const resend = new Resend(process.env.RESEND_API_KEY);
   const slotDate = new Date(booking.slot_datetime);
   const dateStr = slotDate.toLocaleDateString("th-TH", {
@@ -206,7 +225,7 @@ export async function sendMentorCancellationEmail(
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h1 style="color: #91C4E3;">เซสชัน Mentor ถูกยกเลิก</h1>
-          <p>สวัสดีครับ/ค่ะ คุณ${studentName},</p>
+          <p>สวัสดีครับ/ค่ะ คุณ${safeStudentName},</p>
           <p>
             เซสชัน Mentor ที่ได้รับการยืนยันของคุณกับ <strong>${mentor.full_name}</strong>
             ในวันที่ <strong>${dateStr}</strong> เวลา <strong>${timeStr}</strong>
