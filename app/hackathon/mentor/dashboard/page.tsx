@@ -29,6 +29,28 @@ const SESSION_TYPE_BADGE: Record<
   },
 };
 
+function LineBadge({ connected }: { connected: boolean }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium font-[family-name:var(--font-mitr)]"
+      style={{
+        color: connected ? "#34d399" : "#5a7a94",
+        background: connected ? "rgba(52,211,153,0.12)" : "rgba(90,122,148,0.12)",
+        border: `1px solid ${connected ? "rgba(52,211,153,0.3)" : "rgba(74,107,130,0.25)"}`,
+      }}
+    >
+      <span
+        className="w-2 h-2 rounded-full"
+        style={{
+          background: connected ? "#34d399" : "#5a7a94",
+          boxShadow: connected ? "0 0 6px rgba(52,211,153,0.5)" : "none",
+        }}
+      />
+      Line {connected ? "Connected" : "Not Connected"}
+    </span>
+  );
+}
+
 export default function MentorDashboardPage() {
   const router = useRouter();
   const pageRef = useRef<HTMLDivElement>(null);
@@ -64,6 +86,27 @@ export default function MentorDashboardPage() {
       .then((r) => r.json())
       .then((data) => setBookings(data.bookings ?? []));
   }, [router]);
+
+  useEffect(() => {
+    if (!mentor?.id) return;
+
+    fetch("/api/hackathon/mentor/teams")
+      .then((r) => r.json())
+      .then((data) => {
+        const teams = data.teams ?? [];
+        const assigned = teams
+          .filter((t: { is_assigned: boolean }) => t.is_assigned)
+          .map((t: { id: string }, i: number) => ({
+            id: `assignment-${i}`,
+            mentor_id: mentor.id,
+            team_id: t.id,
+            hackathon_id: "",
+            assigned_at: "",
+            assigned_by: null,
+          }));
+        setAssignments(assigned);
+      });
+  }, [mentor?.id]);
 
   const handleToggleAvailability = async () => {
     if (!mentor || toggling) return;
@@ -170,6 +213,7 @@ export default function MentorDashboardPage() {
                   Pending Approval
                 </span>
               )}
+              <LineBadge connected={!!mentor.line_user_id} />
             </div>
           </div>
           <div className="flex flex-col items-end gap-2 shrink-0">

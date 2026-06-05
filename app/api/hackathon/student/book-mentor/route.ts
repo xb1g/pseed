@@ -93,9 +93,12 @@ export async function POST(req: NextRequest) {
     );
 
     // Send calendar invite to mentor
-    sendMentorBookingCalendarInvite(mentor, booking as MentorBooking, participant.name).catch((err) =>
-      console.error("Calendar invite failed:", err)
-    );
+    sendMentorBookingCalendarInvite(
+      mentor,
+      booking as MentorBooking,
+      participant.name,
+      participant.email
+    ).catch((err) => console.error("Calendar invite failed:", err));
   }
 
   return NextResponse.json({ booking: booking as MentorBooking });
