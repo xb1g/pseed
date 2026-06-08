@@ -100,6 +100,7 @@ function CertificateSender() {
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sendProgress, setSendProgress] = useState<{ current: number; total: number } | null>(null);
   const [sendResult, setSendResult] = useState<{ sent: number; failed: number; errors: string[] } | null>(null);
 
   function handleFolderChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -139,56 +140,77 @@ function CertificateSender() {
   async function handleSend() {
     setSending(true);
     setSendResult(null);
-    try {
-      const fileMap = new Map<string, File>();
-      for (const f of files) fileMap.set(f.name, f);
 
-      // Collect all unique filenames needed
-      const neededFiles = new Set<string>();
-      for (const team of matched) team.files.forEach((fn) => neededFiles.add(fn));
+    const fileMap = new Map<string, File>();
+    for (const f of files) fileMap.set(f.name, f);
 
-      // Build recipients metadata (no file content — files go as FormData parts)
-      const recipients = matched.flatMap((team) =>
-        team.members.map((member) => ({
-          participantId: member.id,
-          to: member.email,
-          name: member.name,
-          teamName: team.dbTeamName,
-          fileNames: team.files,
-        }))
-      );
+    // Build flat list of recipients with their team files
+    const recipients = matched.flatMap((team) =>
+      team.members.map((member) => ({
+        to: member.email,
+        name: member.name,
+        teamName: team.dbTeamName,
+        fileNames: team.files,
+      }))
+    );
 
-      const meta = { subject: certSubject, body: certBody, recipients };
+    const total = recipients.length;
+    setSendProgress({ current: 0, total });
 
-      const form = new FormData();
-      form.append("meta", JSON.stringify(meta));
-      for (const fname of neededFiles) {
-        const file = fileMap.get(fname);
-        if (file) form.append(`file:${fname}`, file, fname);
+    let sent = 0;
+    let failed = 0;
+    const errors: string[] = [];
+
+    // Send one recipient at a time to keep FormData simple and reliable
+    for (let i = 0; i < recipients.length; i++) {
+      const r = recipients[i];
+      setSendProgress({ current: i + 1, total });
+
+      try {
+        const form = new FormData();
+        form.append("meta", JSON.stringify({
+          subject: certSubject,
+          body: certBody,
+          recipients: [r],
+        }));
+        // Append files with simple numeric keys to avoid special-char issues
+        r.fileNames.forEach((fname, idx) => {
+          const file = fileMap.get(fname);
+          console.log(`[cert] recipient ${r.name} file[${idx}]: "${fname}" → found=${!!file} size=${file?.size}`);
+          if (file) form.append(`f${idx}`, file, fname);
+        });
+        // Log all form entries
+        console.log(`[cert] FormData entries for ${r.name}:`);
+        for (const [k, v] of form.entries()) {
+          if (v instanceof File) console.log(`  ${k}: File name="${v.name}" size=${v.size}`);
+          else console.log(`  ${k}: string length=${v.length}`);
+        }
+
+        const res = await fetch("/api/admin/hackathon/certificate-sender", {
+          method: "POST",
+          body: form,
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          failed++;
+          errors.push(`${r.name} (${r.to}): ${text}`);
+        } else {
+          const data = await res.json();
+          sent += data.sent ?? 0;
+          failed += data.failed ?? 0;
+          if (data.errors?.length) errors.push(...data.errors);
+        }
+      } catch (err) {
+        failed++;
+        errors.push(`${r.name}: ${err instanceof Error ? err.message : String(err)}`);
       }
-
-      const res = await fetch("/api/admin/hackathon/certificate-sender", {
-        method: "POST",
-        body: form,
-        // Do NOT set Content-Type — browser sets it with boundary automatically
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("Certificate send error:", text);
-        alert(`Send failed: ${text}`);
-        return;
-      }
-
-      const data = await res.json();
-      setSendResult({ sent: data.sent ?? 0, failed: data.failed ?? 0, errors: data.errors ?? [] });
-    } catch (err) {
-      console.error("Certificate send exception:", err);
-      alert("Error sending certificates: " + (err instanceof Error ? err.message : String(err)));
-    } finally {
-      setSending(false);
-      setConfirmOpen(false);
     }
+
+    setSendResult({ sent, failed, errors });
+    setSending(false);
+    setSendProgress(null);
+    setConfirmOpen(false);
   }
 
   return (
@@ -350,14 +372,34 @@ function CertificateSender() {
         </Card>
       )}
 
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <Dialog open={confirmOpen} onOpenChange={(o) => { if (!sending) setConfirmOpen(o); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirm Certificate Send</DialogTitle>
           </DialogHeader>
           <div className="py-4 space-y-2">
-            <p>You are about to send certificates to <strong>{totalRecipients} participants</strong> across <strong>{matched.length} teams</strong>.</p>
-            <p className="text-sm text-muted-foreground">Each participant will receive all certificate files for their team as attachments. This cannot be undone.</p>
+            {sending && sendProgress ? (
+              <div className="space-y-3">
+                <p className="text-sm font-medium">Sending certificates…</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-primary h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(sendProgress.current / sendProgress.total) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-sm font-mono tabular-nums text-muted-foreground whitespace-nowrap">
+                    {sendProgress.current} / {sendProgress.total}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">Do not close this window.</p>
+              </div>
+            ) : (
+              <>
+                <p>You are about to send certificates to <strong>{totalRecipients} participants</strong> across <strong>{matched.length} teams</strong>.</p>
+                <p className="text-sm text-muted-foreground">Each participant will receive all certificate files for their team as attachments. This cannot be undone.</p>
+              </>
+            )}
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={sending}>Cancel</Button>
