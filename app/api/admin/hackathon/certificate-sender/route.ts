@@ -153,27 +153,16 @@ async function handleSend(req: NextRequest) {
     return NextResponse.json({ error: "Invalid meta JSON" }, { status: 400 });
   }
 
-  // Build file buffer map
+  // Build file buffer map: keys are f0, f1, f2... matching recipient[0].fileNames indices
   const fileMap = new Map<string, Buffer>();
   for (const [key, value] of formData.entries()) {
-    if (key.startsWith("file:")) {
-      const fname = key.slice(5);
-      if (typeof value === "string") {
-        console.warn(`[cert-sender] file "${fname}" arrived as string, not Blob — skipping`);
-        continue;
-      }
+    if (/^f\d+$/.test(key) && typeof value !== "string") {
       const blob = value as Blob;
+      // The actual filename is stored as the Blob's name (third arg to FormData.append)
+      const fname = (value as File).name || key;
       const buf = Buffer.from(await blob.arrayBuffer());
       fileMap.set(fname, buf);
-      console.log(`[cert-sender] loaded file: "${fname}" size=${buf.length}`);
     }
-  }
-  console.log(`[cert-sender] total files loaded: ${fileMap.size}`);
-  console.log(`[cert-sender] recipients: ${meta.recipients.length}`);
-  // Log first recipient's fileNames to verify matching
-  if (meta.recipients[0]) {
-    console.log(`[cert-sender] first recipient fileNames:`, meta.recipients[0].fileNames);
-    console.log(`[cert-sender] fileMap keys sample:`, [...fileMap.keys()].slice(0, 3));
   }
 
   const BATCH_SIZE = 5;
