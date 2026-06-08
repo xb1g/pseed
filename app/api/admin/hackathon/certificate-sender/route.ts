@@ -203,12 +203,24 @@ async function handleSend(req: NextRequest) {
     });
 
     try {
-      const { error } = await resend.batch.send(resendPayload);
-      if (error) {
-        failed += chunk.length;
-        errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${error.message}`);
-      } else {
-        sent += chunk.length;
+      // Use fetch directly to avoid any SDK serialization issues with Buffer/base64
+      for (const payload of resendPayload) {
+        const res = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+        const json = await res.json() as any;
+        console.log(`[cert-sender] resend response status=${res.status} body=${JSON.stringify(json)}`);
+        if (!res.ok) {
+          failed++;
+          errors.push(`${payload.to[0]}: ${json?.message ?? res.statusText}`);
+        } else {
+          sent++;
+        }
       }
     } catch (err) {
       failed += chunk.length;
