@@ -41,23 +41,33 @@ function normalizeTeam(name: string) {
 }
 
 /** Extract team name from certificate filename.
- *  Strategy: team name is always after the LAST dash in the base filename.
+ *  Primary strategy: team name is after the LAST dash in the base filename.
  *  Underscores in the team segment are replaced with spaces.
  *
- *  Examples:
- *   TNDH_Participan-PersonName-TeamName.png       → "TeamName"
- *   TNDH_Participants_Certificate-TEst2.png       → "TEst2"
- *   TNDH_Participants_Certificate_TeamName.png    → "TeamName" (no dash → last underscore segment)
+ *  Returns all candidate extractions (last-dash, second-to-last, etc.) so the
+ *  caller can try each one against the DB.
  */
-function teamFromFilename(filename: string): string {
+function teamCandidatesFromFilename(filename: string): string[] {
   const base = filename.replace(/\.[^.]+$/, "");
-  const lastDash = base.lastIndexOf("-");
-  if (lastDash !== -1) {
-    return base.slice(lastDash + 1).replace(/_/g, " ").trim();
+  const candidates: string[] = [];
+  // Walk backwards through dash positions, collecting progressively longer suffixes
+  let pos = base.length;
+  while (true) {
+    const dash = base.lastIndexOf("-", pos - 1);
+    if (dash === -1) break;
+    candidates.push(base.slice(dash + 1).replace(/_/g, " ").trim());
+    pos = dash;
   }
   // No dash at all — take last underscore segment
-  const parts = base.split("_");
-  return parts[parts.length - 1].trim();
+  if (candidates.length === 0) {
+    const parts = base.split("_");
+    candidates.push(parts[parts.length - 1].trim());
+  }
+  return candidates;
+}
+
+function teamFromFilename(filename: string): string {
+  return teamCandidatesFromFilename(filename)[0];
 }
 
 export async function POST(req: NextRequest) {
@@ -104,24 +114,41 @@ async function resolveFilenames(filenames: string[]) {
     teamMap.set(normalizeTeam(t.name), { id: t.id, name: t.name, members });
   }
 
-  const filesByRawTeam = new Map<string, string[]>();
+  // Group files by their best-matching team candidate
+  // Each file may have multiple candidate team names; pick the first one that matches the DB
+  const filesByDbTeam = new Map<string, { dbTeam: { id: string; name: string; members: Array<{ id: string; name: string; email: string }> }; rawTeamName: string; files: string[] }>();
+  const unmatchedFiles = new Map<string, string[]>(); // rawTeamName → files
+
   for (const f of filenames) {
-    const raw = teamFromFilename(f);
-    const arr = filesByRawTeam.get(raw) ?? [];
-    arr.push(f);
-    filesByRawTeam.set(raw, arr);
+    const candidates = teamCandidatesFromFilename(f);
+    let found = false;
+    for (const raw of candidates) {
+      const dbTeam = teamMap.get(normalizeTeam(raw));
+      if (dbTeam) {
+        const key = dbTeam.name;
+        const entry = filesByDbTeam.get(key) ?? { dbTeam, rawTeamName: raw, files: [] };
+        entry.files.push(f);
+        filesByDbTeam.set(key, entry);
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      const raw = candidates[0];
+      const arr = unmatchedFiles.get(raw) ?? [];
+      arr.push(f);
+      unmatchedFiles.set(raw, arr);
+    }
   }
 
   const matched: Array<{ rawTeamName: string; dbTeamName: string; files: string[]; members: Array<{ id: string; name: string; email: string }> }> = [];
   const unmatched: Array<{ rawTeamName: string; files: string[] }> = [];
 
-  for (const [raw, files] of filesByRawTeam.entries()) {
-    const dbTeam = teamMap.get(normalizeTeam(raw));
-    if (dbTeam) {
-      matched.push({ rawTeamName: raw, dbTeamName: dbTeam.name, files, members: dbTeam.members });
-    } else {
-      unmatched.push({ rawTeamName: raw, files });
-    }
+  for (const { dbTeam, rawTeamName, files } of filesByDbTeam.values()) {
+    matched.push({ rawTeamName, dbTeamName: dbTeam.name, files, members: dbTeam.members });
+  }
+  for (const [rawTeamName, files] of unmatchedFiles.entries()) {
+    unmatched.push({ rawTeamName, files });
   }
 
   return NextResponse.json({ matched, unmatched });
