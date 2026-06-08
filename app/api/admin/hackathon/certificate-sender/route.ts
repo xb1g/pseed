@@ -190,7 +190,7 @@ async function handleSend(req: NextRequest) {
       const bodyHtml = meta.body.replace(/\{\{name\}\}/g, r.name).replace(/\{\{team_name\}\}/g, r.teamName);
       const attachments = r.fileNames
         .filter((fn) => fileMap.has(fn))
-        .map((fn) => ({ filename: fn, content: fileMap.get(fn)! }));
+        .map((fn) => ({ filename: fn, content: fileMap.get(fn)!.toString("base64") }));
       console.log(`[cert-sender] recipient=${r.to} fileNames=${JSON.stringify(r.fileNames)} attachments=${attachments.length}`);
       return {
         from: `PassionSeed <${FROM_EMAIL}>`,
