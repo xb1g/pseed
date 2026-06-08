@@ -197,7 +197,7 @@ function CertificateSender() {
           errors.push(`${r.name} (${r.to}): ${text}`);
         } else {
           const data = await res.json();
-          console.log(`[cert] server response for ${r.name}:`, data);
+          console.log(`[cert] server response for ${r.name}:`, JSON.stringify(data.debug, null, 2));
           sent += data.sent ?? 0;
           failed += data.failed ?? 0;
           if (data.errors?.length) errors.push(...data.errors);

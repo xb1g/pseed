@@ -188,15 +188,17 @@ async function handleSend(req: NextRequest) {
     const resendPayload = chunk.map((r) => {
       const subject = meta.subject.replace(/\{\{name\}\}/g, r.name).replace(/\{\{team_name\}\}/g, r.teamName);
       const bodyHtml = meta.body.replace(/\{\{name\}\}/g, r.name).replace(/\{\{team_name\}\}/g, r.teamName);
+      const attachments = r.fileNames
+        .filter((fn) => fileMap.has(fn))
+        .map((fn) => ({ filename: fn, content: fileMap.get(fn)! }));
+      console.log(`[cert-sender] recipient=${r.to} fileNames=${JSON.stringify(r.fileNames)} attachments=${attachments.length}`);
       return {
         from: `PassionSeed <${FROM_EMAIL}>`,
         to: [r.to],
         subject,
         html: `<!DOCTYPE html><html><body>${bodyHtml}</body></html>`,
         text: bodyHtml.replace(/<[^>]+>/g, ""),
-        attachments: r.fileNames
-          .filter((fn) => fileMap.has(fn))
-          .map((fn) => ({ filename: fn, content: fileMap.get(fn)! })),
+        attachments,
       };
     });
 
@@ -214,5 +216,10 @@ async function handleSend(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ sent, failed, errors, debug: { fileMapKeys: [...fileMap.keys()], recipientFileNames: recipient0FileNames, debugFiles } });
+  const attachmentCounts = meta.recipients.map((r) => ({
+    to: r.to,
+    fileNames: r.fileNames,
+    matched: r.fileNames.filter((fn) => fileMap.has(fn)),
+  }));
+  return NextResponse.json({ sent, failed, errors, debug: { fileMapKeys: [...fileMap.keys()], recipientFileNames: recipient0FileNames, debugFiles, attachmentCounts } });
 }
