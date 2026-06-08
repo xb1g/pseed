@@ -153,17 +153,29 @@ async function handleSend(req: NextRequest) {
     return NextResponse.json({ error: "Invalid meta JSON" }, { status: 400 });
   }
 
-  // Build file buffer map: keys are f0, f1, f2... matching recipient[0].fileNames indices
+  // Build file buffer map keyed by filename.
+  // We send one recipient at a time, so meta.recipients[0].fileNames[i] == file at key f{i}.
+  // We use the numeric index from the key to look up the original filename — this avoids
+  // relying on File.name which may not be preserved through Next.js FormData parsing.
+  const recipient0FileNames = meta.recipients[0]?.fileNames ?? [];
   const fileMap = new Map<string, Buffer>();
+  const debugFiles: Array<{ key: string; filenameFromFile: string; filenameResolved: string; size: number }> = [];
   for (const [key, value] of formData.entries()) {
-    if (/^f\d+$/.test(key) && typeof value !== "string") {
+    const match = key.match(/^f(\d+)$/);
+    if (match && typeof value !== "string") {
+      const idx = parseInt(match[1], 10);
       const blob = value as Blob;
-      // The actual filename is stored as the Blob's name (third arg to FormData.append)
-      const fname = (value as File).name || key;
+      const filenameFromFile = (value as File).name || key;
+      // Prefer index-based lookup; fall back to File.name
+      const fname = recipient0FileNames[idx] ?? filenameFromFile;
       const buf = Buffer.from(await blob.arrayBuffer());
       fileMap.set(fname, buf);
+      debugFiles.push({ key, filenameFromFile, filenameResolved: fname, size: buf.length });
     }
   }
+  console.log("[cert-sender] fileMap keys:", [...fileMap.keys()]);
+  console.log("[cert-sender] recipient fileNames:", recipient0FileNames);
+  console.log("[cert-sender] debugFiles:", debugFiles);
 
   const BATCH_SIZE = 5;
   let sent = 0;
@@ -202,5 +214,5 @@ async function handleSend(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ sent, failed, errors });
+  return NextResponse.json({ sent, failed, errors, debug: { fileMapKeys: [...fileMap.keys()], recipientFileNames: recipient0FileNames, debugFiles } });
 }
