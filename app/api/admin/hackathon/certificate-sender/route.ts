@@ -38,16 +38,23 @@ function normalizeTeam(name: string) {
 }
 
 /** Extract team name from certificate filename.
- *  Format: TNDH_Participan-PersonName-TeamName.png
- *  Team name is the last dash-separated segment before the extension,
- *  with underscores replaced by spaces.
+ *  Strategy: team name is always after the LAST dash in the base filename.
+ *  Underscores in the team segment are replaced with spaces.
+ *
+ *  Examples:
+ *   TNDH_Participan-PersonName-TeamName.png       → "TeamName"
+ *   TNDH_Participants_Certificate-TEst2.png       → "TEst2"
+ *   TNDH_Participants_Certificate_TeamName.png    → "TeamName" (no dash → last underscore segment)
  */
 function teamFromFilename(filename: string): string {
-  const base = filename.replace(/\.[^.]+$/, ""); // strip extension
-  const parts = base.split("-");
-  if (parts.length < 3) return base.replace(/_/g, " ");
-  // Everything after the second dash is the team name (handles team names with dashes)
-  return parts.slice(2).join("-").replace(/_/g, " ");
+  const base = filename.replace(/\.[^.]+$/, "");
+  const lastDash = base.lastIndexOf("-");
+  if (lastDash !== -1) {
+    return base.slice(lastDash + 1).replace(/_/g, " ").trim();
+  }
+  // No dash at all — take last underscore segment
+  const parts = base.split("_");
+  return parts[parts.length - 1].trim();
 }
 
 // GET — resolve filenames against DB teams

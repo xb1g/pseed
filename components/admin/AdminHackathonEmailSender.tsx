@@ -67,9 +67,12 @@ interface FilterOptions {
 
 function teamFromFilename(filename: string): string {
   const base = filename.replace(/\.[^.]+$/, "");
-  const parts = base.split("-");
-  if (parts.length < 3) return base.replace(/_/g, " ");
-  return parts.slice(2).join("-").replace(/_/g, " ");
+  const lastDash = base.lastIndexOf("-");
+  if (lastDash !== -1) {
+    return base.slice(lastDash + 1).replace(/_/g, " ").trim();
+  }
+  const parts = base.split("_");
+  return parts[parts.length - 1].trim();
 }
 
 interface MatchedTeam {
