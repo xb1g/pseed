@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
-import { renderCustomEmail } from "@/lib/hackathon/email-templates";
-import { type EmailTemplateVars } from "@/lib/hackathon/email";
+
+// Increase body size limit for certificate file uploads (~200 PNGs)
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "hi@noreply.passionseed.org";
@@ -57,114 +60,131 @@ function teamFromFilename(filename: string): string {
   return parts[parts.length - 1].trim();
 }
 
-// GET — resolve filenames against DB teams
-// Body: { filenames: string[] }
 export async function POST(req: NextRequest) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Not authorized" }, { status: 403 });
 
   const contentType = req.headers.get("content-type") ?? "";
 
-  // ── Mode 1: resolve filenames → matched/unmatched preview ──
+  // ── Mode 1: resolve filenames → matched/unmatched preview (JSON, no files) ──
   if (contentType.includes("application/json")) {
     const body = await req.json();
-
-    // Sub-mode: send certificates
-    if (body.action === "send") {
-      return handleSend(body);
-    }
-
-    // Sub-mode: resolve
     const { filenames }: { filenames: string[] } = body;
     if (!filenames?.length) {
       return NextResponse.json({ error: "No filenames provided" }, { status: 400 });
     }
+    return resolveFilenames(filenames);
+  }
 
-    const serviceClient = getServiceClient();
-
-    // Fetch all teams with their members
-    const { data: teams, error: tErr } = await serviceClient
-      .from("hackathon_teams")
-      .select(`id, name, hackathon_team_members(participant_id, hackathon_participants(id, name, email))`);
-
-    if (tErr) return NextResponse.json({ error: "Failed to fetch teams" }, { status: 500 });
-
-    // Build normalized lookup: normalizedName → { id, name, members[] }
-    const teamMap = new Map<string, { id: string; name: string; members: Array<{ id: string; name: string; email: string }> }>();
-    for (const t of teams ?? []) {
-      const members = (t.hackathon_team_members as any[])
-        .map((m: any) => m.hackathon_participants)
-        .filter(Boolean)
-        .map((p: any) => ({ id: p.id, name: p.name, email: p.email }));
-      teamMap.set(normalizeTeam(t.name), { id: t.id, name: t.name, members });
-    }
-
-    // Group filenames by extracted team name
-    const filesByRawTeam = new Map<string, string[]>();
-    for (const f of filenames) {
-      const raw = teamFromFilename(f);
-      const arr = filesByRawTeam.get(raw) ?? [];
-      arr.push(f);
-      filesByRawTeam.set(raw, arr);
-    }
-
-    const matched: Array<{
-      rawTeamName: string;
-      dbTeamName: string;
-      files: string[];
-      members: Array<{ id: string; name: string; email: string }>;
-    }> = [];
-    const unmatched: Array<{ rawTeamName: string; files: string[] }> = [];
-
-    for (const [raw, files] of filesByRawTeam.entries()) {
-      const dbTeam = teamMap.get(normalizeTeam(raw));
-      if (dbTeam) {
-        matched.push({ rawTeamName: raw, dbTeamName: dbTeam.name, files, members: dbTeam.members });
-      } else {
-        unmatched.push({ rawTeamName: raw, files });
-      }
-    }
-
-    return NextResponse.json({ matched, unmatched });
+  // ── Mode 2: send certificates (multipart/form-data with actual files) ──
+  if (contentType.includes("multipart/form-data")) {
+    return handleSend(req);
   }
 
   return NextResponse.json({ error: "Unsupported content type" }, { status: 415 });
 }
 
-async function handleSend(body: {
-  action: "send";
-  // Each entry: participantId, their email, the filenames to attach, rendered subject/html/text
-  emails: Array<{
-    participantId: string;
-    to: string;
-    subject: string;
-    html: string;
-    text: string;
-    attachments: Array<{ filename: string; contentBase64: string }>;
-  }>;
-}) {
-  const { emails } = body;
-  if (!emails?.length) return NextResponse.json({ error: "No emails to send" }, { status: 400 });
+async function resolveFilenames(filenames: string[]) {
+  const serviceClient = getServiceClient();
+  const { data: teams, error: tErr } = await serviceClient
+    .from("hackathon_teams")
+    .select(`id, name, hackathon_team_members(participant_id, hackathon_participants(id, name, email))`);
 
-  const BATCH_SIZE = 10; // smaller batches due to attachments
+  if (tErr) {
+    console.error("resolveFilenames DB error:", tErr);
+    return NextResponse.json({ error: "Failed to fetch teams" }, { status: 500 });
+  }
+
+  const teamMap = new Map<string, { id: string; name: string; members: Array<{ id: string; name: string; email: string }> }>();
+  for (const t of teams ?? []) {
+    const members = (t.hackathon_team_members as any[])
+      .map((m: any) => m.hackathon_participants)
+      .filter(Boolean)
+      .map((p: any) => ({ id: p.id, name: p.name, email: p.email }));
+    teamMap.set(normalizeTeam(t.name), { id: t.id, name: t.name, members });
+  }
+
+  const filesByRawTeam = new Map<string, string[]>();
+  for (const f of filenames) {
+    const raw = teamFromFilename(f);
+    const arr = filesByRawTeam.get(raw) ?? [];
+    arr.push(f);
+    filesByRawTeam.set(raw, arr);
+  }
+
+  const matched: Array<{ rawTeamName: string; dbTeamName: string; files: string[]; members: Array<{ id: string; name: string; email: string }> }> = [];
+  const unmatched: Array<{ rawTeamName: string; files: string[] }> = [];
+
+  for (const [raw, files] of filesByRawTeam.entries()) {
+    const dbTeam = teamMap.get(normalizeTeam(raw));
+    if (dbTeam) {
+      matched.push({ rawTeamName: raw, dbTeamName: dbTeam.name, files, members: dbTeam.members });
+    } else {
+      unmatched.push({ rawTeamName: raw, files });
+    }
+  }
+
+  return NextResponse.json({ matched, unmatched });
+}
+
+async function handleSend(req: NextRequest) {
+  let formData: FormData;
+  try {
+    formData = await req.formData();
+  } catch (err) {
+    console.error("handleSend formData parse error:", err);
+    return NextResponse.json({ error: "Failed to parse form data" }, { status: 400 });
+  }
+
+  const metaRaw = formData.get("meta");
+  if (!metaRaw || typeof metaRaw !== "string") {
+    return NextResponse.json({ error: "Missing meta field" }, { status: 400 });
+  }
+
+  let meta: {
+    subject: string;
+    body: string;
+    // per-participant: { participantId, to, name, teamName, fileNames[] }
+    recipients: Array<{ participantId: string; to: string; name: string; teamName: string; fileNames: string[] }>;
+  };
+  try {
+    meta = JSON.parse(metaRaw);
+  } catch {
+    return NextResponse.json({ error: "Invalid meta JSON" }, { status: 400 });
+  }
+
+  // Build file buffer map
+  const fileMap = new Map<string, Buffer>();
+  for (const [key, value] of formData.entries()) {
+    if (key.startsWith("file:") && value instanceof Blob) {
+      const fname = key.slice(5);
+      const buf = Buffer.from(await value.arrayBuffer());
+      fileMap.set(fname, buf);
+    }
+  }
+
+  const BATCH_SIZE = 5;
   let sent = 0;
   let failed = 0;
   const errors: string[] = [];
 
-  for (let i = 0; i < emails.length; i += BATCH_SIZE) {
-    const chunk = emails.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < meta.recipients.length; i += BATCH_SIZE) {
+    const chunk = meta.recipients.slice(i, i + BATCH_SIZE);
 
-    const resendPayload = chunk.map((e) => ({
-      from: `PassionSeed <${FROM_EMAIL}>`,
-      to: [e.to],
-      subject: e.subject,
-      html: e.html,
-      text: e.text,
-      attachments: e.attachments.map((a) => ({
-        filename: a.filename,
-        content: Buffer.from(a.contentBase64, "base64"),
-      })),
-    }));
+    const resendPayload = chunk.map((r) => {
+      const subject = meta.subject.replace(/\{\{name\}\}/g, r.name).replace(/\{\{team_name\}\}/g, r.teamName);
+      const bodyHtml = meta.body.replace(/\{\{name\}\}/g, r.name).replace(/\{\{team_name\}\}/g, r.teamName);
+      return {
+        from: `PassionSeed <${FROM_EMAIL}>`,
+        to: [r.to],
+        subject,
+        html: `<!DOCTYPE html><html><body>${bodyHtml}</body></html>`,
+        text: bodyHtml.replace(/<[^>]+>/g, ""),
+        attachments: r.fileNames
+          .filter((fn) => fileMap.has(fn))
+          .map((fn) => ({ filename: fn, content: fileMap.get(fn)! })),
+      };
+    });
 
     try {
       const { error } = await resend.batch.send(resendPayload);
@@ -176,7 +196,7 @@ async function handleSend(body: {
       }
     } catch (err) {
       failed += chunk.length;
-      errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${err instanceof Error ? err.message : "Unknown error"}`);
+      errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 

@@ -140,55 +140,51 @@ function CertificateSender() {
     setSending(true);
     setSendResult(null);
     try {
-      // Build a file map for quick lookup
       const fileMap = new Map<string, File>();
       for (const f of files) fileMap.set(f.name, f);
 
-      // Build per-participant emails: each member gets all files for their team
-      const emails: Array<{
-        participantId: string;
-        to: string;
-        subject: string;
-        html: string;
-        text: string;
-        attachments: Array<{ filename: string; contentBase64: string }>;
-      }> = [];
+      // Collect all unique filenames needed
+      const neededFiles = new Set<string>();
+      for (const team of matched) team.files.forEach((fn) => neededFiles.add(fn));
 
-      for (const team of matched) {
-        // Read all team files to base64 once
-        const attachments: Array<{ filename: string; contentBase64: string }> = await Promise.all(
-          team.files.map(async (fname) => {
-            const file = fileMap.get(fname)!;
-            const buf = await file.arrayBuffer();
-            const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
-            return { filename: fname, contentBase64: b64 };
-          })
-        );
+      // Build recipients metadata (no file content — files go as FormData parts)
+      const recipients = matched.flatMap((team) =>
+        team.members.map((member) => ({
+          participantId: member.id,
+          to: member.email,
+          name: member.name,
+          teamName: team.dbTeamName,
+          fileNames: team.files,
+        }))
+      );
 
-        for (const member of team.members) {
-          // Render subject/body with participant vars
-          const subj = certSubject.replace(/\{\{name\}\}/g, member.name).replace(/\{\{team_name\}\}/g, team.dbTeamName);
-          const bodyHtml = certBody.replace(/\{\{name\}\}/g, member.name).replace(/\{\{team_name\}\}/g, team.dbTeamName);
-          emails.push({
-            participantId: member.id,
-            to: member.email,
-            subject: subj,
-            html: `<!DOCTYPE html><html><body>${bodyHtml}</body></html>`,
-            text: bodyHtml.replace(/<[^>]+>/g, ""),
-            attachments,
-          });
-        }
+      const meta = { subject: certSubject, body: certBody, recipients };
+
+      const form = new FormData();
+      form.append("meta", JSON.stringify(meta));
+      for (const fname of neededFiles) {
+        const file = fileMap.get(fname);
+        if (file) form.append(`file:${fname}`, file, fname);
       }
 
       const res = await fetch("/api/admin/hackathon/certificate-sender", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "send", emails }),
+        body: form,
+        // Do NOT set Content-Type — browser sets it with boundary automatically
       });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Certificate send error:", text);
+        alert(`Send failed: ${text}`);
+        return;
+      }
+
       const data = await res.json();
       setSendResult({ sent: data.sent ?? 0, failed: data.failed ?? 0, errors: data.errors ?? [] });
     } catch (err) {
-      alert("Error sending certificates");
+      console.error("Certificate send exception:", err);
+      alert("Error sending certificates: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSending(false);
       setConfirmOpen(false);
