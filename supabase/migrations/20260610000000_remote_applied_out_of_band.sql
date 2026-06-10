@@ -1,0 +1,3 @@
+-- Placeholder. Migration 20260610000000 was applied directly to prod (out-of-band),
+-- not through this repo. This empty file reconciles local↔remote migration history so
+-- `supabase db push` can proceed. No DDL here on purpose — prod already has whatever ran.
