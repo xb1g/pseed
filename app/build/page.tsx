@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import {
-  getWeeklyLeaderboard,
   getUserTasks,
   getWeeklyFocusStats,
   getPSAccess,
@@ -10,14 +9,15 @@ import {
   getPendingRequestCounts,
   getUserAssignedRequests,
 } from "@/actions/ps-requests";
-import { BuildLeaderboard } from "@/components/ps/build-leaderboard";
 import Link from "next/link";
-import { FolderKanban, ArrowRight, Trophy } from "lucide-react";
+import { FolderKanban, Trophy } from "lucide-react";
 import { FocusGraphPaper } from "@/components/ps/FocusGraphPaper";
 import { TaskList } from "@/components/ps/task-list";
 import { createClient } from "@/utils/supabase/server";
 import { TestButton } from "@/components/ps/test-button";
 import { Button } from "@/components/ui/button";
+import { BuildTodoList } from "@/components/ps/build-todo-list";
+import { getBuildTodos } from "@/actions/build-todos";
 
 export const dynamic = "force-dynamic";
 
@@ -76,10 +76,10 @@ export default async function BuildPage() {
             </Suspense>
           </div>
 
-          {/* Right Column: Leaderboard */}
+          {/* Right Column: Todo List */}
           <div className="md:col-span-1">
-            <Suspense fallback={<div>Loading leaderboard...</div>}>
-              <LeaderboardFetcher />
+            <Suspense fallback={<div className="h-40 bg-white/5 rounded-lg animate-pulse" />}>
+              <TodoListFetcher />
             </Suspense>
           </div>
         </div>
@@ -126,9 +126,14 @@ async function UserTasksFetcher() {
   );
 }
 
-async function LeaderboardFetcher() {
-  const data = await getWeeklyLeaderboard();
-  return <BuildLeaderboard initialData={data} />;
+async function TodoListFetcher() {
+  const todos = await getBuildTodos();
+  return (
+    <div className="bg-[#111827]/50 border border-white/10 rounded-sm p-4">
+      <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">My Tasks</h3>
+      <BuildTodoList initialTodos={todos} />
+    </div>
+  );
 }
 
 async function FocusStatsFetcher() {

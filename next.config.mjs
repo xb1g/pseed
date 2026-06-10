@@ -56,6 +56,9 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: "50mb", // Allow up to 50MB for server actions and streaming
     },
+    // Allow large multipart uploads for certificate sending API route
+    // (Next.js App Router reads body via Web Streams — no extra config needed,
+    //  but serverActions limit covers route handlers in the same process)
   },
   // Webpack optimizations
   webpack: (config, { dev, isServer }) => {
