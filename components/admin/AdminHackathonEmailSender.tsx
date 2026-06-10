@@ -36,7 +36,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Search, Mail, X, Send, Eye, Users, FileText, LayoutTemplate, Code, LayoutList, UsersRound } from "lucide-react";
+import { Loader2, Search, Mail, X, Send, Eye, Users, FileText, LayoutTemplate, Code, LayoutList, UsersRound, Award, Upload, CheckCircle2, AlertCircle, FolderOpen } from "lucide-react";
 import { TEMPLATE_VARIABLES, type EmailTemplateVars } from "@/lib/hackathon/email";
 import { renderCustomEmail, type EmailTemplate } from "@/lib/hackathon/email-templates";
 
@@ -60,6 +60,361 @@ interface FilterOptions {
   submissionStatuses: string[];
   activityTitles: string[];
 }
+
+// ─────────────────────────────────────────────
+// Certificate sender helpers
+// ─────────────────────────────────────────────
+
+function teamFromFilename(filename: string): string {
+  const base = filename.replace(/\.[^.]+$/, "");
+  const lastDash = base.lastIndexOf("-");
+  if (lastDash !== -1) {
+    return base.slice(lastDash + 1).replace(/_/g, " ").trim();
+  }
+  const parts = base.split("_");
+  return parts[parts.length - 1].trim();
+}
+
+interface MatchedTeam {
+  rawTeamName: string;
+  dbTeamName: string;
+  files: string[];
+  members: Array<{ id: string; name: string; email: string }>;
+}
+interface UnmatchedTeam {
+  rawTeamName: string;
+  files: string[];
+}
+
+function CertificateSender() {
+  const [files, setFiles] = useState<File[]>([]);
+  const [matched, setMatched] = useState<MatchedTeam[]>([]);
+  const [unmatched, setUnmatched] = useState<UnmatchedTeam[]>([]);
+  const [resolving, setResolving] = useState(false);
+  const [resolved, setResolved] = useState(false);
+
+  const [certSubject, setCertSubject] = useState("Your Certificate — The Next Decade Hackathon 2026");
+  const [certBody, setCertBody] = useState(
+    `<p>Hi {{name}},</p>\n<p>Congratulations on being part of <strong>The Next Decade Hackathon 2026</strong>! Please find your participation certificate(s) attached.</p>\n<p>Thank you for being part of this journey.</p>\n<p>Best regards,<br/>PassionSeed Team</p>`
+  );
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendProgress, setSendProgress] = useState<{ current: number; total: number } | null>(null);
+  const [sendResult, setSendResult] = useState<{ sent: number; failed: number; errors: string[] } | null>(null);
+
+  function handleFolderChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const fileList = e.target.files;
+    if (!fileList) return;
+    const pngs = Array.from(fileList).filter((f) => f.name.toLowerCase().endsWith(".png"));
+    setFiles(pngs);
+    setResolved(false);
+    setMatched([]);
+    setUnmatched([]);
+    setSendResult(null);
+  }
+
+  async function handleResolve() {
+    if (!files.length) return;
+    setResolving(true);
+    try {
+      const res = await fetch("/api/admin/hackathon/certificate-sender", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filenames: files.map((f) => f.name) }),
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.error || "Failed to resolve"); return; }
+      setMatched(data.matched ?? []);
+      setUnmatched(data.unmatched ?? []);
+      setResolved(true);
+    } catch (err) {
+      alert("Error resolving files");
+    } finally {
+      setResolving(false);
+    }
+  }
+
+  const totalRecipients = matched.reduce((sum, t) => sum + t.members.length, 0);
+
+  async function handleSend() {
+    setSending(true);
+    setSendResult(null);
+
+    const fileMap = new Map<string, File>();
+    for (const f of files) fileMap.set(f.name, f);
+
+    // Build flat list of recipients with their team files
+    const recipients = matched.flatMap((team) =>
+      team.members.map((member) => ({
+        to: member.email,
+        name: member.name,
+        teamName: team.dbTeamName,
+        fileNames: team.files,
+      }))
+    );
+
+    const total = recipients.length;
+    setSendProgress({ current: 0, total });
+
+    let sent = 0;
+    let failed = 0;
+    const errors: string[] = [];
+
+    // Send one recipient at a time to keep FormData simple and reliable
+    for (let i = 0; i < recipients.length; i++) {
+      const r = recipients[i];
+      setSendProgress({ current: i + 1, total });
+
+      try {
+        const form = new FormData();
+        form.append("meta", JSON.stringify({
+          subject: certSubject,
+          body: certBody,
+          recipients: [r],
+        }));
+        // Append files with simple numeric keys to avoid special-char issues
+        r.fileNames.forEach((fname, idx) => {
+          const file = fileMap.get(fname);
+          console.log(`[cert] recipient ${r.name} file[${idx}]: "${fname}" → found=${!!file} size=${file?.size}`);
+          if (file) form.append(`f${idx}`, file, fname);
+        });
+        // Log all form entries
+        console.log(`[cert] FormData entries for ${r.name}:`);
+        for (const [k, v] of form.entries()) {
+          if (v instanceof File) console.log(`  ${k}: File name="${v.name}" size=${v.size}`);
+          else console.log(`  ${k}: string length=${v.length}`);
+        }
+
+        const res = await fetch("/api/admin/hackathon/certificate-sender", {
+          method: "POST",
+          body: form,
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          failed++;
+          errors.push(`${r.name} (${r.to}): ${text}`);
+        } else {
+          const data = await res.json();
+          console.log(`[cert] server response for ${r.name}:`, JSON.stringify(data.debug, null, 2));
+          sent += data.sent ?? 0;
+          failed += data.failed ?? 0;
+          if (data.errors?.length) errors.push(...data.errors);
+        }
+      } catch (err) {
+        failed++;
+        errors.push(`${r.name}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+
+    setSendResult({ sent, failed, errors });
+    setSending(false);
+    setSendProgress(null);
+    setConfirmOpen(false);
+  }
+
+  return (
+    <div className="space-y-4">
+      {sendResult && (
+        <Card className={sendResult.failed > 0 ? "border-orange-500" : "border-green-500"}>
+          <CardContent className="pt-4">
+            <p className="text-sm">
+              <span className="font-bold text-green-500">{sendResult.sent} sent successfully</span>.{" "}
+              {sendResult.failed > 0 && <span className="font-bold text-red-500">{sendResult.failed} failed</span>}
+            </p>
+            {sendResult.errors.length > 0 && (
+              <div className="mt-2 text-xs text-red-500 bg-red-500/10 p-2 rounded">
+                {sendResult.errors.map((e, i) => <div key={i}>{e}</div>)}
+              </div>
+            )}
+            <Button variant="outline" size="sm" className="mt-3" onClick={() => setSendResult(null)}>Dismiss</Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 1 — Upload */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <FolderOpen className="h-5 w-5" />
+            Step 1 — Upload Certificate Folder
+          </CardTitle>
+          <CardDescription>
+            Select the folder containing certificate PNGs. Filenames must follow the pattern:<br />
+            <code className="text-xs bg-muted px-1 rounded">TNDH_Participan-PersonName-TeamName.png</code>
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <label className="flex items-center gap-3 cursor-pointer border-2 border-dashed rounded-lg p-4 hover:bg-muted/50 transition-colors">
+            <Upload className="h-5 w-5 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              {files.length > 0 ? `${files.length} PNG files selected` : "Click to select folder…"}
+            </span>
+            <input
+              type="file"
+              // @ts-ignore — webkitdirectory is valid
+              webkitdirectory=""
+              multiple
+              accept=".png"
+              className="hidden"
+              onChange={handleFolderChange}
+            />
+          </label>
+          {files.length > 0 && (
+            <Button onClick={handleResolve} disabled={resolving} size="sm">
+              {resolving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Resolving…</> : "Match Files to Teams"}
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Step 2 — Preview */}
+      {resolved && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5" />
+              Step 2 — Preview Matches
+            </CardTitle>
+            <CardDescription>
+              {matched.length} teams matched · {totalRecipients} recipients · {unmatched.length} unmatched file group{unmatched.length !== 1 ? "s" : ""}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {unmatched.length > 0 && (
+              <div className="rounded-lg border border-orange-500/30 bg-orange-500/5 p-3 space-y-2">
+                <p className="text-sm font-semibold text-orange-500 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  {unmatched.length} unmatched team name{unmatched.length !== 1 ? "s" : ""} — these will NOT be sent
+                </p>
+                <div className="space-y-1">
+                  {unmatched.map((u) => (
+                    <div key={u.rawTeamName} className="text-xs text-muted-foreground">
+                      <span className="font-medium text-orange-400">{u.rawTeamName}</span>
+                      {" "}— {u.files.length} file{u.files.length !== 1 ? "s" : ""}: {u.files.slice(0, 3).join(", ")}{u.files.length > 3 ? ` +${u.files.length - 3} more` : ""}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="rounded-md border max-h-[320px] overflow-auto">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10">
+                  <TableRow>
+                    <TableHead>DB Team Name</TableHead>
+                    <TableHead>Files</TableHead>
+                    <TableHead>Members (recipients)</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {matched.map((t) => (
+                    <TableRow key={t.dbTeamName}>
+                      <TableCell className="font-medium">{t.dbTeamName}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-0.5">
+                          {t.files.map((f) => (
+                            <span key={f} className="text-xs text-muted-foreground truncate max-w-[200px]">{f}</span>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-0.5">
+                          {t.members.map((m) => (
+                            <span key={m.id} className="text-xs">{m.name} <span className="text-muted-foreground">({m.email})</span></span>
+                          ))}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 3 — Compose & Send */}
+      {resolved && matched.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Step 3 — Email Message
+            </CardTitle>
+            <CardDescription>
+              Supports <code className="text-xs bg-muted px-1 rounded">{"{{name}}"}</code> and <code className="text-xs bg-muted px-1 rounded">{"{{team_name}}"}</code>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1">
+              <Label>Subject</Label>
+              <Input value={certSubject} onChange={(e) => setCertSubject(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label>Body (HTML)</Label>
+              <Textarea
+                value={certBody}
+                onChange={(e) => setCertBody(e.target.value)}
+                className="min-h-[160px] font-mono text-sm"
+              />
+            </div>
+            <Button
+              size="lg"
+              className="w-full"
+              disabled={!certSubject.trim() || !certBody.trim()}
+              onClick={() => setConfirmOpen(true)}
+            >
+              <Send className="mr-2 h-4 w-4" />
+              Send Certificates to {totalRecipients} Participants
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      <Dialog open={confirmOpen} onOpenChange={(o) => { if (!sending) setConfirmOpen(o); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Certificate Send</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-2">
+            {sending && sendProgress ? (
+              <div className="space-y-3">
+                <p className="text-sm font-medium">Sending certificates…</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-primary h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(sendProgress.current / sendProgress.total) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-sm font-mono tabular-nums text-muted-foreground whitespace-nowrap">
+                    {sendProgress.current} / {sendProgress.total}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">Do not close this window.</p>
+              </div>
+            ) : (
+              <>
+                <p>You are about to send certificates to <strong>{totalRecipients} participants</strong> across <strong>{matched.length} teams</strong>.</p>
+                <p className="text-sm text-muted-foreground">Each participant will receive all certificate files for their team as attachments. This cannot be undone.</p>
+              </>
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={sending}>Cancel</Button>
+            <Button onClick={handleSend} disabled={sending}>
+              {sending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Sending…</> : <><Send className="mr-2 h-4 w-4" />Confirm & Send</>}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 
 export function AdminHackathonEmailSender() {
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -305,6 +660,23 @@ export function AdminHackathonEmailSender() {
   );
 
   return (
+    <Tabs defaultValue="email" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="email" className="flex items-center gap-2">
+          <Mail className="h-4 w-4" />
+          Email Blast
+        </TabsTrigger>
+        <TabsTrigger value="certificates" className="flex items-center gap-2">
+          <Award className="h-4 w-4" />
+          Certificates
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="certificates">
+        <CertificateSender />
+      </TabsContent>
+
+      <TabsContent value="email">
     <div className="space-y-4">
       {sendResult && (
         <Card className={sendResult.failed > 0 ? "border-orange-500" : "border-green-500"}>
@@ -763,5 +1135,7 @@ PassionSeed Team"
         </DialogContent>
       </Dialog>
     </div>
+      </TabsContent>
+    </Tabs>
   );
 }
