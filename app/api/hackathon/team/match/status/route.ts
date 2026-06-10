@@ -2,7 +2,14 @@ import { NextResponse } from "next/server";
 import { SESSION_COOKIE } from "@/lib/hackathon/auth";
 import { getSessionParticipant } from "@/lib/hackathon/db";
 import { cookies } from "next/headers";
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@supabase/supabase-js";
+
+function getServiceClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 export async function GET() {
   try {
@@ -17,7 +24,7 @@ export async function GET() {
       return NextResponse.json({ error: "Invalid session" }, { status: 401 });
     }
 
-    const supabase = await createClient();
+    const supabase = getServiceClient();
 
     // Check waitlist status
     const { data: waitlist, error: waitlistError } = await supabase
