@@ -95,14 +95,14 @@ function Slide0() {
         filter: "blur(40px)",
       }} />
       <Creatures />
-      {/* Logo — top 12% */}
-      <div className="absolute left-0 right-0 flex justify-center z-10" style={{ top: "12%", padding: "0 8%", filter: "drop-shadow(0 0 30px rgba(145,196,227,0.4))" }}>
+      {/* Logo — top 20% */}
+      <div className="absolute left-0 right-0 flex justify-center z-10" style={{ top: "20%", padding: "0 8%", filter: "drop-shadow(0 0 30px rgba(145,196,227,0.4))" }}>
         <img src="/hackathon/HackLogo.png" alt="The Next Decade"
           style={{ width: "clamp(180px, 70%, 420px)", height: "auto", objectFit: "contain" }} />
       </div>
 
-      {/* Grand title — top 36% */}
-      <div className="absolute left-0 right-0 flex flex-col items-center text-center z-10" style={{ top: "36%" }}>
+      {/* Grand title — top 44% */}
+      <div className="absolute left-0 right-0 flex flex-col items-center text-center z-10" style={{ top: "44%" }}>
         <p style={{
           fontFamily: "var(--font-poppins), sans-serif",
           fontWeight: 600,
@@ -136,8 +136,8 @@ function Slide0() {
         </h2>
       </div>
 
-      {/* Decorative line — top 62% */}
-      <div className="absolute left-0 right-0 flex items-center justify-center gap-3 z-10" style={{ top: "62%", padding: "0 15%" }}>
+      {/* Decorative line — top 70% */}
+      <div className="absolute left-0 right-0 flex items-center justify-center gap-3 z-10" style={{ top: "70%", padding: "0 15%" }}>
         <div style={{ flex: 1, height: "1px", background: "linear-gradient(to right, transparent, rgba(200,160,50,0.5))" }} />
         <span style={{ color: "rgba(200,160,50,0.7)", fontSize: "clamp(0.6rem, 1.5vw, 0.9rem)" }}>✦</span>
         <span style={{ color: "rgba(200,160,50,0.9)", fontSize: "clamp(0.8rem, 2vw, 1.1rem)" }}>✦</span>
@@ -145,8 +145,8 @@ function Slide0() {
         <div style={{ flex: 1, height: "1px", background: "linear-gradient(to left, transparent, rgba(200,160,50,0.5))" }} />
       </div>
 
-      {/* Thai text — top 68% */}
-      <div className="absolute left-0 right-0 text-center z-10" style={{ top: "68%" }}>
+      {/* Thai text — top 76% */}
+      <div className="absolute left-0 right-0 text-center z-10" style={{ top: "76%" }}>
         <p style={{
           fontFamily: "var(--font-noto-sans-thai), sans-serif",
           fontSize: "clamp(0.7rem, 1.8vw, 1.1rem)",
@@ -174,8 +174,8 @@ function Slide1() {
       }} />
       <Creatures />
 
-      {/* Header — top 10% */}
-      <div className="absolute left-0 right-0 text-center z-10" style={{ top: "10%", padding: "0 10%" }}>
+      {/* Header — top 18% */}
+      <div className="absolute left-0 right-0 text-center z-10" style={{ top: "18%", padding: "0 10%" }}>
         <p style={{
           fontFamily: "var(--font-poppins), sans-serif",
           fontWeight: 600,
@@ -199,8 +199,8 @@ function Slide1() {
         </div>
       </div>
 
-      {/* Two sections side by side — top 28% */}
-      <div className="absolute z-10" style={{ top: "28%", left: "10%", right: "10%", bottom: "8%" }}>
+      {/* Two sections side by side — top 36% */}
+      <div className="absolute z-10" style={{ top: "36%", left: "10%", right: "10%", bottom: "8%" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6%", height: "100%" }}>
           {/* Highschool */}
           <div style={{ display: "flex", flexDirection: "column" }}>
