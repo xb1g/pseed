@@ -111,11 +111,19 @@ export function LearningAnalyticsDashboard() {
   return (
     <div className="space-y-6">
       {/* summary */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Stat title="Teams" value={data.counts.total} />
-        <Stat title="Semifinalists" value={data.counts.finalists} />
-        <Stat title="Median Learning" value={data.medians.learning.toFixed(1)} />
-        <Stat title="Median Semifinal" value={data.medians.semifinal.toFixed(1)} />
+      <div className="flex items-center justify-between">
+        <div className="grid flex-1 grid-cols-2 gap-4 md:grid-cols-4">
+          <Stat title="Teams" value={data.counts.total} />
+          <Stat title="Semifinalists" value={data.counts.finalists} />
+          <Stat title="Median Learning" value={data.medians.learning.toFixed(1)} />
+          <Stat title="Median Semifinal" value={data.medians.semifinal.toFixed(1)} />
+        </div>
+        <a
+          href="/api/admin/hackathon/learning/export"
+          className="ml-4 shrink-0 rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"
+        >
+          ⬇ Export CSV
+        </a>
       </div>
 
       {/* filters */}
