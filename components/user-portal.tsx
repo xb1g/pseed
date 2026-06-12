@@ -17,6 +17,7 @@ import {
   Heart,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { getMindmapReflections } from "@/lib/supabase/mindmap-reflections";
 import { useAuth } from "@/hooks/use-auth";
