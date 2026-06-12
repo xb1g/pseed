@@ -13,14 +13,11 @@ import {
   VisuallyHidden,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, Globe, X, Compass, Map, Users, BookOpen, Sprout, User, Wrench } from "lucide-react";
+import { Menu, Globe, X, Compass, Sprout, User, Wrench } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 
 const navItems = [
   { href: "/about", label: { en: "About", th: "เกี่ยวกับ" }, icon: Compass },
-  { href: "/map", label: { en: "Maps", th: "แผนที่" }, icon: Map },
-  { href: "/classrooms", label: { en: "Classrooms", th: "ห้องเรียน" }, icon: BookOpen },
-  { href: "/teams", label: { en: "Teams", th: "ทีม" }, icon: Users },
   { href: "/seeds", label: { en: "Seeds", th: "Seeds" }, icon: Sprout },
   { href: "/me", label: { en: "My Journey", th: "เส้นทางของฉัน" }, icon: User },
 ];
@@ -140,9 +137,7 @@ export function MainNav({ isAuthenticated = false }: { isAuthenticated?: boolean
                   </div>
                   
                   {/* Nav items with icons */}
-                  {navItems
-                    .filter(item => isHackathon ? !['/classrooms', '/teams'].includes(item.href) : true)
-                    .map((item, index) => (
+                  {navItems.map((item, index) => (
                     <motion.div
                       key={item.href}
                       initial={{ opacity: 0, x: -20 }}
@@ -284,28 +279,6 @@ export function MainNav({ isAuthenticated = false }: { isAuthenticated?: boolean
             >
               About
             </Link>
-            <Link
-              href="/map"
-              className="text-sm font-medium transition-colors hover:text-white whitespace-nowrap px-3 py-2 text-gray-400"
-            >
-              Maps
-            </Link>
-            {!isHackathon && (
-              <>
-                <Link
-                  href="/classrooms"
-                  className="text-sm font-medium transition-colors hover:text-white whitespace-nowrap px-3 py-2 text-gray-400"
-                >
-                  Classrooms
-                </Link>
-                <Link
-                  href="/teams"
-                  className="text-sm font-medium transition-colors hover:text-white whitespace-nowrap px-3 py-2 text-gray-400"
-                >
-                  Teams
-                </Link>
-              </>
-            )}
             <a
               href="/seeds"
               className="text-sm font-medium transition-colors hover:text-white whitespace-nowrap px-3 py-2 text-gray-400 cursor-pointer"
