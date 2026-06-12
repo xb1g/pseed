@@ -14,12 +14,12 @@ interface TeamRow {
   completion: number | null; scoredSubs: number;
   honestWrongness: boolean; learningIndex: number | null; fidelity: number | null;
   aiLikelihood: number | null; engagement: number; iteration: number;
-  semifinal: number | null; quadrant: string | null;
+  semifinal: number | null; round1: number | null; quadrant: string | null;
 }
 interface Payload {
   teams: TeamRow[];
-  medians: { learning: number; semifinal: number };
-  counts: { total: number; finalists: number };
+  medians: { learning: number; semifinal: number; round1: number };
+  counts: { total: number; finalists: number; round1: number };
 }
 interface TeamDetail {
   journey: string | null;
@@ -37,7 +37,7 @@ interface TeamDetail {
 interface FunnelStage { label: string; phase: number; teams: number; drop: number; pctOfStart: number; }
 interface ExpTeam {
   teamId: string; label: string; division: string | null;
-  semifinal: number; avgExperience: number; members: number;
+  semifinal: number; round1: number | null; avgExperience: number; members: number;
 }
 
 const QUADRANT = {
@@ -63,6 +63,7 @@ export function LearningAnalyticsDashboard() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [funnel, setFunnel] = useState<Record<string, FunnelStage[]> | null>(null);
   const [expTeams, setExpTeams] = useState<ExpTeam[] | null>(null);
+  const [scoreRound, setScoreRound] = useState<"semifinal" | "round1">("semifinal");
 
   async function openTeam(t: TeamRow) {
     setSelected(t); setDetail(null); setDetailLoading(true);
@@ -101,8 +102,8 @@ export function LearningAnalyticsDashboard() {
   }, [data, hideTest, minMembers, quadrantFilter]);
 
   const finalists = useMemo(
-    () => teams.filter((t) => t.semifinal !== null && t.learningIndex !== null),
-    [teams],
+    () => teams.filter((t) => t[scoreRound] !== null && t.learningIndex !== null),
+    [teams, scoreRound],
   );
   const allTeams = useMemo(
     () => teams.filter((t) => t.learningIndex !== null && t.completion !== null),
@@ -121,11 +122,12 @@ export function LearningAnalyticsDashboard() {
     <div className="space-y-6">
       {/* summary */}
       <div className="flex items-center justify-between">
-        <div className="grid flex-1 grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid flex-1 grid-cols-2 gap-4 md:grid-cols-5">
           <Stat title="Teams" value={data.counts.total} />
           <Stat title="Semifinalists" value={data.counts.finalists} />
+          <Stat title="Round 1 teams" value={data.counts.round1} />
           <Stat title="Median Learning" value={data.medians.learning.toFixed(1)} />
-          <Stat title="Median Semifinal" value={data.medians.semifinal.toFixed(1)} />
+          <Stat title="Med R1 / R2" value={`${data.medians.round1.toFixed(1)} / ${data.medians.semifinal.toFixed(1)}`} />
         </div>
         <a
           href="/api/admin/hackathon/learning/export"
@@ -167,18 +169,30 @@ export function LearningAnalyticsDashboard() {
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <CardTitle>{chartView === "finalists" ? "Learning × Semifinal" : "Learning × Completion — all teams"}</CardTitle>
+              <CardTitle>
+                {chartView === "finalists"
+                  ? `Learning × ${scoreRound === "round1" ? "Round 1" : "Semifinal"}`
+                  : "Learning × Completion — all teams"}
+              </CardTitle>
               <CardDescription>
                 {chartView === "finalists"
-                  ? "Process (did they learn) vs outcome (judges' score), 28 semifinalists. Top-left 🔑 undervalued growth; bottom-right 🪤 polished coasters."
+                  ? `Process (did they learn) vs outcome (judges' score). Top-left 🔑 undervalued growth; bottom-right 🪤 polished coasters.`
                   : `All ${allTeams.length} teams. X = how far through the program; Y = Learning Index. Dropouts cluster bottom-left. Click any dot.`}
               </CardDescription>
             </div>
-            <div className="flex gap-1 text-sm">
+            <div className="flex flex-wrap gap-1 text-sm">
               <button onClick={() => setChartView("finalists")}
-                className={`rounded px-3 py-1 ${chartView === "finalists" ? "bg-foreground text-background" : "border"}`}>Semifinalists (2×2)</button>
+                className={`rounded px-3 py-1 ${chartView === "finalists" ? "bg-foreground text-background" : "border"}`}>Finalists (2×2)</button>
               <button onClick={() => setChartView("all")}
                 className={`rounded px-3 py-1 ${chartView === "all" ? "bg-foreground text-background" : "border"}`}>All teams</button>
+              {chartView === "finalists" && (
+                <div className="flex gap-1 border-l pl-1 ml-1">
+                  <button onClick={() => setScoreRound("semifinal")}
+                    className={`rounded px-3 py-1 ${scoreRound === "semifinal" ? "bg-blue-600 text-white" : "border"}`}>Round 2 (Semi)</button>
+                  <button onClick={() => setScoreRound("round1")}
+                    className={`rounded px-3 py-1 ${scoreRound === "round1" ? "bg-amber-500 text-white" : "border"}`}>Round 1</button>
+                </div>
+              )}
             </div>
           </div>
           {/* legend */}
@@ -196,16 +210,24 @@ export function LearningAnalyticsDashboard() {
           <ResponsiveContainer width="100%" height={460}>
             <ScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 10 }}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-              <XAxis type="number" dataKey={chartView === "finalists" ? "semifinal" : "completion"}
-                name={chartView === "finalists" ? "Semifinal" : "Completion"}
-                domain={chartView === "finalists" ? [0, 60] : [0, 100]}
-                label={{ value: chartView === "finalists" ? "Semifinal score (judges)" : "Completion %", position: "bottom", offset: 0 }} />
+              <XAxis
+                type="number"
+                dataKey={chartView === "finalists" ? scoreRound : "completion"}
+                name={chartView === "finalists" ? (scoreRound === "round1" ? "Round 1" : "Semifinal") : "Completion"}
+                domain={chartView === "finalists" ? (scoreRound === "round1" ? [40, 75] : [0, 60]) : [0, 100]}
+                label={{ value: chartView === "finalists" ? (scoreRound === "round1" ? "Round 1 score (judges)" : "Semifinal score (judges)") : "Completion %", position: "bottom", offset: 0 }}
+              />
               <YAxis type="number" dataKey="learningIndex" name="Learning" domain={[0, 100]}
                 label={{ value: "Learning Index", angle: -90, position: "insideLeft" }} />
               <ZAxis type="number" dataKey="members" range={[40, 260]} name="Members" />
-              {chartView === "finalists" && <ReferenceLine x={data.medians.semifinal} stroke="#888" strokeDasharray="4 4" />}
+              {chartView === "finalists" && (
+                <ReferenceLine
+                  x={scoreRound === "round1" ? data.medians.round1 : data.medians.semifinal}
+                  stroke="#888" strokeDasharray="4 4"
+                />
+              )}
               <ReferenceLine y={data.medians.learning} stroke="#888" strokeDasharray="4 4" />
-              <Tooltip content={<DotTip mode={chartView} />} cursor={{ strokeDasharray: "3 3" }} />
+              <Tooltip content={<DotTip mode={chartView} scoreRound={scoreRound} />} cursor={{ strokeDasharray: "3 3" }} />
               <Scatter data={chartView === "finalists" ? finalists : allTeams}
                 onClick={(d) => { const t = (d as unknown as { payload?: TeamRow }).payload; if (t) openTeam(t); }}
                 cursor="pointer">
@@ -221,6 +243,7 @@ export function LearningAnalyticsDashboard() {
       </Card>
 
       {expTeams && expTeams.length > 0 && <ExperienceChart teams={expTeams} />}
+
 
       {/* ranked table */}
       <Card>
@@ -238,8 +261,9 @@ export function LearningAnalyticsDashboard() {
             <thead>
               <tr className="border-b text-left text-muted-foreground">
                 {([["label", "Team"], ["learningIndex", "Learning"], ["fidelity", "Fidelity"],
-                   ["completion", "Completion"], ["aiLikelihood", "AI%"], ["semifinal", "Semifinal"],
-                   ["cycles", "P3 cyc"], ["scoredSubs", "Subs"], ["members", "Mem"]] as [keyof TeamRow, string][]).map(([k, lbl]) => (
+                   ["completion", "Completion"], ["aiLikelihood", "AI%"], ["round1", "R1"],
+                   ["semifinal", "R2 (Semi)"], ["cycles", "P3 cyc"], ["scoredSubs", "Subs"],
+                   ["members", "Mem"]] as [keyof TeamRow, string][]).map(([k, lbl]) => (
                   <th key={k} className="cursor-pointer px-2 py-2 hover:text-foreground"
                     onClick={() => setSortKey(k)}>{lbl}</th>
                 ))}
@@ -261,6 +285,7 @@ export function LearningAnalyticsDashboard() {
                     <td className="px-2 py-1.5">{t.fidelity?.toFixed(0) ?? "–"}</td>
                     <td className="px-2 py-1.5">{t.completion != null ? `${t.completion}%` : "–"}</td>
                     <td className="px-2 py-1.5">{t.aiLikelihood?.toFixed(0) ?? "–"}</td>
+                    <td className="px-2 py-1.5">{t.round1?.toFixed(1) ?? "–"}</td>
                     <td className="px-2 py-1.5">{t.semifinal?.toFixed(1) ?? "–"}</td>
                     <td className="px-2 py-1.5">{t.cycles || "–"}</td>
                     <td className="px-2 py-1.5">{t.scoredSubs}</td>
@@ -491,7 +516,17 @@ function Stat({ title, value }: { title: string; value: string | number }) {
 
 function ExperienceChart({ teams }: { teams: ExpTeam[] }) {
   const [divFilter, setDivFilter] = useState<"all" | "high_school" | "university">("all");
-  const filtered = divFilter === "all" ? teams : teams.filter((t) => t.division === divFilter);
+  const [expRound, setExpRound] = useState<"semifinal" | "round1">("semifinal");
+
+  const baseFiltered = divFilter === "all" ? teams : teams.filter((t) => t.division === divFilter);
+  // For round1 view, only show teams that have round1 data
+  const filtered = expRound === "round1"
+    ? baseFiltered.filter((t) => t.round1 !== null)
+    : baseFiltered;
+
+  const scoreKey = expRound === "round1" ? "round1" : "semifinal";
+  const scoreLabel = expRound === "round1" ? "Round 1 score" : "Semifinal score";
+  const scoreDomain = expRound === "round1" ? ([40, 75] as [number, number]) : ([0, 60] as [number, number]);
 
   // Bucket teams by experience bracket (1-3, 4-6, 7-10)
   const brackets = [
@@ -499,13 +534,13 @@ function ExperienceChart({ teams }: { teams: ExpTeam[] }) {
     { key: "4–6", label: "4–6\nSome exp", min: 4, max: 6 },
     { key: "7–10", label: "7–10\nVeteran", min: 7, max: 10 },
   ];
-  const stats = brackets.map(({ key, label, min, max }) => {
+  const stats = brackets.map(({ key, min, max }) => {
     const bucket = filtered.filter((t) => t.avgExperience >= min && t.avgExperience <= max);
-    const scores = bucket.map((t) => t.semifinal);
+    const scores = bucket.map((t) => (expRound === "round1" ? (t.round1 ?? 0) : t.semifinal));
     const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
     const sorted = [...scores].sort((a, b) => a - b);
     const med = sorted.length ? sorted[Math.floor(sorted.length / 2)] : null;
-    return { key, label, count: bucket.length, avg, med };
+    return { key, count: bucket.length, avg, med };
   });
 
   const tabs: [typeof divFilter, string][] = [["all", "All"], ["high_school", "High School"], ["university", "University"]];
@@ -518,14 +553,20 @@ function ExperienceChart({ teams }: { teams: ExpTeam[] }) {
             <CardTitle>Prior experience vs Judge score</CardTitle>
             <CardDescription>
               X = avg team <b>experience_level</b> from registration (1 = first-timer, 10 = veteran).
-              Y = semifinal score. Dot size = team members. Click division tabs to filter.
+              Y = {scoreLabel}. Dot size = team members.
             </CardDescription>
           </div>
-          <div className="flex gap-1 text-sm">
+          <div className="flex flex-wrap gap-1 text-sm">
             {tabs.map(([k, lbl]) => (
               <button key={k} onClick={() => setDivFilter(k)}
                 className={`rounded px-3 py-1 ${divFilter === k ? "bg-foreground text-background" : "border"}`}>{lbl}</button>
             ))}
+            <div className="flex gap-1 border-l pl-1 ml-1">
+              <button onClick={() => setExpRound("semifinal")}
+                className={`rounded px-3 py-1 ${expRound === "semifinal" ? "bg-blue-600 text-white" : "border"}`}>Round 2 (Semi)</button>
+              <button onClick={() => setExpRound("round1")}
+                className={`rounded px-3 py-1 ${expRound === "round1" ? "bg-amber-500 text-white" : "border"}`}>Round 1</button>
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -536,16 +577,15 @@ function ExperienceChart({ teams }: { teams: ExpTeam[] }) {
             <XAxis type="number" dataKey="avgExperience" name="Experience" domain={[1, 10]}
               ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
               label={{ value: "Avg experience level (registration)", position: "bottom", offset: 0 }} />
-            <YAxis type="number" dataKey="semifinal" name="Semifinal" domain={[0, 60]}
-              label={{ value: "Semifinal score", angle: -90, position: "insideLeft" }} />
+            <YAxis type="number" dataKey={scoreKey} name={scoreLabel} domain={scoreDomain}
+              label={{ value: scoreLabel, angle: -90, position: "insideLeft" }} />
             <ZAxis type="number" dataKey="members" range={[40, 220]} name="Members" />
-            {/* median reference line */}
             {(() => {
-              const scores = filtered.map((t) => t.semifinal).sort((a, b) => a - b);
+              const scores = filtered.map((t) => (expRound === "round1" ? (t.round1 ?? 0) : t.semifinal)).sort((a, b) => a - b);
               const med = scores.length ? scores[Math.floor(scores.length / 2)] : null;
               return med !== null ? <ReferenceLine y={med} stroke="#888" strokeDasharray="4 4" label={{ value: `med ${med.toFixed(1)}`, position: "right", fontSize: 10 }} /> : null;
             })()}
-            <Tooltip content={<ExpDotTip />} cursor={{ strokeDasharray: "3 3" }} />
+            <Tooltip content={<ExpDotTip scoreRound={expRound} />} cursor={{ strokeDasharray: "3 3" }} />
             <Scatter data={filtered} fill="#8b5cf6" fillOpacity={0.75}>
               {filtered.map((t) => (
                 <Cell key={t.teamId}
@@ -585,22 +625,30 @@ function ExperienceChart({ teams }: { teams: ExpTeam[] }) {
   );
 }
 
-function ExpDotTip({ active, payload }: { active?: boolean; payload?: Array<{ payload: ExpTeam }> }) {
+function ExpDotTip({ active, payload, scoreRound = "semifinal" }: {
+  active?: boolean; payload?: Array<{ payload: ExpTeam }>; scoreRound?: "semifinal" | "round1";
+}) {
   if (!active || !payload?.length) return null;
   const t = payload[0].payload;
+  const score = scoreRound === "round1" ? t.round1 : t.semifinal;
+  const label = scoreRound === "round1" ? "Round 1" : "Semifinal";
   return (
     <div className="rounded border bg-background p-2 text-xs shadow">
       <div className="font-semibold">{t.label}</div>
-      <div>Semifinal {t.semifinal.toFixed(1)} · Avg exp {t.avgExperience.toFixed(1)}</div>
+      <div>{label} {score != null ? score.toFixed(1) : "–"} · Avg exp {t.avgExperience.toFixed(1)}</div>
       <div>{t.members} members · {t.division ?? "unknown"}</div>
     </div>
   );
 }
 
-function DotTip({ active, payload, mode }: { active?: boolean; payload?: Array<{ payload: TeamRow }>; mode?: "finalists" | "all" }) {
+function DotTip({ active, payload, mode, scoreRound = "semifinal" }: {
+  active?: boolean; payload?: Array<{ payload: TeamRow }>; mode?: "finalists" | "all"; scoreRound?: "semifinal" | "round1";
+}) {
   if (!active || !payload?.length) return null;
   const t = payload[0].payload;
   const q = QUADRANT[t.quadrant as keyof typeof QUADRANT];
+  const scoreVal = scoreRound === "round1" ? t.round1 : t.semifinal;
+  const scoreLabel = scoreRound === "round1" ? "Round 1" : "Semifinal";
   return (
     <div className="rounded border bg-background p-2 text-xs shadow">
       <div className="font-semibold">{t.label} {q?.emoji}</div>
@@ -608,7 +656,7 @@ function DotTip({ active, payload, mode }: { active?: boolean; payload?: Array<{
         Learning {t.learningIndex?.toFixed(1)}
         {mode === "all"
           ? ` · Completion ${t.completion}%`
-          : ` · Semifinal ${t.semifinal?.toFixed(1)}`}
+          : ` · ${scoreLabel} ${scoreVal?.toFixed(1) ?? "–"}`}
       </div>
       <div>Fidelity {t.fidelity?.toFixed(0)} · AI {t.aiLikelihood?.toFixed(0)}% · {t.members} members · {t.scoredSubs} subs · {t.cycles} cycles</div>
       <div className="mt-0.5 text-muted-foreground">click for evidence</div>

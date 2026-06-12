@@ -56,17 +56,37 @@ export async function GET() {
       }
     }
 
+    // Get round1 scores for cross-referencing
+    const { data: round1Data, error: round1Err } = await client
+      .from("hackathon_round1_scores")
+      .select("team_id, total, raw_team_name, division")
+      .not("team_id", "is", null);
+    if (round1Err) throw round1Err;
+
+    // Build round1 map by team_id
+    const round1Map = new Map<string, number>(
+      (round1Data ?? []).map((r) => [r.team_id as string, Number(r.total)]),
+    );
+
+    // Also build a map from raw_team_name to round1 total for teams without matched team_id
+    const round1ByName = new Map<string, number>(
+      (round1Data ?? []).map((r) => [r.raw_team_name as string, Number(r.total)]),
+    );
+
+    // Get all semifinal team_ids for lookup in round1
     const teams = (scores ?? []).map((s) => {
       const tid = s.team_id as string;
       const exps = teamMembers.get(tid) ?? [];
       const avgExp = exps.length
         ? Math.round((exps.reduce((a, b) => a + b, 0) / exps.length) * 10) / 10
         : null;
+      const round1 = round1Map.get(tid) ?? round1ByName.get(s.raw_team_name as string) ?? null;
       return {
         teamId: tid,
         label: s.raw_team_name as string,
         division: (s.division as string) ?? null,
         semifinal: s.total === null ? null : Number(s.total),
+        round1,
         avgExperience: avgExp,
         memberExperiences: exps,
         members: exps.length,
