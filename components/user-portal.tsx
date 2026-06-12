@@ -161,7 +161,7 @@ export function UserPortal({ dashboardData }: UserPortalProps) {
     <div className="flex flex-col space-y-8">
       {/* Header greeting with premium atmospheric typography */}
       <div className="flex flex-col space-y-2 mt-4">
-        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight font-kodchasan bg-gradient-to-r from-white via-slate-200 to-purple-200 bg-clip-text text-transparent">
+        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight font-kodchasan bg-gradient-to-r from-white via-slate-200 to-amber-100 bg-clip-text text-transparent">
           Hi,{" "}
           {user?.user_metadata?.full_name?.split(" ")[0] ||
             user?.email?.split("@")[0] ||
@@ -189,17 +189,17 @@ export function UserPortal({ dashboardData }: UserPortalProps) {
           }}
         >
           {/* Soft inner glow elements */}
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent opacity-50 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-transparent to-transparent opacity-50 pointer-events-none" />
           
           <div className="flex flex-col space-y-4">
             <div className="relative w-16 h-16 mb-4">
               <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-pink-600 rounded-2xl blur-xl opacity-40 group-hover:opacity-75 transition-opacity" />
-              <div className="relative bg-gradient-to-br from-[#1a0a2e] to-[#2d1449] border border-purple-500/30 p-4 rounded-2xl flex items-center justify-center h-full w-full group-hover:scale-105 transition-transform duration-300">
+              <div className="relative bg-gradient-to-br from-[#140b08] to-[#24130d] border border-orange-500/10 p-4 rounded-2xl flex items-center justify-center h-full w-full group-hover:scale-105 transition-transform duration-300">
                 <Compass suppressHydrationWarning className="w-8 h-8 text-orange-400" />
               </div>
             </div>
 
-            <h3 className="text-2xl md:text-3xl font-bold font-kodchasan bg-gradient-to-r from-orange-200 via-pink-200 to-purple-200 bg-clip-text text-transparent">
+            <h3 className="text-2xl md:text-3xl font-bold font-kodchasan bg-gradient-to-r from-orange-200 via-amber-200 to-orange-100 bg-clip-text text-transparent">
               {isLoadingNorthStar
                 ? "Loading..."
                 : hasNorthStarResult
@@ -244,7 +244,7 @@ export function UserPortal({ dashboardData }: UserPortalProps) {
           <div className="flex flex-col space-y-4">
             <div className="relative w-16 h-16 mb-4">
               <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-red-600 rounded-full blur-xl opacity-60" />
-              <div className="relative bg-gradient-to-br from-[#1a0a2e] to-[#2d1449] border border-orange-500/20 p-4 rounded-2xl flex items-center justify-center h-full w-full">
+              <div className="relative bg-gradient-to-br from-[#140b08] to-[#24130d] border border-orange-500/10 p-4 rounded-2xl flex items-center justify-center h-full w-full">
                 <Flame suppressHydrationWarning className="h-8 w-8 text-orange-400 drop-shadow-[0_0_15px_rgba(251,146,60,0.8)]" />
               </div>
             </div>
@@ -312,7 +312,7 @@ export function UserPortal({ dashboardData }: UserPortalProps) {
             {reflections.map((reflection) => (
               <div
                 key={reflection.id}
-                className="ei-card p-5 cursor-pointer hover:border-purple-500/30 transition-all duration-300"
+                className="ei-card p-5 cursor-pointer hover:border-orange-500/20 transition-all duration-300"
                 onClick={() => handleReflectionClick(reflection)}
               >
                 <div className="flex items-center justify-between mb-4">
@@ -324,7 +324,7 @@ export function UserPortal({ dashboardData }: UserPortalProps) {
                   </div>
                   <Badge
                     variant="outline"
-                    className="text-[10px] font-bai-jamjuree px-2 py-0.5 border-purple-500/20 bg-purple-500/5 text-purple-300"
+                    className="text-[10px] font-bai-jamjuree px-2 py-0.5 border-orange-500/20 bg-orange-500/5 text-orange-300"
                   >
                     {reflection.mindmap_topics.length} topics
                   </Badge>
@@ -352,9 +352,9 @@ export function UserPortal({ dashboardData }: UserPortalProps) {
 
       {/* Modal Dialog for Reflection Details */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto bg-gradient-to-b from-[#160b24] to-[#0d0d0d] border border-purple-500/20 text-white rounded-2xl p-6">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto bg-gradient-to-b from-[#140a12] to-[#0d0d0d] border border-orange-500/15 text-white rounded-2xl p-6">
           <DialogHeader className="border-b border-white/5 pb-4 mb-4">
-            <DialogTitle className="text-xl font-bold font-kodchasan bg-gradient-to-r from-purple-200 to-pink-200 bg-clip-text text-transparent">
+            <DialogTitle className="text-xl font-bold font-kodchasan bg-gradient-to-r from-orange-200 to-amber-200 bg-clip-text text-transparent">
               Reflection Detail —{" "}
               {selectedReflection && formatDate(selectedReflection.created_at)}
             </DialogTitle>
@@ -371,11 +371,11 @@ export function UserPortal({ dashboardData }: UserPortalProps) {
                     {selectedReflection.satisfaction_rating}
                   </div>
                 </div>
-                <div className="bg-purple-500/5 p-3 rounded-xl border border-purple-500/10 text-center">
-                  <div className="text-[10px] text-purple-400 font-bold tracking-wider uppercase mb-1">
+                <div className="bg-blue-500/5 p-3 rounded-xl border border-blue-500/10 text-center">
+                  <div className="text-[10px] text-blue-400 font-bold tracking-wider uppercase mb-1">
                     Progress
                   </div>
-                  <div className="text-2xl font-bold text-purple-400">
+                  <div className="text-2xl font-bold text-blue-400">
                     {selectedReflection.progress_rating}
                   </div>
                 </div>
@@ -391,7 +391,7 @@ export function UserPortal({ dashboardData }: UserPortalProps) {
 
               {selectedReflection.overall_reflection && (
                 <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-purple-400 mb-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-orange-400 mb-2">
                     Overall Reflection
                   </h4>
                   <p className="text-sm leading-relaxed text-slate-300 whitespace-pre-line">
@@ -401,14 +401,14 @@ export function UserPortal({ dashboardData }: UserPortalProps) {
               )}
 
               <div className="space-y-4">
-                <h4 className="text-sm font-bold uppercase tracking-wider text-purple-400">
+                <h4 className="text-sm font-bold uppercase tracking-wider text-orange-400">
                   Topics Discussed
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {selectedReflection.mindmap_topics.map((topic) => (
                     <div key={topic.id} className="ei-card p-5 bg-white/[0.01]">
                       <div className="flex items-center justify-between mb-2">
-                        <h5 className="font-bold text-sm text-purple-200 truncate pr-2">
+                        <h5 className="font-bold text-sm text-slate-200 truncate pr-2">
                           {topic.text}
                         </h5>
                       </div>
@@ -429,7 +429,7 @@ export function UserPortal({ dashboardData }: UserPortalProps) {
                         {topic.progress_rating !== null && (
                           <div className="flex justify-between text-xs text-slate-400">
                             <span>Progress</span>
-                            <span className="font-bold text-purple-400">{topic.progress_rating}</span>
+                            <span className="font-bold text-blue-400">{topic.progress_rating}</span>
                           </div>
                         )}
                         {topic.challenge_rating !== null && (
