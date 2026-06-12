@@ -151,6 +151,24 @@ export const hackathonFeedbackSchema = z
 export type FeedbackVersion = (typeof feedbackVersions)[number];
 export type HackathonFeedbackInput = z.infer<typeof hackathonFeedbackSchema>;
 
+type FeedbackParticipantSource = {
+  id?: string;
+  name?: string | null;
+  grade_level?: string | null;
+  is_admin?: boolean;
+};
+
+export function getFeedbackParticipant(
+  participant: FeedbackParticipantSource | null | undefined
+) {
+  if (!participant?.id || participant.is_admin) return null;
+
+  return {
+    name: participant.name ?? "",
+    grade_level: participant.grade_level ?? "",
+  };
+}
+
 export function getFeedbackVersion(gradeLevel: string): FeedbackVersion {
   const normalizedGrade = gradeLevel.trim().replace(/\s+/g, "");
   return /^ม\.[3-5]$/.test(normalizedGrade)
