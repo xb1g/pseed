@@ -9,8 +9,6 @@ import { motion } from "framer-motion";
 import { getMindmapReflections } from "@/lib/supabase/mindmap-reflections";
 import { useToast } from "@/components/ui/use-toast";
 import { ReflectionHeatmap } from "@/components/reflection/reflection-heatmap";
-import { MapCard } from "@/components/map/MapCard";
-import { useProgressMaps } from "@/hooks/use-progress-maps";
 import Link from "next/link";
 
 interface MindmapReflection {
@@ -37,7 +35,7 @@ export default function ReflectionHome() {
   const { toast } = useToast();
   const [reflections, setReflections] = useState<MindmapReflection[]>([]);
   const [loading, setLoading] = useState(true);
-  const { enrolledMaps, availableMaps, isLoading: mapsLoading, error: mapsError } = useProgressMaps();
+  // Progress maps removed
 
   // Parse overall_reflection text to extract topic-specific notes
   const parseOverallReflection = (text: string): Map<string, string> => {
@@ -157,37 +155,7 @@ export default function ReflectionHome() {
         <ReflectionHeatmap />
       </div>
 
-      {/* Your Learning Maps Section */}
-      {!mapsLoading && enrolledMaps.length > 0 && (
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2 px-2 sm:px-0">
-              <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />
-              Your Learning Maps
-            </h2>
-            <Button variant="ghost" asChild size="sm">
-              <Link href="/map" className="flex items-center gap-1">
-                View All
-              </Link>
-            </Button>
-          </div>
-          <p className="text-muted-foreground mb-6 px-2 sm:px-0 text-sm sm:text-base">
-            Maps you're currently working on
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4 px-2 sm:px-0">
-            {enrolledMaps.slice(0, 6).map((map, index) => (
-              <motion.div
-                key={map.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <MapCard map={map} />
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
+
 
       {reflections.length === 0 ? (
         <div className="text-center mt-8 px-4">
