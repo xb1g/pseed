@@ -1,14 +1,6 @@
 "use client";
 
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -165,309 +157,301 @@ export function UserPortal({ dashboardData }: UserPortalProps) {
   };
 
   return (
-    <div className="flex flex-col space-y-6 md:space-y-8">
-      <div className="flex flex-col space-y-2">
-        <div className="flex items-center gap-3 mb-2">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-              Hi,{" "}
-              {user?.user_metadata?.full_name?.split(" ")[0] ||
-                user?.email?.split("@")[0] ||
-                "there"}
-              ! 👋
-            </h1>
-            <p suppressHydrationWarning className="text-sm md:text-base text-muted-foreground italic">
-              {getRandomMotivationalText()}
-            </p>
-          </div>
+    <div className="relative min-h-screen w-full text-white overflow-hidden pb-12">
+      {/* Dusk Background Atmosphere */}
+      <div className="absolute inset-0 bg-[#06000f] z-0" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#06000f] via-[#1a0336] to-[#0d0d0d] opacity-90 z-0" />
+      
+      {/* Drifting Cloud Blobs */}
+      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-purple-900/10 blur-[100px] animate-cloud-slow z-0" style={{ animationDuration: '18s' }} />
+      <div className="absolute bottom-1/4 right-1/4 w-[350px] h-[350px] rounded-full bg-pink-900/10 blur-[90px] animate-cloud-slow z-0" style={{ animationDuration: '22s', animationDelay: '-5s' }} />
+
+      {/* Content wrapper */}
+      <div className="relative z-10 flex flex-col space-y-8 max-w-7xl mx-auto px-4 sm:px-6">
+        
+        {/* Header greeting with premium atmospheric typography */}
+        <div className="flex flex-col space-y-2 mt-4">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight font-kodchasan bg-gradient-to-r from-white via-slate-200 to-purple-200 bg-clip-text text-transparent">
+            Hi,{" "}
+            {user?.user_metadata?.full_name?.split(" ")[0] ||
+              user?.email?.split("@")[0] ||
+              "there"}
+            ! 👋
+          </h1>
+          <p suppressHydrationWarning className="text-sm md:text-base text-slate-400 font-bai-jamjuree italic font-light max-w-xl">
+            {getRandomMotivationalText()}
+          </p>
         </div>
-      </div>
 
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-3">
-        {/* Left Column: North Star Assessment Card */}
-        <Card
-          className="md:col-span-2 h-[480px] md:h-[580px] overflow-hidden cursor-pointer group hover:shadow-2xl transition-all duration-300 bg-gradient-to-br from-slate-900 via-purple-950/30 to-slate-900 border-purple-500/20 hover:border-purple-500/50"
-          onClick={() => {
-            if (isLoadingNorthStar) return;
-            if (hasNorthStarResult) {
-              window.location.assign("/me/journey/new-northstar?step=results");
-            } else {
-              window.location.assign("/me/journey/new-northstar");
-            }
-          }}
-        >
-          <CardContent className="h-full p-8 flex flex-col items-center justify-center text-center relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-purple-500/10 to-transparent rounded-full blur-3xl" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-blue-500/10 to-transparent rounded-full blur-2xl" />
-
-            <div className="relative mb-6">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-blue-600 rounded-3xl blur-2xl opacity-40 group-hover:opacity-60 transition-opacity" />
-              <div className="relative bg-gradient-to-br from-purple-500 to-blue-600 p-6 rounded-3xl shadow-lg group-hover:scale-110 transition-transform">
-                <Compass suppressHydrationWarning className="w-12 h-12 md:w-16 md:h-16 text-white" />
+        {/* Dashboard Grid */}
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+          
+          {/* Left: North Star Assessment Card (Premium Dusk Card style) */}
+          <div
+            className="ei-card lg:col-span-2 h-[450px] md:h-[500px] flex flex-col justify-between p-8 group cursor-pointer"
+            onClick={() => {
+              if (isLoadingNorthStar) return;
+              if (hasNorthStarResult) {
+                window.location.assign("/me/journey/new-northstar?step=results");
+              } else {
+                window.location.assign("/me/journey/new-northstar");
+              }
+            }}
+          >
+            {/* Soft inner glow elements */}
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent opacity-50 pointer-events-none" />
+            
+            <div className="flex flex-col space-y-4">
+              <div className="relative w-16 h-16 mb-4">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-pink-600 rounded-2xl blur-xl opacity-40 group-hover:opacity-75 transition-opacity" />
+                <div className="relative bg-gradient-to-br from-[#1a0a2e] to-[#2d1449] border border-purple-500/30 p-4 rounded-2xl flex items-center justify-center h-full w-full group-hover:scale-105 transition-transform duration-300">
+                  <Compass suppressHydrationWarning className="w-8 h-8 text-orange-400" />
+                </div>
               </div>
+
+              <h3 className="text-2xl md:text-3xl font-bold font-kodchasan bg-gradient-to-r from-orange-200 via-pink-200 to-purple-200 bg-clip-text text-transparent">
+                {isLoadingNorthStar
+                  ? "Loading..."
+                  : hasNorthStarResult
+                    ? "Your North Star"
+                    : "Find Your North Star"}
+              </h3>
+
+              <p className="text-slate-400 text-sm md:text-base font-bai-jamjuree max-w-md leading-relaxed">
+                {isLoadingNorthStar
+                  ? "Checking your progress..."
+                  : hasNorthStarResult
+                    ? "View your personalized direction profile, career paths, and tailored recommendations."
+                    : "Discover your true potential, values, and ideal career directions through our AI-guided alignment check."}
+              </p>
             </div>
 
-            <h3 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-300 via-purple-200 to-blue-300 mb-3">
-              {isLoadingNorthStar
-                ? "Loading..."
-                : hasNorthStarResult
-                  ? "Your North Star"
-                  : "Find Your North Star"}
-            </h3>
+            <div className="mt-8 flex justify-start">
+              {!isLoadingNorthStar && (
+                <div className="ei-button-dusk text-sm">
+                  {hasNorthStarResult ? (
+                    <>
+                      <CheckCircle2 suppressHydrationWarning className="w-4 h-4 mr-2" />
+                      <span>View Results</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles suppressHydrationWarning className="w-4 h-4 mr-2" />
+                      <span>Start Assessment</span>
+                    </>
+                  )}
+                  <ArrowRight suppressHydrationWarning className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                </div>
+              )}
+            </div>
+          </div>
 
-            <p className="text-slate-400 text-sm md:text-base mb-6 max-w-md leading-relaxed">
-              {isLoadingNorthStar
-                ? "Checking your progress..."
-                : hasNorthStarResult
-                  ? "View your personalized direction profile and career recommendations"
-                  : "Discover your strengths, values, and ideal career paths through our AI-powered assessment"}
-            </p>
-
-            {!isLoadingNorthStar && (
-              <div className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full text-white font-semibold shadow-lg group-hover:shadow-purple-500/50 group-hover:scale-105 transition-all">
-                {hasNorthStarResult ? (
-                  <>
-                    <CheckCircle2 suppressHydrationWarning className="w-4 h-4" />
-                    <span>View Results</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles suppressHydrationWarning className="w-4 h-4" />
-                    <span>Start Assessment</span>
-                  </>
-                )}
-                <ArrowRight suppressHydrationWarning className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Right Column: Streak Card */}
-        <div className="md:col-span-1 flex flex-col gap-6">
+          {/* Right: Streak Card */}
           <div
-            className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 p-[2px] cursor-pointer group hover:scale-[1.02] transition-transform"
+            className="ei-card lg:col-span-1 p-8 flex flex-col justify-between group cursor-pointer"
             onClick={() => (window.location.href = "/me/reflection")}
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 via-orange-500 to-red-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl" />
-
-            <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-6 h-full">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-500/20 to-transparent rounded-full blur-3xl" />
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-pink-500/20 to-transparent rounded-full blur-2xl" />
-
-              <div className="relative z-10 flex items-center justify-center gap-6">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-red-600 rounded-full blur-xl opacity-60" />
-                  <Flame suppressHydrationWarning className="relative h-10 w-10 text-orange-400 drop-shadow-[0_0_15px_rgba(251,146,60,0.8)]" />
+            <div className="flex flex-col space-y-4">
+              <div className="relative w-16 h-16 mb-4">
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-red-600 rounded-full blur-xl opacity-60" />
+                <div className="relative bg-gradient-to-br from-[#1a0a2e] to-[#2d1449] border border-orange-500/20 p-4 rounded-2xl flex items-center justify-center h-full w-full">
+                  <Flame suppressHydrationWarning className="h-8 w-8 text-orange-400 drop-shadow-[0_0_15px_rgba(251,146,60,0.8)]" />
                 </div>
-
-                <div className="text-center">
-                  <div className="text-4xl font-black bg-gradient-to-br from-orange-300 via-orange-400 to-red-500 bg-clip-text text-transparent drop-shadow-lg">
-                    {reflectionStreak}
-                  </div>
-                  <div className="text-orange-200 text-base font-semibold tracking-wider uppercase">
-                    {reflectionStreak === 1 ? "Night" : "Nights"}
-                  </div>
-                  <div className="text-orange-400/80 text-sm font-medium tracking-widest uppercase">
-                    Streak
-                  </div>
-                </div>
-
-                {reflectionStreak > 0 && (
-                  <div className="flex flex-col items-center gap-1.5">
-                    {Array.from({ length: Math.min(5, reflectionStreak) }).map(
-                      (_, i) => (
-                        <div
-                          key={i}
-                          className="w-2.5 h-6 bg-gradient-to-t from-orange-600 to-orange-400 rounded-full shadow-[0_0_8px_rgba(251,146,60,0.5)]"
-                        />
-                      )
-                    )}
-                  </div>
-                )}
               </div>
 
-              <p className="text-orange-200/60 text-xs text-center mt-3 max-w-[200px] mx-auto">
-                {reflectionStreak === 0
-                  ? "Start your reflection journey today!"
-                  : reflectionStreak < 3
-                    ? "Keep the fire burning! 🔥"
-                    : reflectionStreak < 7
-                      ? "You're on a roll! ✨"
-                      : reflectionStreak < 14
-                        ? "Amazing dedication! 🌟"
-                        : "Legendary streak! 🏆"}
+              <h4 className="text-xl font-bold font-kodchasan text-orange-200">
+                Your Reflection Streak
+              </h4>
+              <p className="text-slate-400 text-sm font-bai-jamjuree leading-relaxed">
+                Stay consistent! Real self-discovery grows night by night.
               </p>
+            </div>
+
+            <div className="flex items-center justify-between mt-8 border-t border-white/5 pt-6">
+              <div className="text-left">
+                <div className="text-5xl font-black font-kodchasan bg-gradient-to-br from-orange-300 via-orange-400 to-red-500 bg-clip-text text-transparent">
+                  {reflectionStreak}
+                </div>
+                <div className="text-orange-400/80 text-[10px] tracking-widest uppercase font-bold font-bai-jamjuree">
+                  {reflectionStreak === 1 ? "Night" : "Nights"} Streak
+                </div>
+              </div>
+
+              {reflectionStreak > 0 ? (
+                <div className="flex gap-1">
+                  {Array.from({ length: Math.min(5, reflectionStreak) }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="w-2 h-8 bg-gradient-to-t from-orange-600 to-orange-400 rounded-full shadow-[0_0_8px_rgba(251,146,60,0.5)]"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <span className="text-xs text-orange-300/60 font-bai-jamjuree">0 days active</span>
+              )}
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Reflections Section */}
-      <Card>
-        <CardHeader className="pb-3 md:pb-6">
-          <CardTitle className="flex items-center text-lg md:text-xl">
-            <Heart suppressHydrationWarning className="mr-2 h-4 w-4 md:h-5 md:w-5" />
-            Recent Reflections
-          </CardTitle>
-          <CardDescription className="text-xs md:text-sm">
-            Your latest mindmap reflections and insights
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        {/* Reflections Card Section */}
+        <div className="ei-card p-6 md:p-8">
+          <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/5">
+            <h3 className="text-xl font-bold font-kodchasan flex items-center gap-3">
+              <Heart suppressHydrationWarning className="h-5 w-5 text-pink-500" />
+              Recent Reflections
+            </h3>
+            <span className="text-xs text-slate-400 font-bai-jamjuree">
+              Last 6 entries
+            </span>
+          </div>
+
           {reflections.length === 0 ? (
-            <div className="text-center py-8">
-              <Brain suppressHydrationWarning className="h-10 w-10 md:h-12 md:w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground text-sm md:text-base">
-                No reflections yet
+            <div className="text-center py-16 flex flex-col items-center justify-center">
+              <div className="w-16 h-16 bg-white/[0.02] border border-white/[0.06] rounded-full flex items-center justify-center mb-4 text-slate-500">
+                <Brain suppressHydrationWarning className="h-8 w-8" />
+              </div>
+              <p className="text-slate-400 text-sm font-bai-jamjuree mb-4">
+                You haven't recorded any reflections yet.
               </p>
-              <Button asChild className="mt-4 text-sm md:text-base">
+              <Button asChild className="ei-button-dusk text-sm">
                 <Link href="/me/reflection/mindmap">Start Reflecting</Link>
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {reflections.map((reflection) => (
-                <Card
+                <div
                   key={reflection.id}
-                  className="cursor-pointer hover:shadow-md transition-shadow h-full"
+                  className="ei-card p-5 cursor-pointer hover:border-purple-500/30 transition-all duration-300"
                   onClick={() => handleReflectionClick(reflection)}
                 >
-                  <CardContent className="p-3 md:p-4">
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <div className="flex items-center gap-1.5 md:gap-2 flex-1 min-w-0">
-                        <Calendar suppressHydrationWarning className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
-                        <span className="font-semibold text-xs md:text-sm truncate">
-                          {formatDate(reflection.created_at)}
-                        </span>
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 flex-shrink-0"
-                      >
-                        {reflection.mindmap_topics.length} topics
-                      </Badge>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2 text-slate-400">
+                      <Calendar suppressHydrationWarning className="h-4 w-4" />
+                      <span className="font-semibold text-xs font-bai-jamjuree">
+                        {formatDate(reflection.created_at)}
+                      </span>
                     </div>
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] font-bai-jamjuree px-2 py-0.5 border-purple-500/20 bg-purple-500/5 text-purple-300"
+                    >
+                      {reflection.mindmap_topics.length} topics
+                    </Badge>
+                  </div>
 
-                    <div className="space-y-1.5 md:space-y-2 mb-3 md:mb-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-pink-500 text-[10px] md:text-xs">
-                          💗 Satisfaction
-                        </span>
-                        <span className="text-[10px] md:text-xs font-medium">
-                          {reflection.satisfaction_rating}
-                        </span>
-                      </div>
-                      <div className="w-full bg-muted/60 rounded-full h-1 md:h-1.5">
-                        <div
-                          className="bg-pink-500 h-1 md:h-1.5 rounded-full transition-all duration-300"
-                          style={{
-                            width: `${reflection.satisfaction_rating}%`,
-                          }}
-                        />
-                      </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-pink-400 text-[11px] font-bai-jamjuree">💗 Satisfaction</span>
+                      <span className="text-xs font-bold font-bai-jamjuree text-pink-300">{reflection.satisfaction_rating}</span>
                     </div>
-                  </CardContent>
-                </Card>
+                    <div className="w-full bg-slate-950 rounded-full h-1">
+                      <div
+                        className="bg-pink-500 h-1 rounded-full transition-all duration-300"
+                        style={{
+                          width: `${reflection.satisfaction_rating}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+
+      </div>
 
       {/* Modal Dialog for Reflection Details */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>
-                Reflection Detail —{" "}
-                {selectedReflection && formatDate(selectedReflection.created_at)}
-              </span>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto bg-gradient-to-b from-[#160b24] to-[#0d0d0d] border border-purple-500/20 text-white rounded-2xl p-6">
+          <DialogHeader className="border-b border-white/5 pb-4 mb-4">
+            <DialogTitle className="text-xl font-bold font-kodchasan bg-gradient-to-r from-purple-200 to-pink-200 bg-clip-text text-transparent">
+              Reflection Detail —{" "}
+              {selectedReflection && formatDate(selectedReflection.created_at)}
             </DialogTitle>
           </DialogHeader>
 
           {selectedReflection && (
-            <div className="space-y-6 mt-4">
+            <div className="space-y-6 mt-4 font-bai-jamjuree">
               <div className="grid grid-cols-3 gap-4">
-                <div className="bg-pink-500/10 p-3 rounded-lg border border-pink-500/20 text-center">
-                  <div className="text-[10px] text-pink-400 font-semibold tracking-wider uppercase mb-1">
+                <div className="bg-pink-500/5 p-3 rounded-xl border border-pink-500/10 text-center">
+                  <div className="text-[10px] text-pink-400 font-bold tracking-wider uppercase mb-1">
                     Satisfaction
                   </div>
-                  <div className="text-2xl font-bold text-pink-500">
+                  <div className="text-2xl font-bold text-pink-400">
                     {selectedReflection.satisfaction_rating}
                   </div>
                 </div>
-                <div className="bg-emerald-500/10 p-3 rounded-lg border border-emerald-500/20 text-center">
-                  <div className="text-[10px] text-emerald-400 font-semibold tracking-wider uppercase mb-1">
+                <div className="bg-purple-500/5 p-3 rounded-xl border border-purple-500/10 text-center">
+                  <div className="text-[10px] text-purple-400 font-bold tracking-wider uppercase mb-1">
                     Progress
                   </div>
-                  <div className="text-2xl font-bold text-emerald-500">
+                  <div className="text-2xl font-bold text-purple-400">
                     {selectedReflection.progress_rating}
                   </div>
                 </div>
-                <div className="bg-amber-500/10 p-3 rounded-lg border border-amber-500/20 text-center">
-                  <div className="text-[10px] text-amber-400 font-semibold tracking-wider uppercase mb-1">
+                <div className="bg-orange-500/5 p-3 rounded-xl border border-orange-500/10 text-center">
+                  <div className="text-[10px] text-orange-400 font-bold tracking-wider uppercase mb-1">
                     Challenge
                   </div>
-                  <div className="text-2xl font-bold text-amber-500">
+                  <div className="text-2xl font-bold text-orange-400">
                     {selectedReflection.challenge_rating}
                   </div>
                 </div>
               </div>
 
               {selectedReflection.overall_reflection && (
-                <div className="p-4 rounded-xl bg-muted/40 border border-white/[0.04]">
-                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-purple-400 mb-2">
                     Overall Reflection
                   </h4>
-                  <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-line">
+                  <p className="text-sm leading-relaxed text-slate-300 whitespace-pre-line">
                     {selectedReflection.overall_reflection}
                   </p>
                 </div>
               )}
 
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                <h4 className="text-sm font-bold uppercase tracking-wider text-purple-400">
                   Topics Discussed
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {selectedReflection.mindmap_topics.map((topic) => (
-                    <Card key={topic.id} className="bg-muted/30 border-white/[0.04]">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <h5 className="font-semibold text-sm truncate pr-2">
-                            {topic.text}
-                          </h5>
-                        </div>
+                    <div key={topic.id} className="ei-card p-5 bg-white/[0.01]">
+                      <div className="flex items-center justify-between mb-2">
+                        <h5 className="font-bold text-sm text-purple-200 truncate pr-2">
+                          {topic.text}
+                        </h5>
+                      </div>
 
-                        {topic.notes && (
-                          <p className="text-xs text-muted-foreground mb-3 line-clamp-3">
-                            {topic.notes}
-                          </p>
+                      {topic.notes && (
+                        <p className="text-xs text-slate-400 mb-4 line-clamp-3 leading-relaxed">
+                          {topic.notes}
+                        </p>
+                      )}
+
+                      <div className="space-y-2 border-t border-white/5 pt-3">
+                        {topic.satisfaction_rating !== null && (
+                          <div className="flex justify-between text-xs text-slate-400">
+                            <span>Satisfaction</span>
+                            <span className="font-bold text-pink-400">{topic.satisfaction_rating}</span>
+                          </div>
                         )}
-
-                        <div className="space-y-1">
-                          {topic.satisfaction_rating !== null && (
-                            <div className="flex justify-between text-[10px]">
-                              <span>Satisfaction</span>
-                              <span>{topic.satisfaction_rating}</span>
-                            </div>
-                          )}
-                          {topic.progress_rating !== null && (
-                            <div className="flex justify-between text-[10px]">
-                              <span>Progress</span>
-                              <span>{topic.progress_rating}</span>
-                            </div>
-                          )}
-                          {topic.challenge_rating !== null && (
-                            <div className="flex justify-between text-[10px]">
-                              <span>Challenge</span>
-                              <span>{topic.challenge_rating}</span>
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
+                        {topic.progress_rating !== null && (
+                          <div className="flex justify-between text-xs text-slate-400">
+                            <span>Progress</span>
+                            <span className="font-bold text-purple-400">{topic.progress_rating}</span>
+                          </div>
+                        )}
+                        {topic.challenge_rating !== null && (
+                          <div className="flex justify-between text-xs text-slate-400">
+                            <span>Challenge</span>
+                            <span className="font-bold text-orange-400">{topic.challenge_rating}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
