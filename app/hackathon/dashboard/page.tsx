@@ -13,9 +13,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import gsap from "gsap";
-import { Bell, ClipboardList, Users, Check, Sparkles, BookOpen, Home, ArrowRight, Search, Settings, MessageSquare } from "lucide-react";
+import { Bell, ClipboardList, Users, Check, Sparkles, BookOpen, Home, ArrowRight, Search, Settings } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import type { HackathonParticipant } from "@/lib/hackathon/db";
+import { FeedbackInvitationCard } from "@/components/hackathon/FeedbackInvitationCard";
 
 import FractalGlassBackground from "@/components/hackathon/ClarityGlassBackground";
 
@@ -68,6 +69,9 @@ export default function HackathonDashboardPage() {
   const [settingsFocused, setSettingsFocused] = useState<string | null>(null);
   const [inboxItems, setInboxItems] = useState<InboxItem[]>([]);
   const [inboxUnreadCount, setInboxUnreadCount] = useState(0);
+  const [feedbackStatus, setFeedbackStatus] = useState<
+    "loading" | "pending" | "complete"
+  >("loading");
 
   useEffect(() => {
 
@@ -160,6 +164,18 @@ export default function HackathonDashboardPage() {
         setInboxItems([]);
         setInboxUnreadCount(0);
       });
+  }, [participant?.id, participant?.is_admin]);
+
+  useEffect(() => {
+    if (!participant || participant.is_admin) return;
+
+    fetch("/api/hackathon/feedback")
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Failed to load feedback status");
+        const data = await response.json();
+        setFeedbackStatus(data.data ? "complete" : "pending");
+      })
+      .catch(() => setFeedbackStatus("pending"));
   }, [participant?.id, participant?.is_admin]);
 
   const dismissOnboardingNudge = () => {
@@ -506,6 +522,10 @@ export default function HackathonDashboardPage() {
               </div>
             )}
 
+            {!participant.is_admin && (
+              <FeedbackInvitationCard status={feedbackStatus} />
+            )}
+
             <div className="bg-gradient-to-br from-[#0d1219]/90 to-[#121c29]/80 backdrop-blur-md border border-[#4a6b82]/30 rounded-3xl p-6 md:p-8 text-left space-y-5 shadow-[0_0_30px_rgba(74,107,130,0.15)] relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-br from-[#91C4E3]/0 via-[#91C4E3]/5 to-[#91C4E3]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               
@@ -637,17 +657,6 @@ export default function HackathonDashboardPage() {
                 </Link>
               </Button>
             )}
-
-            {/* Feedback form link */}
-            <Button
-              asChild
-              className="w-full bg-gradient-to-r from-[#5a7a94] to-[#4a6a84] hover:from-[#6a9ac4] hover:to-[#5a8ab4] text-white font-medium py-6 rounded-xl transition-all duration-300 shadow-[0_0_25px_rgba(90,122,148,0.4)] hover:shadow-[0_0_40px_rgba(106,154,196,0.6)] hover:scale-[1.02] border border-[#7aa4c4]/30 font-[family-name:var(--font-mitr)]"
-            >
-              <Link href="/hackathon/feedback" className="inline-flex items-center justify-center gap-2 text-lg">
-                <MessageSquare className="h-5 w-5" aria-hidden />
-                แบบฟอร์มฟีดแบ็ก
-              </Link>
-            </Button>
 
             <div className="grid grid-cols-3 gap-4">
               <Button

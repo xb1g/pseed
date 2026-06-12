@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { FeedbackChoice } from "./FeedbackChoice";
 import { FeedbackRating } from "./FeedbackRating";
 import { FeedbackSection } from "./FeedbackSection";
+import { FeedbackSuccessState } from "./FeedbackSuccessState";
 import { FollowUpOpportunity } from "./FollowUpOpportunity";
 
 describe("hackathon feedback components", () => {
@@ -52,5 +53,33 @@ describe("hackathon feedback components", () => {
     expect(
       screen.getByText("ได้แผนขั้นต่อไป + mentor checkpoint")
     ).toBeVisible();
+  });
+
+  it("confirms a successful submission and gives clear next actions", () => {
+    const onDashboard = jest.fn();
+    const onEdit = jest.fn();
+
+    render(
+      <FeedbackSuccessState
+        wantsContact
+        hasFollowUpInterests
+        onDashboard={onDashboard}
+        onEdit={onEdit}
+      />
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "ขอบคุณ เราได้รับฟีดแบ็กแล้ว" })
+    ).toBeVisible();
+    expect(screen.getByText(/ทีม PassionSeed จะติดต่อกลับ/)).toBeVisible();
+    expect(screen.getByText(/โอกาสที่คุณสนใจ/)).toBeVisible();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "กลับไป Dashboard" })
+    );
+    fireEvent.click(screen.getByRole("button", { name: "แก้ไขคำตอบ" }));
+
+    expect(onDashboard).toHaveBeenCalledTimes(1);
+    expect(onEdit).toHaveBeenCalledTimes(1);
   });
 });

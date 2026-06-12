@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
-  CheckCircle2,
   LogIn,
   MessageSquareHeart,
   Sparkles,
@@ -12,6 +11,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { HackathonFeedbackForm } from "@/components/hackathon/feedback/HackathonFeedbackForm";
+import { FeedbackSuccessState } from "@/components/hackathon/feedback/FeedbackSuccessState";
 import {
   getFeedbackParticipant,
   type HackathonFeedbackInput,
@@ -23,8 +23,13 @@ type Participant = {
 };
 
 type Toast = {
-  type: "error" | "success";
+  type: "error";
   message: string;
+};
+
+type SubmissionSummary = {
+  wantsContact: boolean;
+  hasFollowUpInterests: boolean;
 };
 
 export default function HackathonFeedbackPage() {
@@ -37,6 +42,8 @@ export default function HackathonFeedbackPage() {
     unknown
   > | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
+  const [submissionSummary, setSubmissionSummary] =
+    useState<SubmissionSummary | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -107,11 +114,12 @@ export default function HackathonFeedbackPage() {
       }
 
       setStoredFeedback(result.data);
-      setToast({
-        type: "success",
-        message: "ขอบคุณสำหรับฟีดแบ็ก คำตอบของคุณถูกบันทึกแล้ว",
+      setToast(null);
+      setSubmissionSummary({
+        wantsContact: feedback.wants_contact,
+        hasFollowUpInterests: feedback.follow_up_interests.length > 0,
       });
-      window.setTimeout(() => router.push("/hackathon/dashboard"), 1400);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (error) {
       setToast({
         type: "error",
@@ -135,18 +143,10 @@ export default function HackathonFeedbackPage() {
             initial={{ opacity: 0, y: -16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            role={toast.type === "error" ? "alert" : "status"}
-            className={`fixed left-1/2 top-4 z-50 flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 items-start gap-3 rounded-xl border px-4 py-3 font-[family-name:var(--font-bai-jamjuree)] text-sm shadow-2xl backdrop-blur-xl ${
-              toast.type === "success"
-                ? "border-emerald-300/25 bg-emerald-950/90 text-emerald-100"
-                : "border-red-300/25 bg-red-950/90 text-red-100"
-            }`}
+            role="alert"
+            className="fixed left-1/2 top-4 z-50 flex w-[calc(100%-2rem)] max-w-md -translate-x-1/2 items-start gap-3 rounded-xl border border-red-300/25 bg-red-950/90 px-4 py-3 font-[family-name:var(--font-bai-jamjuree)] text-sm text-red-100 shadow-2xl backdrop-blur-xl"
           >
-            {toast.type === "success" ? (
-              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
-            ) : (
-              <X className="mt-0.5 h-5 w-5 shrink-0" />
-            )}
+            <X className="mt-0.5 h-5 w-5 shrink-0" />
             <span className="flex-1 leading-6">{toast.message}</span>
             <button
               type="button"
@@ -167,16 +167,29 @@ export default function HackathonFeedbackPage() {
             The Next Decade Hackathon
           </div>
           <h1 className="font-[family-name:var(--font-kodchasan)] text-3xl font-semibold leading-tight text-white sm:text-4xl">
-            ช่วยเราทำรุ่นต่อไปให้ดีกว่าเดิม
+            {submissionSummary
+              ? "ส่งฟีดแบ็กเรียบร้อยแล้ว"
+              : "ช่วยเราทำรุ่นต่อไปให้ดีกว่าเดิม"}
           </h1>
           <p className="mx-auto mt-3 max-w-xl font-[family-name:var(--font-bai-jamjuree)] text-sm leading-6 text-slate-400 sm:text-base">
-            เล่าแบบตรงไปตรงมา ทั้งสิ่งที่เวิร์ก สิ่งที่ควรปรับ
-            และสิ่งที่อยากไปต่อหลังจบโครงการ
+            {submissionSummary
+              ? "ขอบคุณที่ช่วยบอกเราว่าอะไรควรทำต่อ"
+              : "เล่าแบบตรงไปตรงมา ทั้งสิ่งที่เวิร์ก สิ่งที่ควรปรับ และสิ่งที่อยากไปต่อหลังจบโครงการ"}
           </p>
         </header>
 
         {isLoading ? (
           <LoadingState />
+        ) : participant && submissionSummary ? (
+          <FeedbackSuccessState
+            wantsContact={submissionSummary.wantsContact}
+            hasFollowUpInterests={submissionSummary.hasFollowUpInterests}
+            onDashboard={() => router.push("/hackathon/dashboard")}
+            onEdit={() => {
+              setSubmissionSummary(null);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          />
         ) : participant ? (
           <HackathonFeedbackForm
             participantName={participant.name}
