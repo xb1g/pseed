@@ -220,7 +220,7 @@ describe("buildFeedbackRecord", () => {
     });
   });
 
-  it("keeps product interest but drops future-path answers from the other audience version", () => {
+  it("keeps product interest but drops only age-specific answers from the other audience version", () => {
     expect(
       buildFeedbackRecord(
         {
@@ -238,8 +238,8 @@ describe("buildFeedbackRecord", () => {
     ).toMatchObject({
       feedback_version: "project_growth",
       future_path_uncertain: null,
-      product_priority: null,
-      product_priority_reason: null,
+      product_priority: "career_classes",
+      product_priority_reason: "อยากเห็นตัวเลือกทั้งหมดก่อน",
       follow_up_interests: ["future_path", "project_launch"],
       wants_product_beta: true,
     });
