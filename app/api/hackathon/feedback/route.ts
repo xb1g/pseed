@@ -87,6 +87,20 @@ export async function POST(req: NextRequest) {
         { status: 400, headers: corsHeaders }
       );
     }
+    if (
+      feedbackVersion === "future_path" &&
+      parsed.data.product_priority === null
+    ) {
+      return NextResponse.json(
+        {
+          error: "กรุณาเลือกสิ่งที่อยากลองก่อน",
+          fieldErrors: {
+            product_priority: ["กรุณาเลือกสิ่งที่อยากลองก่อน"],
+          },
+        },
+        { status: 400, headers: corsHeaders }
+      );
+    }
 
     const supabase = getAdminClient();
     const payload = buildFeedbackRecord(parsed.data, participant);
