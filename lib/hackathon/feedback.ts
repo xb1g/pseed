@@ -236,12 +236,10 @@ export function buildFeedbackRecord(
       feedbackVersion === "future_path"
         ? feedback.future_path_uncertain
         : null,
-    product_priority:
-      feedbackVersion === "future_path" ? feedback.product_priority : null,
-    product_priority_reason:
-      feedbackVersion === "future_path" && feedback.product_priority
-        ? feedback.product_priority_reason || null
-        : null,
+    product_priority: feedback.product_priority,
+    product_priority_reason: feedback.product_priority
+      ? feedback.product_priority_reason || null
+      : null,
     follow_up_interests: followUpInterests,
     wants_contact: feedback.wants_contact,
     contact_name: feedback.wants_contact ? feedback.contact_name : null,
