@@ -43,6 +43,14 @@ export const learningIssueIds = [
   "app_difficult",
   "already_good",
 ] as const;
+export const productPriorityIds = [
+  "career_classes",
+  "student_reviews",
+  "interest_squad",
+  "seven_day_project",
+  "job_intelligence",
+  "parent_summary",
+] as const;
 export const followUpInterestIds = [
   "future_path",
   "mentor_future",
@@ -80,6 +88,8 @@ export const hackathonFeedbackSchema = z
     learning_content_issues: z.array(z.enum(learningIssueIds)).min(1).max(3),
     learning_content_feedback: z.string().trim().max(1000),
     future_path_uncertain: z.boolean().nullable(),
+    product_priority: z.enum(productPriorityIds).nullable(),
+    product_priority_reason: z.string().trim().max(500),
     follow_up_interests: z.array(z.enum(followUpInterestIds)).max(3),
     wants_contact: z.boolean(),
     contact_name: z.string().trim().max(120),
@@ -225,6 +235,12 @@ export function buildFeedbackRecord(
     future_path_uncertain:
       feedbackVersion === "future_path"
         ? feedback.future_path_uncertain
+        : null,
+    product_priority:
+      feedbackVersion === "future_path" ? feedback.product_priority : null,
+    product_priority_reason:
+      feedbackVersion === "future_path" && feedback.product_priority
+        ? feedback.product_priority_reason || null
         : null,
     follow_up_interests: followUpInterests,
     wants_contact: feedback.wants_contact,

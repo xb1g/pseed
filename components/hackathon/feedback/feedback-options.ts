@@ -87,6 +87,51 @@ export const learningIssueOptions: Option<
   { id: "already_good", label: "ดีและใช้งานง่ายอยู่แล้ว" },
 ];
 
+export type ProductPriorityOption = {
+  id: NonNullable<HackathonFeedbackInput["product_priority"]>;
+  title: string;
+  description: string;
+};
+
+export const productPriorityOptions: ProductPriorityOption[] = [
+  {
+    id: "career_classes",
+    title: "สำรวจคลาสอาชีพ",
+    description:
+      "ดูเส้นทางอย่าง Builder, Creator, Analyst หรือ Healer แล้วเทียบว่าแต่ละอนาคตเป็นแบบไหน",
+  },
+  {
+    id: "student_reviews",
+    title: "อ่านรีวิวจากนักเรียน",
+    description:
+      "ดูว่าคนอื่นเคยลองอะไร เจอเรื่องไม่คาดคิดอะไร และสุดท้ายไปต่อหรือหยุด",
+  },
+  {
+    id: "interest_squad",
+    title: "เข้าร่วม Squad",
+    description:
+      "เจอเพื่อนที่สนใจเรื่องเดียวกัน แล้วช่วยกันสำรวจหนึ่งเส้นทาง",
+  },
+  {
+    id: "seven_day_project",
+    title: "ลองทำโปรเจกต์ 7 วัน",
+    description:
+      "ลงมือทำโปรเจกต์เล็ก ๆ เพื่อเช็กว่าเส้นทางอาชีพนั้นเหมาะกับเราจริงไหม",
+  },
+  {
+    id: "job_intelligence",
+    title: "ดูข้อมูลอาชีพเชิงลึก",
+    description:
+      "เข้าใจเงินเดือน ความต้องการ ทักษะ ผลกระทบจาก AI และงานจริงที่ต้องทำ",
+  },
+  {
+    id: "parent_summary",
+    title: "รับสรุปไว้คุยกับผู้ปกครอง",
+    description:
+      "ได้รายงานสั้น ๆ อธิบายเส้นทาง ตัวเลือก และก้าวถัดไปให้ผู้ปกครองเข้าใจ",
+  },
+];
+
 export const contactTopicOptions: Option<
   HackathonFeedbackInput["contact_topics"][number]
 >[] = [
