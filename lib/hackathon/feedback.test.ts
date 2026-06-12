@@ -1,5 +1,6 @@
 import {
   buildFeedbackRecord,
+  getFeedbackParticipant,
   getFeedbackVersion,
   hackathonFeedbackSchema,
   type HackathonFeedbackInput,
@@ -44,6 +45,32 @@ describe("getFeedbackVersion", () => {
       expect(getFeedbackVersion(grade)).toBe("project_growth");
     }
   );
+});
+
+describe("getFeedbackParticipant", () => {
+  it("accepts a participant authenticated through the hackathon session", () => {
+    expect(
+      getFeedbackParticipant({
+        id: "participant-1",
+        name: "แพรว",
+        grade_level: "ม.5",
+      })
+    ).toEqual({
+      name: "แพรว",
+      grade_level: "ม.5",
+    });
+  });
+
+  it("rejects the Supabase admin fallback without a hackathon session", () => {
+    expect(
+      getFeedbackParticipant({
+        id: "admin-1",
+        name: "Admin",
+        grade_level: "",
+        is_admin: true,
+      })
+    ).toBeNull();
+  });
 });
 
 describe("hackathonFeedbackSchema", () => {
