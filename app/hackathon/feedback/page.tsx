@@ -450,12 +450,9 @@ export default function HackathonFeedbackPage() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Q1: Event takeaways */}
                 <div className="space-y-2">
-                  <Label
-                    htmlFor="event_takeaways"
-                    className="text-xs font-medium text-slate-400 uppercase tracking-wider"
-                  >
+                  <p className="text-sm font-medium text-slate-200">
                     คุณได้อะไรจากกิจกรรม 3 เดือนนี้?
-                  </Label>
+                  </p>
                   <Textarea
                     id="event_takeaways"
                     name="event_takeaways"
@@ -469,9 +466,9 @@ export default function HackathonFeedbackPage() {
 
                 {/* Q2: Mentorship rating */}
                 <div className="space-y-2">
-                  <Label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  <p className="text-sm font-medium text-slate-200">
                     การให้คำปรึกษาเป็นอย่างไร?
-                  </Label>
+                  </p>
                   <div className="flex items-center gap-1">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
@@ -500,9 +497,9 @@ export default function HackathonFeedbackPage() {
 
                 {/* Q3: Can make social change */}
                 <div className="space-y-2">
-                  <Label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  <p className="text-sm font-medium text-slate-200">
                     คุณรู้สึกว่าสามารถเปลี่ยนแปลงสังคมได้ในอนาคตหรือไม่?
-                  </Label>
+                  </p>
                   <div className="flex gap-3">
                     <button
                       type="button"
@@ -537,9 +534,9 @@ export default function HackathonFeedbackPage() {
 
                 {/* Q4: Would do again */}
                 <div className="space-y-2">
-                  <Label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                  <p className="text-sm font-medium text-slate-200">
                     อยากเข้าร่วมกิจกรรมแบบนี้อีกไหม?
-                  </Label>
+                  </p>
                   <div className="flex gap-3">
                     <button
                       type="button"
@@ -574,12 +571,9 @@ export default function HackathonFeedbackPage() {
 
                 {/* Q5: Improvements */}
                 <div className="space-y-2">
-                  <Label
-                    htmlFor="improvement_suggestions"
-                    className="text-xs font-medium text-slate-400 uppercase tracking-wider"
-                  >
+                  <p className="text-sm font-medium text-slate-200">
                     เราควรปรับปรุงตรงไหน?
-                  </Label>
+                  </p>
                   <Textarea
                     id="improvement_suggestions"
                     name="improvement_suggestions"
@@ -593,7 +587,7 @@ export default function HackathonFeedbackPage() {
 
                 {/* Follow-up Opportunities */}
                 <div className="border-t border-white/10 pt-5 space-y-4">
-                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <p className="text-sm font-medium text-slate-200">
                     โอกาสต่อเนื่อง (เลือกได้มากกว่าหนึ่ง)
                   </p>
 
