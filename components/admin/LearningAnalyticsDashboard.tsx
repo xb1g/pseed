@@ -35,6 +35,10 @@ interface TeamDetail {
   summary: { avgFidelity: number | null; avgCycleRigor: number | null; scoredSubmissions: number; scoredCycles: number };
 }
 interface FunnelStage { label: string; phase: number; teams: number; drop: number; pctOfStart: number; }
+interface ExpTeam {
+  teamId: string; label: string; division: string | null;
+  semifinal: number; avgExperience: number; members: number;
+}
 
 const QUADRANT = {
   grew_delivered: { label: "Grew + Delivered", color: "#22c55e", emoji: "🌟" },
@@ -58,6 +62,7 @@ export function LearningAnalyticsDashboard() {
   const [detail, setDetail] = useState<TeamDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [funnel, setFunnel] = useState<Record<string, FunnelStage[]> | null>(null);
+  const [expTeams, setExpTeams] = useState<ExpTeam[] | null>(null);
 
   async function openTeam(t: TeamRow) {
     setSelected(t); setDetail(null); setDetailLoading(true);
@@ -79,6 +84,10 @@ export function LearningAnalyticsDashboard() {
     fetch("/api/admin/hackathon/learning/funnel")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => d && setFunnel(d.divisions))
+      .catch(() => {});
+    fetch("/api/admin/hackathon/learning/experience")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setExpTeams(d.teams))
       .catch(() => {});
   }, []);
 
@@ -210,6 +219,8 @@ export function LearningAnalyticsDashboard() {
           </ResponsiveContainer>
         </CardContent>
       </Card>
+
+      {expTeams && expTeams.length > 0 && <ExperienceChart teams={expTeams} />}
 
       {/* ranked table */}
       <Card>
@@ -475,6 +486,114 @@ function Stat({ title, value }: { title: string; value: string | number }) {
         <div className="text-2xl font-bold">{value}</div>
       </CardContent>
     </Card>
+  );
+}
+
+function ExperienceChart({ teams }: { teams: ExpTeam[] }) {
+  const [divFilter, setDivFilter] = useState<"all" | "high_school" | "university">("all");
+  const filtered = divFilter === "all" ? teams : teams.filter((t) => t.division === divFilter);
+
+  // Bucket teams by experience bracket (1-3, 4-6, 7-10)
+  const brackets = [
+    { key: "1–3", label: "1–3\nFirst-timer", min: 1, max: 3 },
+    { key: "4–6", label: "4–6\nSome exp", min: 4, max: 6 },
+    { key: "7–10", label: "7–10\nVeteran", min: 7, max: 10 },
+  ];
+  const stats = brackets.map(({ key, label, min, max }) => {
+    const bucket = filtered.filter((t) => t.avgExperience >= min && t.avgExperience <= max);
+    const scores = bucket.map((t) => t.semifinal);
+    const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+    const sorted = [...scores].sort((a, b) => a - b);
+    const med = sorted.length ? sorted[Math.floor(sorted.length / 2)] : null;
+    return { key, label, count: bucket.length, avg, med };
+  });
+
+  const tabs: [typeof divFilter, string][] = [["all", "All"], ["high_school", "High School"], ["university", "University"]];
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <CardTitle>Prior experience vs Judge score</CardTitle>
+            <CardDescription>
+              X = avg team <b>experience_level</b> from registration (1 = first-timer, 10 = veteran).
+              Y = semifinal score. Dot size = team members. Click division tabs to filter.
+            </CardDescription>
+          </div>
+          <div className="flex gap-1 text-sm">
+            {tabs.map(([k, lbl]) => (
+              <button key={k} onClick={() => setDivFilter(k)}
+                className={`rounded px-3 py-1 ${divFilter === k ? "bg-foreground text-background" : "border"}`}>{lbl}</button>
+            ))}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={380}>
+          <ScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 10 }}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+            <XAxis type="number" dataKey="avgExperience" name="Experience" domain={[1, 10]}
+              ticks={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+              label={{ value: "Avg experience level (registration)", position: "bottom", offset: 0 }} />
+            <YAxis type="number" dataKey="semifinal" name="Semifinal" domain={[0, 60]}
+              label={{ value: "Semifinal score", angle: -90, position: "insideLeft" }} />
+            <ZAxis type="number" dataKey="members" range={[40, 220]} name="Members" />
+            {/* median reference line */}
+            {(() => {
+              const scores = filtered.map((t) => t.semifinal).sort((a, b) => a - b);
+              const med = scores.length ? scores[Math.floor(scores.length / 2)] : null;
+              return med !== null ? <ReferenceLine y={med} stroke="#888" strokeDasharray="4 4" label={{ value: `med ${med.toFixed(1)}`, position: "right", fontSize: 10 }} /> : null;
+            })()}
+            <Tooltip content={<ExpDotTip />} cursor={{ strokeDasharray: "3 3" }} />
+            <Scatter data={filtered} fill="#8b5cf6" fillOpacity={0.75}>
+              {filtered.map((t) => (
+                <Cell key={t.teamId}
+                  fill={t.division === "high_school" ? "#3b82f6" : t.division === "university" ? "#f59e0b" : "#8b5cf6"}
+                  fillOpacity={0.8} />
+              ))}
+            </Scatter>
+          </ScatterChart>
+        </ResponsiveContainer>
+
+        {/* Bracket summary */}
+        <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
+          {stats.map((s) => (
+            <div key={s.key} className="rounded-lg border p-3">
+              <div className="font-semibold">Exp {s.key}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {s.key === "1–3" ? "First-timer" : s.key === "4–6" ? "Some experience" : "Veteran"}
+              </div>
+              <div className="mt-2 space-y-0.5 text-xs">
+                <div>{s.count} teams</div>
+                <div>Avg score: <span className="font-mono font-semibold">{s.avg !== null ? s.avg.toFixed(1) : "–"}</span></div>
+                <div>Median: <span className="font-mono">{s.med !== null ? s.med.toFixed(1) : "–"}</span></div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Legend */}
+        <div className="mt-3 flex gap-4 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full bg-[#3b82f6]" /> High school</span>
+          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full bg-[#f59e0b]" /> University</span>
+          <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full bg-[#8b5cf6]" /> Unknown division</span>
+          <span className="ml-2">· dot size = members</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ExpDotTip({ active, payload }: { active?: boolean; payload?: Array<{ payload: ExpTeam }> }) {
+  if (!active || !payload?.length) return null;
+  const t = payload[0].payload;
+  return (
+    <div className="rounded border bg-background p-2 text-xs shadow">
+      <div className="font-semibold">{t.label}</div>
+      <div>Semifinal {t.semifinal.toFixed(1)} · Avg exp {t.avgExperience.toFixed(1)}</div>
+      <div>{t.members} members · {t.division ?? "unknown"}</div>
+    </div>
   );
 }
 
