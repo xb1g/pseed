@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import gsap from "gsap";
-import { Bell, ClipboardList, Users, Check, Sparkles, BookOpen, Home, ArrowRight, Search, Settings } from "lucide-react";
+import { Bell, ClipboardList, Users, Check, Sparkles, BookOpen, Home, ArrowRight, Search, Settings, MessageSquare } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import type { HackathonParticipant } from "@/lib/hackathon/db";
 
@@ -637,6 +637,17 @@ export default function HackathonDashboardPage() {
                 </Link>
               </Button>
             )}
+
+            {/* Feedback form link */}
+            <Button
+              asChild
+              className="w-full bg-gradient-to-r from-[#5a7a94] to-[#4a6a84] hover:from-[#6a9ac4] hover:to-[#5a8ab4] text-white font-medium py-6 rounded-xl transition-all duration-300 shadow-[0_0_25px_rgba(90,122,148,0.4)] hover:shadow-[0_0_40px_rgba(106,154,196,0.6)] hover:scale-[1.02] border border-[#7aa4c4]/30 font-[family-name:var(--font-mitr)]"
+            >
+              <Link href="/hackathon/feedback" className="inline-flex items-center justify-center gap-2 text-lg">
+                <MessageSquare className="h-5 w-5" aria-hidden />
+                แบบฟอร์มฟีดแบ็ก
+              </Link>
+            </Button>
 
             <div className="grid grid-cols-3 gap-4">
               <Button
