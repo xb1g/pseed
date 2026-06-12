@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionParticipant } from "@/lib/hackathon/db";
 import { createClient } from "@supabase/supabase-js";
 import { getCorsHeaders, extractHackathonToken } from "@/lib/hackathon/auth";
+import {
+  buildFeedbackRecord,
+  getFeedbackVersion,
+  hackathonFeedbackSchema,
+} from "@/lib/hackathon/feedback";
 
 function getAdminClient() {
   return createClient(
@@ -54,57 +59,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders });
     }
 
-    const body = await req.json();
-    const {
-      event_takeaways,
-      mentorship_rating,
-      can_make_social_change,
-      would_do_again,
-      improvement_suggestions,
-      wants_call,
-      wants_product_beta,
-      wants_continue_mentorship,
-    } = body;
+    const parsed = hackathonFeedbackSchema.safeParse(await req.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          error: "กรุณาตรวจสอบคำตอบที่ยังไม่ครบ",
+          fieldErrors: parsed.error.flatten().fieldErrors,
+        },
+        { status: 400, headers: corsHeaders }
+      );
+    }
 
-    // Validate required fields
+    const feedbackVersion = getFeedbackVersion(participant.grade_level);
     if (
-      typeof mentorship_rating !== "number" ||
-      mentorship_rating < 1 ||
-      mentorship_rating > 5
+      feedbackVersion === "future_path" &&
+      parsed.data.future_path_uncertain === null
     ) {
       return NextResponse.json(
-        { error: "Mentorship rating must be between 1 and 5" },
-        { status: 400, headers: corsHeaders }
-      );
-    }
-
-    if (typeof can_make_social_change !== "boolean") {
-      return NextResponse.json(
-        { error: "can_make_social_change must be a boolean" },
-        { status: 400, headers: corsHeaders }
-      );
-    }
-
-    if (typeof would_do_again !== "boolean") {
-      return NextResponse.json(
-        { error: "would_do_again must be a boolean" },
+        {
+          error: "กรุณาตอบคำถามเกี่ยวกับเส้นทางการเรียนหรืออาชีพ",
+          fieldErrors: {
+            future_path_uncertain: [
+              "กรุณาตอบคำถามเกี่ยวกับเส้นทางการเรียนหรืออาชีพ",
+            ],
+          },
+        },
         { status: 400, headers: corsHeaders }
       );
     }
 
     const supabase = getAdminClient();
-    const payload = {
-      participant_id: participant.id,
-      event_takeaways: event_takeaways?.trim() || null,
-      mentorship_rating,
-      can_make_social_change,
-      would_do_again,
-      improvement_suggestions: improvement_suggestions?.trim() || null,
-      wants_call: wants_call === true,
-      wants_product_beta: wants_product_beta === true,
-      wants_continue_mentorship: wants_continue_mentorship === true,
-      updated_at: new Date().toISOString(),
-    };
+    const payload = buildFeedbackRecord(parsed.data, participant);
 
     const { data, error } = await supabase
       .from("hackathon_feedback")
