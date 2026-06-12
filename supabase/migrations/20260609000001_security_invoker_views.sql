@@ -160,52 +160,67 @@ from aha;
 
 -- ------------------------------------------------------------------
 -- analytics_retention_summary
+-- Only recreate if all dependent materialized views already exist.
+-- (They are created by 20260415000000_create_retention_analytics_views.sql;
+--  if that migration was recorded but the views were never materialised in
+--  a given environment this block is a no-op so the push succeeds.)
 -- ------------------------------------------------------------------
-CREATE OR REPLACE VIEW public.analytics_retention_summary
-WITH (security_invoker = on) AS
-SELECT
-  CURRENT_DATE as report_date,
-  (SELECT dau FROM analytics_daily_active_users ORDER BY activity_date DESC LIMIT 1) as current_dau,
-  (SELECT wau FROM analytics_weekly_active_users ORDER BY activity_week DESC LIMIT 1) as current_wau,
-  (SELECT mau FROM analytics_monthly_active_users ORDER BY activity_month DESC LIMIT 1) as current_mau,
-  (SELECT dau FROM analytics_daily_active_users ORDER BY activity_date DESC OFFSET 1 LIMIT 1) as prev_dau,
-  (SELECT wau FROM analytics_weekly_active_users ORDER BY activity_week DESC OFFSET 1 LIMIT 1) as prev_wau,
-  (SELECT mau FROM analytics_monthly_active_users ORDER BY activity_month DESC OFFSET 1 LIMIT 1) as prev_mau,
-  (SELECT COUNT(DISTINCT user_id) FROM analytics_user_cohorts) as total_users_ever,
-  (SELECT COUNT(*) FROM analytics_user_cohorts WHERE is_active_last_7_days) as active_users_7d,
-  (SELECT COUNT(*) FROM analytics_user_cohorts WHERE is_active_last_30_days) as active_users_30d,
-  (SELECT avg_session_duration_min FROM analytics_session_duration ORDER BY session_date DESC LIMIT 1) as avg_session_min,
-  -- Calculate week-over-week change percentages
-  CASE
-    WHEN (SELECT dau FROM analytics_daily_active_users ORDER BY activity_date DESC OFFSET 1 LIMIT 1) > 0
-    THEN ROUND(
-      ((SELECT dau FROM analytics_daily_active_users ORDER BY activity_date DESC LIMIT 1) -
-       (SELECT dau FROM analytics_daily_active_users ORDER BY activity_date DESC OFFSET 1 LIMIT 1))::numeric /
-      (SELECT dau FROM analytics_daily_active_users ORDER BY activity_date DESC OFFSET 1 LIMIT 1) * 100,
-      2
-    )
-    ELSE 0
-  END as dau_change_pct,
-  CASE
-    WHEN (SELECT wau FROM analytics_weekly_active_users ORDER BY activity_week DESC OFFSET 1 LIMIT 1) > 0
-    THEN ROUND(
-      ((SELECT wau FROM analytics_weekly_active_users ORDER BY activity_week DESC LIMIT 1) -
-       (SELECT wau FROM analytics_weekly_active_users ORDER BY activity_week DESC OFFSET 1 LIMIT 1))::numeric /
-      (SELECT wau FROM analytics_weekly_active_users ORDER BY activity_week DESC OFFSET 1 LIMIT 1) * 100,
-      2
-    )
-    ELSE 0
-  END as wau_change_pct,
-  CASE
-    WHEN (SELECT mau FROM analytics_monthly_active_users ORDER BY activity_month DESC OFFSET 1 LIMIT 1) > 0
-    THEN ROUND(
-      ((SELECT mau FROM analytics_monthly_active_users ORDER BY activity_month DESC LIMIT 1) -
-       (SELECT mau FROM analytics_monthly_active_users ORDER BY activity_month DESC OFFSET 1 LIMIT 1))::numeric /
-      (SELECT mau FROM analytics_monthly_active_users ORDER BY activity_month DESC OFFSET 1 LIMIT 1) * 100,
-      2
-    )
-    ELSE 0
-  END as mau_change_pct;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public' AND c.relname = 'analytics_monthly_active_users'
+  ) THEN
+    EXECUTE $view$
+      CREATE OR REPLACE VIEW public.analytics_retention_summary
+      WITH (security_invoker = on) AS
+      SELECT
+        CURRENT_DATE as report_date,
+        (SELECT dau FROM analytics_daily_active_users ORDER BY activity_date DESC LIMIT 1) as current_dau,
+        (SELECT wau FROM analytics_weekly_active_users ORDER BY activity_week DESC LIMIT 1) as current_wau,
+        (SELECT mau FROM analytics_monthly_active_users ORDER BY activity_month DESC LIMIT 1) as current_mau,
+        (SELECT dau FROM analytics_daily_active_users ORDER BY activity_date DESC OFFSET 1 LIMIT 1) as prev_dau,
+        (SELECT wau FROM analytics_weekly_active_users ORDER BY activity_week DESC OFFSET 1 LIMIT 1) as prev_wau,
+        (SELECT mau FROM analytics_monthly_active_users ORDER BY activity_month DESC OFFSET 1 LIMIT 1) as prev_mau,
+        (SELECT COUNT(DISTINCT user_id) FROM analytics_user_cohorts) as total_users_ever,
+        (SELECT COUNT(*) FROM analytics_user_cohorts WHERE is_active_last_7_days) as active_users_7d,
+        (SELECT COUNT(*) FROM analytics_user_cohorts WHERE is_active_last_30_days) as active_users_30d,
+        (SELECT avg_session_duration_min FROM analytics_session_duration ORDER BY session_date DESC LIMIT 1) as avg_session_min,
+        CASE
+          WHEN (SELECT dau FROM analytics_daily_active_users ORDER BY activity_date DESC OFFSET 1 LIMIT 1) > 0
+          THEN ROUND(
+            ((SELECT dau FROM analytics_daily_active_users ORDER BY activity_date DESC LIMIT 1) -
+             (SELECT dau FROM analytics_daily_active_users ORDER BY activity_date DESC OFFSET 1 LIMIT 1))::numeric /
+            (SELECT dau FROM analytics_daily_active_users ORDER BY activity_date DESC OFFSET 1 LIMIT 1) * 100,
+            2
+          )
+          ELSE 0
+        END as dau_change_pct,
+        CASE
+          WHEN (SELECT wau FROM analytics_weekly_active_users ORDER BY activity_week DESC OFFSET 1 LIMIT 1) > 0
+          THEN ROUND(
+            ((SELECT wau FROM analytics_weekly_active_users ORDER BY activity_week DESC LIMIT 1) -
+             (SELECT wau FROM analytics_weekly_active_users ORDER BY activity_week DESC OFFSET 1 LIMIT 1))::numeric /
+            (SELECT wau FROM analytics_weekly_active_users ORDER BY activity_week DESC OFFSET 1 LIMIT 1) * 100,
+            2
+          )
+          ELSE 0
+        END as wau_change_pct,
+        CASE
+          WHEN (SELECT mau FROM analytics_monthly_active_users ORDER BY activity_month DESC OFFSET 1 LIMIT 1) > 0
+          THEN ROUND(
+            ((SELECT mau FROM analytics_monthly_active_users ORDER BY activity_month DESC LIMIT 1) -
+             (SELECT mau FROM analytics_monthly_active_users ORDER BY activity_month DESC OFFSET 1 LIMIT 1))::numeric /
+            (SELECT mau FROM analytics_monthly_active_users ORDER BY activity_month DESC OFFSET 1 LIMIT 1) * 100,
+            2
+          )
+          ELSE 0
+        END as mau_change_pct
+    $view$;
+  ELSE
+    RAISE NOTICE 'analytics_monthly_active_users not found — skipping analytics_retention_summary view update';
+  END IF;
+END $$;
 
 -- ------------------------------------------------------------------
 -- phase3_leaderboard_cycles

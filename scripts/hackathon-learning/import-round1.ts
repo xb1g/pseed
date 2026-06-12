@@ -10,6 +10,7 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 
 dotenv.config({ path: ".env.production" });
+dotenv.config({ path: ".env.local" }); // fallback if .env.production absent
 
 const XLSX_PATH =
   process.env.ROUND1_XLSX ??
