@@ -12,7 +12,10 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { HackathonFeedbackForm } from "@/components/hackathon/feedback/HackathonFeedbackForm";
-import type { HackathonFeedbackInput } from "@/lib/hackathon/feedback";
+import {
+  getFeedbackParticipant,
+  type HackathonFeedbackInput,
+} from "@/lib/hackathon/feedback";
 
 type Participant = {
   name: string;
@@ -47,19 +50,21 @@ export default function HackathonFeedbackPage() {
         }
 
         const participantPayload = await participantResponse.json();
-        if (!participantPayload.participant) {
+        const feedbackParticipant = getFeedbackParticipant(
+          participantPayload.participant
+        );
+        if (!feedbackParticipant) {
           if (!cancelled) setParticipant(null);
           return;
         }
 
-        if (!cancelled) {
-          setParticipant({
-            name: participantPayload.participant.name || "",
-            grade_level: participantPayload.participant.grade_level || "",
-          });
+        const feedbackResponse = await fetch("/api/hackathon/feedback");
+        if (feedbackResponse.status === 401) {
+          if (!cancelled) setParticipant(null);
+          return;
         }
 
-        const feedbackResponse = await fetch("/api/hackathon/feedback");
+        if (!cancelled) setParticipant(feedbackParticipant);
         if (!feedbackResponse.ok) return;
         const feedbackPayload = await feedbackResponse.json();
         if (!cancelled) setStoredFeedback(feedbackPayload.data || null);
@@ -94,6 +99,10 @@ export default function HackathonFeedbackPage() {
       const result = await response.json();
 
       if (!response.ok) {
+        if (response.status === 401) {
+          setParticipant(null);
+          throw new Error("เซสชันหมดอายุ กรุณาเข้าสู่ระบบ Hackathon อีกครั้ง");
+        }
         throw new Error(result.error || "ส่งฟีดแบ็กไม่สำเร็จ");
       }
 
