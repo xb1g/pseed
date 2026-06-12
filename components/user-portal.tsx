@@ -158,10 +158,9 @@ export function UserPortal({ dashboardData }: UserPortalProps) {
   };
 
   return (
-    <div className="relative min-h-screen w-full text-white overflow-hidden pb-12">
-      {/* Dusk Background Atmosphere */}
-      <div className="absolute inset-0 bg-[#06000f] z-0" />
-      <div className="absolute inset-0 bg-gradient-to-b from-[#06000f] via-[#1a0336] to-[#0d0d0d] opacity-90 z-0" />
+    <div className="relative min-h-screen w-full text-white overflow-hidden pb-12 bg-gradient-to-b from-[#1a0a2e] via-[#2d1449] to-[#4a1d6b] font-sans antialiased">
+      {/* Gradient overlay for smooth transition */}
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-transparent to-[#0d0d0d]/50 z-0" />
       
       {/* Drifting Cloud Blobs */}
       <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-purple-900/10 blur-[100px] animate-cloud-slow z-0" style={{ animationDuration: '18s' }} />
