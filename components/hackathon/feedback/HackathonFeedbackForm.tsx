@@ -23,6 +23,7 @@ import {
   learningIssueOptions,
   mentorHelpOptions,
   mentorshipInterestOptions,
+  productPriorityOptions,
   projectStageOptions,
   socialChangeOptions,
   takeawayOptions,
@@ -51,6 +52,8 @@ type FeedbackDraft = {
   learning_content_issues: string[];
   learning_content_feedback: string;
   future_path_uncertain: boolean | null;
+  product_priority: string | null;
+  product_priority_reason: string;
   follow_up_interests: string[];
   wants_contact: boolean;
   contact_name: string;
@@ -123,6 +126,12 @@ function createInitialDraft(
       version === "future_path"
         ? (stored?.future_path_uncertain ?? null)
         : null,
+    product_priority:
+      version === "future_path" ? (stored?.product_priority ?? null) : null,
+    product_priority_reason:
+      version === "future_path"
+        ? (stored?.product_priority_reason ?? "")
+        : "",
     follow_up_interests: stored?.follow_up_interests ?? legacyFollowUps,
     wants_contact: stored?.wants_contact ?? stored?.wants_call ?? false,
     contact_name:
@@ -343,6 +352,12 @@ export function HackathonFeedbackForm({
         return showValidationError(
           "กรุณาตอบคำถามเรื่องเส้นทางในอนาคต",
           "future-path"
+        );
+      }
+      if (version === "future_path" && !draft.product_priority) {
+        return showValidationError(
+          "กรุณาเลือกสิ่งที่คุณอยากลองก่อน",
+          "product-priority"
         );
       }
       if (draft.wants_contact && !draft.contact_name.trim()) {
@@ -704,25 +719,102 @@ export function HackathonFeedbackForm({
         </Question>
 
         {version === "future_path" && (
-          <Question
-            id="future-path"
-            title="ตอนนี้คุณยังไม่แน่ใจเรื่องเส้นทางเรียนหรืออาชีพในอนาคตใช่ไหม?"
-          >
-            <div className="grid gap-2 sm:grid-cols-2">
-              <FeedbackChoice
-                selected={draft.future_path_uncertain === true}
-                onClick={() => updateDraft("future_path_uncertain", true)}
+          <>
+            <Question
+              id="future-path"
+              title="ตอนนี้คุณยังไม่แน่ใจเรื่องเส้นทางเรียนหรืออาชีพในอนาคตใช่ไหม?"
+            >
+              <div className="grid gap-2 sm:grid-cols-2">
+                <FeedbackChoice
+                  selected={draft.future_path_uncertain === true}
+                  onClick={() => updateDraft("future_path_uncertain", true)}
+                >
+                  ใช่ ยังอยากลองค้นหาตัวเอง
+                </FeedbackChoice>
+                <FeedbackChoice
+                  selected={draft.future_path_uncertain === false}
+                  onClick={() => updateDraft("future_path_uncertain", false)}
+                >
+                  ไม่ ตอนนี้มีทิศทางค่อนข้างชัดแล้ว
+                </FeedbackChoice>
+              </div>
+            </Question>
+
+            <div className="rounded-2xl border border-indigo-300/15 bg-indigo-400/[0.06] p-4 sm:p-5">
+              <Question
+                id="product-priority"
+                title="ถ้าเลือกได้ 1 อย่าง คุณอยากลองอะไรก่อน?"
+                hint="เลือกเพียง 1 ข้อที่อยากเริ่มจริง ๆ"
               >
-                ใช่ ยังอยากลองค้นหาตัวเอง
-              </FeedbackChoice>
-              <FeedbackChoice
-                selected={draft.future_path_uncertain === false}
-                onClick={() => updateDraft("future_path_uncertain", false)}
-              >
-                ไม่ ตอนนี้มีทิศทางค่อนข้างชัดแล้ว
-              </FeedbackChoice>
+                <div className="grid gap-2">
+                  {productPriorityOptions.map((option) => (
+                    <FeedbackChoice
+                      key={option.id}
+                      selected={draft.product_priority === option.id}
+                      onClick={() =>
+                        updateDraft("product_priority", option.id)
+                      }
+                      className="items-start py-4"
+                    >
+                      <span className="block">
+                        <span className="block font-semibold text-white">
+                          {option.title}
+                        </span>
+                        <span className="mt-1 block text-xs font-normal leading-5 text-slate-400">
+                          {option.description}
+                        </span>
+                      </span>
+                    </FeedbackChoice>
+                  ))}
+                </div>
+
+                <AnimatePresence initial={false}>
+                  {draft.product_priority && (
+                    <motion.div
+                      initial={
+                        prefersReducedMotion
+                          ? { opacity: 0 }
+                          : { opacity: 0, height: 0, y: -6 }
+                      }
+                      animate={{ opacity: 1, height: "auto", y: 0 }}
+                      exit={
+                        prefersReducedMotion
+                          ? { opacity: 0 }
+                          : { opacity: 0, height: 0, y: -6 }
+                      }
+                      className="overflow-hidden"
+                    >
+                      <div className="pt-4">
+                        <label
+                          htmlFor="product-priority-reason"
+                          className="font-[family-name:var(--font-bai-jamjuree)] text-sm font-semibold text-slate-200"
+                        >
+                          ทำไมคุณถึงเลือกข้อนี้?
+                          <span className="ml-2 text-xs font-normal text-slate-500">
+                            ไม่บังคับ
+                          </span>
+                        </label>
+                        <Textarea
+                          id="product-priority-reason"
+                          value={draft.product_priority_reason}
+                          maxLength={500}
+                          rows={2}
+                          onChange={(event) =>
+                            updateDraft(
+                              "product_priority_reason",
+                              event.target.value
+                            )
+                          }
+                          placeholder="เพราะอะไรตัวเลือกนี้ถึงน่าสนใจสำหรับคุณ?"
+                          className="ei-input mt-2 min-h-20 resize-none py-3"
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Question>
             </div>
-          </Question>
+          </>
         )}
 
         <Question
