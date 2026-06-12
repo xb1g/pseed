@@ -119,7 +119,7 @@ describe("HackathonFeedbackForm", () => {
     });
   });
 
-  it("does not add the product-priority question to the university version", async () => {
+  it("also asks university students for their product priority", async () => {
     renderForm();
 
     fireEvent.click(screen.getByRole("button", { name: "5 ดีมาก" }));
@@ -139,8 +139,15 @@ describe("HackathonFeedbackForm", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "ต่อไป" }));
 
+    await waitFor(() => {
+      expect(
+        screen.getByText("ถ้าเลือกได้ 1 อย่าง คุณอยากลองอะไรก่อน?")
+      ).toBeVisible();
+    });
     expect(
-      screen.queryByText("ถ้าเลือกได้ 1 อย่าง คุณอยากลองอะไรก่อน?")
+      screen.queryByText(
+        "ตอนนี้คุณยังไม่แน่ใจเรื่องเส้นทางเรียนหรืออาชีพในอนาคตใช่ไหม?"
+      )
     ).not.toBeInTheDocument();
   });
 });
