@@ -24,6 +24,8 @@ const validFeedback: HackathonFeedbackInput = {
   learning_content_issues: ["more_examples"],
   learning_content_feedback: "",
   future_path_uncertain: null,
+  product_priority: null,
+  product_priority_reason: "",
   follow_up_interests: ["project_launch", "mentor_match"],
   wants_contact: false,
   contact_name: "",
@@ -136,6 +138,15 @@ describe("hackathonFeedbackSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("rejects unknown product priorities", () => {
+    const result = hackathonFeedbackSchema.safeParse({
+      ...validFeedback,
+      product_priority: "watch_videos",
+    });
+
+    expect(result.success).toBe(false);
+  });
+
   it("requires mentorship details only when mentorship was received", () => {
     const result = hackathonFeedbackSchema.safeParse({
       ...validFeedback,
@@ -185,6 +196,8 @@ describe("buildFeedbackRecord", () => {
           ...validFeedback,
           ongoing_mentorship_interest: "yes",
           future_path_uncertain: true,
+          product_priority: "seven_day_project",
+          product_priority_reason: "อยากรู้ว่าชอบจริงไหมก่อนเลือกสายเรียน",
           follow_up_interests: ["future_path", "mentor_future"],
         },
         {
@@ -196,6 +209,8 @@ describe("buildFeedbackRecord", () => {
       participant_id: "participant-1",
       feedback_version: "future_path",
       future_path_uncertain: true,
+      product_priority: "seven_day_project",
+      product_priority_reason: "อยากรู้ว่าชอบจริงไหมก่อนเลือกสายเรียน",
       follow_up_interests: ["future_path", "mentor_future"],
       mentorship_rating: 4,
       improvement_suggestions: null,
@@ -211,6 +226,8 @@ describe("buildFeedbackRecord", () => {
         {
           ...validFeedback,
           future_path_uncertain: true,
+          product_priority: "career_classes",
+          product_priority_reason: "อยากเห็นตัวเลือกทั้งหมดก่อน",
           follow_up_interests: ["future_path", "project_launch"],
         },
         {
@@ -221,6 +238,8 @@ describe("buildFeedbackRecord", () => {
     ).toMatchObject({
       feedback_version: "project_growth",
       future_path_uncertain: null,
+      product_priority: null,
+      product_priority_reason: null,
       follow_up_interests: ["future_path", "project_launch"],
       wants_product_beta: true,
     });
