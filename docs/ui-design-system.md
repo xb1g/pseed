@@ -1,8 +1,152 @@
 # PassionSeed UI Design System
 
-> **Version 2.0** — Last updated: 2026-03-15
+> **Version 2.1** — Last updated: 2026-06-14
 >
 > This is a living document. If you add a new pattern, update this doc. If you can't explain it here, it doesn't belong in the codebase.
+
+---
+
+## Core Concept: Dawn, Dusk & Bloom
+
+PassionSeed uses three atmospheric themes tied to context:
+
+| Context | Theme | Meaning | Users |
+|---------|-------|---------|-------|
+| **Experts** | **Dusk** | The sun setting — experience, warmth, legacy, things earned over time | Professionals, mentors, industry partners |
+| **Students** | **Dawn** | The sun rising — potential, possibility, new beginnings | High school students, university students |
+| **Gallery** | **Bloom** | A sunlit exhibition hall, midday warmth — work on every wall, visitors stopping with genuine curiosity | Hackathon participants, public visitors, adopters |
+
+All three share the same structural DNA: fluid, atmospheric, luminous. Each has its own sky and its own material character.
+
+---
+
+## Bloom Theme (Hackathon Gallery)
+
+### Scene & Identity
+
+Bloom is for the hackathon gallery and participant portal. It exists to show participants that their work has value beyond the contest, and to help visitors discover and adopt student-built products.
+
+- **Personality**: Playful, bold, alive
+- **Register**: Split — brand surface for the public gallery, product surface for the participant portal
+- **Anchor color**: Warm coral/terracotta `#e8623a` (oklch 0.65 0.18 28)
+- **Grain**: Bold SVG turbulence noise on cards and buttons — tactile, printed, material
+
+### Color Tokens
+
+```css
+--bloom-coral-500: #e8623a;  /* anchor coral */
+--bloom-coral-400: #ee8060;  /* warm mid-coral */
+--bloom-coral-300: #f2a88e;  /* soft blush */
+--bloom-amber-400: #d97b2e;  /* warm amber */
+--bloom-amber-300: #e69f5a;  /* light amber */
+--bloom-rose-400:  #e8927a;  /* rose-gold */
+
+--bloom-bg-950: #160a06;     /* deep warm black */
+--bloom-bg-900: #221009;     /* dark surface */
+--bloom-bg-800: #301810;     /* card background */
+--bloom-bg-700: #3f2218;     /* elevated surface */
+
+--bloom-text-primary:   #f0ece8;
+--bloom-text-secondary: #b8aa9f;
+--bloom-text-muted:     #7a6d65;
+
+--bloom-border-subtle:  rgba(232, 98, 58, 0.12);
+--bloom-border-default: rgba(232, 98, 58, 0.22);
+--bloom-border-strong:  rgba(232, 98, 58, 0.40);
+--bloom-glow-soft:      rgba(232, 98, 58, 0.15);
+--bloom-glow-mid:       rgba(232, 98, 58, 0.28);
+--bloom-glow-strong:    rgba(232, 98, 58, 0.50);
+```
+
+### Noise Grain
+
+Bloom uses an inline SVG turbulence filter as a CSS data URI, applied via `mix-blend-mode: overlay` on `::before` pseudo-elements. No image asset required.
+
+```css
+--bloom-noise: url("data:image/svg+xml,...");
+/* Applied on cards (opacity: 0.28) and buttons (opacity: 0.22) */
+/* mix-blend-mode: overlay — sits on gradient without flattening color */
+```
+
+**Rules:**
+- Cards: `opacity: 0.28`, `background-size: 200px 200px`
+- Buttons: `opacity: 0.22`, `background-size: 160px 160px`
+- Never apply noise to text, icons, or interactive state indicators
+- Noise `::before` on cards means shimmer lives on `.bloom-card__shimmer` child element
+
+### Atmospheric Layers (bloom-scene)
+
+Layer order (bottom to top):
+1. Dark warm gradient background (base)
+2. `::before` — angled light shaft, 18s cycle, `opacity: 0.06–0.13`
+3. `::after` — floor warmth radial glow, 13s cycle, `blur(40px)`
+4. `.bloom-dust` spans (3–5) — rising motes, prime-number durations (6113ms, 8317ms, 11003ms)
+5. Content
+
+```html
+<div class="bloom-scene">
+  <span class="bloom-dust"></span>
+  <span class="bloom-dust"></span>
+  <span class="bloom-dust"></span>
+  <!-- content -->
+</div>
+```
+
+### Components
+
+#### `.bloom-card`
+
+```html
+<div class="bloom-card">
+  <span class="bloom-card__shimmer" aria-hidden="true"></span>
+  <!-- content (position: relative; z-index: 1 to sit above noise layer) -->
+</div>
+```
+
+- `::before` — noise grain layer (`z-index: 0`)
+- `.bloom-card__shimmer` — shimmer sweep on hover (`z-index: 1`)
+- `::after` — outer glow ring, fades in on hover
+- Touch: add `.bloom-card--in-view` via `IntersectionObserver` + `@media (hover: none)`
+
+#### `.bloom-button`
+
+```html
+<button class="bloom-button">View product</button>
+<button class="bloom-button bloom-button--ghost">Learn more</button>
+```
+
+- `::before` — noise grain (hidden on `--ghost` variant)
+- `::after` — gloss highlight strip on upper half
+- Ghost variant: transparent bg, coral outline, no noise
+
+#### `.bloom-interest-badge`
+
+Participant portal widget showing live interest signals.
+
+```html
+<span class="bloom-interest-badge">
+  <span class="bloom-interest-badge__dot" aria-hidden="true"></span>
+  14 people viewed this week
+</span>
+```
+
+### Animation Timings
+
+| Variable | Value | Purpose |
+|----------|-------|---------|
+| `--bloom-dust-a` | `6113ms` | Dust mote (prime) |
+| `--bloom-dust-b` | `8317ms` | Dust mote (prime) |
+| `--bloom-dust-c` | `11003ms` | Dust mote (prime) |
+| Light shaft | `18s` | Scene atmosphere |
+| Floor glow | `13s` | Scene atmosphere |
+| Card hover-in | `420ms` | `var(--ease-tension)` |
+| Button hover-in | `380ms` | `var(--ease-tension)` |
+| Shimmer sweep | `520ms` | `var(--ease-tension)` |
+| Snap/hover-out | `160ms` | `var(--ease-snap)` |
+
+### Reduced Motion
+
+All Bloom animations stop under `prefers-reduced-motion: reduce`. Cards and buttons retain their color/border states but drop all transforms and keyframe animations.
 
 ---
 

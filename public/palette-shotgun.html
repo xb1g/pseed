@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bloom Gallery — Palette Shotgun v3</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #080808;
+  padding: 2rem;
+  gap: 0;
+}
+
+.meta {
+  color: rgba(255,255,255,0.25);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 1.75rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.col { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.label {
+  color: rgba(255,255,255,0.28);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  padding-left: 2px;
+  margin-bottom: 0.1rem;
+}
+
+.sublabel {
+  color: rgba(255,255,255,0.16);
+  font-size: 0.58rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding-left: 2px;
+  margin-top: -0.2rem;
+  margin-bottom: 0.3rem;
+}
+
+.frame {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.07), 0 16px 48px rgba(0,0,0,0.6);
+}
+
+.divider {
+  height: 1px;
+  background: rgba(255,255,255,0.06);
+  margin: 0.5rem 0;
+}
+
+/* ──────────────────────────────────────────
+   SHARED MICRO COMPONENTS
+────────────────────────────────────────── */
+.ico { width: 13px; height: 13px; flex-shrink: 0; }
+
+/* ══════════════════════════════════════════════════════
+   A — BLUE + ORANGE  ·  "Drenched" layout
+   bg: deep navy / white
+   accent-1: electric blue #2563eb
+   accent-2: vivid orange #ea580c
+   Hero/bg band: blue. CTAs: orange.
+   ══════════════════════════════════════════════════════ */
+
+/* LIGHT */
+.a-l {
+  background: #f4f6fb;
+  font-family: inherit;
+}
+.a-l .nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 1rem; height: 48px;
+  background: rgba(244,246,251,0.95);
+  border-bottom: 1px solid rgba(37,99,235,0.10);
+  backdrop-filter: blur(8px);
+}
+.a-l .logo { font-size: 0.86rem; font-weight: 800; color: #1e3a8a; letter-spacing: -0.02em; }
+.a-l .body { padding: 1.1rem 1rem 1.1rem; }
+.a-l h1 { font-size: 1.2rem; font-weight: 800; color: #1e3a8a; letter-spacing: -0.025em; line-height: 1.18; margin-bottom: 0.4rem; }
+.a-l .sub { font-size: 0.72rem; color: #4b6099; line-height: 1.55; margin-bottom: 1rem; max-width: 30ch; }
+.a-l .filters { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
+.a-l .pill { padding: 0.2rem 0.55rem; border-radius: 999px; font-size: 0.62rem; font-weight: 700;
+  background: rgba(37,99,235,0.07); border: 1px solid rgba(37,99,235,0.18); color: #2563eb; }
+.a-l .pill.on { background: #2563eb; color: #fff; border-color: #2563eb; }
+.a-l .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.a-l .card { background: #fff; border: 1px solid rgba(37,99,235,0.10); border-radius: 9px; overflow: hidden;
+  box-shadow: 0 1px 4px rgba(37,99,235,0.06); position: relative; }
+.a-l .card:first-child { border-top: 2.5px solid #ea580c; }
+.a-l .ph { aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem; font-weight: 900; font-family: Georgia,serif;
+  background: linear-gradient(135deg, rgba(37,99,235,0.08), rgba(234,88,12,0.06));
+  color: rgba(37,99,235,0.25); }
+.a-l .ci { aspect-ratio: 16/9; overflow: hidden; }
+.a-l .ci img { width:100%; height:100%; object-fit:cover; }
+.a-l .cb { padding: 0.55rem 0.6rem 0.6rem; }
+.a-l .tag { display:inline-block; font-size:0.56rem; font-weight:700; padding:0.13rem 0.38rem;
+  border-radius:999px; background:rgba(37,99,235,0.08); color:#2563eb; border:1px solid rgba(37,99,235,0.18);
+  margin-right:0.2rem; margin-bottom:0.28rem; }
+.a-l .ct { font-size:0.78rem; font-weight:700; color:#1e3a8a; margin-bottom:0.22rem; }
+.a-l .cd { font-size:0.62rem; color:#4b6099; line-height:1.45;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.a-l .cf { display:flex; align-items:center; justify-content:space-between;
+  margin-top:0.4rem; padding-top:0.4rem; border-top:1px solid rgba(37,99,235,0.07); }
+.a-l .tn { font-size:0.6rem; color:#93a8cc; }
+.a-l .badge { font-size:0.58rem; font-weight:700; padding:0.13rem 0.38rem; border-radius:999px;
+  background:rgba(234,88,12,0.09); color:#c2440a; border:1px solid rgba(234,88,12,0.20);
+  display:flex; align-items:center; gap:0.22rem; }
+.a-l .dot { width:4px; height:4px; border-radius:50%; background:#ea580c; flex-shrink:0; }
+.a-l .btn { padding:0.3rem 0.7rem; border-radius:6px; font-size:0.7rem; font-weight:700;
+  background:#ea580c; color:#fff; border:none; cursor:pointer; }
+.a-l .btn-g { background:transparent; color:#2563eb; border:1px solid rgba(37,99,235,0.30); }
+.a-l .tog { width:26px; height:26px; border-radius:6px; border:1px solid rgba(37,99,235,0.15);
+  background:rgba(37,99,235,0.06); display:flex; align-items:center; justify-content:center; }
+
+/* DARK */
+.a-d {
+  background: #0d1424;
+  font-family: inherit;
+}
+.a-d .nav {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 1rem; height:48px;
+  background:rgba(13,20,36,0.95);
+  border-bottom:1px solid rgba(59,130,246,0.14);
+}
+.a-d .logo { font-size:0.86rem; font-weight:800; color:#93c5fd; letter-spacing:-0.02em; }
+.a-d .body { padding:1.1rem 1rem; }
+.a-d h1 { font-size:1.2rem; font-weight:800; color:#dbeafe; letter-spacing:-0.025em; line-height:1.18; margin-bottom:0.4rem; }
+.a-d .sub { font-size:0.72rem; color:#6b90c4; line-height:1.55; margin-bottom:1rem; max-width:30ch; }
+.a-d .filters { display:flex; gap:0.3rem; flex-wrap:wrap; margin-bottom:0.9rem; }
+.a-d .pill { padding:0.2rem 0.55rem; border-radius:999px; font-size:0.62rem; font-weight:700;
+  background:rgba(59,130,246,0.10); border:1px solid rgba(59,130,246,0.20); color:#60a5fa; }
+.a-d .pill.on { background:#2563eb; color:#fff; border-color:#2563eb; }
+.a-d .cards { display:grid; grid-template-columns:1fr 1fr; gap:0.6rem; }
+.a-d .card { background:#111d33; border:1px solid rgba(59,130,246,0.13); border-radius:9px; overflow:hidden; position:relative; }
+.a-d .card:first-child { border-top:2.5px solid #ea580c; }
+.a-d .ph { aspect-ratio:16/9; display:flex; align-items:center; justify-content:center;
+  font-size:1.6rem; font-weight:900; font-family:Georgia,serif;
+  background:rgba(59,130,246,0.07); color:rgba(59,130,246,0.25); }
+.a-d .ci { aspect-ratio:16/9; overflow:hidden; }
+.a-d .ci img { width:100%; height:100%; object-fit:cover; filter:brightness(0.8) saturate(0.9); }
+.a-d .cb { padding:0.55rem 0.6rem 0.6rem; }
+.a-d .tag { display:inline-block; font-size:0.56rem; font-weight:700; padding:0.13rem 0.38rem;
+  border-radius:999px; background:rgba(59,130,246,0.12); color:#60a5fa; border:1px solid rgba(59,130,246,0.22);
+  margin-right:0.2rem; margin-bottom:0.28rem; }
+.a-d .ct { font-size:0.78rem; font-weight:700; color:#dbeafe; margin-bottom:0.22rem; }
+.a-d .cd { font-size:0.62rem; color:#6b90c4; line-height:1.45;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.a-d .cf { display:flex; align-items:center; justify-content:space-between;
+  margin-top:0.4rem; padding-top:0.4rem; border-top:1px solid rgba(59,130,246,0.09); }
+.a-d .tn { font-size:0.6rem; color:#3d5a8a; }
+.a-d .badge { font-size:0.58rem; font-weight:700; padding:0.13rem 0.38rem; border-radius:999px;
+  background:rgba(234,88,12,0.12); color:#fb923c; display:flex; align-items:center; gap:0.22rem; }
+.a-d .dot { width:4px; height:4px; border-radius:50%; background:#f97316; flex-shrink:0; }
+.a-d .btn { padding:0.3rem 0.7rem; border-radius:6px; font-size:0.7rem; font-weight:700;
+  background:#ea580c; color:#fff; border:none; }
+.a-d .btn-g { background:transparent; color:#60a5fa; border:1px solid rgba(59,130,246,0.28); }
+.a-d .tog { width:26px; height:26px; border-radius:6px; border:1px solid rgba(59,130,246,0.18);
+  background:rgba(59,130,246,0.08); display:flex; align-items:center; justify-content:center; }
+
+
+/* ══════════════════════════════════════════════════════
+   B — BLUE + ORANGE  ·  "Gradient hero band" layout
+   Same palette as A, different composition:
+   gradient hero (blue→orange), clean cards below.
+   ══════════════════════════════════════════════════════ */
+
+.b-l {
+  background: #fff;
+  font-family: inherit;
+}
+.b-l .hero {
+  padding: 0 1rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+/* Base gradient — warm yellow / peach-orange / sky-blue / near-white mesh */
+.b-l .hero::before {
+  content: "";
+  position: absolute; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse at 5% 0%,   #f9c740 0%, transparent 48%),
+    radial-gradient(ellipse at 95% 5%,  #f4845a 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 55%, #f07050 0%, transparent 45%),
+    radial-gradient(ellipse at 20% 85%, #b8dff5 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 90%, #f9c04a 0%, transparent 42%),
+    radial-gradient(ellipse at 45% 30%, #fca96e 0%, transparent 40%),
+    #f0ede8;
+}
+/* Grain layer */
+.b-l .hero-grain {
+  position: absolute; inset: 0; z-index: 1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='280' height='280' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 280px 280px;
+  filter: contrast(170%) brightness(1000%);
+  mix-blend-mode: overlay;
+  opacity: 0.28;
+  pointer-events: none;
+}
+.b-l .hero::after {
+  content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 40px; z-index: 2;
+  background: linear-gradient(to bottom, transparent, #fff);
+}
+.b-l .nav { display:flex; align-items:center; justify-content:space-between;
+  height:48px; position:relative; z-index:3; }
+.b-l .logo { font-size:0.86rem; font-weight:800; color:#3a1a08; letter-spacing:-0.02em; }
+.b-l h1 { font-size:1.2rem; font-weight:800; color:#2a1205; letter-spacing:-0.025em; line-height:1.18; margin-bottom:0.35rem; position:relative; z-index:3; text-shadow: 0 1px 0 rgba(255,255,255,0.25); }
+.b-l .sub { font-size:0.72rem; color:rgba(50,20,5,0.68); line-height:1.55; max-width:30ch; position:relative; z-index:3; }
+.b-l .body { padding:0.8rem 1rem 1rem; }
+.b-l .filters { display:flex; gap:0.3rem; flex-wrap:wrap; margin-bottom:0.9rem; }
+.b-l .pill { padding:0.2rem 0.55rem; border-radius:999px; font-size:0.62rem; font-weight:700;
+  background:#f0f0ee; border:1px solid rgba(0,0,0,0.09); color:#555; }
+.b-l .pill.on { background:#2563eb; color:#fff; border-color:#2563eb; }
+.b-l .cards { display:grid; grid-template-columns:1fr 1fr; gap:0.6rem; }
+.b-l .card { background:#fff; border:1px solid rgba(0,0,0,0.09); border-radius:9px; overflow:hidden;
+  box-shadow:0 1px 4px rgba(0,0,0,0.06); }
+.b-l .ph { aspect-ratio:16/9; display:flex; align-items:center; justify-content:center;
+  font-size:1.6rem; font-weight:900; font-family:Georgia,serif;
+  background:linear-gradient(135deg,rgba(37,99,235,0.08),rgba(234,88,12,0.06));
+  color:rgba(37,99,235,0.25); }
+.b-l .ci { aspect-ratio:16/9; overflow:hidden; }
+.b-l .ci img { width:100%; height:100%; object-fit:cover; }
+.b-l .cb { padding:0.55rem 0.6rem 0.6rem; }
+.b-l .tag { display:inline-block; font-size:0.56rem; font-weight:700; padding:0.13rem 0.38rem;
+  border-radius:999px; background:rgba(234,88,12,0.09); color:#c2440a; border:1px solid rgba(234,88,12,0.20);
+  margin-right:0.2rem; margin-bottom:0.28rem; }
+.b-l .ct { font-size:0.78rem; font-weight:700; color:#111; margin-bottom:0.22rem; }
+.b-l .cd { font-size:0.62rem; color:#666; line-height:1.45;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.b-l .cf { display:flex; align-items:center; justify-content:space-between;
+  margin-top:0.4rem; padding-top:0.4rem; border-top:1px solid rgba(0,0,0,0.07); }
+.b-l .tn { font-size:0.6rem; color:#999; }
+.b-l .badge { font-size:0.58rem; font-weight:700; padding:0.13rem 0.38rem; border-radius:999px;
+  background:rgba(234,88,12,0.09); color:#c2440a; display:flex; align-items:center; gap:0.22rem; }
+.b-l .dot { width:4px; height:4px; border-radius:50%; background:#ea580c; flex-shrink:0; }
+.b-l .btn { padding:0.3rem 0.7rem; border-radius:6px; font-size:0.7rem; font-weight:700;
+  background:rgba(50,20,5,0.75); color:#fff; border:1px solid rgba(50,20,5,0.10); backdrop-filter:blur(4px); }
+.b-l .btn-g { background:rgba(255,255,255,0.38); color:#3a1208; border:1px solid rgba(255,255,255,0.55); backdrop-filter:blur(4px); }
+.b-l .tog { width:26px; height:26px; border-radius:6px; border:1px solid rgba(255,255,255,0.55);
+  background:rgba(255,255,255,0.35); display:flex; align-items:center; justify-content:center; }
+
+.b-d {
+  background: #130e08;
+  font-family: inherit;
+}
+.b-d .hero {
+  padding: 0 1rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+/* Dark warm mesh — same hues, heavily dimmed */
+.b-d .hero::before {
+  content: ""; position: absolute; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse at 5% 0%,   rgba(200,140,10,0.70) 0%, transparent 48%),
+    radial-gradient(ellipse at 92% 8%,  rgba(200,80,30,0.65) 0%, transparent 50%),
+    radial-gradient(ellipse at 65% 55%, rgba(180,60,20,0.60) 0%, transparent 45%),
+    radial-gradient(ellipse at 18% 85%, rgba(40,90,160,0.50) 0%, transparent 50%),
+    radial-gradient(ellipse at 82% 90%, rgba(180,120,10,0.55) 0%, transparent 42%),
+    radial-gradient(ellipse at 45% 30%, rgba(200,90,40,0.50) 0%, transparent 40%),
+    #130e08;
+}
+.b-d .hero::after {
+  content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 44px; z-index: 2;
+  background: linear-gradient(to bottom, transparent, #130e08);
+}
+.b-d .nav { display:flex; align-items:center; justify-content:space-between;
+  height:48px; position:relative; z-index:3; }
+.b-d .logo { font-size:0.86rem; font-weight:800; color:#f5dfc0; letter-spacing:-0.02em; }
+.b-d h1 { font-size:1.2rem; font-weight:800; color:#fcebd8; letter-spacing:-0.025em; line-height:1.18; margin-bottom:0.35rem; position:relative; z-index:3; }
+.b-d .sub { font-size:0.72rem; color:rgba(240,210,180,0.62); line-height:1.55; max-width:30ch; position:relative; z-index:3; }
+.b-d .body { padding:0.8rem 1rem 1rem; }
+.b-d .hero-grain {
+  position: absolute; inset: 0; z-index: 1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='280'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='280' height='280' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 280px 280px;
+  filter: contrast(170%) brightness(1000%);
+  mix-blend-mode: overlay;
+  opacity: 0.22;
+  pointer-events: none;
+}
+.b-d .filters { display:flex; gap:0.3rem; flex-wrap:wrap; margin-bottom:0.9rem; }
+.b-d .pill { padding:0.2rem 0.55rem; border-radius:999px; font-size:0.62rem; font-weight:700;
+  background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.10); color:#888; }
+.b-d .pill.on { background:rgba(200,80,30,0.75); color:#fff; border-color:rgba(220,100,40,0.70); }
+.b-d .cards { display:grid; grid-template-columns:1fr 1fr; gap:0.6rem; }
+.b-d .card { background:#1e1509; border:1px solid rgba(200,130,50,0.18); border-radius:9px; overflow:hidden; }
+.b-d .ph { aspect-ratio:16/9; display:flex; align-items:center; justify-content:center;
+  font-size:1.6rem; font-weight:900; font-family:Georgia,serif;
+  background:rgba(200,100,30,0.10); color:rgba(220,140,60,0.28); }
+.b-d .ci { aspect-ratio:16/9; overflow:hidden; }
+.b-d .ci img { width:100%; height:100%; object-fit:cover; filter:brightness(0.75) saturate(0.85); }
+.b-d .cb { padding:0.55rem 0.6rem 0.6rem; }
+.b-d .tag { display:inline-block; font-size:0.56rem; font-weight:700; padding:0.13rem 0.38rem;
+  border-radius:999px; background:rgba(200,100,30,0.14); color:#e8a060; border:1px solid rgba(200,120,40,0.28);
+  margin-right:0.2rem; margin-bottom:0.28rem; }
+.b-d .ct { font-size:0.78rem; font-weight:700; color:#f5e0c8; margin-bottom:0.22rem; }
+.b-d .cd { font-size:0.62rem; color:#5a4030; line-height:1.45;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.b-d .cf { display:flex; align-items:center; justify-content:space-between;
+  margin-top:0.4rem; padding-top:0.4rem; border-top:1px solid rgba(200,130,50,0.12); }
+.b-d .tn { font-size:0.6rem; color:#3a2818; }
+.b-d .badge { font-size:0.58rem; font-weight:700; padding:0.13rem 0.38rem; border-radius:999px;
+  background:rgba(200,80,30,0.14); color:#e8a060; display:flex; align-items:center; gap:0.22rem; }
+.b-d .dot { width:4px; height:4px; border-radius:50%; background:#e8854a; flex-shrink:0; }
+.b-d .btn { padding:0.3rem 0.7rem; border-radius:6px; font-size:0.7rem; font-weight:700;
+  background:rgba(255,255,255,0.14); color:#f5dfc0; border:1px solid rgba(255,255,255,0.22); }
+.b-d .btn-g { background:transparent; color:rgba(240,200,160,0.75); border:1px solid rgba(240,200,160,0.28); }
+.b-d .tog { width:26px; height:26px; border-radius:6px; border:1px solid rgba(255,220,180,0.18);
+  background:rgba(255,200,120,0.08); display:flex; align-items:center; justify-content:center; }
+
+
+/* ══════════════════════════════════════════════════════
+   C — STEEL BLUE / DUSTY INDIGO  ·  "Drenched bg" layout
+   sky-blue top-right, deep blue-indigo centre,
+   silver-blue corners — grainy throughout.
+   Both light and dark variants.
+   ══════════════════════════════════════════════════════ */
+
+/* ── C DARK ── */
+.c-dark {
+  background: #0e1320;
+  font-family: inherit;
+  position: relative;
+  min-height: 100%;
+  isolation: isolate;
+}
+.c-dark::before {
+  content: "";
+  position: absolute; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse at 80% 5%,  rgba(130,195,240,0.85) 0%, transparent 45%),
+    radial-gradient(ellipse at 15% 10%, rgba(80,130,200,0.60) 0%, transparent 42%),
+    radial-gradient(ellipse at 50% 52%, rgba(55,65,140,0.90) 0%, transparent 48%),
+    radial-gradient(ellipse at 5%  80%, rgba(110,175,220,0.65) 0%, transparent 44%),
+    radial-gradient(ellipse at 90% 90%, rgba(90,160,210,0.55) 0%, transparent 40%),
+    #0e1320;
+}
+.c-dark::after {
+  content: "";
+  position: absolute; inset: 0; z-index: 1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  filter: contrast(160%) brightness(900%);
+  mix-blend-mode: overlay;
+  opacity: 0.30;
+  pointer-events: none;
+}
+.c-dark > * { position: relative; z-index: 2; }
+.c-dark .nav {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 1rem; height:48px;
+  background: rgba(10,16,32,0.40);
+  border-bottom:1px solid rgba(130,180,230,0.14);
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+}
+.c-dark .logo { font-size:0.86rem; font-weight:800; color:#c8e4f8; letter-spacing:-0.02em; }
+.c-dark .body { padding:1.1rem 1rem; }
+.c-dark h1 { font-size:1.2rem; font-weight:800; color:#e0f0fc; letter-spacing:-0.025em; line-height:1.18; margin-bottom:0.4rem; }
+.c-dark .sub { font-size:0.72rem; color:rgba(180,215,240,0.62); line-height:1.55; margin-bottom:1rem; max-width:30ch; }
+.c-dark .filters { display:flex; gap:0.3rem; flex-wrap:wrap; margin-bottom:0.9rem; }
+.c-dark .pill { padding:0.2rem 0.55rem; border-radius:999px; font-size:0.62rem; font-weight:700;
+  background:rgba(100,160,220,0.14); border:1px solid rgba(130,185,235,0.25); color:#90c4e8; }
+.c-dark .pill.on { background:rgba(70,120,200,0.75); color:#fff; border-color:rgba(100,160,230,0.70); }
+.c-dark .cards { display:grid; grid-template-columns:1fr 1fr; gap:0.6rem; }
+.c-dark .card {
+  background:rgba(255,255,255,0.07);
+  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(130,185,235,0.18); border-radius:9px; overflow:hidden;
+}
+.c-dark .ph { aspect-ratio:16/9; display:flex; align-items:center; justify-content:center;
+  font-size:1.6rem; font-weight:900; font-family:Georgia,serif;
+  background:rgba(80,140,210,0.12); color:rgba(130,185,235,0.35); }
+.c-dark .ci { aspect-ratio:16/9; overflow:hidden; }
+.c-dark .ci img { width:100%; height:100%; object-fit:cover; filter:brightness(0.75) saturate(0.85); }
+.c-dark .cb { padding:0.55rem 0.6rem 0.6rem; }
+.c-dark .tag { display:inline-block; font-size:0.56rem; font-weight:700; padding:0.13rem 0.38rem;
+  border-radius:999px; background:rgba(80,140,210,0.14); color:#90c4e8; border:1px solid rgba(130,185,235,0.25);
+  margin-right:0.2rem; margin-bottom:0.28rem; }
+.c-dark .ct { font-size:0.78rem; font-weight:700; color:#deeefa; margin-bottom:0.22rem; }
+.c-dark .cd { font-size:0.62rem; color:rgba(160,200,230,0.55); line-height:1.45;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.c-dark .cf { display:flex; align-items:center; justify-content:space-between;
+  margin-top:0.4rem; padding-top:0.4rem; border-top:1px solid rgba(130,185,235,0.12); }
+.c-dark .tn { font-size:0.6rem; color:rgba(100,150,200,0.45); }
+.c-dark .badge { font-size:0.58rem; font-weight:700; padding:0.13rem 0.38rem; border-radius:999px;
+  background:rgba(80,140,210,0.14); color:#90c4e8; display:flex; align-items:center; gap:0.22rem; }
+.c-dark .dot { width:4px; height:4px; border-radius:50%; background:#70b8e0; flex-shrink:0; }
+.c-dark .btn { padding:0.3rem 0.7rem; border-radius:6px; font-size:0.7rem; font-weight:700;
+  background:rgba(60,110,190,0.65); color:#e0f0fc; border:1px solid rgba(130,185,235,0.35); }
+.c-dark .btn-g { background:rgba(255,255,255,0.09); color:#90c4e8; border:1px solid rgba(130,185,235,0.28); }
+.c-dark .tog { width:26px; height:26px; border-radius:6px; border:1px solid rgba(130,185,235,0.22);
+  background:rgba(80,140,210,0.12); display:flex; align-items:center; justify-content:center; }
+
+/* ── C LIGHT ── */
+.c-light {
+  background: #f0f5fa;
+  font-family: inherit;
+  position: relative;
+  min-height: 100%;
+  isolation: isolate;
+}
+.c-light::before {
+  content: "";
+  position: absolute; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse at 80% 5%,  rgba(160,215,250,0.90) 0%, transparent 45%),
+    radial-gradient(ellipse at 15% 10%, rgba(120,170,230,0.55) 0%, transparent 42%),
+    radial-gradient(ellipse at 50% 52%, rgba(100,120,200,0.60) 0%, transparent 50%),
+    radial-gradient(ellipse at 5%  80%, rgba(155,205,235,0.70) 0%, transparent 44%),
+    radial-gradient(ellipse at 90% 90%, rgba(140,200,235,0.60) 0%, transparent 40%),
+    #eef3f8;
+}
+.c-light::after {
+  content: "";
+  position: absolute; inset: 0; z-index: 1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  filter: contrast(160%) brightness(1000%);
+  mix-blend-mode: multiply;
+  opacity: 0.22;
+  pointer-events: none;
+}
+.c-light > * { position: relative; z-index: 2; }
+.c-light .nav {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 1rem; height:48px;
+  background: rgba(240,248,255,0.50);
+  border-bottom:1px solid rgba(80,130,190,0.12);
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+}
+.c-light .logo { font-size:0.86rem; font-weight:800; color:#1a3060; letter-spacing:-0.02em; }
+.c-light .body { padding:1.1rem 1rem; }
+.c-light h1 { font-size:1.2rem; font-weight:800; color:#12284a; letter-spacing:-0.025em; line-height:1.18; margin-bottom:0.4rem; }
+.c-light .sub { font-size:0.72rem; color:rgba(30,60,110,0.65); line-height:1.55; margin-bottom:1rem; max-width:30ch; }
+.c-light .filters { display:flex; gap:0.3rem; flex-wrap:wrap; margin-bottom:0.9rem; }
+.c-light .pill { padding:0.2rem 0.55rem; border-radius:999px; font-size:0.62rem; font-weight:700;
+  background:rgba(80,130,200,0.10); border:1px solid rgba(80,130,200,0.22); color:#2c5fa0; }
+.c-light .pill.on { background:#2c5fa0; color:#fff; border-color:#2c5fa0; }
+.c-light .cards { display:grid; grid-template-columns:1fr 1fr; gap:0.6rem; }
+.c-light .card {
+  background:rgba(255,255,255,0.72);
+  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(100,155,210,0.20); border-radius:9px; overflow:hidden;
+  box-shadow: 0 1px 4px rgba(30,70,140,0.06);
+}
+.c-light .ph { aspect-ratio:16/9; display:flex; align-items:center; justify-content:center;
+  font-size:1.6rem; font-weight:900; font-family:Georgia,serif;
+  background:rgba(80,140,210,0.07); color:rgba(60,110,190,0.25); }
+.c-light .ci { aspect-ratio:16/9; overflow:hidden; }
+.c-light .ci img { width:100%; height:100%; object-fit:cover; }
+.c-light .cb { padding:0.55rem 0.6rem 0.6rem; }
+.c-light .tag { display:inline-block; font-size:0.56rem; font-weight:700; padding:0.13rem 0.38rem;
+  border-radius:999px; background:rgba(44,95,160,0.09); color:#2c5fa0; border:1px solid rgba(44,95,160,0.20);
+  margin-right:0.2rem; margin-bottom:0.28rem; }
+.c-light .ct { font-size:0.78rem; font-weight:700; color:#12284a; margin-bottom:0.22rem; }
+.c-light .cd { font-size:0.62rem; color:#3a5880; line-height:1.45;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.c-light .cf { display:flex; align-items:center; justify-content:space-between;
+  margin-top:0.4rem; padding-top:0.4rem; border-top:1px solid rgba(80,130,200,0.10); }
+.c-light .tn { font-size:0.6rem; color:#7aa0c8; }
+.c-light .badge { font-size:0.58rem; font-weight:700; padding:0.13rem 0.38rem; border-radius:999px;
+  background:rgba(44,95,160,0.09); color:#2c5fa0; display:flex; align-items:center; gap:0.22rem; }
+.c-light .dot { width:4px; height:4px; border-radius:50%; background:#3a7ac8; flex-shrink:0; }
+.c-light .btn { padding:0.3rem 0.7rem; border-radius:6px; font-size:0.7rem; font-weight:700;
+  background:#2c5fa0; color:#fff; border:none; }
+.c-light .btn-g { background:rgba(255,255,255,0.65); color:#1a3060; border:1px solid rgba(44,95,160,0.25); }
+.c-light .tog { width:26px; height:26px; border-radius:6px; border:1px solid rgba(44,95,160,0.20);
+  background:rgba(255,255,255,0.55); display:flex; align-items:center; justify-content:center; }
+
+
+/* ══════════════════════════════════════════════════════
+   D — PREMIUM DARK  ·  charcoal/grey body
+   Steel-blue (from reference) as highlight only.
+   No hero band — full dark page, blue accents on
+   buttons, active pills, tags, dots, focus states.
+   ══════════════════════════════════════════════════════ */
+
+.d-dark {
+  background: #111214;
+  font-family: inherit;
+}
+.d-dark .nav {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 1rem; height:48px;
+  background: rgba(16,17,20,0.92);
+  border-bottom:1px solid rgba(255,255,255,0.07);
+  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+}
+.d-dark .logo { font-size:0.86rem; font-weight:800; color:#e8eaed; letter-spacing:-0.02em; }
+/* Hero band — light steel-blue, reference image palette */
+.d-dark .hero {
+  position: relative;
+  padding: 0 1rem 1.8rem;
+  overflow: hidden;
+  isolation: isolate;
+}
+.d-dark .hero::before {
+  content: "";
+  position: absolute; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse at 88% 0%,  #b8dff5 0%, transparent 48%),
+    radial-gradient(ellipse at 10% 5%,  #8fc8e8 0%, transparent 44%),
+    radial-gradient(ellipse at 50% 60%, #4a5c9e 0%, transparent 52%),
+    radial-gradient(ellipse at 0%  90%, #7ab8d8 0%, transparent 46%),
+    radial-gradient(ellipse at 90% 88%, #9acce8 0%, transparent 42%),
+    #1c2a48;
+}
+.d-dark .hero-grain {
+  position: absolute; inset: 0; z-index: 1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  filter: contrast(160%) brightness(900%);
+  mix-blend-mode: overlay;
+  opacity: 0.30;
+  pointer-events: none;
+}
+.d-dark .hero::after {
+  content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 52px; z-index: 2;
+  background: linear-gradient(to bottom, transparent, #111214);
+}
+.d-dark .hero .nav { background: transparent; border-bottom: none; position: relative; z-index: 3; }
+.d-dark .body { padding:0.8rem 1rem 1rem; }
+.d-dark h1 { font-size:1.2rem; font-weight:800; color:#fff; letter-spacing:-0.025em; line-height:1.18; margin-bottom:0.35rem; position:relative; z-index:3; text-shadow: 0 1px 12px rgba(30,60,120,0.35); }
+.d-dark .sub { font-size:0.72rem; color:rgba(255,255,255,0.72); line-height:1.55; max-width:30ch; margin-bottom:0; position:relative; z-index:3; }
+.d-dark .filters { display:flex; gap:0.3rem; flex-wrap:wrap; margin-bottom:0.9rem; }
+.d-dark .pill { padding:0.2rem 0.55rem; border-radius:999px; font-size:0.62rem; font-weight:700;
+  background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.09); color:rgba(200,205,215,0.55); }
+/* Active pill uses the steel-blue accent */
+.d-dark .pill.on {
+  background: radial-gradient(ellipse at 80% 10%, rgba(130,195,240,0.80) 0%, transparent 55%),
+              radial-gradient(ellipse at 20% 80%, rgba(80,120,200,0.65) 0%, transparent 50%),
+              radial-gradient(ellipse at 55% 50%, rgba(55,70,150,0.80) 0%, transparent 48%),
+              #1a2540;
+  color:#e0f0fc; border-color:rgba(100,170,230,0.35);
+  position: relative; overflow: hidden;
+}
+.d-dark .pill.on::after {
+  content:""; position:absolute; inset:0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
+  background-size:120px 120px;
+  filter:contrast(160%) brightness(900%); mix-blend-mode:overlay; opacity:0.28; border-radius:999px;
+}
+.d-dark .cards { display:grid; grid-template-columns:1fr 1fr; gap:0.6rem; }
+.d-dark .card { background:#1a1c1f; border:1px solid rgba(255,255,255,0.07); border-radius:9px; overflow:hidden; }
+.d-dark .ph { aspect-ratio:16/9; display:flex; align-items:center; justify-content:center;
+  font-size:1.6rem; font-weight:900; font-family:Georgia,serif;
+  background:#202225; color:rgba(255,255,255,0.12); }
+.d-dark .ci { aspect-ratio:16/9; overflow:hidden; }
+.d-dark .ci img { width:100%; height:100%; object-fit:cover; filter:brightness(0.78) saturate(0.7); }
+.d-dark .cb { padding:0.55rem 0.6rem 0.6rem; }
+.d-dark .tag { display:inline-block; font-size:0.56rem; font-weight:700; padding:0.13rem 0.38rem;
+  border-radius:999px; background:rgba(80,140,210,0.12); color:#78b4d8; border:1px solid rgba(80,150,220,0.22);
+  margin-right:0.2rem; margin-bottom:0.28rem; }
+.d-dark .ct { font-size:0.78rem; font-weight:700; color:#e8eaed; margin-bottom:0.22rem; }
+.d-dark .cd { font-size:0.62rem; color:#484c54; line-height:1.45;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.d-dark .cf { display:flex; align-items:center; justify-content:space-between;
+  margin-top:0.4rem; padding-top:0.4rem; border-top:1px solid rgba(255,255,255,0.06); }
+.d-dark .tn { font-size:0.6rem; color:#32363d; }
+.d-dark .badge { font-size:0.58rem; font-weight:700; padding:0.13rem 0.38rem; border-radius:999px;
+  background:rgba(80,140,210,0.12); color:#78b4d8; display:flex; align-items:center; gap:0.22rem; }
+.d-dark .dot { width:4px; height:4px; border-radius:50%; background:#5a9ec8; flex-shrink:0; }
+/* Primary CTA button — grainy steel-blue */
+.d-dark .btn {
+  padding:0.3rem 0.7rem; border-radius:6px; font-size:0.7rem; font-weight:700;
+  color:#e4f2fc; border:1px solid rgba(100,170,230,0.30);
+  position:relative; overflow:hidden;
+  background: radial-gradient(ellipse at 80% 10%, rgba(130,195,240,0.80) 0%, transparent 55%),
+              radial-gradient(ellipse at 20% 80%, rgba(80,120,200,0.65) 0%, transparent 50%),
+              radial-gradient(ellipse at 55% 50%, rgba(55,70,150,0.80) 0%, transparent 48%),
+              #1a2540;
+}
+.d-dark .btn::after {
+  content:""; position:absolute; inset:0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
+  background-size:120px 120px;
+  filter:contrast(160%) brightness(900%); mix-blend-mode:overlay; opacity:0.28; border-radius:6px;
+}
+.d-dark .btn-g { background:rgba(255,255,255,0.04); color:rgba(200,210,220,0.70); border:1px solid rgba(255,255,255,0.09); }
+.d-dark .tog { width:26px; height:26px; border-radius:6px; border:1px solid rgba(255,255,255,0.08);
+  background:rgba(255,255,255,0.04); display:flex; align-items:center; justify-content:center; }
+
+</style>
+</head>
+<body>
+
+<div class="meta">Bloom Gallery · A/B blue+orange · C/D grainy purple-blue · light+dark per option</div>
+
+<div class="grid">
+
+  <!-- ══ A: BLUE+ORANGE / CLEAN ══ -->
+  <div class="col">
+    <div class="label">A — Blue + Orange</div>
+    <div class="sublabel">Drenched in navy accent</div>
+    <div class="frame">
+      <div class="a-l">
+        <div class="nav">
+          <span class="logo">Bloom Gallery</span>
+          <div style="display:flex;gap:0.35rem;align-items:center">
+            <div class="tog"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" opacity=".5"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>
+            <button class="btn btn-g">Submit</button>
+          </div>
+        </div>
+        <div class="body">
+          <h1>Products built at the 2026 hackathon</h1>
+          <p class="sub">Student teams spent 5 days building real solutions.</p>
+          <div class="filters">
+            <span class="pill on">Mental Health</span>
+            <span class="pill">Healthcare</span>
+            <span class="pill">AI</span>
+          </div>
+          <div class="cards">
+            <div class="card">
+              <div class="ph">M</div>
+              <div class="cb">
+                <div><span class="tag">Mental Health</span><span class="tag">AI</span></div>
+                <div class="ct">MindBridge</div>
+                <div class="cd">Mood check-ins via LINE chatbot. Therapists see a dashboard flagging at-risk patients.</div>
+                <div class="cf"><span class="tn">MindBridge</span><span class="badge"><span class="dot"></span>7</span></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="ci"><img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&q=70" alt=""></div>
+              <div class="cb">
+                <div><span class="tag">Healthcare</span></div>
+                <div class="ct">VitalTrack</div>
+                <div class="cd">Post-discharge cardiac monitoring kit with SMS alerts to nurses.</div>
+                <div class="cf"><span class="tn">VitalTrack</span><span class="badge"><span class="dot"></span>12</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="frame">
+      <div class="a-d">
+        <div class="nav">
+          <span class="logo">Bloom Gallery</span>
+          <div style="display:flex;gap:0.35rem;align-items:center">
+            <div class="tog"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.2" opacity=".55"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></div>
+            <button class="btn btn-g">Submit</button>
+          </div>
+        </div>
+        <div class="body">
+          <div class="cards">
+            <div class="card">
+              <div class="ph">M</div>
+              <div class="cb">
+                <div><span class="tag">Mental Health</span></div>
+                <div class="ct">MindBridge</div>
+                <div class="cd">Mood check-ins via LINE chatbot. Dashboard flags at-risk patients.</div>
+                <div class="cf"><span class="tn">MindBridge</span><span class="badge"><span class="dot"></span>7</span></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="ci"><img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&q=70" alt=""></div>
+              <div class="cb">
+                <div><span class="tag">Healthcare</span></div>
+                <div class="ct">VitalTrack</div>
+                <div class="cd">Cardiac monitoring kit with SMS alerts to nurses.</div>
+                <div class="cf"><span class="tn">VitalTrack</span><span class="badge"><span class="dot"></span>12</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ B: BLUE+ORANGE / HERO BAND ══ -->
+  <div class="col">
+    <div class="label">B — Blue + Orange</div>
+    <div class="sublabel">Gradient hero band · grainy</div>
+    <div class="frame">
+      <div class="b-l">
+        <div class="hero">
+          <div class="hero-grain" aria-hidden="true"></div>
+          <div class="nav">
+            <span class="logo">Bloom Gallery</span>
+            <div style="display:flex;gap:0.35rem;align-items:center">
+              <div class="tog"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="rgba(50,20,5,0.55)" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>
+              <button class="btn btn-g">Submit</button>
+            </div>
+          </div>
+          <h1>Products built at the 2026 hackathon</h1>
+          <p class="sub">Student teams spent 5 days building real solutions.</p>
+        </div>
+        <div class="body">
+          <div class="filters">
+            <span class="pill on">Mental Health</span>
+            <span class="pill">Healthcare</span>
+            <span class="pill">AI</span>
+          </div>
+          <div class="cards">
+            <div class="card">
+              <div class="ph">M</div>
+              <div class="cb">
+                <div><span class="tag">Mental Health</span><span class="tag">AI</span></div>
+                <div class="ct">MindBridge</div>
+                <div class="cd">Mood check-ins via LINE chatbot. Therapists see a dashboard flagging at-risk patients.</div>
+                <div class="cf"><span class="tn">MindBridge</span><span class="badge"><span class="dot"></span>7</span></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="ci"><img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&q=70" alt=""></div>
+              <div class="cb">
+                <div><span class="tag">Healthcare</span></div>
+                <div class="ct">VitalTrack</div>
+                <div class="cd">Post-discharge cardiac monitoring with SMS alerts to nurses.</div>
+                <div class="cf"><span class="tn">VitalTrack</span><span class="badge"><span class="dot"></span>12</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="frame">
+      <div class="b-d">
+        <div class="hero">
+          <div class="hero-grain" aria-hidden="true"></div>
+          <div class="nav">
+            <span class="logo">Bloom Gallery</span>
+            <div style="display:flex;gap:0.35rem;align-items:center">
+              <div class="tog"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="rgba(240,200,160,0.60)" stroke-width="2.2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></div>
+              <button class="btn btn-g">Submit</button>
+            </div>
+          </div>
+          <h1>Products built at the 2026 hackathon</h1>
+          <p class="sub">Student teams spent 5 days building real solutions.</p>
+        </div>
+        <div class="body">
+          <div class="filters">
+            <span class="pill on">Mental Health</span>
+            <span class="pill">Healthcare</span>
+            <span class="pill">AI</span>
+          </div>
+          <div class="cards">
+            <div class="card">
+              <div class="ph">M</div>
+              <div class="cb">
+                <div><span class="tag">Mental Health</span></div>
+                <div class="ct">MindBridge</div>
+                <div class="cd">Mood check-ins via LINE chatbot. Dashboard flags at-risk patients.</div>
+                <div class="cf"><span class="tn">MindBridge</span><span class="badge"><span class="dot"></span>7</span></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="ci"><img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&q=70" alt=""></div>
+              <div class="cb">
+                <div><span class="tag">Healthcare</span></div>
+                <div class="ct">VitalTrack</div>
+                <div class="cd">Cardiac monitoring kit with SMS alerts to nurses.</div>
+                <div class="cf"><span class="tn">VitalTrack</span><span class="badge"><span class="dot"></span>12</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ C: STEEL BLUE / DRENCHED ══ -->
+  <div class="col">
+    <div class="label">C — Steel Blue</div>
+    <div class="sublabel">Full drenched · grainy</div>
+    <div class="frame">
+      <div class="c-light">
+        <div class="nav">
+          <span class="logo">Bloom Gallery</span>
+          <div style="display:flex;gap:0.35rem;align-items:center">
+            <div class="tog"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="rgba(20,50,100,0.50)" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>
+            <button class="btn btn-g">Submit</button>
+          </div>
+        </div>
+        <div class="body">
+          <h1>Products built at the 2026 hackathon</h1>
+          <p class="sub">Student teams spent 5 days building real solutions.</p>
+          <div class="filters" style="margin-top:0.6rem">
+            <span class="pill on">Mental Health</span>
+            <span class="pill">Healthcare</span>
+            <span class="pill">AI</span>
+          </div>
+          <div class="cards">
+            <div class="card">
+              <div class="ph">M</div>
+              <div class="cb">
+                <div><span class="tag">Mental Health</span><span class="tag">AI</span></div>
+                <div class="ct">MindBridge</div>
+                <div class="cd">Mood check-ins via LINE chatbot. Therapists see a dashboard flagging at-risk patients.</div>
+                <div class="cf"><span class="tn">MindBridge</span><span class="badge"><span class="dot"></span>7</span></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="ci"><img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&q=70" alt=""></div>
+              <div class="cb">
+                <div><span class="tag">Healthcare</span></div>
+                <div class="ct">VitalTrack</div>
+                <div class="cd">Post-discharge cardiac monitoring with SMS alerts to nurses.</div>
+                <div class="cf"><span class="tn">VitalTrack</span><span class="badge"><span class="dot"></span>12</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="frame">
+      <div class="c-dark">
+        <div class="nav">
+          <span class="logo">Bloom Gallery</span>
+          <div style="display:flex;gap:0.35rem;align-items:center">
+            <div class="tog"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="rgba(140,200,240,0.60)" stroke-width="2.2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></div>
+            <button class="btn btn-g">Submit</button>
+          </div>
+        </div>
+        <div class="body">
+          <h1>Products built at the 2026 hackathon</h1>
+          <p class="sub">Student teams spent 5 days building real solutions.</p>
+          <div class="filters" style="margin-top:0.6rem">
+            <span class="pill on">Mental Health</span>
+            <span class="pill">Healthcare</span>
+            <span class="pill">AI</span>
+          </div>
+          <div class="cards">
+            <div class="card">
+              <div class="ph">M</div>
+              <div class="cb">
+                <div><span class="tag">Mental Health</span><span class="tag">AI</span></div>
+                <div class="ct">MindBridge</div>
+                <div class="cd">Mood check-ins via LINE chatbot. Therapists see a dashboard flagging at-risk patients.</div>
+                <div class="cf"><span class="tn">MindBridge</span><span class="badge"><span class="dot"></span>7</span></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="ci"><img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&q=70" alt=""></div>
+              <div class="cb">
+                <div><span class="tag">Healthcare</span></div>
+                <div class="ct">VitalTrack</div>
+                <div class="cd">Post-discharge cardiac monitoring with SMS alerts to nurses.</div>
+                <div class="cf"><span class="tn">VitalTrack</span><span class="badge"><span class="dot"></span>12</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ D: PREMIUM DARK + STEEL-BLUE ACCENT ══ -->
+  <div class="col">
+    <div class="label">D — Premium Dark</div>
+    <div class="sublabel">Charcoal · steel-blue accents</div>
+    <div class="frame">
+      <div class="d-dark">
+        <div class="hero">
+          <div class="hero-grain" aria-hidden="true"></div>
+          <div class="nav">
+            <span class="logo" style="color:#fff;">Bloom Gallery</span>
+            <div style="display:flex;gap:0.35rem;align-items:center">
+              <div class="tog" style="border-color:rgba(255,255,255,0.30);background:rgba(255,255,255,0.18);"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.75)" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>
+              <button class="btn-g" style="background:rgba(255,255,255,0.20);color:#fff;border:1px solid rgba(255,255,255,0.38);backdrop-filter:blur(6px);padding:0.3rem 0.7rem;border-radius:6px;font-size:0.7rem;font-weight:700;cursor:pointer;">Submit</button>
+            </div>
+          </div>
+          <h1>Products built at the 2026 hackathon</h1>
+          <p class="sub">Student teams spent 5 days building real solutions.</p>
+        </div>
+        <div class="body">
+          <div class="filters">
+            <span class="pill on">Mental Health</span>
+            <span class="pill">Healthcare</span>
+            <span class="pill">AI</span>
+          </div>
+          <div class="cards">
+            <div class="card">
+              <div class="ph">M</div>
+              <div class="cb">
+                <div><span class="tag">Mental Health</span><span class="tag">AI</span></div>
+                <div class="ct">MindBridge</div>
+                <div class="cd">Mood check-ins via LINE chatbot. Dashboard flags at-risk patients.</div>
+                <div class="cf"><span class="tn">MindBridge</span><span class="badge"><span class="dot"></span>7</span></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="ci"><img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&q=70" alt=""></div>
+              <div class="cb">
+                <div><span class="tag">Healthcare</span></div>
+                <div class="ct">VitalTrack</div>
+                <div class="cd">Cardiac monitoring kit with SMS alerts to nurses.</div>
+                <div class="cf"><span class="tn">VitalTrack</span><span class="badge"><span class="dot"></span>12</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
