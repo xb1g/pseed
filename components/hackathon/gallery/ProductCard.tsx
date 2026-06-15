@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import Link from "next/link";
 import { Eye } from "lucide-react";
 import type { GalleryProductSummary } from "@/lib/hackathon/gallery";
 
 interface ProductCardProps {
   product: GalleryProductSummary;
   style?: React.CSSProperties;
+  onNavigate?: (href: string) => void;
 }
 
 // Single letter of the team name for the image fallback
@@ -37,7 +37,7 @@ function TeamInitial({ name }: { name: string }) {
   );
 }
 
-export default function ProductCard({ product, style }: ProductCardProps) {
+export default function ProductCard({ product, style, onNavigate }: ProductCardProps) {
   const cardRef = useRef<HTMLAnchorElement>(null);
 
   // Touch: apply in-view class via IntersectionObserver
@@ -63,13 +63,22 @@ export default function ProductCard({ product, style }: ProductCardProps) {
     return () => observer.disconnect();
   }, []);
 
+  const href = `/hackathon/gallery/${product.team_id}`;
+
   return (
-    <Link
+    <a
       ref={cardRef}
-      href={`/hackathon/gallery/${product.team_id}`}
+      href={href}
+      onClick={(e) => {
+        if (onNavigate) {
+          e.preventDefault();
+          onNavigate(href);
+        }
+      }}
       className="bloom-card block no-underline focus-visible:outline-none focus-visible:ring-2"
       style={{
         ...style,
+        cursor: "pointer",
         ["--tw-ring-color" as string]: "var(--bloom-focus-ring)",
       }}
       aria-label={`View ${product.product_name} by ${product.team_name}`}
@@ -197,6 +206,6 @@ export default function ProductCard({ product, style }: ProductCardProps) {
           )}
         </div>
       </div>
-    </Link>
+    </a>
   );
 }

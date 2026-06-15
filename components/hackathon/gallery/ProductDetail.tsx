@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ArrowLeft, ExternalLink, Users } from "lucide-react";
 import InterestDialog from "./InterestDialog";
 import ThemeToggle from "./ThemeToggle";
+import WaveEntry from "./WaveEntry";
 import type { GalleryProduct } from "@/lib/hackathon/gallery";
 
 interface ProductDetailProps {
@@ -15,6 +16,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
   return (
     <>
+      <WaveEntry />
       <div style={{ minHeight: "100vh", background: "var(--bloom-bg)" }}>
 
         {/* Hero band — steel-blue gradient with optional cover image overlay */}
