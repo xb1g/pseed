@@ -1,0 +1,179 @@
+/* ── Root ── */
+.root {
+  position: relative;
+  width: 160px;
+  height: 240px;
+}
+
+/* ── Glow ── */
+.glow {
+  position: absolute;
+  bottom: 10px;
+  left: 15px;
+  width: 120px;
+  height: 180px;
+  background: #619AD2;
+  filter: blur(44px);
+  border-radius: 50%;
+  z-index: 0;
+  opacity: 0.4;
+  animation: glowFlicker 600ms ease-in infinite;
+  pointer-events: none;
+}
+@keyframes glowFlicker {
+  50% { opacity: 0.28; transform: scale(0.94); }
+}
+
+/* Outer flames — behind face */
+.flameWrapper {
+  position: absolute;
+  bottom: 0;
+  left: 15px;
+  animation: cssFlicker 600ms ease-in infinite;
+  z-index: 1;
+}
+
+
+.flame {
+  bottom: 0;
+  position: absolute;
+  border-radius: 50% 0% 50% 50%;
+  transform: rotate(-45deg);
+}
+
+.flameRed {
+  width: 130px;
+  height: 190px;
+  background: #1a4a8a;
+  box-shadow: 0 0 14px 7px #1a4a8a;
+}
+.flameOrange {
+  left: 16px;
+  width: 98px;
+  height: 155px;
+  background: #2d6cb0;
+  box-shadow: 0 0 16px 8px #1a4a8a;
+}
+.flameGold {
+  left: 28px;
+  width: 74px;
+  height: 118px;
+  background: #619AD2;
+  box-shadow: 0 0 12px 6px #2d6cb0;
+}
+.flameWhite {
+  left: 36px;
+  width: 58px;
+  height: 86px;
+  background: #c2dff5;
+  box-shadow: 0 0 12px 6px #c2dff5;
+}
+
+@keyframes cssFlicker {
+  0%   { transform: rotate(-1deg); }
+  20%  { transform: rotate(2deg) scaleY(1.1); }
+  40%  { transform: rotate(-1deg); }
+  60%  { transform: rotate(1deg); }
+  80%  { transform: rotate(-1deg) scaleY(0.93); }
+  100% { transform: rotate(1deg); }
+}
+
+/* ── Face: same bottom/left anchor as flameWrapper ── */
+/* flameRed is 130×190px rotated -45deg. Visual center ≈ (65, 95) from its origin. */
+/* Head is 88×80px. Center face over flame center: left = 15 + 65 - 44 = 36px      */
+/*                                                  bottom = 95 - 40 = 55px         */
+.face {
+  position: absolute;
+  bottom: 25px;
+  left: 26px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+/* Dark rounded head */
+.head {
+  position: relative;
+  width: 88px;
+  height: 80px;
+  background: #111214;
+  border-radius: 50% 50% 46% 46%;
+}
+
+/* Eye white */
+.eye {
+  width: 28px;
+  height: 28px;
+  background: #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 16px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.eyeRight {
+  left: auto;
+  right: 8px;
+}
+
+/* Pupil */
+.pupil {
+  width: 17px;
+  height: 17px;
+  background: #060a12;
+  border-radius: 50%;
+}
+
+/* Mouth dot */
+.mouth {
+  position: absolute;
+  bottom: 11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 7px;
+  height: 8px;
+  background: #fff;
+  border-radius: 50%;
+}
+
+/* ── Sparks ── */
+.spark {
+  position: absolute;
+  height: 3px;
+  width: 3px;
+  border-radius: 1px;
+  filter: blur(1px);
+  background: #78b4d8;
+  z-index: 4;
+}
+.spark1 { animation: spark1 1500ms ease-out infinite; }
+.spark2 { animation: spark2 1000ms ease-out infinite; }
+.spark3 { animation: spark3 2000ms ease-out infinite; }
+.spark4 { animation: spark4 1300ms ease-out infinite; }
+.spark5 { animation: spark5 1800ms ease-out infinite; }
+
+@keyframes spark1 {
+  0%   { opacity: 1; bottom: 30px; left: 80px; }
+  100% { opacity: 0; bottom: 250px; left: 110px; }
+}
+@keyframes spark2 {
+  0%   { opacity: 1; bottom: 30px; left: 96px; }
+  100% { opacity: 0; bottom: 250px; left: 124px; }
+}
+@keyframes spark3 {
+  0%   { opacity: 1; bottom: 30px; left: 88px; }
+  100% { opacity: 0; bottom: 250px; left: 52px; }
+}
+@keyframes spark4 {
+  0%   { opacity: 1; bottom: 30px; left: 80px; }
+  100% { opacity: 0; bottom: 250px; left: 56px; }
+}
+@keyframes spark5 {
+  0%   { opacity: 1; bottom: 30px; left: 72px; }
+  100% { opacity: 0; bottom: 250px; left: 116px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flameWrapper, .glow, .spark { animation: none; }
+}
