@@ -3,7 +3,7 @@ import { Metadata } from "next";
 import { getGalleryProducts, getAllTags } from "@/lib/hackathon/gallery";
 import GalleryView from "@/components/hackathon/gallery/GalleryView";
 import ThemeToggle from "@/components/hackathon/gallery/ThemeToggle";
-import NpcFire from "@/components/hackathon/gallery/NpcFire";
+import GalleryMascot from "@/components/hackathon/gallery/GalleryMascot";
 
 export const metadata: Metadata = {
   title: "Product Gallery | PassionSeed Hackathon",
@@ -166,7 +166,7 @@ export default async function GalleryPage({
           userSelect: "none",
         }}
       >
-        <NpcFire />
+        <GalleryMascot />
       </div>
     </div>
   );
