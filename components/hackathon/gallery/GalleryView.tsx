@@ -4,25 +4,25 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
 import gsap from "gsap";
 import ProductCard from "./ProductCard";
-import GalleryWaveOverlay, { type GalleryWaveOverlayHandle } from "./GalleryWaveOverlay";
+import { type GalleryWaveOverlayHandle } from "./GalleryWaveOverlay";
 import type { GalleryProductSummary } from "@/lib/hackathon/gallery";
 
 interface GalleryViewProps {
   products: GalleryProductSummary[];
   allTags: string[];
   initialTag?: string;
+  waveRef: React.RefObject<GalleryWaveOverlayHandle>;
 }
 
-export default function GalleryView({ products, allTags, initialTag }: GalleryViewProps) {
+export default function GalleryView({ products, allTags, initialTag, waveRef }: GalleryViewProps) {
   const [activeTags, setActiveTags] = useState<Set<string>>(
     initialTag ? new Set([initialTag]) : new Set()
   );
   const gridRef = useRef<HTMLDivElement>(null);
-  const waveRef = useRef<GalleryWaveOverlayHandle>(null);
 
   const handleCardNavigate = useCallback((href: string) => {
     waveRef.current?.navigateTo(href);
-  }, []);
+  }, [waveRef]);
 
   const filtered = useMemo(() => {
     if (activeTags.size === 0) return products;
@@ -64,7 +64,6 @@ export default function GalleryView({ products, allTags, initialTag }: GalleryVi
 
   return (
     <div>
-      <GalleryWaveOverlay ref={waveRef} />
       {/* Tag filter bar */}
       {allTags.length > 0 && (
         <div

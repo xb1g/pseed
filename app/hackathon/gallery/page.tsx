@@ -2,9 +2,8 @@ import { Suspense } from "react";
 import { Metadata } from "next";
 import { getGalleryProducts, getAllTags } from "@/lib/hackathon/gallery";
 import { PLACEHOLDER_PRODUCTS } from "@/lib/hackathon/gallery-placeholders";
-import GalleryView from "@/components/hackathon/gallery/GalleryView";
+import GalleryWithWave from "@/components/hackathon/gallery/GalleryWithWave";
 import ThemeToggle from "@/components/hackathon/gallery/ThemeToggle";
-import GalleryMascot from "@/components/hackathon/gallery/GalleryMascot";
 
 export const metadata: Metadata = {
   title: "Product Gallery | PassionSeed Hackathon",
@@ -155,28 +154,13 @@ export default async function GalleryPage({
         }}
       >
         <Suspense fallback={<GallerySkeleton />}>
-          <GalleryView
+          <GalleryWithWave
             products={products}
             allTags={allTags}
             initialTag={tag}
           />
         </Suspense>
       </main>
-
-      {/* NPC character — fixed bottom-right */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: "fixed",
-          bottom: 0,
-          right: "clamp(1rem, 3vw, 2.5rem)",
-          zIndex: 10,
-          pointerEvents: "none",
-          userSelect: "none",
-        }}
-      >
-        <GalleryMascot />
-      </div>
     </div>
   );
 }
