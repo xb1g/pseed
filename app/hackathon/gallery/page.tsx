@@ -20,7 +20,23 @@ export default async function GalleryPage({
 }) {
   const { tag } = await searchParams;
 
-  const products = await getGalleryProducts();
+  let products = await getGalleryProducts();
+
+  if (products.length === 0) {
+    products = Array.from({ length: 10 }, (_, i) => ({
+      id: `placeholder-${i}`,
+      team_id: `placeholder-team-${i}`,
+      product_name: ["MediTrack", "CareLink", "HealthBridge", "NutriScan", "MindEase", "FitPath", "ElderCare", "DiagnoAI", "TeleWell", "ResearchHub"][i],
+      problem_statement: "A placeholder project for testing the gallery layout and wave transitions before real submissions arrive.",
+      cover_image_url: null,
+      tags: [["Health", "Education", "Productivity", "Mental Health", "Elderly Care", "Nutrition", "Fitness", "Diagnosis", "Telemedicine", "Research"][i]],
+      hackathon_year: 2026,
+      hackathon_name: "PassionSeed Hackathon",
+      interest_count: Math.floor(Math.random() * 30),
+      team_name: `Team ${["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota", "Kappa"][i]}`,
+    }));
+  }
+
   const allTags = getAllTags(products);
 
   return (
