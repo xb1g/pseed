@@ -2083,6 +2083,14 @@
   100% { transform: translateX(250%) skewX(-12deg);  opacity: 0; }
 }
 
+/* Auto-shimmer: sweeps across every ~4s, pauses between sweeps */
+@keyframes bloom-button-auto-shine {
+  0%    { transform: translateX(-100%) skewX(-12deg); opacity: 0; }
+  3%    { opacity: 0.85; }
+  18%   { transform: translateX(260%) skewX(-12deg);  opacity: 0; }
+  100%  { transform: translateX(260%) skewX(-12deg);  opacity: 0; }
+}
+
 @keyframes bloom-card-hover-in {
   0%   { transform: translateY(0px); }
   40%  { transform: translateY(-2px); }
@@ -2260,6 +2268,23 @@
   background: var(--bloom-btn-grad);
   z-index: -1;
   border-radius: inherit;
+}
+
+/* Auto-shine sweep layer */
+.bloom-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(180, 220, 255, 0.55) 50%,
+    transparent 70%
+  );
+  z-index: 2;
+  pointer-events: none;
+  border-radius: inherit;
+  animation: bloom-button-auto-shine 4s ease-in-out infinite;
 }
 
 /* Grain noise layer */

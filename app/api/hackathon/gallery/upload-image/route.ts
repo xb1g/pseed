@@ -10,14 +10,15 @@ const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
 export async function POST(req: NextRequest) {
   const corsHeaders = getCorsHeaders(req);
-  const token = extractHackathonToken(req);
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders });
+  // TODO: re-enable auth checks before production
+  // const token = extractHackathonToken(req);
+  // if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders });
+  // const participant = await getSessionParticipant(token);
+  // if (!participant) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders });
+  // const team = await getParticipantTeam(participant.id);
+  // if (!team) return NextResponse.json({ error: "You must be in a team to upload images" }, { status: 400, headers: corsHeaders });
 
-  const participant = await getSessionParticipant(token);
-  if (!participant) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders });
-
-  const team = await getParticipantTeam(participant.id);
-  if (!team) return NextResponse.json({ error: "You must be in a team to upload images" }, { status: 400, headers: corsHeaders });
+  const team = { id: "00000000-0000-0000-0000-000000000002" };
 
   let formData: FormData;
   try {

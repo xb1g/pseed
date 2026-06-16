@@ -18,12 +18,18 @@ export type GalleryProduct = {
   id: string;
   team_id: string;
   product_name: string;
+  product_name_th: string | null;
   problem_statement: string;
+  problem_statement_th: string | null;
   solution_description: string;
+  solution_description_th: string | null;
   cover_image_url: string | null;
   additional_images: string[];
+  test_mode: "direct" | "contact";
   demo_url: string | null;
+  contact_email: string | null;
   line_qr_url: string | null;
+  line_id: string | null;
   tags: string[];
   hackathon_year: number;
   hackathon_name: string;
@@ -40,7 +46,9 @@ export type GalleryProductSummary = Pick<
   | "id"
   | "team_id"
   | "product_name"
+  | "product_name_th"
   | "problem_statement"
+  | "problem_statement_th"
   | "cover_image_url"
   | "tags"
   | "hackathon_year"
@@ -55,7 +63,9 @@ export async function getGalleryProducts(): Promise<GalleryProductSummary[]> {
       id,
       team_id,
       product_name,
+      product_name_th,
       problem_statement,
+      problem_statement_th,
       cover_image_url,
       tags,
       hackathon_year,
@@ -72,7 +82,9 @@ export async function getGalleryProducts(): Promise<GalleryProductSummary[]> {
     id: row.id,
     team_id: row.team_id,
     product_name: row.product_name,
+    product_name_th: row.product_name_th ?? null,
     problem_statement: row.problem_statement,
+    problem_statement_th: row.problem_statement_th ?? null,
     cover_image_url: row.cover_image_url,
     tags: row.tags,
     hackathon_year: row.hackathon_year,
@@ -104,12 +116,18 @@ export async function getGalleryProduct(teamId: string): Promise<GalleryProduct 
     id: data.id,
     team_id: data.team_id,
     product_name: data.product_name,
+    product_name_th: data.product_name_th ?? null,
     problem_statement: data.problem_statement,
+    problem_statement_th: data.problem_statement_th ?? null,
     solution_description: data.solution_description,
+    solution_description_th: data.solution_description_th ?? null,
     cover_image_url: data.cover_image_url,
     additional_images: data.additional_images ?? [],
+    test_mode: data.test_mode ?? "contact",
     demo_url: data.demo_url,
+    contact_email: data.contact_email ?? null,
     line_qr_url: data.line_qr_url ?? null,
+    line_id: data.line_id ?? null,
     tags: data.tags,
     hackathon_year: data.hackathon_year,
     hackathon_name: data.hackathon_name,
@@ -152,20 +170,26 @@ export function getAllTags(products: GalleryProductSummary[]): string[] {
 }
 
 export const ALLOWED_TAGS = [
-  "Health", "Mental Health", "Education", "Productivity", "Community",
-  "Elderly Care", "Disability", "Nutrition", "Fitness", "Research",
-  "Diagnosis", "Telemedicine", "Other",
+  "Community, Public & Environmental Health",
+  "Traditional & Integrative Healthcare",
+  "Mental Health",
 ] as const;
 
 export type GalleryProductInput = {
   product_name: string;
+  product_name_th?: string | null;
   problem_statement: string;
+  problem_statement_th?: string | null;
   solution_description: string;
+  solution_description_th?: string | null;
   tags: string[];
+  test_mode?: "direct" | "contact";
   demo_url?: string | null;
+  contact_email?: string | null;
   cover_image_url?: string | null;
   additional_images?: string[];
   line_qr_url?: string | null;
+  line_id?: string | null;
 };
 
 export type GalleryProductWithPublished = GalleryProduct & { is_published: boolean };
@@ -192,12 +216,18 @@ export async function getMyGalleryProduct(teamId: string): Promise<GalleryProduc
     id: data.id,
     team_id: data.team_id,
     product_name: data.product_name,
+    product_name_th: data.product_name_th ?? null,
     problem_statement: data.problem_statement,
+    problem_statement_th: data.problem_statement_th ?? null,
     solution_description: data.solution_description,
+    solution_description_th: data.solution_description_th ?? null,
     cover_image_url: data.cover_image_url,
     additional_images: data.additional_images ?? [],
+    test_mode: data.test_mode ?? "contact",
     demo_url: data.demo_url,
+    contact_email: data.contact_email ?? null,
     line_qr_url: data.line_qr_url ?? null,
+    line_id: data.line_id ?? null,
     tags: data.tags,
     hackathon_year: data.hackathon_year,
     hackathon_name: data.hackathon_name,
@@ -223,13 +253,19 @@ export async function upsertGalleryProduct(
   const payload = {
     team_id: teamId,
     product_name: data.product_name,
+    product_name_th: data.product_name_th ?? null,
     problem_statement: data.problem_statement,
+    problem_statement_th: data.problem_statement_th ?? null,
     solution_description: data.solution_description,
+    solution_description_th: data.solution_description_th ?? null,
     tags: data.tags,
+    test_mode: data.test_mode ?? "contact",
     demo_url: data.demo_url ?? null,
+    contact_email: data.contact_email ?? null,
     cover_image_url: data.cover_image_url ?? null,
     additional_images: data.additional_images ?? [],
     line_qr_url: data.line_qr_url ?? null,
+    line_id: data.line_id ?? null,
     hackathon_year: new Date().getFullYear(),
     hackathon_name: "PassionSeed Hackathon",
   };
@@ -250,8 +286,14 @@ export async function upsertGalleryProduct(
     solution_description: row.solution_description,
     cover_image_url: row.cover_image_url,
     additional_images: row.additional_images ?? [],
+    test_mode: row.test_mode ?? "contact",
     demo_url: row.demo_url,
+    contact_email: row.contact_email ?? null,
     line_qr_url: row.line_qr_url ?? null,
+    line_id: row.line_id ?? null,
+    product_name_th: row.product_name_th ?? null,
+    problem_statement_th: row.problem_statement_th ?? null,
+    solution_description_th: row.solution_description_th ?? null,
     tags: row.tags,
     hackathon_year: row.hackathon_year,
     hackathon_name: row.hackathon_name,
@@ -282,8 +324,14 @@ export async function adminGetAllProducts(): Promise<(GalleryProductWithPublishe
     solution_description: row.solution_description,
     cover_image_url: row.cover_image_url,
     additional_images: row.additional_images ?? [],
+    test_mode: row.test_mode ?? "contact",
     demo_url: row.demo_url,
+    contact_email: row.contact_email ?? null,
     line_qr_url: row.line_qr_url ?? null,
+    line_id: row.line_id ?? null,
+    product_name_th: row.product_name_th ?? null,
+    problem_statement_th: row.problem_statement_th ?? null,
+    solution_description_th: row.solution_description_th ?? null,
     tags: row.tags,
     hackathon_year: row.hackathon_year,
     hackathon_name: row.hackathon_name,

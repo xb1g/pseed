@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Eye } from "lucide-react";
 import type { GalleryProductSummary } from "@/lib/hackathon/gallery";
+import { useLang, t } from "@/lib/hackathon/gallery-lang";
 
 interface ProductCardProps {
   product: GalleryProductSummary;
@@ -39,6 +40,7 @@ function TeamInitial({ name }: { name: string }) {
 
 export default function ProductCard({ product, style, onNavigate }: ProductCardProps) {
   const cardRef = useRef<HTMLAnchorElement>(null);
+  const { lang } = useLang();
 
   // Touch: apply in-view class via IntersectionObserver
   useEffect(() => {
@@ -163,7 +165,7 @@ export default function ProductCard({ product, style, onNavigate }: ProductCardP
             margin: 0,
           }}
         >
-          {product.product_name}
+          {t(product.product_name, product.product_name_th, lang)}
         </h2>
 
         {/* Problem statement */}
@@ -181,7 +183,7 @@ export default function ProductCard({ product, style, onNavigate }: ProductCardP
             textWrap: "pretty",
           } as React.CSSProperties}
         >
-          {product.problem_statement}
+          {t(product.problem_statement, product.problem_statement_th, lang)}
         </p>
 
         {/* Footer: team + interest count */}

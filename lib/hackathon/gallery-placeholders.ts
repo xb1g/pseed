@@ -2,7 +2,18 @@ import type { GalleryProduct, GalleryProductSummary } from "./gallery";
 
 const NAMES = ["MediTrack", "CareLink", "HealthBridge", "NutriScan", "MindEase", "FitPath", "ElderCare", "DiagnoAI", "TeleWell", "ResearchHub"];
 const TEAMS = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota", "Kappa"];
-const TAGS = ["Health", "Education", "Productivity", "Mental Health", "Elderly Care", "Nutrition", "Fitness", "Diagnosis", "Telemedicine", "Research"];
+const TAGS = [
+  "Community, Public & Environmental Health",
+  "Traditional & Integrative Healthcare",
+  "Mental Health",
+  "Community, Public & Environmental Health",
+  "Mental Health",
+  "Community, Public & Environmental Health",
+  "Traditional & Integrative Healthcare",
+  "Mental Health",
+  "Community, Public & Environmental Health",
+  "Traditional & Integrative Healthcare",
+];
 const COVERS = [
   "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&q=80", // medical
   "https://images.unsplash.com/photo-1504813184591-01572f98c85f?w=800&q=80", // care
@@ -56,7 +67,9 @@ export const PLACEHOLDER_PRODUCTS: GalleryProductSummary[] = NAMES.map((name, i)
   id: `placeholder-${i}`,
   team_id: `placeholder-team-${i}`,
   product_name: name,
+  product_name_th: null,
   problem_statement: PROBLEMS[i],
+  problem_statement_th: null,
   cover_image_url: COVERS[i],
   tags: [TAGS[i]],
   hackathon_year: 2026,
@@ -77,8 +90,14 @@ export function getPlaceholderProduct(teamId: string): GalleryProduct | null {
     solution_description: SOLUTIONS[index],
     cover_image_url: COVERS[index],
     additional_images: [],
+    test_mode: "contact" as const,
     demo_url: null,
+    contact_email: null,
     line_qr_url: null,
+    line_id: null,
+    product_name_th: null,
+    problem_statement_th: null,
+    solution_description_th: null,
     tags: p.tags,
     hackathon_year: p.hackathon_year,
     hackathon_name: p.hackathon_name,
