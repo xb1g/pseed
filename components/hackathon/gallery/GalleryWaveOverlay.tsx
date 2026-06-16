@@ -59,6 +59,16 @@ const GalleryWaveOverlay = forwardRef<GalleryWaveOverlayHandle>(function Gallery
           pointerEvents: "none",
         }}
       >
+        {/* Grain overlay */}
+        <div style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E\")",
+          backgroundRepeat: "repeat",
+          opacity: 0.08,
+          mixBlendMode: "overlay",
+          pointerEvents: "none",
+        }} />
         {/* Shore glow line */}
         <div
           style={{
