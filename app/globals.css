@@ -2011,3 +2011,378 @@
 .ei-badge--success .ei-badge--dot {
   background: #34d399;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BLOOM THEME — Hackathon Gallery  ·  Design D: Premium Dark
+   Scene: a premium dark gallery. Charcoal body. Steel-blue grainy gradient
+   as hero and CTA accent — sky-blue, silver-blue, deep indigo mesh with
+   SVG feTurbulence grain overlay. Everything else recedes into near-black.
+   Accent color (steel-blue) appears only where the eye needs to land.
+   Grainy gradient technique: css-tricks.com/grainy-gradients
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Bloom: Tokens ────────────────────────────────────────────────────────── */
+:root {
+  /* Steel-blue mesh gradient — hero band + primary CTA */
+  --bloom-hero-grad:
+    radial-gradient(ellipse at 88% 0%,  #619AD2 0%, transparent 48%),
+    radial-gradient(ellipse at 10% 5%,  #2a5c90 0%, transparent 44%),
+    radial-gradient(ellipse at 50% 60%, #1e2e6a 0%, transparent 52%),
+    radial-gradient(ellipse at 0%  90%, #2a5080 0%, transparent 46%),
+    radial-gradient(ellipse at 90% 88%, #3a6898 0%, transparent 42%),
+    #0d1830;
+
+  /* Button uses hero grad by default */
+  --bloom-btn-grad: var(--bloom-hero-grad);
+
+  /* SVG feTurbulence grain */
+  --bloom-grain-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='1'/%3E%3C/svg%3E");
+
+  /* Grain blends via overlay on dark surfaces */
+  --bloom-grain-blend: overlay;
+
+  /* Focus ring: steel-blue */
+  --bloom-focus-ring: rgba(90, 158, 200, 0.65);
+
+  /* Animation timings — prime numbers to prevent visual sync */
+  --bloom-ping-a: 6113ms;
+  --bloom-ping-b: 8317ms;
+
+  /* ── Core surface tokens ── */
+  --bloom-bg:             #111214;
+  --bloom-bg-surface:     #1a1c1f;
+  --bloom-bg-raised:      #222528;
+  --bloom-text-primary:   #eceef2;
+  --bloom-text-secondary: #8a8e98;
+  --bloom-text-muted:     #484c54;
+  --bloom-border-subtle:  rgba(255, 255, 255, 0.06);
+  --bloom-border-default: rgba(255, 255, 255, 0.09);
+  --bloom-border-strong:  rgba(120, 180, 216, 0.22);
+  --bloom-shadow-card:    0 1px 2px rgba(0, 0, 0, 0.50), 0 4px 16px rgba(0, 0, 0, 0.35);
+  --bloom-shadow-hover:   0 4px 24px rgba(0, 0, 0, 0.65), 0 1px 4px rgba(0, 0, 0, 0.45),
+                          0 0 0 1px rgba(120, 180, 216, 0.18);
+
+  /* Steel-blue accent */
+  --bloom-accent:         #78b4d8;
+  --bloom-accent-subtle:  rgba(90, 158, 200, 0.12);
+  --bloom-accent-border:  rgba(90, 158, 200, 0.22);
+  --bloom-ping-color:     #5a9ec8;
+
+  /* Ghost button */
+  --bloom-ghost-color:        rgba(200, 210, 220, 0.75);
+  --bloom-ghost-border:       rgba(255, 255, 255, 0.10);
+  --bloom-ghost-hover-bg:     rgba(255, 255, 255, 0.05);
+  --bloom-ghost-hover-border: rgba(255, 255, 255, 0.16);
+}
+
+/* ── Bloom: Keyframes ─────────────────────────────────────────────────────── */
+
+@keyframes bloom-shimmer-sweep {
+  0%   { transform: translateX(-100%) skewX(-12deg); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translateX(250%) skewX(-12deg);  opacity: 0; }
+}
+
+@keyframes bloom-card-hover-in {
+  0%   { transform: translateY(0px); }
+  40%  { transform: translateY(-2px); }
+  70%  { transform: translateY(-3px); }
+  100% { transform: translateY(-2px); }
+}
+
+@keyframes bloom-button-hover-in {
+  0%   { transform: translateY(0px)  scale(1.000); }
+  35%  { transform: translateY(-1px) scale(1.008); }
+  65%  { transform: translateY(-2px) scale(1.012); }
+  100% { transform: translateY(-1px) scale(1.010); }
+}
+
+@keyframes bloom-ping {
+  0%   { transform: scale(1);   opacity: 0.8; }
+  100% { transform: scale(2.4); opacity: 0;   }
+}
+
+/* ── Bloom: Hero Band ─────────────────────────────────────────────────────── */
+/*
+ * Steel-blue grainy gradient band used on gallery page + product detail.
+ * Structure:
+ *   <div class="bloom-hero">
+ *     <div class="bloom-hero__grain" aria-hidden="true"></div>
+ *     nav, h1, subtitle...
+ *   </div>
+ */
+
+.bloom-hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.bloom-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--bloom-hero-grad);
+}
+
+.bloom-hero__grain {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background-image: var(--bloom-grain-svg);
+  background-size: 200px 200px;
+  background-repeat: repeat;
+  filter: contrast(160%) brightness(900%);
+  mix-blend-mode: overlay;
+  opacity: 0.30;
+  pointer-events: none;
+}
+
+.bloom-hero::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 220px;
+  z-index: 2;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(13, 24, 48, 0.60) 40%,
+    rgba(13, 20, 38, 0.85) 65%,
+    rgba(17, 18, 20, 0.96) 85%,
+    var(--bloom-bg) 100%
+  );
+  pointer-events: none;
+}
+
+.bloom-hero > *:not(.bloom-hero__grain) {
+  position: relative;
+  z-index: 3;
+}
+
+/* ── Bloom: Card ──────────────────────────────────────────────────────────── */
+
+.bloom-card {
+  position: relative;
+  isolation: isolate;
+  background: var(--bloom-bg-surface);
+  border: 1px solid var(--bloom-border-default);
+  border-radius: 14px;
+  box-shadow: var(--bloom-shadow-card);
+  overflow: hidden;
+  transition:
+    border-color 180ms ease-out,
+    box-shadow   180ms ease-out,
+    transform    180ms ease-out;
+}
+
+.bloom-card__shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.05) 40%,
+    rgba(255, 255, 255, 0.10) 50%,
+    rgba(255, 255, 255, 0.04) 60%,
+    transparent 100%
+  );
+  width: 60%;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  border-radius: inherit;
+}
+
+@media (hover: hover) {
+  .bloom-card:hover {
+    border-color: var(--bloom-border-strong);
+    box-shadow: var(--bloom-shadow-hover);
+    animation: bloom-card-hover-in 420ms cubic-bezier(0.05, 0.7, 0.35, 0.99) forwards;
+  }
+
+  .bloom-card:hover .bloom-card__shimmer {
+    animation: bloom-shimmer-sweep 520ms cubic-bezier(0.05, 0.7, 0.35, 0.99) forwards;
+  }
+}
+
+@media (hover: none) {
+  .bloom-card--in-view {
+    border-color: var(--bloom-border-strong);
+    box-shadow: var(--bloom-shadow-hover);
+  }
+}
+
+/* ── Bloom: Button ────────────────────────────────────────────────────────── */
+/*
+ * Primary: grainy steel-blue mesh. Structure:
+ *   <button class="bloom-button">
+ *     <span class="bloom-button__grain" aria-hidden="true"></span>
+ *     Label
+ *   </button>
+ * ::before holds the mesh gradient; .bloom-button__grain is the noise layer.
+ */
+
+.bloom-button {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 2rem;
+  border-radius: 10px;
+  border: 1px solid rgba(130, 190, 230, 0.28);
+  font-family: var(--font-bai-jamjuree), var(--font-libre-franklin), sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  overflow: hidden;
+  background: #0d1830;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 2px 10px rgba(90, 158, 200, 0.25),
+    0 0 0 1px rgba(90, 158, 200, 0.15);
+  transition:
+    box-shadow 160ms ease-out,
+    transform  160ms ease-out;
+}
+
+/* Mesh gradient base — behind grain */
+.bloom-button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--bloom-btn-grad);
+  z-index: -1;
+  border-radius: inherit;
+}
+
+/* Grain noise layer */
+.bloom-button__grain {
+  position: absolute;
+  inset: 0;
+  background-image: var(--bloom-grain-svg);
+  background-size: 200px 200px;
+  background-repeat: repeat;
+  filter: contrast(160%) brightness(900%);
+  mix-blend-mode: overlay;
+  opacity: 0.30;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bloom-button > *:not(.bloom-button__grain) {
+  position: relative;
+  z-index: 1;
+}
+
+@media (hover: hover) {
+  .bloom-button:hover {
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.16) inset,
+      0 4px 24px rgba(90, 158, 200, 0.40),
+      0 0 0 1px rgba(90, 158, 200, 0.35),
+      0 0 48px rgba(90, 158, 200, 0.14);
+    animation: bloom-button-hover-in 380ms cubic-bezier(0.05, 0.7, 0.35, 0.99) forwards;
+  }
+}
+
+.bloom-button:active {
+  transform: translateY(0px) scale(0.985);
+  box-shadow:
+    0 1px 4px rgba(90, 158, 200, 0.20),
+    0 0 0 1px rgba(90, 158, 200, 0.20);
+  transition: transform 80ms, box-shadow 80ms;
+}
+
+.bloom-button:focus-visible {
+  outline: 2px solid var(--bloom-focus-ring);
+  outline-offset: 3px;
+}
+
+/* Ghost variant */
+.bloom-button--ghost {
+  background: var(--bloom-ghost-hover-bg);
+  color: var(--bloom-ghost-color);
+  border: 1px solid var(--bloom-ghost-border);
+  box-shadow: none;
+}
+
+.bloom-button--ghost::before {
+  display: none;
+}
+
+.bloom-button--ghost .bloom-button__grain {
+  display: none;
+}
+
+@media (hover: hover) {
+  .bloom-button--ghost:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: var(--bloom-ghost-hover-border);
+    box-shadow: none;
+    animation: none;
+    transform: none;
+  }
+}
+
+/* ── Bloom: Interest Badge ────────────────────────────────────────────────── */
+
+.bloom-interest-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  background: var(--bloom-accent-subtle);
+  border: 1px solid var(--bloom-accent-border);
+  color: var(--bloom-accent);
+  font-family: var(--font-bai-jamjuree), var(--font-libre-franklin), sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.bloom-interest-badge__dot {
+  position: relative;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--bloom-ping-color);
+  flex-shrink: 0;
+}
+
+.bloom-interest-badge__dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--bloom-ping-color);
+  animation: bloom-ping 2s ease-out infinite;
+}
+
+/* ── Bloom: Reduced Motion ────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .bloom-card,
+  .bloom-button {
+    transition: none;
+    animation: none;
+  }
+
+  .bloom-card:hover,
+  .bloom-button:hover {
+    transform: none;
+    animation: none;
+  }
+
+  .bloom-card__shimmer,
+  .bloom-interest-badge__dot::after {
+    animation: none;
+  }
+}

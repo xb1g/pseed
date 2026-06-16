@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import gsap from "gsap";
-import { Bell, ClipboardList, Users, Check, Sparkles, BookOpen, Home, ArrowRight, Search, Settings } from "lucide-react";
+import { Bell, ClipboardList, Users, Check, Sparkles, BookOpen, Home, ArrowRight, Search, Settings, ExternalLink, Loader2, QrCode } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import type { HackathonParticipant } from "@/lib/hackathon/db";
 import { FeedbackInvitationCard } from "@/components/hackathon/FeedbackInvitationCard";
@@ -72,6 +72,9 @@ export default function HackathonDashboardPage() {
   const [feedbackStatus, setFeedbackStatus] = useState<
     "loading" | "pending" | "complete"
   >("loading");
+
+  // Gallery submission state
+  const [galleryProduct, setGalleryProduct] = useState<any | null | undefined>(undefined); // undefined = loading
 
   useEffect(() => {
 
@@ -176,6 +179,15 @@ export default function HackathonDashboardPage() {
         setFeedbackStatus(data.data ? "complete" : "pending");
       })
       .catch(() => setFeedbackStatus("pending"));
+  }, [participant?.id, participant?.is_admin]);
+
+  useEffect(() => {
+    if (!participant || participant.is_admin) return;
+
+    fetch("/api/hackathon/gallery/my-product")
+      .then((r) => r.json())
+      .then((data) => setGalleryProduct(data.product ?? null))
+      .catch(() => setGalleryProduct(null));
   }, [participant?.id, participant?.is_admin]);
 
   const dismissOnboardingNudge = () => {
@@ -582,6 +594,100 @@ export default function HackathonDashboardPage() {
                 แดชบอร์ดทีม
               </Link>
             </Button>
+
+            {/* Gallery submission section */}
+            {!participant.is_admin && galleryProduct !== undefined && (
+              <div className="text-left">
+                {galleryProduct === null ? (
+                  // Not submitted yet — prominent CTA
+                  <Link
+                    href="/hackathon/gallery/submit"
+                    className="group relative block w-full overflow-hidden rounded-2xl font-[family-name:var(--font-mitr)] no-underline"
+                    style={{
+                      background: "linear-gradient(135deg, #0e2035 0%, #0a1828 50%, #0d1f30 100%)",
+                      border: "1px solid rgba(97,154,210,0.35)",
+                      boxShadow: "0 0 32px rgba(97,154,210,0.15), 0 4px 24px rgba(0,0,0,0.4)",
+                      padding: "1.5rem",
+                      transition: "all 300ms",
+                    }}
+                  >
+                    {/* Animated glow on hover */}
+                    <div
+                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                      style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(97,154,210,0.12) 0%, transparent 70%)" }}
+                      aria-hidden="true"
+                    />
+                    <div className="relative z-10 flex items-center justify-between gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <QrCode className="h-4 w-4 text-[#619AD2]" />
+                          <span className="text-xs font-semibold tracking-widest uppercase text-[#619AD2]">Bloom Gallery</span>
+                        </div>
+                        <p className="text-lg font-semibold text-white leading-tight">
+                          Submit your product
+                        </p>
+                        <p className="text-sm text-[#5a7a94] leading-relaxed">
+                          Share what you built — add your LINE QR so interested visitors can reach your team directly.
+                        </p>
+                      </div>
+                      <div
+                        className="shrink-0 flex items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-110"
+                        style={{
+                          width: "48px", height: "48px",
+                          background: "linear-gradient(135deg, #3a6a9a 0%, #2a5a8a 100%)",
+                          border: "1px solid rgba(97,154,210,0.4)",
+                          boxShadow: "0 0 20px rgba(97,154,210,0.3)",
+                        }}
+                      >
+                        <ArrowRight className="h-5 w-5 text-white" />
+                      </div>
+                    </div>
+                  </Link>
+                ) : galleryProduct.is_published ? (
+                  // Published
+                  <div className="bg-gradient-to-br from-emerald-950/40 to-emerald-900/20 backdrop-blur-md border border-emerald-500/30 rounded-2xl p-5 space-y-3 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
+                    <div className="flex items-center gap-2 text-emerald-400 font-medium">
+                      <Check className="h-4 w-4" />
+                      <p>ผลิตภัณฑ์เผยแพร่แล้ว</p>
+                    </div>
+                    <p className="text-sm text-white font-medium">{galleryProduct.product_name}</p>
+                    <div className="flex gap-3">
+                      <Link
+                        href={`/hackathon/gallery/${galleryProduct.team_id}`}
+                        className="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                      >
+                        ดูใน Gallery
+                        <ExternalLink className="h-3 w-3" />
+                      </Link>
+                      <Link
+                        href="/hackathon/gallery/submit"
+                        className="inline-flex items-center gap-1.5 text-xs text-[#5a7a94] hover:text-[#91C4E3] transition-colors"
+                      >
+                        แก้ไข
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  // Under review
+                  <div className="bg-gradient-to-br from-[#1a2530]/80 to-[#121c29]/60 backdrop-blur-md border border-[#619AD2]/20 rounded-2xl p-5 space-y-2 shadow-[0_0_20px_rgba(97,154,210,0.08)]">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 text-[#91C4E3] font-medium">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <p>รอการตรวจสอบ</p>
+                      </div>
+                      <Link
+                        href="/hackathon/gallery/submit"
+                        className="text-xs text-[#619AD2] hover:text-[#91C4E3] transition-colors"
+                      >
+                        แก้ไข
+                      </Link>
+                    </div>
+                    <p className="text-sm text-gray-300 font-medium">{galleryProduct.product_name}</p>
+                    <p className="text-xs text-[#5a7a94]">ทีมผู้ดูแลจะแจ้งให้ทราบเมื่อเผยแพร่</p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {inboxItems.length > 0 && (
               <div className="bg-gradient-to-br from-[#0d1219]/90 to-[#121c29]/80 backdrop-blur-md border border-[#4a6b82]/30 rounded-2xl p-5 text-left space-y-4 shadow-[0_0_24px_rgba(74,107,130,0.12)]">

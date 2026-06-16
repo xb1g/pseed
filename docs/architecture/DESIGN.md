@@ -110,6 +110,19 @@ components:
     textColor: "#818cf8"
     rounded: "{rounded.full}"
     padding: "0.25rem 0.75rem"
+  bloom-coral-500: "#e8623a"
+  bloom-coral-400: "#ee8060"
+  bloom-coral-300: "#f2a88e"
+  bloom-amber-400: "#d97b2e"
+  bloom-amber-300: "#e69f5a"
+  bloom-rose-400: "#e8927a"
+  bloom-bg-950: "#160a06"
+  bloom-bg-900: "#221009"
+  bloom-bg-800: "#301810"
+  bloom-bg-700: "#3f2218"
+  bloom-text-primary: "#f0ece8"
+  bloom-text-secondary: "#b8aa9f"
+  bloom-text-muted: "#7a6d65"
 ---
 
 # Design System: PassionSeed
@@ -263,3 +276,139 @@ When shadows do appear, they are structural and minimal:
 - **Don't** use modals as a first thought. Exhaust inline and progressive alternatives first.
 - **Don't** design like corporate ed-tech: bright primary colors, stock illustrations, rigid module layouts, progress bars that feel like compliance tracking.
 - **Don't** design like generic SaaS: gray-on-white, thin lines, no personality, everything looks like Notion or Linear.
+
+## 7. Bloom Theme (Hackathon Gallery)
+
+Bloom is the third atmospheric theme, introduced for the hackathon product gallery and participant portal. It shares the same structural DNA as Dawn and Dusk but has its own sky: a sunlit exhibition hall at midday, warm walls, work on display, visitors stopping with genuine curiosity.
+
+### Scene and identity
+
+- **Personality:** Playful, bold, alive
+- **Anchor color:** Warm coral/terracotta `#e8623a` (oklch 0.65 0.18 28)
+- **Background:** Deep warm dark `#160a06` — not neutral black, tinted toward the coral hue
+- **Grain:** Bold SVG turbulence noise on cards and buttons via `mix-blend-mode: overlay`. Cards at 0.28 opacity, buttons at 0.22. This is Bloom's signature material — tactile and printed, not polished.
+- **Atmospheric particles:** Dust motes (`.bloom-dust`) rising slowly, prime-number durations (6113ms, 8317ms, 11003ms)
+- **Light shaft:** A single angled gradient sweep on `.bloom-scene::before` that breathes over 18s, mimicking gallery window light
+
+### Color usage
+
+- Coral `#e8623a` carries primary CTAs, active tag filters, interest badges, and card borders on hover
+- Backgrounds stay dark (`#160a06` → `#221009` → `#301810`) so product images and coral accents pop
+- Text: `#f0ece8` primary, `#b8aa9f` secondary, `#7a6d65` muted — all tinted warm, not neutral gray
+- Borders: `rgba(232, 98, 58, 0.22)` default, `rgba(232, 98, 58, 0.40)` on hover/active
+
+### Noise grain implementation
+
+```css
+--bloom-noise: url("data:image/svg+xml,..."); /* SVG turbulence, no image asset */
+
+/* On cards — ::before pseudo-element */
+background-image: var(--bloom-noise);
+mix-blend-mode: overlay;
+opacity: 0.28;
+
+/* On buttons — ::before pseudo-element */
+opacity: 0.22;
+background-size: 160px 160px;
+```
+
+Because `::before` is taken by noise, card shimmer lives on a `.bloom-card__shimmer` child span. Card content needs `position: relative; z-index: 1` to sit above the noise layer.
+
+### Components
+
+| Class | Description |
+|---|---|
+| `.bloom-scene` | Atmospheric page background with light shaft + floor glow pseudo-elements + dust motes |
+| `.bloom-card` | Card with noise grain, shimmer child, glow ring on hover. Touch: `.bloom-card--in-view` via IntersectionObserver |
+| `.bloom-card__shimmer` | First child of `.bloom-card`, handles the sweep animation on hover |
+| `.bloom-button` | Coral gradient button with noise grain and gloss highlight |
+| `.bloom-button--ghost` | Transparent coral outline variant, no noise |
+| `.bloom-interest-badge` | Pill badge with live ping dot, shows interest count |
+| `.bloom-dust` | Atmospheric particle — add 3-5 inside `.bloom-scene` |
+
+### Animation timing
+
+| Animation | Duration | Easing |
+|---|---|---|
+| Light shaft | 18s | ease-in-out |
+| Floor glow | 13s | ease-in-out |
+| Dust mote A | 6113ms (prime) | ease-in |
+| Dust mote B | 8317ms (prime) | ease-in |
+| Dust mote C | 11003ms (prime) | ease-in |
+| Card hover-in | 420ms | `var(--ease-tension)` |
+| Button hover-in | 380ms | `var(--ease-tension)` |
+| Shimmer sweep | 520ms | `var(--ease-tension)` |
+| Snap/hover-out | 160ms | `var(--ease-snap)` |
+
+### Bloom-specific rules
+
+- Never apply noise grain to text, icons, or state indicators
+- Ghost button variant hides the noise layer (`::before { display: none }`)
+- All Bloom animations stop under `prefers-reduced-motion: reduce` — color and border states remain, transforms and keyframes do not
+- Touch devices: use `IntersectionObserver` + `.bloom-card--in-view` + `@media (hover: none)` — never rely on `:hover` alone
+
+---
+
+## 8. Mobile Design Principles
+
+**PassionSeed's primary users are Thai students browsing on phones.** The Bloom gallery targets a general public audience that is also predominantly mobile. Mobile is not a reduced experience — it is the primary experience. Desktop is the enhancement.
+
+### Mobile-first rule (non-negotiable)
+
+Design the mobile layout first. Desktop layouts are built on top of mobile, not the reverse. If a component only works on desktop, it is not finished.
+
+### Touch targets
+
+- Minimum 48×48px for all interactive elements (buttons, links, filter pills, card tap areas)
+- Cards are fully tappable via `<a>` or `<button>` wrapping the entire surface — never a small "View" link inside a card
+- Filter pills: minimum height 40px, horizontal padding ≥ 16px
+- Spacing between adjacent touch targets: minimum 8px
+
+### Navigation
+
+- Sticky nav height: 64px maximum on mobile. Content below the fold must not be obscured.
+- Horizontal scroll filter bars: `overflow-x: auto; scrollbar-width: none` — never wrap onto two lines on mobile
+- Back links: always use `<a>` with a real href (not `router.back()`) so users arriving via direct link still get a destination
+
+### Typography on mobile
+
+- Display headings: `clamp()` floor must be comfortable at 320px viewport — test at 320px, not just 375px
+- Body text: minimum 16px on mobile to prevent iOS auto-zoom on inputs and maintain readability
+- Line length: 65-75ch cap applies on desktop; on mobile, full-width is correct — do not set `max-width` on body text inside already-narrow containers
+
+### Layout
+
+- Single column on mobile is always correct — do not force two columns below 640px
+- Two-column detail layouts (e.g. product detail sidebar) collapse to single column on mobile, with the sidebar moving below the main content
+- Grid cards: `repeat(auto-fill, minmax(300px, 1fr))` — on 375px this renders one column naturally. Do not override with a forced single-column media query unless cards are wider than the viewport.
+- Padding: `clamp(1.25rem, 5vw, 3rem)` for page gutters — never less than 1.25rem (20px) on mobile
+
+### Dialogs and overlays
+
+- `<dialog>` max-width: `min(480px, calc(100vw - 2rem))` — always leaves visible margin on small screens
+- Dialogs triggered by a button must be dismissible by tapping the backdrop and via an explicit close button
+- No bottom sheets implemented as `position: absolute` inside `overflow: hidden` containers — always use `position: fixed` or native `<dialog>`
+
+### Images
+
+- `loading="lazy"` on all images below the fold
+- `object-fit: cover` with explicit `aspect-ratio` so images never cause layout shift
+- Cover images: `16/9` ratio on cards. Detail page hero: `clamp(220px, 35vw, 460px)` height — on mobile this collapses to ~220px, leaving most of the viewport for content
+
+### Hover interactions
+
+- Every hover animation must have a touch equivalent via `IntersectionObserver` + `@media (hover: none)`
+- Do not use `:hover` as the only trigger for revealing information (tooltips, expanded content). Information visible on hover must also be visible on tap or always visible.
+- Atmospheric animations (dust motes, glow shifts) run on mobile — they are CSS, not pointer-dependent. Only pointer-driven animations (card lift, shimmer sweep) need the touch fallback.
+
+### Forms on mobile
+
+- Input font-size: minimum 16px to prevent iOS zoom-on-focus
+- Inputs should have correct `type` and `autocomplete` attributes for keyboard optimization (`type="email"`, `autocomplete="email"`, etc.)
+- Submit buttons: full-width on mobile (`width: 100%`), fixed to bottom of viewport only when the form is the primary action on the page
+
+### Performance on mobile
+
+- No animations that trigger layout (avoid animating `width`, `height`, `top`, `left`, `margin`, `padding`)
+- `filter: blur()` on large elements is GPU-intensive — scope atmospheric blur to pseudo-elements with `will-change: transform` applied sparingly
+- Images from external URLs (Unsplash, etc.): add `?w=800&q=80` size params. Do not load full-resolution originals on mobile.

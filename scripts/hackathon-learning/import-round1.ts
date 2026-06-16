@@ -19,8 +19,8 @@ const XLSX_PATH =
 const DRY = process.argv.includes("--dry-run");
 const TARGET_PROD = process.argv.includes("--target=prod");
 
-const SRC_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SRC_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const SRC_URL = process.env.HACKATHON_SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SRC_KEY = process.env.HACKATHON_SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const LOCAL_URL = process.env.LOCAL_SUPABASE_URL ?? "http://127.0.0.1:54321";
 const LOCAL_KEY =
   process.env.LOCAL_SUPABASE_SERVICE_ROLE_KEY ??
@@ -33,6 +33,17 @@ const NAME_OVERRIDES: Record<string, string> = {
   "SamoiAdventure ": "SamoiAdventure",
   "Infinity ": "Infinity",
   "PAMUN Engineering ": "PAMUN Engineering",
+};
+
+// Manual ID overrides: raw xlsx name -> exact DB team_id (for duplicate-name teams)
+const ID_OVERRIDES: Record<string, string> = {
+  "ชัดเจนในเลนเรา": "d2a59186-dce2-4b02-b41e-1108ddf99e2c", // 5-member team, not the 1-member stray
+};
+
+// Rows to merge (average) instead of inserting twice — keyed by normalised name
+// Value: the single merged total to use
+const MERGED_TOTALS: Record<string, number> = {
+  "ParaChoose Me": (57.92 + 60.29) / 2, // two judge panels in xlsx → average
 };
 
 function normKey(s: string): string {
@@ -61,6 +72,12 @@ function ratio(a: string, b: string): number {
 }
 
 function resolveTeam(raw: string, teams: { id: string; name: string }[]) {
+  // ID override takes highest priority
+  const idOverride = ID_OVERRIDES[raw.trim()];
+  if (idOverride) {
+    const t = teams.find((t) => t.id === idOverride);
+    if (t) return { id: t.id, method: "manual", matchedName: t.name };
+  }
   const override = NAME_OVERRIDES[raw];
   if (override) {
     const t = teams.find((t) => normKey(t.name) === normKey(override));
@@ -83,14 +100,15 @@ function resolveTeam(raw: string, teams: { id: string; name: string }[]) {
 async function parseXlsx(): Promise<{ raw: string; division: string; total: number }[]> {
   // Dynamically import xlsx (lightweight alternative to openpyxl)
   const XLSX = await import("xlsx");
-  const wb = XLSX.readFile(XLSX_PATH);
+  const lib = (XLSX as unknown as { default?: typeof XLSX }).default ?? XLSX;
+  const wb = lib.readFile(XLSX_PATH);
 
   const result: { raw: string; division: string; total: number }[] = [];
 
   for (const [sheetName, division] of [["Highschool", "high_school"], ["University", "university"]] as const) {
     const ws = wb.Sheets[sheetName];
     if (!ws) { console.warn(`Sheet "${sheetName}" not found`); continue; }
-    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1 }) as unknown[][];
+    const rows = lib.utils.sheet_to_json<Record<string, unknown>>(ws, { header: 1 }) as unknown[][];
     // Row 0 = headers, col 0 = team name, col 27 = Total Score
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i] as unknown[];
@@ -126,8 +144,26 @@ async function main() {
     };
   });
 
-  const unresolved = records.filter((r) => !r.team_id);
-  console.log(`\nresolved=${records.length - unresolved.length}  unresolved=${unresolved.length}`);
+  // Deduplicate: if the same team_id appears twice, use the MERGED_TOTALS average
+  const seen = new Map<string, typeof records[0]>();
+  const deduped: typeof records = [];
+  for (const rec of records) {
+    if (!rec.team_id) { deduped.push(rec); continue; }
+    if (seen.has(rec.team_id)) {
+      // Replace total with the pre-computed merged value if available
+      const mergedTotal = MERGED_TOTALS[rec.raw_team_name.trim()];
+      if (mergedTotal !== undefined) {
+        seen.get(rec.team_id)!.total = Math.round(mergedTotal * 100) / 100;
+        console.log(`  merged    ${rec.raw_team_name.padEnd(38)} -> averaged to ${seen.get(rec.team_id)!.total}`);
+      }
+    } else {
+      seen.set(rec.team_id, rec);
+      deduped.push(rec);
+    }
+  }
+
+  const unresolved = deduped.filter((r) => !r.team_id);
+  console.log(`\nresolved=${deduped.length - unresolved.length}  unresolved=${unresolved.length}  (after dedup: ${deduped.length} rows)`);
 
   if (DRY) { console.log("(dry-run — nothing written)"); return; }
   if (unresolved.length) {
@@ -140,9 +176,9 @@ async function main() {
     : createClient(LOCAL_URL, LOCAL_KEY, { auth: { persistSession: false } });
 
   await target.from("hackathon_round1_scores").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-  const { error: insErr } = await target.from("hackathon_round1_scores").insert(records);
+  const { error: insErr } = await target.from("hackathon_round1_scores").insert(deduped);
   if (insErr) { console.error("Insert failed:", insErr); process.exit(1); }
-  console.log(`\n✅ wrote ${records.length} rows to ${TARGET_PROD ? "PROD" : "LOCAL"} hackathon_round1_scores`);
+  console.log(`\n✅ wrote ${deduped.length} rows to ${TARGET_PROD ? "PROD" : "LOCAL"} hackathon_round1_scores`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
