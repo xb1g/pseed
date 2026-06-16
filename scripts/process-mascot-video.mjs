@@ -32,7 +32,9 @@ const manifestPath = path.join(outputDir, "manifest.json");
 const TARGET_FPS = 24;
 const TARGET_WIDTH = 240;
 const COLORKEY_TOLERANCE = 0.12; // tune if light mascot parts disappear
-const HUE_SHIFT = 60; // rotate the source green mascot toward blue
+const HUE_SHIFT = 55; // rotate the source green mascot toward blue
+const HUE_SATURATION = 0.75; // slightly desaturate so dark areas don't pick up a strong green cast
+const SHADOW_GREEN_BALANCE = -0.12; // pull green out of the shadows
 
 const WEBP_OPTIONS = {
   quality: 85,
@@ -64,7 +66,8 @@ function extractPngFrames() {
   // 3. scale down with lanczos
   const vf = [
     `fps=${TARGET_FPS}`,
-    `hue=h=${HUE_SHIFT}`,
+    `hue=h=${HUE_SHIFT}:s=${HUE_SATURATION}`,
+    `colorbalance=gs=${SHADOW_GREEN_BALANCE}`,
     `colorkey=white:${COLORKEY_TOLERANCE}:0.0`,
     `scale=${TARGET_WIDTH}:-1:flags=lanczos`,
     "format=rgba",
