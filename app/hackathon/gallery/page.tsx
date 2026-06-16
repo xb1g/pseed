@@ -4,6 +4,8 @@ import { getGalleryProducts, getAllTags } from "@/lib/hackathon/gallery";
 import { PLACEHOLDER_PRODUCTS } from "@/lib/hackathon/gallery-placeholders";
 import GalleryWithWave from "@/components/hackathon/gallery/GalleryWithWave";
 import ThemeToggle from "@/components/hackathon/gallery/ThemeToggle";
+import LangToggle from "@/components/hackathon/gallery/LangToggle";
+import JellyfishBackground from "@/components/hackathon/gallery/JellyfishBackground";
 
 export const metadata: Metadata = {
   title: "Product Gallery | PassionSeed Hackathon",
@@ -33,6 +35,7 @@ export default async function GalleryPage({
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bloom-bg)" }}>
+      <JellyfishBackground />
 
       {/* Hero band — steel-blue grainy gradient */}
       <div
@@ -60,19 +63,8 @@ export default async function GalleryPage({
           </a>
 
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <LangToggle onHero />
             <ThemeToggle />
-            <a
-              href="/hackathon/dashboard"
-              className="bloom-button bloom-button--ghost"
-              style={{
-                padding: "0.5rem 1.25rem",
-                fontSize: "0.875rem",
-                color: "rgba(255,255,255,0.85)",
-                borderColor: "rgba(255,255,255,0.22)",
-              }}
-            >
-              Submit your product
-            </a>
           </div>
         </nav>
 

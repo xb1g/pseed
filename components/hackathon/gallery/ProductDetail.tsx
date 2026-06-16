@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, ExternalLink, Users } from "lucide-react";
+import { ArrowLeft, Users } from "lucide-react";
 import InterestDialog from "./InterestDialog";
 import ThemeToggle from "./ThemeToggle";
+import LangToggle from "./LangToggle";
 import WaveEntry from "./WaveEntry";
 import type { GalleryProduct } from "@/lib/hackathon/gallery";
+import { useLang, t } from "@/lib/hackathon/gallery-lang";
 
 interface ProductDetailProps {
   product: GalleryProduct;
@@ -13,6 +15,7 @@ interface ProductDetailProps {
 
 export default function ProductDetail({ product }: ProductDetailProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { lang } = useLang();
 
   return (
     <>
@@ -77,16 +80,9 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               All products
             </a>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <LangToggle onHero />
               <ThemeToggle />
-              <button
-                className="bloom-button"
-                onClick={() => setDialogOpen(true)}
-                style={{ padding: "0.5rem 1.25rem", fontSize: "0.875rem" }}
-              >
-                <span className="bloom-button__grain" aria-hidden="true" />
-                I want to use this product
-              </button>
             </div>
           </nav>
 
@@ -145,7 +141,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 textShadow: "0 2px 16px rgba(20,40,80,0.40)",
               } as React.CSSProperties}
             >
-              {product.product_name}
+              {t(product.product_name, product.product_name_th, lang)}
             </h1>
 
             <p
@@ -160,7 +156,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 textWrap: "pretty",
               } as React.CSSProperties}
             >
-              {product.problem_statement}
+              {t(product.problem_statement, product.problem_statement_th, lang)}
             </p>
           </div>
         </div>
@@ -200,7 +196,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                   textWrap: "pretty",
                 } as React.CSSProperties}
               >
-                {product.solution_description.split("\n\n").map((para, i) => (
+                {t(product.solution_description, product.solution_description_th, lang).split("\n\n").map((para, i) => (
                   <p key={i} style={{ margin: i === 0 ? 0 : "1em 0 0" }}>
                     {para}
                   </p>
@@ -309,42 +305,18 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
                   <div style={{ height: "1px", background: "var(--bloom-border-subtle)", marginBottom: "1.5rem" }} />
 
-                  {/* Hackathon badge */}
-                  <p
-                    style={{
-                      fontFamily: "var(--font-bai-jamjuree), var(--font-libre-franklin), sans-serif",
-                      fontSize: "0.8125rem",
-                      color: "var(--bloom-text-muted)",
-                      margin: "0 0 1.5rem",
-                    }}
-                  >
-                    Built at{" "}
-                    <span style={{ color: "var(--bloom-text-secondary)", fontWeight: 600 }}>
-                      {product.hackathon_name} {product.hackathon_year}
-                    </span>
+                  {/* How to test hint */}
+                  <p style={{
+                    fontFamily: "var(--font-bai-jamjuree), sans-serif",
+                    fontSize: "0.8125rem",
+                    color: "var(--bloom-text-muted)",
+                    margin: "0 0 0.875rem",
+                    lineHeight: 1.5,
+                  }}>
+                    {product.test_mode === "direct"
+                      ? "This product is available to try directly — click below to get the link."
+                      : "Contact the team to get access and try this product."}
                   </p>
-
-                  {/* Demo link */}
-                  {product.demo_url && (
-                    <a
-                      href={product.demo_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bloom-button bloom-button--ghost"
-                      style={{
-                        display: "flex",
-                        width: "100%",
-                        justifyContent: "center",
-                        marginBottom: "0.75rem",
-                        textDecoration: "none",
-                        fontSize: "0.9rem",
-                        padding: "0.625rem 1.25rem",
-                      }}
-                    >
-                      <ExternalLink size={14} aria-hidden="true" />
-                      View demo
-                    </a>
-                  )}
 
                   {/* CTA */}
                   <button
@@ -353,45 +325,8 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                     onClick={() => setDialogOpen(true)}
                   >
                     <span className="bloom-button__grain" aria-hidden="true" />
-                    I want to use this product
+                    {product.test_mode === "direct" ? "Get access to try this" : "Contact team to test"}
                   </button>
-
-                  {/* LINE QR */}
-                  {product.line_qr_url && (
-                    <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid var(--bloom-border-subtle)' }}>
-                      <p style={{
-                        fontFamily: 'var(--font-bai-jamjuree), sans-serif',
-                        fontSize: '0.75rem', fontWeight: 700,
-                        color: 'var(--bloom-text-muted)',
-                        letterSpacing: '0.06em', textTransform: 'uppercase' as const,
-                        margin: '0 0 0.75rem',
-                      }}>
-                        Chat with the team on LINE
-                      </p>
-                      <div style={{ display: 'flex', justifyContent: 'center' }}>
-                        <img
-                          src={product.line_qr_url}
-                          alt='LINE QR code — scan to contact the team'
-                          style={{
-                            width: '140px', height: '140px',
-                            objectFit: 'contain',
-                            borderRadius: '12px',
-                            border: '1px solid rgba(74,222,128,0.2)',
-                            background: '#ffffff',
-                            padding: '0.5rem',
-                            display: 'block',
-                          }}
-                        />
-                      </div>
-                      <p style={{
-                        fontFamily: 'var(--font-bai-jamjuree), sans-serif',
-                        fontSize: '0.75rem', color: 'var(--bloom-text-muted)',
-                        textAlign: 'center', margin: '0.625rem 0 0',
-                      }}>
-                        Scan to add on LINE
-                      </p>
-                    </div>
-                  )}
 
                   {/* Interest count */}
                   {product.interest_count > 0 && (
@@ -418,6 +353,11 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       <InterestDialog
         productId={product.id}
         productName={product.product_name}
+        testMode={product.test_mode}
+        demoUrl={product.demo_url}
+        contactEmail={product.contact_email}
+        lineId={product.line_id}
+        lineQrUrl={product.line_qr_url}
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
       />

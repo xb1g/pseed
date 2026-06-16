@@ -3,29 +3,42 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Upload, X, Loader2, Check, ExternalLink, QrCode } from "lucide-react";
+import { ArrowLeft, Upload, X, Loader2, Check, ExternalLink, QrCode, Eye } from "lucide-react";
 import { ALLOWED_TAGS } from "@/lib/hackathon/gallery";
+import ProductDetail from "@/components/hackathon/gallery/ProductDetail";
 
 type FormState = {
   product_name: string;
+  product_name_th: string;
   problem_statement: string;
+  problem_statement_th: string;
   solution_description: string;
+  solution_description_th: string;
   tags: string[];
+  test_mode: "direct" | "contact";
   demo_url: string;
+  contact_email: string;
   cover_image_url: string;
   additional_images: string[];
   line_qr_url: string;
+  line_id: string;
 };
 
 const EMPTY_FORM: FormState = {
   product_name: "",
+  product_name_th: "",
   problem_statement: "",
+  problem_statement_th: "",
   solution_description: "",
+  solution_description_th: "",
   tags: [],
+  test_mode: "contact",
   demo_url: "",
+  contact_email: "",
   cover_image_url: "",
   additional_images: [],
   line_qr_url: "",
+  line_id: "",
 };
 
 export default function GallerySubmitPage() {
@@ -39,6 +52,7 @@ export default function GallerySubmitPage() {
   const [coverUploading, setCoverUploading] = useState(false);
   const [additionalUploading, setAdditionalUploading] = useState(false);
   const [lineQrUploading, setLineQrUploading] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
 
   // Auth + prefill
@@ -61,13 +75,19 @@ export default function GallerySubmitPage() {
           setExistingProduct(data.product);
           setForm({
             product_name: data.product.product_name ?? "",
+            product_name_th: data.product.product_name_th ?? "",
             problem_statement: data.product.problem_statement ?? "",
+            problem_statement_th: data.product.problem_statement_th ?? "",
             solution_description: data.product.solution_description ?? "",
+            solution_description_th: data.product.solution_description_th ?? "",
             tags: data.product.tags ?? [],
+            test_mode: data.product.test_mode ?? "contact",
             demo_url: data.product.demo_url ?? "",
+            contact_email: data.product.contact_email ?? "",
             cover_image_url: data.product.cover_image_url ?? "",
             additional_images: data.product.additional_images ?? [],
             line_qr_url: data.product.line_qr_url ?? "",
+            line_id: data.product.line_id ?? "",
           });
         }
       })
@@ -75,11 +95,10 @@ export default function GallerySubmitPage() {
   }, [authChecked]);
 
   const toggleTag = (tag: string) => {
-    setForm((prev) => {
-      if (prev.tags.includes(tag)) return { ...prev, tags: prev.tags.filter((t) => t !== tag) };
-      if (prev.tags.length >= 5) return prev;
-      return { ...prev, tags: [...prev.tags, tag] };
-    });
+    setForm((prev) => ({
+      ...prev,
+      tags: prev.tags.includes(tag) ? [] : [tag],
+    }));
   };
 
   const uploadImage = async (file: File, type: "cover" | "additional" | "line_qr") => {
@@ -114,9 +133,14 @@ export default function GallerySubmitPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
-          demo_url: form.demo_url || null,
+          product_name_th: form.product_name_th || null,
+          problem_statement_th: form.problem_statement_th || null,
+          solution_description_th: form.solution_description_th || null,
+          demo_url: form.test_mode === "direct" ? (form.demo_url || null) : null,
+          contact_email: form.contact_email || null,
           cover_image_url: form.cover_image_url || null,
           line_qr_url: form.line_qr_url || null,
+          line_id: form.line_id || null,
         }),
       });
       const data = await res.json();
@@ -264,6 +288,16 @@ export default function GallerySubmitPage() {
               />
             </FormField>
 
+            <FormField label="ชื่อผลิตภัณฑ์ (ภาษาไทย)" hint={`${form.product_name_th.length}/80 · optional`}>
+              <input
+                value={form.product_name_th}
+                onChange={(e) => setForm((p) => ({ ...p, product_name_th: e.target.value }))}
+                maxLength={80}
+                placeholder="ชื่อผลิตภัณฑ์เป็นภาษาไทย"
+                style={inputStyle}
+              />
+            </FormField>
+
             {/* Problem */}
             <FormField label="Problem statement" required hint={`${form.problem_statement.length}/300`}>
               <textarea
@@ -273,6 +307,17 @@ export default function GallerySubmitPage() {
                 required
                 rows={3}
                 placeholder="What problem does this solve? (1–2 sentences)"
+                style={{ ...inputStyle, resize: "none" }}
+              />
+            </FormField>
+
+            <FormField label="คำอธิบายปัญหา (ภาษาไทย)" hint={`${form.problem_statement_th.length}/300 · optional`}>
+              <textarea
+                value={form.problem_statement_th}
+                onChange={(e) => setForm((p) => ({ ...p, problem_statement_th: e.target.value }))}
+                maxLength={300}
+                rows={3}
+                placeholder="ปัญหานี้คืออะไร? (1–2 ประโยค)"
                 style={{ ...inputStyle, resize: "none" }}
               />
             </FormField>
@@ -290,8 +335,19 @@ export default function GallerySubmitPage() {
               />
             </FormField>
 
+            <FormField label="รายละเอียดแนวทางแก้ไข (ภาษาไทย)" hint={`${form.solution_description_th.length}/1000 · optional`}>
+              <textarea
+                value={form.solution_description_th}
+                onChange={(e) => setForm((p) => ({ ...p, solution_description_th: e.target.value }))}
+                maxLength={1000}
+                rows={6}
+                placeholder="ทำงานอย่างไร? มีประสิทธิภาพอย่างไร?"
+                style={{ ...inputStyle, resize: "vertical" }}
+              />
+            </FormField>
+
             {/* Tags */}
-            <FormField label="Tags" required hint="Choose 1–5">
+            <FormField label="Track" required hint="Choose 1">
               <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.25rem" }}>
                 {ALLOWED_TAGS.map((tag) => {
                   const active = form.tags.includes(tag);
@@ -320,16 +376,70 @@ export default function GallerySubmitPage() {
               </div>
             </FormField>
 
-            {/* Demo URL */}
-            <FormField label="Demo URL" hint="Optional — video, live app, or prototype">
-              <input
-                value={form.demo_url}
-                onChange={(e) => setForm((p) => ({ ...p, demo_url: e.target.value }))}
-                type="url"
-                placeholder="https://..."
-                style={inputStyle}
-              />
-            </FormField>
+            {/* How to test */}
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.75rem" }}>
+                <label style={{
+                  fontFamily: "var(--font-bai-jamjuree), sans-serif",
+                  fontSize: "0.8125rem", fontWeight: 700,
+                  color: "rgba(145,196,227,0.7)",
+                  letterSpacing: "0.03em", textTransform: "uppercase" as const,
+                }}>
+                  How can people test your product? <span style={{ color: "rgba(97,154,210,0.6)" }}>*</span>
+                </label>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                {(["direct", "contact"] as const).map((mode) => {
+                  const active = form.test_mode === mode;
+                  const label = mode === "direct" ? "Direct access" : "Contact to test";
+                  const desc = mode === "direct" ? "Provide a link — anyone can try it immediately" : "Interested people reach out to you first";
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setForm((p) => ({ ...p, test_mode: mode }))}
+                      style={{
+                        padding: "0.875rem 1rem",
+                        borderRadius: "12px",
+                        border: `1px solid ${active ? "rgba(97,154,210,0.6)" : "rgba(74,107,130,0.3)"}`,
+                        background: active ? "rgba(97,154,210,0.12)" : "transparent",
+                        cursor: "pointer",
+                        textAlign: "left" as const,
+                        transition: "all 180ms",
+                      }}
+                    >
+                      <div style={{
+                        fontFamily: "var(--font-bai-jamjuree), sans-serif",
+                        fontSize: "0.875rem", fontWeight: 700,
+                        color: active ? "#91C4E3" : "rgba(145,196,227,0.5)",
+                        marginBottom: "0.25rem",
+                      }}>{label}</div>
+                      <div style={{
+                        fontFamily: "var(--font-bai-jamjuree), sans-serif",
+                        fontSize: "0.75rem",
+                        color: active ? "rgba(145,196,227,0.6)" : "rgba(145,196,227,0.3)",
+                        lineHeight: 1.4,
+                      }}>{desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Direct: demo URL */}
+              {form.test_mode === "direct" && (
+                <div style={{ marginTop: "1rem" }}>
+                  <FormField label="Demo / App URL" required hint="Where people can try your product">
+                    <input
+                      value={form.demo_url}
+                      onChange={(e) => setForm((p) => ({ ...p, demo_url: e.target.value }))}
+                      type="url"
+                      placeholder="https://..."
+                      style={inputStyle}
+                    />
+                  </FormField>
+                </div>
+              )}
+            </div>
 
             {/* Cover image */}
             <FormField label="Cover image" hint="Optional — 16:9 recommended">
@@ -405,9 +515,82 @@ export default function GallerySubmitPage() {
                 fontSize: "0.875rem", color: "rgba(145,196,227,0.6)",
                 margin: "0 0 1.25rem", lineHeight: 1.6,
               }}>
-                Upload your LINE QR code so interested visitors can add your team directly and start a conversation.
-                This appears on your product page next to the "I want to use this" button.
+                Add contact info so interested visitors can reach your team. At least one contact method is recommended.
               </p>
+
+              {/* Contact email */}
+              <div style={{ marginBottom: "1.25rem" }}>
+                <label style={{
+                  display: "block",
+                  fontFamily: "var(--font-bai-jamjuree), sans-serif",
+                  fontSize: "0.75rem", fontWeight: 700,
+                  color: "rgba(74,222,128,0.6)",
+                  letterSpacing: "0.05em", textTransform: "uppercase" as const,
+                  marginBottom: "0.375rem",
+                }}>
+                  Email
+                </label>
+                <input
+                  value={form.contact_email}
+                  onChange={(e) => setForm((p) => ({ ...p, contact_email: e.target.value }))}
+                  type="email"
+                  placeholder="team@example.com"
+                  style={{
+                    ...inputStyle,
+                    border: "1px solid rgba(74,222,128,0.25)",
+                    background: "rgba(0,185,100,0.04)",
+                  }}
+                />
+              </div>
+
+              {/* LINE ID */}
+              <div style={{ marginBottom: "1.25rem" }}>
+                <label style={{
+                  display: "block",
+                  fontFamily: "var(--font-bai-jamjuree), sans-serif",
+                  fontSize: "0.75rem", fontWeight: 700,
+                  color: "rgba(74,222,128,0.6)",
+                  letterSpacing: "0.05em", textTransform: "uppercase",
+                  marginBottom: "0.375rem",
+                }}>
+                  LINE ID
+                </label>
+                <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                  <span style={{
+                    position: "absolute", left: "0.875rem",
+                    fontFamily: "var(--font-bai-jamjuree), sans-serif",
+                    fontSize: "0.9375rem", color: "rgba(74,222,128,0.5)",
+                    pointerEvents: "none", userSelect: "none",
+                  }}>@</span>
+                  <input
+                    value={form.line_id}
+                    onChange={(e) => setForm((p) => ({ ...p, line_id: e.target.value.replace(/^@/, "") }))}
+                    placeholder="yourlineid"
+                    style={{
+                      ...inputStyle,
+                      paddingLeft: "2rem",
+                      border: "1px solid rgba(74,222,128,0.25)",
+                      background: "rgba(0,185,100,0.04)",
+                    }}
+                  />
+                </div>
+                {form.line_id && (
+                  <a
+                    href={`https://line.me/ti/p/~${form.line_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: "0.3rem",
+                      marginTop: "0.375rem",
+                      fontFamily: "var(--font-bai-jamjuree), sans-serif",
+                      fontSize: "0.75rem", color: "rgba(74,222,128,0.6)",
+                      textDecoration: "none",
+                    }}
+                  >
+                    <ExternalLink size={11} /> line.me/ti/p/~{form.line_id}
+                  </a>
+                )}
+              </div>
 
               {form.line_qr_url ? (
                 <div style={{ display: "flex", alignItems: "flex-start", gap: "1rem" }}>
@@ -446,7 +629,37 @@ export default function GallerySubmitPage() {
             </div>
 
             {/* Submit */}
-            <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: "0.5rem" }}>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", paddingTop: "0.5rem" }}>
+              <button
+                type="button"
+                onClick={() => setPreviewing(true)}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: "0.5rem",
+                  padding: "0.875rem 1.75rem",
+                  borderRadius: "12px",
+                  fontFamily: "var(--font-bai-jamjuree), sans-serif",
+                  fontWeight: 700, fontSize: "1rem",
+                  background: "transparent",
+                  border: "1px solid rgba(97,154,210,0.35)",
+                  color: "rgba(145,196,227,0.7)",
+                  cursor: "pointer",
+                  transition: "all 200ms",
+                }}
+                onMouseEnter={(e) => {
+                  const el = e.currentTarget as HTMLButtonElement;
+                  el.style.background = "rgba(97,154,210,0.08)";
+                  el.style.color = "#91C4E3";
+                  el.style.borderColor = "rgba(97,154,210,0.5)";
+                }}
+                onMouseLeave={(e) => {
+                  const el = e.currentTarget as HTMLButtonElement;
+                  el.style.background = "transparent";
+                  el.style.color = "rgba(145,196,227,0.7)";
+                  el.style.borderColor = "rgba(97,154,210,0.35)";
+                }}
+              >
+                <Eye size={16} /> Preview
+              </button>
               <button
                 type="submit"
                 disabled={submitting || form.tags.length === 0}
@@ -481,6 +694,80 @@ export default function GallerySubmitPage() {
         input::placeholder, textarea::placeholder { color: rgba(90,122,148,0.6); }
         input:focus, textarea:focus { border-color: rgba(97,154,210,0.5) !important; outline: none; box-shadow: 0 0 0 3px rgba(97,154,210,0.08); }
       `}</style>
+
+      {/* Preview modal */}
+      {previewing && (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 400,
+            background: "var(--bloom-bg)",
+            overflowY: "auto",
+          }}
+        >
+          {/* Close bar */}
+          <div style={{
+            position: "sticky", top: 0, zIndex: 10,
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "0 clamp(1.25rem, 5vw, 3rem)",
+            height: "52px",
+            background: "rgba(8,12,18,0.92)",
+            backdropFilter: "blur(12px)",
+            borderBottom: "1px solid rgba(97,154,210,0.12)",
+          }}>
+            <span style={{
+              fontFamily: "var(--font-bai-jamjuree), sans-serif",
+              fontSize: "0.8125rem", fontWeight: 700,
+              color: "rgba(145,196,227,0.5)",
+              letterSpacing: "0.06em", textTransform: "uppercase",
+            }}>
+              Preview — how your page will look
+            </span>
+            <button
+              onClick={() => setPreviewing(false)}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: "0.375rem",
+                padding: "0.4rem 1rem",
+                borderRadius: "8px",
+                fontFamily: "var(--font-bai-jamjuree), sans-serif",
+                fontSize: "0.8125rem", fontWeight: 700,
+                background: "rgba(97,154,210,0.1)",
+                border: "1px solid rgba(97,154,210,0.3)",
+                color: "#91C4E3",
+                cursor: "pointer",
+                transition: "all 160ms",
+              }}
+            >
+              <X size={13} /> Close preview
+            </button>
+          </div>
+
+          <ProductDetail
+            product={{
+              id: "preview",
+              team_id: "preview",
+              product_name: form.product_name || "Your product name",
+              product_name_th: form.product_name_th || null,
+              problem_statement: form.problem_statement || "Your problem statement will appear here.",
+              problem_statement_th: form.problem_statement_th || null,
+              solution_description: form.solution_description || "Your solution description will appear here.",
+              solution_description_th: form.solution_description_th || null,
+              cover_image_url: form.cover_image_url || null,
+              additional_images: form.additional_images,
+              test_mode: form.test_mode,
+              demo_url: form.demo_url || null,
+              contact_email: form.contact_email || null,
+              line_qr_url: form.line_qr_url || null,
+              line_id: form.line_id || null,
+              tags: form.tags,
+              hackathon_year: 2026,
+              hackathon_name: "PassionSeed Hackathon",
+              interest_count: 0,
+              created_at: new Date().toISOString(),
+              team: { name: "Your team", members: [] },
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
