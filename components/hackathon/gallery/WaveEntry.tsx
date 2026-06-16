@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import gsap from "gsap";
+import { useEffect, useLayoutEffect, useRef } from "react";
 
 /**
  * Wave overlay that recedes on mount, completing the transition from the gallery.
@@ -10,11 +9,23 @@ import gsap from "gsap";
 export default function WaveEntry() {
   const overlayRef = useRef<HTMLDivElement>(null);
 
+  // useLayoutEffect runs synchronously after DOM paint — shows overlay before user sees content
+  useLayoutEffect(() => {
+    const overlay = overlayRef.current;
+    if (!overlay) return;
+    try {
+      if (sessionStorage.getItem("gallery-wave-entry") === "1") {
+        overlay.style.display = "block";
+        overlay.style.transform = "translateY(0)";
+        overlay.style.transition = "none";
+      }
+    } catch {}
+  }, []);
+
   useEffect(() => {
     const overlay = overlayRef.current;
     if (!overlay) return;
 
-    // Check if we arrived via the wave transition
     let fromWave = false;
     try {
       fromWave = sessionStorage.getItem("gallery-wave-entry") === "1";
@@ -23,21 +34,16 @@ export default function WaveEntry() {
 
     if (!fromWave) return;
 
-    // Show overlay immediately (was hidden to avoid flash on direct navigation)
-    gsap.set(overlay, { yPercent: 0, y: 0, display: "block" });
+    // Force reflow then animate down
+    void overlay.offsetHeight;
+    overlay.style.transition = "transform 0.7s cubic-bezier(0.87, 0, 0.13, 1)";
+    overlay.style.transform = "translateY(110%)";
 
-    const tl = gsap.timeline({ delay: 0.08 });
-    tl.to(overlay, {
-      yPercent: 100,
-      y: 80,
-      duration: 0.7,
-      ease: "power3.inOut",
-      onComplete: () => {
-        if (overlay) overlay.style.display = "none";
-      },
-    });
+    const onEnd = () => { overlay.style.display = "none"; };
+    overlay.addEventListener("transitionend", onEnd, { once: true });
 
-    return () => { tl.kill(); };
+    const failsafe = setTimeout(() => { overlay.style.display = "none"; }, 1500);
+    return () => { clearTimeout(failsafe); overlay.removeEventListener("transitionend", onEnd); };
   }, []);
 
   return (

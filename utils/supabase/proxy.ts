@@ -69,6 +69,7 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith('/api/expert-interview') &&
     !request.nextUrl.pathname.startsWith('/epic-sprint') &&
     !request.nextUrl.pathname.startsWith('/about') &&
+    !request.nextUrl.pathname.startsWith('/fireball') &&
     !request.nextUrl.pathname.endsWith('.md') &&
     request.nextUrl.pathname !== '/'
   ) {
