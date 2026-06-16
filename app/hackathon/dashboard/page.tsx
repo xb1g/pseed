@@ -13,12 +13,48 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import gsap from "gsap";
-import { Bell, ClipboardList, Users, Check, Sparkles, BookOpen, Home, ArrowRight, Search, Settings, ExternalLink, Loader2, QrCode } from "lucide-react";
+import { Bell, ClipboardList, Users, Check, Sparkles, BookOpen, Home, ArrowRight, Search, Settings, ExternalLink, Loader2, QrCode, Trophy, Target, Zap, BarChart3, BrainCircuit, Activity } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import type { HackathonParticipant } from "@/lib/hackathon/db";
 import { FeedbackInvitationCard } from "@/components/hackathon/FeedbackInvitationCard";
 
 import FractalGlassBackground from "@/components/hackathon/ClarityGlassBackground";
+
+interface Particle {
+  id: number;
+  x: number;
+  y: number;
+  velocityX: number;
+  velocityY: number;
+  color: string;
+  size: number;
+}
+
+interface TeamLearningStats {
+  teamId: string;
+  label: string;
+  members: number;
+  cycles: number;
+  completion: number | null;
+  scoredSubs: number;
+  honestWrongness: boolean;
+  learningIndex: number | null;
+  fidelity: number | null;
+  aiLikelihood: number | null;
+  engagement: number;
+  iteration: number;
+  semifinal: number | null;
+  round1: number | null;
+  quadrant: string | null;
+  finished: boolean;
+}
+
+const QUADRANT: Record<string, { label: string; color: string; emoji: string; desc: string }> = {
+  grew_delivered: { label: "เรียนรู้ + ส่งงาน", color: "#22c55e", emoji: "🌟", desc: "ทั้งเติบโตและทำงานได้ดี" },
+  undervalued_growth: { label: "เติบโตเกินคะแนน", color: "#3b82f6", emoji: "🔑", desc: "การเรียนรู้สูง แม้คะแนนยังไม่สะท้อน" },
+  polished_coaster: { label: "งานเนียนแต่เรียนน้อย", color: "#f59e0b", emoji: "🪤", desc: "ผลงานดี แต่กระบวนการเรียนรู้น้อย" },
+  disengaged: { label: "ยังไม่เข้าร่วมเต็มที่", color: "#9ca3af", emoji: "😐", desc: "มีโอกาสพัฒนาการมีส่วนร่วม" },
+};
 
 const ONBOARDING_NUDGE_KEY = "hackathon_onboarding_nudge_dismissed";
 

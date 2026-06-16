@@ -1,14 +1,12 @@
-import { GoogleGenerativeAI } from "npm:@google/generative-ai@0.24.0";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
 
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-const GEMINI_PRIMARY_MODEL = "gemini-3.1-flash-lite-preview";
-const GEMINI_FALLBACK_MODEL = "gemini-2.5-flash-lite";
+const DEEPSEEK_API_KEY = Deno.env.get("DEEPSEEK_API_KEY");
+const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
+const DEEPSEEK_MODEL = "deepseek-v4-flash";
 
 interface ChatMessage {
   role: "user" | "model";
@@ -101,49 +99,68 @@ Respond ONLY with valid JSON:
 }`,
 };
 
-async function callGemini(
+interface OpenAIMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
+
+function toOpenAIMessages(
+  systemPrompt: string,
+  history: ChatMessage[],
+  userMessage?: string,
+): OpenAIMessage[] {
+  const messages: OpenAIMessage[] = [
+    { role: "system", content: systemPrompt },
+  ];
+
+  for (const msg of history) {
+    messages.push({
+      role: msg.role === "model" ? "assistant" : "user",
+      content: msg.parts.map((p) => p.text).join(""),
+    });
+  }
+
+  if (userMessage) {
+    messages.push({ role: "user", content: userMessage });
+  }
+
+  return messages;
+}
+
+async function callDeepSeek(
   systemPrompt: string,
   history: ChatMessage[],
   userMessage?: string,
 ): Promise<string> {
-  if (!GEMINI_API_KEY) {
-    throw new Error("Missing GEMINI_API_KEY");
+  if (!DEEPSEEK_API_KEY) {
+    throw new Error("Missing DEEPSEEK_API_KEY");
   }
 
-  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+  const messages = toOpenAIMessages(systemPrompt, history, userMessage);
 
-  const contents: ChatMessage[] = [...history];
-  if (userMessage) {
-    contents.push({ role: "user", parts: [{ text: userMessage }] });
-  }
-
-  const request = {
-    contents,
-    systemInstruction: systemPrompt,
-    generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: 1024,
+  const response = await fetch(DEEPSEEK_BASE_URL + "/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + DEEPSEEK_API_KEY,
     },
-  };
+    body: JSON.stringify({
+      model: DEEPSEEK_MODEL,
+      messages,
+      temperature: 0.7,
+      max_tokens: 1024,
+    }),
+  });
 
-  try {
-    const primaryModel = genAI.getGenerativeModel({
-      model: GEMINI_PRIMARY_MODEL,
-    });
-    const result = await primaryModel.generateContent(request);
-    return result.response.text() ?? "";
-  } catch (error) {
-    console.error(
-      `[onboarding-chat] Primary Gemini model failed (${GEMINI_PRIMARY_MODEL}), trying fallback (${GEMINI_FALLBACK_MODEL})`,
-      error,
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "");
+    throw new Error(
+      `DeepSeek API error: status=${response.status} body=${errorText.substring(0, 300)}`,
     );
-
-    const fallbackModel = genAI.getGenerativeModel({
-      model: GEMINI_FALLBACK_MODEL,
-    });
-    const result = await fallbackModel.generateContent(request);
-    return result.response.text() ?? "";
   }
+
+  const data = await response.json();
+  return data?.choices?.[0]?.message?.content ?? "";
 }
 
 function extractJsonObject(text: string): string | null {
@@ -192,7 +209,7 @@ function extractJsonObject(text: string): string | null {
 function parseJsonBlock(text: string): Record<string, unknown> {
   const jsonBlock = extractJsonObject(text);
   if (!jsonBlock) {
-    throw new Error("No JSON in Gemini response");
+    throw new Error("No JSON in DeepSeek response");
   }
   return JSON.parse(jsonBlock) as Record<string, unknown>;
 }
@@ -205,11 +222,14 @@ Deno.serve(async (req) => {
   try {
     console.log("[onboarding-chat] Request received");
 
-    if (!GEMINI_API_KEY) {
-      return new Response(JSON.stringify({ error: "Missing GEMINI_API_KEY" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!DEEPSEEK_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: "Missing DEEPSEEK_API_KEY" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const { mode, chat_history, user_context } =
@@ -218,13 +238,11 @@ Deno.serve(async (req) => {
     let response: OnboardingResponse;
 
     if (mode === "chat") {
-      // chat_history already contains the latest user message from the client.
-      // For initial greeting (empty history), inject a seed message.
       const history =
         chat_history.length === 0
-          ? [{ role: "user" as const, parts: [{ text: "Hi, I'm new here!" }] }]
+          ? [{ role: "user" as const, parts: [{ text: "Hi, I'm new here!" }] as [{ text: string }] }]
           : chat_history;
-      const text = await callGemini(SYSTEM_PROMPTS.chat, history);
+      const text = await callDeepSeek(SYSTEM_PROMPTS.chat, history);
       const readyForInterests = text.includes("[READY_FOR_INTERESTS]");
       const cleanText = text.replace("[READY_FOR_INTERESTS]", "").trim();
 
@@ -235,9 +253,9 @@ Deno.serve(async (req) => {
     } else if (mode === "generate_interests") {
       const history =
         chat_history.length === 0
-          ? [{ role: "user" as const, parts: [{ text: "Generate interest categories for me" }] }]
+          ? [{ role: "user" as const, parts: [{ text: "Generate interest categories for me" }] as [{ text: string }] }]
           : chat_history;
-      const text = await callGemini(
+      const text = await callDeepSeek(
         SYSTEM_PROMPTS.generate_interests,
         history,
       );
@@ -259,7 +277,7 @@ Deno.serve(async (req) => {
     } else {
       const interestContext = user_context.selected_interests?.join(", ") ?? "";
       const prompt = `User's selected interests: ${interestContext}`;
-      const text = await callGemini(SYSTEM_PROMPTS.suggest_careers, [
+      const text = await callDeepSeek(SYSTEM_PROMPTS.suggest_careers, [
         { role: "user", parts: [{ text: prompt }] },
       ]);
       const parsed = parseJsonBlock(text);
