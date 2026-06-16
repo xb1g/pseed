@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { getGalleryProduct } from "@/lib/hackathon/gallery";
+import { getPlaceholderProduct } from "@/lib/hackathon/gallery-placeholders";
 import ProductDetail from "@/components/hackathon/gallery/ProductDetail";
 
 export const revalidate = 60;
@@ -11,7 +12,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { teamId } = await params;
-  const product = await getGalleryProduct(teamId);
+  const product = (await getGalleryProduct(teamId)) ?? getPlaceholderProduct(teamId);
   if (!product) return { title: "Product not found | Bloom Gallery" };
 
   return {
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { teamId } = await params;
-  const product = await getGalleryProduct(teamId);
+  const product = (await getGalleryProduct(teamId)) ?? getPlaceholderProduct(teamId);
 
   if (!product) notFound();
 

@@ -27,7 +27,7 @@ export function Layout({ children }: LayoutProps) {
   const isPublicHackathonRoute =
     pathname?.startsWith("/hackathon") && !pathname?.startsWith("/admin");
 
-  const hideNavbar = mounted && (
+  const hideNavbar =
     pathname === "/" ||
     pathname === "/support" ||
     pathname === "/contact" ||
@@ -35,8 +35,7 @@ export function Layout({ children }: LayoutProps) {
     pathname?.includes("complete-profile") ||
     isPublicHackathonRoute ||
     pathname?.includes("/app/beta") ||
-    pathname?.startsWith("/expert-interview")
-  );
+    pathname?.startsWith("/expert-interview");
 
   useEffect(() => {
     setMounted(true);
