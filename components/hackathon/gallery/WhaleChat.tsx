@@ -88,9 +88,11 @@ export default function WhaleChat({ onComplete, onExplore }: WhaleChatProps) {
         ))}
       </div>
 
-      {/* Whale */}
-      <div style={{ width: "120px", height: "120px", flexShrink: 0 }}>
-        <GalleryMascot />
+      {/* Whale — mascot renders at 240px native, scale to fit */}
+      <div style={{ width: "120px", height: "120px", flexShrink: 0, overflow: "hidden" }}>
+        <div style={{ transform: "scale(0.5)", transformOrigin: "top left", width: "240px", height: "240px" }}>
+          <GalleryMascot />
+        </div>
       </div>
 
       {/* Speech bubble — bloom-card style */}

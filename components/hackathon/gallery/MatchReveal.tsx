@@ -50,8 +50,10 @@ export default function MatchReveal({ answers, results, unmatched, onRetake }: M
         display: "flex", flexDirection: "column", alignItems: "center",
         gap: "1.5rem", paddingTop: "2rem",
       }}>
-        <div style={{ width: "120px", height: "120px" }}>
-          <GalleryMascot />
+        <div style={{ width: "120px", height: "120px", overflow: "hidden" }}>
+          <div style={{ transform: "scale(0.5)", transformOrigin: "top left", width: "240px", height: "240px" }}>
+            <GalleryMascot />
+          </div>
         </div>
         <p style={{
           fontFamily: "var(--font-bai-jamjuree), sans-serif",
