@@ -58,19 +58,21 @@ export default function WhaleChat({ onComplete, onExplore }: WhaleChatProps) {
   const whaleText = lang === "th" ? question.whale_th : question.whale_en;
 
   return (
-    <div style={{
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      minHeight: "100dvh",
-      padding: "2rem 1.25rem",
-      gap: "1.5rem",
-      opacity: phase === "transitioning" ? 0.5 : 1,
-      transition: "opacity 300ms ease",
-    }}>
+    <div
+      className="whale-chat"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "1.5rem",
+        opacity: phase === "transitioning" ? 0 : 1,
+        transform: phase === "transitioning" ? "translateY(8px)" : "translateY(0)",
+        transition: "opacity 300ms ease, transform 300ms ease",
+      }}
+    >
       {/* Progress dots */}
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
-        {[0, 1, 2, 3].map((i) => (
+      <div style={{ display: "flex", gap: "0.5rem" }}>
+        {[0, 1, 2].map((i) => (
           <div
             key={i}
             style={{
@@ -78,8 +80,8 @@ export default function WhaleChat({ onComplete, onExplore }: WhaleChatProps) {
               height: "8px",
               borderRadius: "50%",
               background: i <= step
-                ? "var(--bloom-accent, #619AD2)"
-                : "var(--bloom-border-default, rgba(74,107,130,0.3))",
+                ? "var(--bloom-accent)"
+                : "var(--bloom-border-default)",
               transition: "background 300ms",
             }}
           />
@@ -91,21 +93,21 @@ export default function WhaleChat({ onComplete, onExplore }: WhaleChatProps) {
         <GalleryMascot />
       </div>
 
-      {/* Speech bubble */}
-      <div style={{
-        maxWidth: "520px",
-        width: "100%",
-        padding: "1.25rem 1.5rem",
-        borderRadius: "20px",
-        background: "var(--bloom-bg-surface, rgba(15,22,36,0.85))",
-        border: "1px solid var(--bloom-border-default, rgba(74,107,130,0.25))",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
-      }}>
+      {/* Speech bubble — bloom-card style */}
+      <div
+        className="bloom-card"
+        style={{
+          maxWidth: "520px",
+          width: "100%",
+          padding: "1.25rem 1.5rem",
+          borderRadius: "20px",
+        }}
+      >
         <p style={{
           fontFamily: "var(--font-bai-jamjuree), sans-serif",
           fontSize: "1rem",
           lineHeight: 1.6,
-          color: "var(--bloom-text-primary, #C0D8F0)",
+          color: "var(--bloom-text-primary)",
           margin: 0,
           textAlign: "center",
         }}>
@@ -120,40 +122,30 @@ export default function WhaleChat({ onComplete, onExplore }: WhaleChatProps) {
         display: "flex",
         flexDirection: "column",
         gap: "0.625rem",
-        overflowY: "auto",
-        flex: 1,
       }}>
         {question.options.map((opt, i) => (
           <button
-            key={i}
+            key={`${questionId}-${i}`}
             onClick={() => handleOption(opt)}
             disabled={phase === "transitioning"}
+            className="whale-chat__option"
             style={{
               padding: "0.875rem 1.25rem",
               borderRadius: "14px",
-              border: "1px solid var(--bloom-border-default, rgba(74,107,130,0.3))",
-              background: "var(--bloom-bg-raised, rgba(10,15,22,0.6))",
+              border: "1px solid var(--bloom-border-default)",
+              background: "var(--bloom-bg-surface)",
               cursor: phase === "transitioning" ? "not-allowed" : "pointer",
               textAlign: "left",
-              transition: "all 180ms",
+              transition: "border-color 180ms ease-out, box-shadow 180ms ease-out, transform 180ms ease-out",
               minHeight: "48px",
-            }}
-            onMouseEnter={(e) => {
-              if (phase !== "transitioning") {
-                e.currentTarget.style.borderColor = "rgba(97,154,210,0.5)";
-                e.currentTarget.style.background = "rgba(97,154,210,0.08)";
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "var(--bloom-border-default, rgba(74,107,130,0.3))";
-              e.currentTarget.style.background = "var(--bloom-bg-raised, rgba(10,15,22,0.6))";
+              boxShadow: "var(--bloom-shadow-card)",
             }}
           >
             <span style={{
               fontFamily: "var(--font-bai-jamjuree), sans-serif",
               fontSize: "0.9375rem",
               fontWeight: 600,
-              color: "var(--bloom-text-primary, #C0D8F0)",
+              color: "var(--bloom-text-primary)",
               display: "block",
             }}>
               {lang === "th" ? opt.th : opt.en}
@@ -162,7 +154,7 @@ export default function WhaleChat({ onComplete, onExplore }: WhaleChatProps) {
               <span style={{
                 fontFamily: "var(--font-bai-jamjuree), sans-serif",
                 fontSize: "0.75rem",
-                color: "var(--bloom-text-muted, rgba(145,196,227,0.45))",
+                color: "var(--bloom-text-muted)",
                 display: "block",
                 marginTop: "0.125rem",
               }}>
@@ -172,6 +164,27 @@ export default function WhaleChat({ onComplete, onExplore }: WhaleChatProps) {
           </button>
         ))}
       </div>
+
+      <style>{`
+        .whale-chat__option:hover:not(:disabled) {
+          border-color: var(--bloom-border-strong) !important;
+          box-shadow: var(--bloom-shadow-hover) !important;
+          transform: translateY(-2px);
+        }
+        .whale-chat__option:focus-visible {
+          outline: none;
+          box-shadow: 0 0 0 2px var(--bloom-focus-ring) !important;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .whale-chat {
+            transition: opacity 0ms !important;
+            transform: none !important;
+          }
+          .whale-chat__option {
+            transition: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

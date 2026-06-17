@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { getGalleryProducts } from "@/lib/hackathon/gallery";
 import { PLACEHOLDER_PRODUCTS } from "@/lib/hackathon/gallery-placeholders";
 import MatchFlow from "./MatchFlow";
+import JellyfishBackground from "@/components/hackathon/gallery/JellyfishBackground";
 
 export const metadata: Metadata = {
   title: "Find Your Match | PassionSeed Hackathon",
@@ -24,6 +25,7 @@ export default async function MatchPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bloom-bg)" }}>
+      <JellyfishBackground />
       <MatchFlow products={products} />
     </div>
   );
