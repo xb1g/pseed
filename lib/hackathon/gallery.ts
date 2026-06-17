@@ -34,6 +34,8 @@ export type GalleryProduct = {
   hackathon_year: number;
   hackathon_name: string;
   interest_count: number;
+  match_count: number;
+  target_personas: { who: string[]; what: string[] } | null;
   created_at: string;
   team: {
     name: string;
@@ -54,6 +56,8 @@ export type GalleryProductSummary = Pick<
   | "hackathon_year"
   | "hackathon_name"
   | "interest_count"
+  | "match_count"
+  | "target_personas"
 > & { team_name: string };
 
 export async function getGalleryProducts(): Promise<GalleryProductSummary[]> {
@@ -71,6 +75,8 @@ export async function getGalleryProducts(): Promise<GalleryProductSummary[]> {
       hackathon_year,
       hackathon_name,
       interest_count,
+      match_count,
+      target_personas,
       hackathon_teams!inner ( name )
     `)
     .eq("is_published", true)
@@ -90,6 +96,8 @@ export async function getGalleryProducts(): Promise<GalleryProductSummary[]> {
     hackathon_year: row.hackathon_year,
     hackathon_name: row.hackathon_name,
     interest_count: row.interest_count,
+    match_count: row.match_count ?? 0,
+    target_personas: row.target_personas ?? null,
     team_name: row.hackathon_teams?.name ?? "",
   }));
 }
@@ -132,6 +140,8 @@ export async function getGalleryProduct(teamId: string): Promise<GalleryProduct 
     hackathon_year: data.hackathon_year,
     hackathon_name: data.hackathon_name,
     interest_count: data.interest_count,
+    match_count: data.match_count ?? 0,
+    target_personas: data.target_personas ?? null,
     created_at: data.created_at,
     team: {
       name: data.hackathon_teams.name,
@@ -190,6 +200,7 @@ export type GalleryProductInput = {
   additional_images?: string[];
   line_qr_url?: string | null;
   line_id?: string | null;
+  target_personas?: { who: string[]; what: string[] } | null;
 };
 
 export type GalleryProductWithPublished = GalleryProduct & { is_published: boolean };
@@ -232,6 +243,8 @@ export async function getMyGalleryProduct(teamId: string): Promise<GalleryProduc
     hackathon_year: data.hackathon_year,
     hackathon_name: data.hackathon_name,
     interest_count: data.interest_count,
+    match_count: data.match_count ?? 0,
+    target_personas: data.target_personas ?? null,
     created_at: data.created_at,
     is_published: data.is_published,
     team: {
@@ -266,6 +279,7 @@ export async function upsertGalleryProduct(
     additional_images: data.additional_images ?? [],
     line_qr_url: data.line_qr_url ?? null,
     line_id: data.line_id ?? null,
+    target_personas: data.target_personas ?? null,
     hackathon_year: new Date().getFullYear(),
     hackathon_name: "PassionSeed Hackathon",
   };
@@ -298,6 +312,8 @@ export async function upsertGalleryProduct(
     hackathon_year: row.hackathon_year,
     hackathon_name: row.hackathon_name,
     interest_count: row.interest_count ?? 0,
+    match_count: row.match_count ?? 0,
+    target_personas: row.target_personas ?? null,
     created_at: row.created_at,
     is_published: row.is_published,
     team: null,
@@ -336,6 +352,8 @@ export async function adminGetAllProducts(): Promise<(GalleryProductWithPublishe
     hackathon_year: row.hackathon_year,
     hackathon_name: row.hackathon_name,
     interest_count: row.interest_count ?? 0,
+    match_count: row.match_count ?? 0,
+    target_personas: row.target_personas ?? null,
     created_at: row.created_at,
     is_published: row.is_published,
     team_name: row.hackathon_teams?.name ?? "",

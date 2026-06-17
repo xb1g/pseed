@@ -75,6 +75,8 @@ export const PLACEHOLDER_PRODUCTS: GalleryProductSummary[] = NAMES.map((name, i)
   hackathon_year: 2026,
   hackathon_name: "PassionSeed Hackathon",
   interest_count: 0,
+  match_count: 0,
+  target_personas: null,
   team_name: `Team ${TEAMS[i]}`,
 }));
 
@@ -102,6 +104,8 @@ export function getPlaceholderProduct(teamId: string): GalleryProduct | null {
     hackathon_year: p.hackathon_year,
     hackathon_name: p.hackathon_name,
     interest_count: 12,
+    match_count: 0,
+    target_personas: null,
     created_at: new Date().toISOString(),
     team: {
       name: `Team ${TEAMS[index]}`,
