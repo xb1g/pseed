@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Upload, X, Loader2, Check, ExternalLink, QrCode, Eye } from "lucide-react";
 import { ALLOWED_TAGS } from "@/lib/hackathon/gallery";
+import { WHO_TAGS, WHAT_TAGS } from "@/lib/hackathon/gallery-match";
 import ProductDetail from "@/components/hackathon/gallery/ProductDetail";
 
 type FormState = {
@@ -22,6 +23,7 @@ type FormState = {
   additional_images: string[];
   line_qr_url: string;
   line_id: string;
+  target_personas: { who: string[]; what: string[] };
 };
 
 const EMPTY_FORM: FormState = {
@@ -39,6 +41,7 @@ const EMPTY_FORM: FormState = {
   additional_images: [],
   line_qr_url: "",
   line_id: "",
+  target_personas: { who: [], what: [] },
 };
 
 export default function GallerySubmitPage() {
@@ -88,6 +91,7 @@ export default function GallerySubmitPage() {
             additional_images: data.product.additional_images ?? [],
             line_qr_url: data.product.line_qr_url ?? "",
             line_id: data.product.line_id ?? "",
+            target_personas: data.product.target_personas ?? { who: [], what: [] },
           });
         }
       })
@@ -141,6 +145,9 @@ export default function GallerySubmitPage() {
           cover_image_url: form.cover_image_url || null,
           line_qr_url: form.line_qr_url || null,
           line_id: form.line_id || null,
+          target_personas: (form.target_personas.who.length > 0 || form.target_personas.what.length > 0)
+            ? form.target_personas
+            : null,
         }),
       });
       const data = await res.json();
@@ -258,6 +265,24 @@ export default function GallerySubmitPage() {
             fontFamily: "var(--font-bai-jamjuree), sans-serif", fontSize: "0.875rem",
           }}>
             {error}
+          </div>
+        )}
+
+        {/* Match count */}
+        {existingProduct?.match_count > 0 && (
+          <div style={{
+            marginBottom: "2rem", padding: "1rem 1.25rem",
+            background: "rgba(97,154,210,0.06)", border: "1px solid rgba(97,154,210,0.18)",
+            borderRadius: "12px", display: "flex", alignItems: "center", gap: "0.75rem",
+          }}>
+            <span style={{ fontSize: "1.5rem" }}>🐋</span>
+            <p style={{
+              fontFamily: "var(--font-bai-jamjuree), sans-serif",
+              fontSize: "0.9375rem", color: "rgba(145,196,227,0.8)", margin: 0,
+            }}>
+              <strong style={{ color: "#91C4E3" }}>{existingProduct.match_count}</strong>{" "}
+              {existingProduct.match_count === 1 ? "person has" : "people have"} been matched to your product by the whale!
+            </p>
           </div>
         )}
 
@@ -627,6 +652,86 @@ export default function GallerySubmitPage() {
                 />
               )}
             </div>
+
+            {/* Target audience — WHO */}
+            <FormField label="Who is your product for?" hint="Pick 1–3">
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.25rem" }}>
+                {WHO_TAGS.map((tag) => {
+                  const active = form.target_personas.who.includes(tag.value);
+                  return (
+                    <button
+                      key={tag.value}
+                      type="button"
+                      onClick={() => {
+                        setForm((p) => {
+                          const who = active
+                            ? p.target_personas.who.filter((v) => v !== tag.value)
+                            : p.target_personas.who.length < 3
+                              ? [...p.target_personas.who, tag.value]
+                              : p.target_personas.who;
+                          return { ...p, target_personas: { ...p.target_personas, who } };
+                        });
+                      }}
+                      style={{
+                        padding: "0.375rem 0.875rem",
+                        borderRadius: "9999px",
+                        fontSize: "0.8125rem",
+                        fontFamily: "var(--font-bai-jamjuree), sans-serif",
+                        fontWeight: 600,
+                        border: `1px solid ${active ? "rgba(97,154,210,0.6)" : "rgba(74,107,130,0.3)"}`,
+                        background: active ? "rgba(97,154,210,0.15)" : "transparent",
+                        color: active ? "#91C4E3" : "rgba(145,196,227,0.45)",
+                        cursor: "pointer",
+                        transition: "all 180ms",
+                      }}
+                    >
+                      {tag.en}
+                      <span style={{ display: "block", fontSize: "0.6875rem", opacity: 0.7 }}>{tag.th}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </FormField>
+
+            {/* Target problem — WHAT */}
+            <FormField label="What problem does it solve?" hint="Pick 1–3">
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.25rem" }}>
+                {WHAT_TAGS.map((tag) => {
+                  const active = form.target_personas.what.includes(tag.value);
+                  return (
+                    <button
+                      key={tag.value}
+                      type="button"
+                      onClick={() => {
+                        setForm((p) => {
+                          const what = active
+                            ? p.target_personas.what.filter((v) => v !== tag.value)
+                            : p.target_personas.what.length < 3
+                              ? [...p.target_personas.what, tag.value]
+                              : p.target_personas.what;
+                          return { ...p, target_personas: { ...p.target_personas, what } };
+                        });
+                      }}
+                      style={{
+                        padding: "0.375rem 0.875rem",
+                        borderRadius: "9999px",
+                        fontSize: "0.8125rem",
+                        fontFamily: "var(--font-bai-jamjuree), sans-serif",
+                        fontWeight: 600,
+                        border: `1px solid ${active ? "rgba(97,154,210,0.6)" : "rgba(74,107,130,0.3)"}`,
+                        background: active ? "rgba(97,154,210,0.15)" : "transparent",
+                        color: active ? "#91C4E3" : "rgba(145,196,227,0.45)",
+                        cursor: "pointer",
+                        transition: "all 180ms",
+                      }}
+                    >
+                      {tag.en}
+                      <span style={{ display: "block", fontSize: "0.6875rem", opacity: 0.7 }}>{tag.th}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </FormField>
 
             {/* Submit */}
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", paddingTop: "0.5rem" }}>

@@ -78,6 +78,18 @@ export async function POST(req: NextRequest) {
 
   const contact_email = body.contact_email ? (body.contact_email as string).trim().toLowerCase() : null;
 
+  // target_personas validation
+  let target_personas: { who: string[]; what: string[] } | null = null;
+  if (body.target_personas && typeof body.target_personas === "object") {
+    const who = Array.isArray(body.target_personas.who) ? body.target_personas.who.filter((v: unknown) => typeof v === "string") : [];
+    const what = Array.isArray(body.target_personas.what) ? body.target_personas.what.filter((v: unknown) => typeof v === "string") : [];
+    if (who.length > 0 || what.length > 0) {
+      if (who.length > 3) errors.push("target_personas.who: maximum 3 tags");
+      if (what.length > 3) errors.push("target_personas.what: maximum 3 tags");
+      target_personas = { who: who.slice(0, 3), what: what.slice(0, 3) };
+    }
+  }
+
   if (errors.length > 0) {
     return NextResponse.json({ error: errors.join("; ") }, { status: 422, headers: corsHeaders });
   }
@@ -97,6 +109,7 @@ export async function POST(req: NextRequest) {
     additional_images,
     line_qr_url,
     line_id,
+    target_personas,
   };
 
   try {

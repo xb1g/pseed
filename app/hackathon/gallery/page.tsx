@@ -106,6 +106,22 @@ export default async function GalleryPage({
             Student teams spent 5 days building solutions to real healthcare and mental health problems.
             If something here could help your organization, reach out directly to the team.
           </p>
+          <a
+            href="/hackathon/gallery/match"
+            className="bloom-button"
+            style={{
+              marginTop: "1.25rem",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              fontSize: "0.9375rem",
+              textDecoration: "none",
+            }}
+          >
+            <span className="bloom-button__grain" aria-hidden="true" />
+            <span aria-hidden="true">🐋</span>
+            Not sure which product is for you?
+          </a>
         </header>
       </div>
 
