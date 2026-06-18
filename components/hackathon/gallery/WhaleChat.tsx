@@ -10,8 +10,6 @@ interface WhaleChatProps {
   onExplore: () => void;
 }
 
-type Phase = "asking" | "transitioning";
-
 // Typing speed: ~30ms per char, scaled so longer text doesn't take forever
 function getTypingDuration(text: string): number {
   const len = text.length;
@@ -77,12 +75,13 @@ function TypewriterText({ text, onDone }: { text: string; onDone: () => void }) 
 export default function WhaleChat({ onComplete, onExplore }: WhaleChatProps) {
   const { lang } = useLang();
   const [questionId, setQuestionId] = useState(FIRST_QUESTION_ID);
-  const [phase, setPhase] = useState<Phase>("asking");
   const [who, setWho] = useState<string | null>(null);
   const [what, setWhat] = useState<string | null>(null);
   const [step, setStep] = useState(0);
   const [speaking, setSpeaking] = useState(true);
   const [showOptions, setShowOptions] = useState(false);
+  // Controls fade of speech bubble + options only (not whale/dots)
+  const [contentVisible, setContentVisible] = useState(true);
 
   const question = QUESTION_MAP[questionId];
 
@@ -94,7 +93,6 @@ export default function WhaleChat({ onComplete, onExplore }: WhaleChatProps) {
 
   const handleTypingDone = useCallback(() => {
     setSpeaking(false);
-    // Small delay before showing options for a natural pause
     setTimeout(() => setShowOptions(true), 200);
   }, []);
 
@@ -110,23 +108,28 @@ export default function WhaleChat({ onComplete, onExplore }: WhaleChatProps) {
     }
 
     if (option.next === null) {
-      setPhase("transitioning");
+      // Final answer — fade content, then complete
+      setContentVisible(false);
       const finalWhat = option.tag && !option.tag.startsWith("area_") ? option.tag : what;
       setTimeout(() => {
         onComplete({
           who: (questionId === "q1_who" ? option.tag : who) as any,
           what: finalWhat as any,
         });
-      }, 600);
+      }, 500);
       return;
     }
 
-    setPhase("transitioning");
+    // Fade out content only, then swap question, then fade back in
+    setContentVisible(false);
     setTimeout(() => {
       setQuestionId(option.next!);
       setStep((s) => s + 1);
-      setPhase("asking");
-    }, 400);
+      // Small delay so the new content renders before fading in
+      requestAnimationFrame(() => {
+        setContentVisible(true);
+      });
+    }, 350);
   }, [questionId, who, what, onComplete, onExplore]);
 
   if (!question) return null;
@@ -141,12 +144,9 @@ export default function WhaleChat({ onComplete, onExplore }: WhaleChatProps) {
         flexDirection: "column",
         alignItems: "center",
         gap: "1.5rem",
-        opacity: phase === "transitioning" ? 0 : 1,
-        transform: phase === "transitioning" ? "translateY(8px)" : "translateY(0)",
-        transition: "opacity 300ms ease, transform 300ms ease",
       }}
     >
-      {/* Progress dots */}
+      {/* Progress dots — always visible */}
       <div style={{ display: "flex", gap: "0.5rem" }}>
         {[0, 1, 2].map((i) => (
           <div
@@ -164,101 +164,115 @@ export default function WhaleChat({ onComplete, onExplore }: WhaleChatProps) {
         ))}
       </div>
 
-      {/* Whale — speaking prop triggers frame animation */}
+      {/* Whale — always visible, speaking prop controls animation */}
       <div style={{ width: "120px", height: "120px", flexShrink: 0, overflow: "hidden" }}>
         <div style={{ transform: "scale(0.5)", transformOrigin: "top left", width: "240px", height: "240px" }}>
           <GalleryMascot speaking={speaking} />
         </div>
       </div>
 
-      {/* Speech bubble — bloom-card with typewriter text */}
+      {/* Speech bubble + options — these fade on transition */}
       <div
-        className="bloom-card"
+        className="whale-chat__content"
         style={{
-          maxWidth: "520px",
           width: "100%",
-          padding: "1.25rem 1.5rem",
-          borderRadius: "20px",
-        }}
-      >
-        <p style={{
-          fontFamily: "var(--font-bai-jamjuree), sans-serif",
-          fontSize: "1rem",
-          lineHeight: 1.6,
-          color: "var(--bloom-text-primary)",
-          margin: 0,
-          textAlign: "center",
-          minHeight: "2.6em",
-        }}>
-          <TypewriterText
-            key={questionId}
-            text={whaleText}
-            onDone={handleTypingDone}
-          />
-        </p>
-      </div>
-
-      {/* Options — 2-column grid, fade in after typing */}
-      <div
-        className="whale-chat__options"
-        style={{
-          maxWidth: "520px",
-          width: "100%",
-          display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
-          gap: "0.625rem",
-          opacity: showOptions ? 1 : 0,
-          transform: showOptions ? "translateY(0)" : "translateY(8px)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "1.5rem",
+          opacity: contentVisible ? 1 : 0,
+          transform: contentVisible ? "translateY(0)" : "translateY(8px)",
           transition: "opacity 300ms ease, transform 300ms ease",
-          pointerEvents: showOptions ? "auto" : "none",
         }}
       >
-        {question.options.map((opt, i) => (
-          <button
-            key={`${questionId}-${i}`}
-            onClick={() => handleOption(opt)}
-            disabled={phase === "transitioning" || !showOptions}
-            className="whale-chat__option"
-            style={{
-              padding: "0.75rem 1rem",
-              borderRadius: "14px",
-              border: "1px solid var(--bloom-border-default)",
-              background: "var(--bloom-bg-surface)",
-              cursor: (phase === "transitioning" || !showOptions) ? "not-allowed" : "pointer",
-              textAlign: "left",
-              transition: "border-color 180ms ease-out, box-shadow 180ms ease-out, transform 180ms ease-out",
-              minHeight: "48px",
-              boxShadow: "var(--bloom-shadow-card)",
-              // Last odd item spans full width
-              ...(question.options.length % 2 === 1 && i === question.options.length - 1
-                ? { gridColumn: "1 / -1" }
-                : {}),
-            }}
-          >
-            <span style={{
-              fontFamily: "var(--font-bai-jamjuree), sans-serif",
-              fontSize: "0.875rem",
-              fontWeight: 600,
-              color: "var(--bloom-text-primary)",
-              display: "block",
-              lineHeight: 1.4,
-            }}>
-              {lang === "th" ? opt.th : opt.en}
-            </span>
-            {lang === "en" && (
+        {/* Speech bubble */}
+        <div
+          className="bloom-card"
+          style={{
+            maxWidth: "520px",
+            width: "100%",
+            padding: "1.25rem 1.5rem",
+            borderRadius: "20px",
+          }}
+        >
+          <p style={{
+            fontFamily: "var(--font-bai-jamjuree), sans-serif",
+            fontSize: "1rem",
+            lineHeight: 1.6,
+            color: "var(--bloom-text-primary)",
+            margin: 0,
+            textAlign: "center",
+            minHeight: "2.6em",
+          }}>
+            <TypewriterText
+              key={questionId}
+              text={whaleText}
+              onDone={handleTypingDone}
+            />
+          </p>
+        </div>
+
+        {/* Options — 2-column grid, fade in after typing */}
+        <div
+          className="whale-chat__options"
+          style={{
+            maxWidth: "520px",
+            width: "100%",
+            display: "grid",
+            gridTemplateColumns: "repeat(2, 1fr)",
+            gap: "0.625rem",
+            opacity: showOptions ? 1 : 0,
+            transform: showOptions ? "translateY(0)" : "translateY(8px)",
+            transition: "opacity 300ms ease, transform 300ms ease",
+            pointerEvents: showOptions ? "auto" : "none",
+          }}
+        >
+          {question.options.map((opt, i) => (
+            <button
+              key={`${questionId}-${i}`}
+              onClick={() => handleOption(opt)}
+              disabled={!showOptions}
+              className="whale-chat__option"
+              style={{
+                padding: "0.75rem 1rem",
+                borderRadius: "14px",
+                border: "1px solid var(--bloom-border-default)",
+                background: "var(--bloom-bg-surface)",
+                cursor: !showOptions ? "not-allowed" : "pointer",
+                textAlign: "left",
+                transition: "border-color 180ms ease-out, box-shadow 180ms ease-out, transform 180ms ease-out",
+                minHeight: "48px",
+                boxShadow: "var(--bloom-shadow-card)",
+                ...(question.options.length % 2 === 1 && i === question.options.length - 1
+                  ? { gridColumn: "1 / -1" }
+                  : {}),
+              }}
+            >
               <span style={{
                 fontFamily: "var(--font-bai-jamjuree), sans-serif",
-                fontSize: "0.6875rem",
-                color: "var(--bloom-text-muted)",
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                color: "var(--bloom-text-primary)",
                 display: "block",
-                marginTop: "0.125rem",
-                lineHeight: 1.3,
+                lineHeight: 1.4,
               }}>
-                {opt.th}
+                {lang === "th" ? opt.th : opt.en}
               </span>
-            )}
-          </button>
-        ))}
+              {lang === "en" && (
+                <span style={{
+                  fontFamily: "var(--font-bai-jamjuree), sans-serif",
+                  fontSize: "0.6875rem",
+                  color: "var(--bloom-text-muted)",
+                  display: "block",
+                  marginTop: "0.125rem",
+                  lineHeight: 1.3,
+                }}>
+                  {opt.th}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
       <style>{`
@@ -276,8 +290,9 @@ export default function WhaleChat({ onComplete, onExplore }: WhaleChatProps) {
           box-shadow: 0 0 0 2px var(--bloom-focus-ring) !important;
         }
         @media (prefers-reduced-motion: reduce) {
-          .whale-chat {
-            transition: opacity 0ms !important;
+          .whale-chat__content {
+            transition: none !important;
+            opacity: 1 !important;
             transform: none !important;
           }
           .whale-chat__option {
