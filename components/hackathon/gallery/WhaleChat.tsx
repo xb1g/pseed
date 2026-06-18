@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import GalleryMascot from "./GalleryMascot";
 import { QUESTION_MAP, FIRST_QUESTION_ID, type QuizOption, type VisitorAnswers } from "@/lib/hackathon/gallery-match";
 import { useLang } from "@/lib/hackathon/gallery-lang";
@@ -12,6 +12,68 @@ interface WhaleChatProps {
 
 type Phase = "asking" | "transitioning";
 
+// Typing speed: ~30ms per char, scaled so longer text doesn't take forever
+function getTypingDuration(text: string): number {
+  const len = text.length;
+  if (len <= 40) return len * 30;
+  if (len <= 80) return 40 * 30 + (len - 40) * 18;
+  return 40 * 30 + 40 * 18 + (len - 80) * 10;
+}
+
+function TypewriterText({ text, onDone }: { text: string; onDone: () => void }) {
+  const [displayLen, setDisplayLen] = useState(0);
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
+
+  useEffect(() => {
+    setDisplayLen(0);
+    const totalDuration = getTypingDuration(text);
+    const interval = totalDuration / text.length;
+    let frame = 0;
+    let raf: number;
+    let start: number | null = null;
+
+    const tick = (now: number) => {
+      if (start === null) start = now;
+      const elapsed = now - start;
+      const chars = Math.min(Math.floor(elapsed / interval) + 1, text.length);
+      if (chars !== frame) {
+        frame = chars;
+        setDisplayLen(chars);
+      }
+      if (chars < text.length) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        onDoneRef.current();
+      }
+    };
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [text]);
+
+  return (
+    <>
+      {text.slice(0, displayLen)}
+      {displayLen < text.length && (
+        <span
+          className="typewriter-cursor"
+          aria-hidden="true"
+          style={{
+            display: "inline-block",
+            width: "2px",
+            height: "1.1em",
+            background: "var(--bloom-accent)",
+            marginLeft: "1px",
+            verticalAlign: "text-bottom",
+            animation: "cursor-blink 600ms step-end infinite",
+          }}
+        />
+      )}
+    </>
+  );
+}
+
 export default function WhaleChat({ onComplete, onExplore }: WhaleChatProps) {
   const { lang } = useLang();
   const [questionId, setQuestionId] = useState(FIRST_QUESTION_ID);
@@ -19,8 +81,22 @@ export default function WhaleChat({ onComplete, onExplore }: WhaleChatProps) {
   const [who, setWho] = useState<string | null>(null);
   const [what, setWhat] = useState<string | null>(null);
   const [step, setStep] = useState(0);
+  const [speaking, setSpeaking] = useState(true);
+  const [showOptions, setShowOptions] = useState(false);
 
   const question = QUESTION_MAP[questionId];
+
+  // Reset speaking state when question changes
+  useEffect(() => {
+    setSpeaking(true);
+    setShowOptions(false);
+  }, [questionId]);
+
+  const handleTypingDone = useCallback(() => {
+    setSpeaking(false);
+    // Small delay before showing options for a natural pause
+    setTimeout(() => setShowOptions(true), 200);
+  }, []);
 
   const handleOption = useCallback((option: QuizOption) => {
     if (questionId === "q1_who") {
@@ -88,14 +164,14 @@ export default function WhaleChat({ onComplete, onExplore }: WhaleChatProps) {
         ))}
       </div>
 
-      {/* Whale — mascot renders at 240px native, scale to fit */}
+      {/* Whale — speaking prop triggers frame animation */}
       <div style={{ width: "120px", height: "120px", flexShrink: 0, overflow: "hidden" }}>
         <div style={{ transform: "scale(0.5)", transformOrigin: "top left", width: "240px", height: "240px" }}>
-          <GalleryMascot />
+          <GalleryMascot speaking={speaking} />
         </div>
       </div>
 
-      {/* Speech bubble — bloom-card style */}
+      {/* Speech bubble — bloom-card with typewriter text */}
       <div
         className="bloom-card"
         style={{
@@ -112,53 +188,71 @@ export default function WhaleChat({ onComplete, onExplore }: WhaleChatProps) {
           color: "var(--bloom-text-primary)",
           margin: 0,
           textAlign: "center",
+          minHeight: "2.6em",
         }}>
-          {whaleText}
+          <TypewriterText
+            key={questionId}
+            text={whaleText}
+            onDone={handleTypingDone}
+          />
         </p>
       </div>
 
-      {/* Options */}
-      <div style={{
-        maxWidth: "520px",
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        gap: "0.625rem",
-      }}>
+      {/* Options — 2-column grid, fade in after typing */}
+      <div
+        className="whale-chat__options"
+        style={{
+          maxWidth: "520px",
+          width: "100%",
+          display: "grid",
+          gridTemplateColumns: "repeat(2, 1fr)",
+          gap: "0.625rem",
+          opacity: showOptions ? 1 : 0,
+          transform: showOptions ? "translateY(0)" : "translateY(8px)",
+          transition: "opacity 300ms ease, transform 300ms ease",
+          pointerEvents: showOptions ? "auto" : "none",
+        }}
+      >
         {question.options.map((opt, i) => (
           <button
             key={`${questionId}-${i}`}
             onClick={() => handleOption(opt)}
-            disabled={phase === "transitioning"}
+            disabled={phase === "transitioning" || !showOptions}
             className="whale-chat__option"
             style={{
-              padding: "0.875rem 1.25rem",
+              padding: "0.75rem 1rem",
               borderRadius: "14px",
               border: "1px solid var(--bloom-border-default)",
               background: "var(--bloom-bg-surface)",
-              cursor: phase === "transitioning" ? "not-allowed" : "pointer",
+              cursor: (phase === "transitioning" || !showOptions) ? "not-allowed" : "pointer",
               textAlign: "left",
               transition: "border-color 180ms ease-out, box-shadow 180ms ease-out, transform 180ms ease-out",
               minHeight: "48px",
               boxShadow: "var(--bloom-shadow-card)",
+              // Last odd item spans full width
+              ...(question.options.length % 2 === 1 && i === question.options.length - 1
+                ? { gridColumn: "1 / -1" }
+                : {}),
             }}
           >
             <span style={{
               fontFamily: "var(--font-bai-jamjuree), sans-serif",
-              fontSize: "0.9375rem",
+              fontSize: "0.875rem",
               fontWeight: 600,
               color: "var(--bloom-text-primary)",
               display: "block",
+              lineHeight: 1.4,
             }}>
               {lang === "th" ? opt.th : opt.en}
             </span>
             {lang === "en" && (
               <span style={{
                 fontFamily: "var(--font-bai-jamjuree), sans-serif",
-                fontSize: "0.75rem",
+                fontSize: "0.6875rem",
                 color: "var(--bloom-text-muted)",
                 display: "block",
                 marginTop: "0.125rem",
+                lineHeight: 1.3,
               }}>
                 {opt.th}
               </span>
@@ -168,6 +262,10 @@ export default function WhaleChat({ onComplete, onExplore }: WhaleChatProps) {
       </div>
 
       <style>{`
+        @keyframes cursor-blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
         .whale-chat__option:hover:not(:disabled) {
           border-color: var(--bloom-border-strong) !important;
           box-shadow: var(--bloom-shadow-hover) !important;
@@ -184,6 +282,14 @@ export default function WhaleChat({ onComplete, onExplore }: WhaleChatProps) {
           }
           .whale-chat__option {
             transition: none !important;
+          }
+          .whale-chat__options {
+            transition: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+          }
+          .typewriter-cursor {
+            animation: none !important;
           }
         }
       `}</style>

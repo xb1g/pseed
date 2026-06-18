@@ -13,15 +13,21 @@ interface MascotManifest {
 const MANIFEST_URL = "/hackathon/gallery/mascot-frames/manifest.json";
 const FRAMES_BASE = "/hackathon/gallery/mascot-frames/";
 
-export default function GalleryMascot() {
+export default function GalleryMascot({ speaking }: { speaking?: boolean } = {}) {
   const [manifest, setManifest] = useState<MascotManifest | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
 
   const isHoveredRef = useRef(false);
+  const isSpeakingRef = useRef(speaking ?? false);
   const activeIndexRef = useRef(0);
   const rafRef = useRef<number | null>(null);
+
+  // Keep speaking ref in sync with prop
+  useEffect(() => {
+    isSpeakingRef.current = speaking ?? false;
+  }, [speaking]);
 
   // Load manifest and detect reduced motion preference
   useEffect(() => {
@@ -99,7 +105,7 @@ export default function GalleryMascot() {
       const dt = now - lastTime;
       lastTime = now;
 
-      const shouldAdvance = isHoveredRef.current || activeIndexRef.current !== 0;
+      const shouldAdvance = isHoveredRef.current || isSpeakingRef.current || activeIndexRef.current !== 0;
       if (!shouldAdvance) {
         accumulator = 0;
         return;
@@ -113,7 +119,7 @@ export default function GalleryMascot() {
         const next = (activeIndexRef.current + 1) % manifest.frames.length;
 
         // If we're finishing a loop and would wrap, freeze at frame 0.
-        if (!isHoveredRef.current && next === 0) {
+        if (!isHoveredRef.current && !isSpeakingRef.current && next === 0) {
           activeIndexRef.current = 0;
           setActiveIndex(0);
           accumulator = 0;
