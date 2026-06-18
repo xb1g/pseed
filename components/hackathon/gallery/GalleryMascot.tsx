@@ -14,6 +14,7 @@ const MANIFEST_URL = "/hackathon/gallery/mascot-frames/manifest.json";
 const FRAMES_BASE = "/hackathon/gallery/mascot-frames/";
 
 export default function GalleryMascot({ speaking }: { speaking?: boolean } = {}) {
+  const [mounted, setMounted] = useState(false);
   const [manifest, setManifest] = useState<MascotManifest | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -29,8 +30,12 @@ export default function GalleryMascot({ speaking }: { speaking?: boolean } = {})
     isSpeakingRef.current = speaking ?? false;
   }, [speaking]);
 
+  // Mark as mounted (client-only) to avoid hydration mismatch
+  useEffect(() => { setMounted(true); }, []);
+
   // Load manifest and detect reduced motion preference
   useEffect(() => {
+    if (!mounted) return;
     let cancelled = false;
 
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -53,7 +58,7 @@ export default function GalleryMascot({ speaking }: { speaking?: boolean } = {})
       cancelled = true;
       media.removeEventListener("change", handleChange);
     };
-  }, []);
+  }, [mounted]);
 
   // Preload and decode all frames in the background
   useEffect(() => {
@@ -152,7 +157,7 @@ export default function GalleryMascot({ speaking }: { speaking?: boolean } = {})
 
   const wrapperSize = manifest ? Math.max(manifest.width, manifest.height) : 240;
 
-  if (!manifest) {
+  if (!mounted || !manifest) {
     return (
       <div
         aria-hidden="true"
