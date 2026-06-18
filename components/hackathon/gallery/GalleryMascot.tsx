@@ -150,9 +150,23 @@ export default function GalleryMascot({ speaking }: { speaking?: boolean } = {})
     };
   }, []);
 
-  if (!manifest) return null;
+  const wrapperSize = manifest ? Math.max(manifest.width, manifest.height) : 240;
 
-  const wrapperSize = Math.max(manifest.width, manifest.height);
+  if (!manifest) {
+    return (
+      <div
+        aria-hidden="true"
+        className="gallery-mascot-wrapper"
+        style={{
+          position: "relative",
+          width: wrapperSize,
+          height: wrapperSize,
+          pointerEvents: "none",
+          userSelect: "none",
+        }}
+      />
+    );
+  }
 
   const handleMouseEnter = () => {
     isHoveredRef.current = true;
