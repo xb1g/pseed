@@ -578,7 +578,7 @@ export default function GallerySubmitPage() {
                   letterSpacing: "0.05em", textTransform: "uppercase",
                   marginBottom: "0.375rem",
                 }}>
-                  LINE ID
+                  LINE ID <span style={{ color: "rgba(255,100,100,0.8)" }}>*</span>
                 </label>
                 <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
                   <span style={{
@@ -591,10 +591,11 @@ export default function GallerySubmitPage() {
                     value={form.line_id}
                     onChange={(e) => setForm((p) => ({ ...p, line_id: e.target.value.replace(/^@/, "") }))}
                     placeholder="yourlineid"
+                    required
                     style={{
                       ...inputStyle,
                       paddingLeft: "2rem",
-                      border: "1px solid rgba(74,222,128,0.25)",
+                      border: `1px solid ${!form.line_id ? "rgba(255,100,100,0.35)" : "rgba(74,222,128,0.25)"}`,
                       background: "rgba(0,185,100,0.04)",
                     }}
                   />
@@ -767,20 +768,20 @@ export default function GallerySubmitPage() {
               </button>
               <button
                 type="submit"
-                disabled={submitting || form.tags.length === 0}
+                disabled={submitting || form.tags.length === 0 || !form.line_id}
                 style={{
                   display: "inline-flex", alignItems: "center", gap: "0.625rem",
                   padding: "0.875rem 2.25rem",
                   borderRadius: "12px",
                   fontFamily: "var(--font-bai-jamjuree), sans-serif",
                   fontWeight: 700, fontSize: "1rem",
-                  background: submitting || form.tags.length === 0
+                  background: submitting || form.tags.length === 0 || !form.line_id
                     ? "rgba(97,154,210,0.2)"
                     : "linear-gradient(135deg, #3a6a9a 0%, #2a5a8a 100%)",
                   border: "1px solid rgba(97,154,210,0.4)",
-                  color: submitting || form.tags.length === 0 ? "rgba(145,196,227,0.4)" : "#fff",
-                  cursor: submitting || form.tags.length === 0 ? "not-allowed" : "pointer",
-                  boxShadow: submitting || form.tags.length === 0 ? "none" : "0 0 24px rgba(97,154,210,0.3), 0 4px 16px rgba(0,0,0,0.3)",
+                  color: submitting || form.tags.length === 0 || !form.line_id ? "rgba(145,196,227,0.4)" : "#fff",
+                  cursor: submitting || form.tags.length === 0 || !form.line_id ? "not-allowed" : "pointer",
+                  boxShadow: submitting || form.tags.length === 0 || !form.line_id ? "none" : "0 0 24px rgba(97,154,210,0.3), 0 4px 16px rgba(0,0,0,0.3)",
                   transition: "all 200ms",
                 }}
               >

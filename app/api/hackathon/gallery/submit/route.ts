@@ -18,15 +18,12 @@ function isValidUrl(value: string): boolean {
 
 export async function POST(req: NextRequest) {
   const corsHeaders = getCorsHeaders(req);
-  // TODO: re-enable auth checks before production
-  // const token = extractHackathonToken(req);
-  // if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders });
-  // const participant = await getSessionParticipant(token);
-  // if (!participant) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders });
-  // const team = await getParticipantTeam(participant.id);
-  // if (!team) return NextResponse.json({ error: "You must be in a team to submit" }, { status: 400, headers: corsHeaders });
-
-  const team = { id: "00000000-0000-0000-0000-000000000002" };
+  const token = extractHackathonToken(req);
+  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders });
+  const participant = await getSessionParticipant(token);
+  if (!participant) return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders });
+  const team = await getParticipantTeam(participant.id);
+  if (!team) return NextResponse.json({ error: "You must be in a team to submit" }, { status: 400, headers: corsHeaders });
 
   let body: any;
   try {
@@ -72,6 +69,7 @@ export async function POST(req: NextRequest) {
   if (line_qr_url && !isValidUrl(line_qr_url)) errors.push("line_qr_url must be a valid URL");
 
   const line_id = body.line_id ? (body.line_id as string).trim().replace(/^@/, "") : null;
+  if (!line_id) errors.push("line_id is required");
 
   const test_mode: "direct" | "contact" = body.test_mode === "direct" ? "direct" : "contact";
   if (test_mode === "direct" && !demo_url) errors.push("demo_url is required for direct access mode");
