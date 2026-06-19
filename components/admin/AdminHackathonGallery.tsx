@@ -177,21 +177,39 @@ export function AdminHackathonGallery() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        size="sm"
-                        variant={product.is_published ? "outline" : "default"}
-                        onClick={() => togglePublish(product)}
-                        disabled={toggling === product.id}
-                        className="gap-1.5 text-xs"
-                      >
-                        {toggling === product.id ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : product.is_published ? (
-                          <><EyeOff className="h-3 w-3" /> Unpublish</>
-                        ) : (
-                          <><Eye className="h-3 w-3" /> Publish</>
+                      <div className="flex gap-1.5">
+                        {product.is_published && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            asChild
+                            className="gap-1.5 text-xs"
+                          >
+                            <a
+                              href={`/hackathon/gallery/${product.team_id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <ExternalLink className="h-3 w-3" /> Preview
+                            </a>
+                          </Button>
                         )}
-                      </Button>
+                        <Button
+                          size="sm"
+                          variant={product.is_published ? "outline" : "default"}
+                          onClick={() => togglePublish(product)}
+                          disabled={toggling === product.id}
+                          className="gap-1.5 text-xs"
+                        >
+                          {toggling === product.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : product.is_published ? (
+                            <><EyeOff className="h-3 w-3" /> Unpublish</>
+                          ) : (
+                            <><Eye className="h-3 w-3" /> Publish</>
+                          )}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
