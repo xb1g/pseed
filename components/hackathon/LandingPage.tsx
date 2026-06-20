@@ -1,42 +1,56 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Trophy, Clock, UsersRound, Microscope, BookOpenCheck, HeartPulse, Brain, Globe, Rocket, Target, Lightbulb, Workflow, Network, Presentation, LightbulbIcon, ArrowUpRight } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { UsersRound, HeartPulse, Brain, Globe, Rocket, Network, Presentation } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import HackathonTimeline from "@/components/HackathonTimeline";
 import { MentorshipIllustration, GuidelineIllustration, TesterIllustration } from './Illustrations';
+import { LangProvider, useLang, type Lang } from "@/lib/hackathon/gallery-lang";
+import LangToggle from "@/components/hackathon/gallery/LangToggle";
 
 interface LandingPageProps {
     isLoggedIn: boolean;
 }
 
 export default function LandingPage({ isLoggedIn }: LandingPageProps) {
-    const router = useRouter();
+    return (
+        <LangProvider>
+            <LandingPageInner isLoggedIn={isLoggedIn} />
+        </LangProvider>
+    );
+}
+
+const LANG_PROMPT_KEY = "hackathon-lang-prompted";
+
+function LandingPageInner({ isLoggedIn }: LandingPageProps) {
+    const { lang, setLang } = useLang();
+
+    /** Shorthand: pick EN or TH string based on current lang */
+    const L = (en: string, th: string) => lang === "th" ? th : en;
     const starsRef = useRef<HTMLDivElement>(null);
     const subtitleRef = useRef<HTMLHeadingElement>(null);
-    const waterRef = useRef<HTMLDivElement>(null);
     const [expandedTrack, setExpandedTrack] = useState<number | null>(null);
-
-    // Set initial water position via DOM directly so React's style prop never owns
-    // the transform — this prevents React re-renders from resetting GSAP mid-animation
-    // Set initial water position using GSAP to ensure state tracking consistency
-    const setWaterRef = useCallback((el: HTMLDivElement | null) => {
-        waterRef.current = el;
-        if (el) {
-            // Start with y: 200 to ensure the waves (which extend ~130px above) are hidden below viewport
-            gsap.set(el, { yPercent: 100, y: 200, autoAlpha: 1 });
-        }
-    }, []);
     const [showTitle, setShowTitle] = useState(false);
     const [showJellyfish, setShowJellyfish] = useState(false);
     const [showContent, setShowContent] = useState(false);
     const [instant, setInstant] = useState(false);
-    const [isTransitioning, setIsTransitioning] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [showLangPrompt, setShowLangPrompt] = useState(false);
+
+    // Show language prompt on first visit
+    useEffect(() => {
+        if (!localStorage.getItem(LANG_PROMPT_KEY)) {
+            setShowLangPrompt(true);
+        }
+    }, []);
+
+    const pickLang = (l: Lang) => {
+        setLang(l);
+        localStorage.setItem(LANG_PROMPT_KEY, "1");
+        setShowLangPrompt(false);
+    };
 
     // Track page view for analytics
     useEffect(() => {
@@ -71,25 +85,6 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
-
-    const handleRegister = () => {
-        if (isTransitioning || !waterRef.current) return;
-        setIsTransitioning(true);
-
-        const targetPath = isLoggedIn ? "/hackathon/dashboard" : "/hackathon/register";
-
-        const tl = gsap.timeline();
-
-        // Water rises to fill screen
-        tl.fromTo(
-            waterRef.current,
-            { yPercent: 100, y: 200 },
-            { yPercent: 0, y: 0, duration: 0.9, ease: "power3.inOut" }
-        )
-            // Hold briefly at peak, then navigate
-            // Target pages (register, team dashboard) will handle the start of their own transitions
-            .call(() => router.push(targetPath));
-    };
 
     // Lock scroll during opening animation
     useEffect(() => {
@@ -201,6 +196,10 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
           0%, 100% { opacity: 0.3; }
           50% { opacity: 1; }
         }
+        @keyframes scrollNudge {
+          0%, 100% { transform: translateY(0); opacity: 0.7; }
+          50% { transform: translateY(6px); opacity: 1; }
+        }
         @keyframes float {
           0%, 100% { transform: translate3d(0, 0, 0); }
           50% { transform: translate3d(10px, -20px, 0); }
@@ -227,14 +226,7 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
         .animate-titleGlowUp {
           animation: titleGlowUp 1.2s ease-out forwards;
         }
-        @keyframes waveShift {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .animate-wave {
-          animation: waveShift 2s linear infinite;
-        }
-        @keyframes jellyfishGlowBlue {
+@keyframes jellyfishGlowBlue {
           0%   { opacity: 0; filter: drop-shadow(0 0 80px rgba(145,196,227,1)); }
           50%  { opacity: 1; filter: drop-shadow(0 0 50px rgba(145,196,227,0.9)); }
           100% { opacity: 1; filter: drop-shadow(0 0 20px rgba(145,196,227,0.4)); }
@@ -244,83 +236,40 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
           50%  { opacity: 1; filter: drop-shadow(0 0 50px rgba(165,148,186,0.8)); }
           100% { opacity: 1; filter: drop-shadow(0 0 24px rgba(165,148,186,0.35)); }
         }
-        @keyframes wave1 {
-          from { transform: translateX(0); }
-          to   { transform: translateX(-50%); }
-        }
-        @keyframes wave2 {
-          from { transform: translateX(-22%); }
-          to   { transform: translateX(-72%); }
-        }
-        @keyframes wave3 {
-          from { transform: translateX(-12%); }
-          to   { transform: translateX(-62%); }
-        }
-        @keyframes shorePulse {
-          0%, 100% {
-            opacity: 0.55;
-            box-shadow: 0 0 18px 4px rgba(101,171,252,0.35), 0 0 40px 10px rgba(145,196,227,0.15);
-          }
-          50% {
-            opacity: 1;
-            box-shadow: 0 0 28px 7px rgba(101,171,252,0.65), 0 0 60px 18px rgba(145,196,227,0.3);
-          }
-        }
-        .w1 { animation: wave1 11s linear infinite; }
-        .w2 { animation: wave2 7.5s linear infinite; }
-        .w3 { animation: wave3 4.8s linear infinite; }
-        .shore { animation: shorePulse 3.2s ease-in-out infinite; }
       `}</style>
 
-                {/* Water transition overlay */}
+                {/* Language prompt overlay */}
+                {showLangPrompt && showContent && (
+                    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                        <div
+                            className="relative rounded-2xl border border-white/10 bg-[#0d1219]/95 backdrop-blur-xl p-8 max-w-sm w-full mx-4 text-center"
+                            style={{ boxShadow: '0 0 60px rgba(145,196,227,0.12)' }}
+                        >
+                            <p className="text-white/90 text-lg font-medium mb-1">Choose your language</p>
+                            <p className="text-gray-400 text-sm mb-6">เลือกภาษาที่ต้องการ</p>
+                            <div className="flex gap-3 justify-center">
+                                <button
+                                    onClick={() => pickLang("th")}
+                                    className="flex-1 py-3 rounded-xl border border-[#91C4E3]/30 text-[#91C4E3] font-medium hover:bg-[#91C4E3]/10 transition-all duration-200"
+                                >
+                                    ภาษาไทย
+                                </button>
+                                <button
+                                    onClick={() => pickLang("en")}
+                                    className="flex-1 py-3 rounded-xl border border-white/20 text-white/80 font-medium hover:bg-white/5 transition-all duration-200"
+                                >
+                                    English
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Top nav bar */}
                 <div
-                    ref={setWaterRef}
-                    className="fixed inset-0 z-[200] pointer-events-none"
-                    style={{
-                        background: "linear-gradient(to bottom, #020C1A 0%, #0A1E38 20%, #122E5A 45%, #1E4A82 70%, #2A62A0 88%, #3A7CC0 100%)",
-                        overflow: "visible",
-                    }}
+                    className={`fixed top-0 left-0 right-0 z-[60] flex items-center px-4 md:px-6 h-14 ${instant ? '' : 'transition-opacity duration-1000'} ${showContent ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                 >
-                    {/* Internal glow blobs */}
-                    <div style={{ position: "absolute", top: "20%", left: "25%", width: "500px", height: "250px", background: "#65ABFC", filter: "blur(140px)", opacity: 0.07, borderRadius: "50%", pointerEvents: "none" }} />
-                    <div style={{ position: "absolute", top: "55%", right: "15%", width: "350px", height: "180px", background: "#91C4E3", filter: "blur(120px)", opacity: 0.06, borderRadius: "50%", pointerEvents: "none" }} />
-                    <div style={{ position: "absolute", bottom: "5%", left: "50%", transform: "translateX(-50%)", width: "900px", height: "200px", background: "#65ABFC", filter: "blur(90px)", opacity: 0.12, borderRadius: "50%", pointerEvents: "none" }} />
-
-                    {/* Wave 1 — back, slowest */}
-                    <div className="absolute left-0 w1" style={{ top: "-130px", width: "200%", height: "130px" }}>
-                        <svg viewBox="0 0 1440 130" preserveAspectRatio="none" style={{ width: "50%", height: "100%", display: "inline-block", filter: "drop-shadow(0 0 6px rgba(100,160,230,0.5))" }}>
-                            <path d="M0,65 C120,110 240,20 360,65 C480,110 600,20 720,65 C840,110 960,20 1080,65 C1200,110 1320,20 1440,65 L1440,130 L0,130 Z" fill="rgba(70,130,200,0.28)" />
-                        </svg>
-                        <svg viewBox="0 0 1440 130" preserveAspectRatio="none" style={{ width: "50%", height: "100%", display: "inline-block", filter: "drop-shadow(0 0 6px rgba(100,160,230,0.5))" }}>
-                            <path d="M0,65 C120,110 240,20 360,65 C480,110 600,20 720,65 C840,110 960,20 1080,65 C1200,110 1320,20 1440,65 L1440,130 L0,130 Z" fill="rgba(70,130,200,0.28)" />
-                        </svg>
-                    </div>
-
-                    {/* Wave 2 — middle */}
-                    <div className="absolute left-0 w2" style={{ top: "-95px", width: "200%", height: "95px" }}>
-                        <svg viewBox="0 0 1440 95" preserveAspectRatio="none" style={{ width: "50%", height: "100%", display: "inline-block", filter: "drop-shadow(0 0 10px rgba(145,196,227,0.6))" }}>
-                            <path d="M0,48 C180,85 360,11 540,48 C720,85 900,11 1080,48 C1260,85 1440,11 1440,48 L1440,95 L0,95 Z" fill="rgba(101,171,252,0.4)" />
-                        </svg>
-                        <svg viewBox="0 0 1440 95" preserveAspectRatio="none" style={{ width: "50%", height: "100%", display: "inline-block", filter: "drop-shadow(0 0 10px rgba(145,196,227,0.6))" }}>
-                            <path d="M0,48 C180,85 360,11 540,48 C720,85 900,11 1080,48 C1260,85 1440,11 1440,48 L1440,95 L0,95 Z" fill="rgba(101,171,252,0.4)" />
-                        </svg>
-                    </div>
-
-                    {/* Wave 3 — front, brightest */}
-                    <div className="absolute left-0 w3" style={{ top: "-65px", width: "200%", height: "65px" }}>
-                        <svg viewBox="0 0 1440 65" preserveAspectRatio="none" style={{ width: "50%", height: "100%", display: "inline-block", filter: "drop-shadow(0 0 14px rgba(101,171,252,0.75)) drop-shadow(0 0 30px rgba(145,196,227,0.4))" }}>
-                            <path d="M0,32 C240,58 480,6 720,32 C960,58 1200,6 1440,32 L1440,65 L0,65 Z" fill="rgba(145,196,227,0.6)" />
-                        </svg>
-                        <svg viewBox="0 0 1440 65" preserveAspectRatio="none" style={{ width: "50%", height: "100%", display: "inline-block", filter: "drop-shadow(0 0 14px rgba(101,171,252,0.75)) drop-shadow(0 0 30px rgba(145,196,227,0.4))" }}>
-                            <path d="M0,32 C240,58 480,6 720,32 C960,58 1200,6 1440,32 L1440,65 L0,65 Z" fill="rgba(145,196,227,0.6)" />
-                        </svg>
-                    </div>
-
-                    {/* Shore glow line */}
-                    <div
-                        className="absolute left-0 w-full shore"
-                        style={{ top: "-30px", height: "1px", background: "#91C4E3" }}
-                    />
+                    <LangToggle onHero />
                 </div>
 
                 {/* Hero Section */}
@@ -358,12 +307,9 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                         />
                     </div>
 
-                    {/* Additional glowing effects */}
+                    {/* Ambient glow */}
                     <div
-                        className={`absolute top-40 left-1/4 w-[500px] h-[500px] bg-[#91C4E3] blur-[150px] rounded-full ${instant ? '' : 'transition-opacity duration-1000'} ${showContent ? 'opacity-5' : 'opacity-0'}`}
-                    />
-                    <div
-                        className={`absolute top-60 right-1/3 w-[400px] h-[400px] bg-[#A594BA] blur-[150px] rounded-full ${instant ? '' : 'transition-opacity duration-1000'} ${showContent ? 'opacity-5' : 'opacity-0'}`}
+                        className={`absolute top-40 left-1/4 w-[500px] h-[500px] bg-[#91C4E3] blur-[150px] rounded-full ${instant ? '' : 'transition-opacity duration-1000'} ${showContent ? 'opacity-[0.03]' : 'opacity-0'}`}
                     />
 
                     <div className="container mx-auto px-4 py-20 pt-36 relative z-50">
@@ -395,47 +341,23 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                             <div
                                 className={`${instant ? '' : 'transition-opacity duration-1000'} ${showContent ? 'opacity-100' : 'opacity-0'}`}
                             >
-                                {/* Register Button */}
-                                <div className="pt-6 flex flex-col items-center gap-2">
-                                    {!mounted ? null : isLoggedIn ? (
-                                        <Button
-                                            size="lg"
-                                            onClick={handleRegister}
-                                            className="bg-[#9D81AC] hover:bg-[#8a6f99] text-white text-xl px-12 py-6 rounded-full shadow-[0_0_40px_rgba(157,129,172,0.6)] transition-all duration-300 hover:shadow-[0_0_60px_rgba(157,129,172,1)] transform hover:scale-105"
+                                <div className="pt-6 flex flex-col items-center gap-3">
+                                    <a
+                                        href="/hackathon/gallery"
+                                        className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-[#91C4E3]/15 border border-[#91C4E3]/40 text-[#91C4E3] font-medium text-base hover:bg-[#91C4E3]/25 hover:border-[#91C4E3]/60 transition-all duration-300"
+                                    >
+                                        {L("Browse Products", "ดูผลงานทั้งหมด")}
+                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M3 8h10M9 4l4 4-4 4" />
+                                        </svg>
+                                    </a>
+                                    {isLoggedIn && (
+                                        <a
+                                            href="/hackathon/dashboard"
+                                            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-white/15 text-gray-300 text-sm hover:border-white/30 hover:text-white transition-all duration-300"
                                         >
-                                            Dashboard
-                                        </Button>
-                                    ) : (
-                                        <>
-                                            <div className="flex items-center gap-3">
-                                                <div
-                                                    className="inline-flex items-center gap-2.5 px-6 py-3 rounded-full"
-                                                    style={{
-                                                        background: "rgba(101,171,252,0.08)",
-                                                        border: "1px solid rgba(101,171,252,0.3)",
-                                                    }}
-                                                >
-                                                    <span className="w-2 h-2 rounded-full bg-[#65ABFC]" style={{ boxShadow: "0 0 8px rgba(101,171,252,0.9)" }} />
-                                                    <span className="text-base font-medium text-[#65ABFC] tracking-wide">Registration Closed</span>
-                                                </div>
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() => router.push("/hackathon/login")}
-                                                    className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full px-5 py-2 text-sm transition-all duration-300"
-                                                >
-                                                    Login
-                                                </Button>
-                                            </div>
-                                            <p className="text-sm text-white/50 max-w-md leading-relaxed">
-                                                ขอขอบคุณผู้สมัครทุกท่านที่ให้ความสนใจ The Next Decade Hackathon อย่างล้นหลาม จนตอนนี้ยอดสมัครพุ่งขึ้นถึง 800 กว่าคน!
-                                            </p>
-                                            <p className="text-sm text-white/50 max-w-md leading-relaxed">
-                                                สำหรับใครที่สมัครไม่ทัน... ไม่ต้องเสียใจไปนะครับ/คะ! 🥺
-                                            </p>
-                                            <p className="text-sm text-white/60 max-w-md leading-relaxed font-medium">
-                                                โอกาสสุดท้ายกำลังจะมา! เราจะเปิดระบบให้ลงทะเบียนรอบเก็บตกอีกครั้งใน <span className="text-[#91C4E3]">วันที่ 4 เมษายนนี้</span> 🔥 จำกัดเพียง <span className="text-[#91C4E3]">20 ที่นั่งสุดท้าย</span>เท่านั้น! (First come, first served)
-                                            </p>
-                                        </>
+                                            {L("Participant Dashboard", "แดชบอร์ดผู้เข้าแข่งขัน")}
+                                        </a>
                                     )}
                                 </div>
                             </div>
@@ -447,8 +369,8 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                     <div
                         className={`absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-50 ${instant ? '' : 'transition-opacity duration-1000'} ${showContent ? 'opacity-100' : 'opacity-0'}`}
                     >
-                        <span className="text-xs tracking-widest uppercase text-gray-400">Detail</span>
-                        <div className="flex flex-col items-center gap-1 animate-bounce">
+                        <span className="text-xs tracking-widest uppercase text-gray-400">{L("Detail", "รายละเอียด")}</span>
+                        <div className="flex flex-col items-center gap-1" style={{ animation: 'scrollNudge 2s ease-in-out infinite' }}>
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-400">
                                 <path d="M8 3 L8 13 M3 8 L8 13 L13 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
@@ -462,15 +384,12 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                 >
                     {/* Watch the Story — Video Section */}
                     <section className="py-20 relative z-10 overflow-hidden">
-                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-[#91C4E3] opacity-[0.04] blur-[120px] rounded-full pointer-events-none" />
                         <div className="container mx-auto px-4 relative z-10">
                             <div className="max-w-5xl mx-auto text-center">
-                                <h2 className="text-4xl md:text-5xl font-medium mb-3" style={{ textShadow: '0 0 30px rgba(145,196,227,0.3)' }}>
-                                    <span className="bg-gradient-to-r from-[#91C4E3] to-[#A594BA] bg-clip-text text-transparent">
-                                        Watch the Story
-                                    </span>
+                                <h2 className="text-4xl md:text-5xl font-medium mb-3 text-white/90" style={{ textShadow: '0 0 30px rgba(145,196,227,0.15)' }}>
+                                    {L("Watch the Story", "ดูเรื่องราวของเรา")}
                                 </h2>
-                                <p className="text-gray-500 mb-12 text-base">ดูว่าเรากำลังสร้างอะไรด้วยกัน</p>
+                                <p className="text-gray-400 mb-12 text-base">{L("See what we built together", "ดูว่าเรากำลังสร้างอะไรด้วยกัน")}</p>
                                 <div className="flex justify-center">
                                     <div
                                         className="relative rounded-3xl overflow-hidden border border-[#91C4E3]/20 shadow-[0_0_80px_rgba(145,196,227,0.12)]"
@@ -491,26 +410,19 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
 
                     {/* Anyone Can Make an Impact Section */}
                     <section className="py-20 relative z-10 overflow-hidden">
-                        {/* Ambient glow */}
-                        <div className="absolute right-0 top-1/2 w-[600px] h-[600px] bg-[#91C4E3] opacity-5 blur-[150px] rounded-full" />
-                        <div className="absolute left-0 bottom-0 w-[500px] h-[500px] bg-[#A594BA] opacity-5 blur-[150px] rounded-full" />
-
-                        {/* Clione decoration */}
-                        <div className="absolute right-16 top-1/4 opacity-15 pointer-events-none" style={{ animation: 'floatReverse 9s infinite ease-in-out' }}>
-                            <img src="/hackathon/Creature/Clione.svg" alt="" className="w-44 h-44" loading="lazy" decoding="async" style={{ filter: 'drop-shadow(0 0 16px rgba(145,196,227,0.4))', transform: 'rotate(-25deg)' }} />
-                        </div>
-
                         <div className="container mx-auto px-4 relative z-10">
                             <div className="max-w-5xl mx-auto">
-                                <h2 className="text-4xl md:text-5xl font-medium mb-12 text-center" style={{ textShadow: '0 0 30px rgba(145,196,227,0.3)' }}>
-                                    <span className="bg-gradient-to-r from-[#91C4E3] to-[#A594BA] bg-clip-text text-transparent">
-                                        Anyone Can Make an Impact
-                                    </span>
+                                <h2 className="text-4xl md:text-5xl font-medium mb-12 text-center text-white/90" style={{ textShadow: '0 0 30px rgba(145,196,227,0.15)' }}>
+                                    {L("Anyone Can Make an Impact", "ใครก็สร้างผลกระทบได้")}
                                 </h2>
                                 <div className="space-y-6">
                                     <div className="mb-12">
                                         <p className="text-gray-200 text-lg md:text-xl leading-relaxed text-center">
-                                            ที่ The Next Decade Hackathon 2026 <span className="text-[#91C4E3] font-medium">พื้นฐานไม่ใช่ข้อจำกัด แต่คือจุดเริ่มต้นของการเรียนรู้</span> เราเปลี่ยนพื้นที่แข่งขันให้กลายเป็นโอกาสให้คุณได้ทดลอง สร้างสรรค์ และเรียนรู้จากการลงมือทำจริงได้แบบไม่ต้องกังวล ผ่านระบบเหล่านี้:
+                                            {lang === "th" ? (
+                                                <>ที่ The Next Decade Hackathon 2026 <span className="text-[#91C4E3] font-medium">พื้นฐานไม่ใช่ข้อจำกัด แต่คือจุดเริ่มต้นของการเรียนรู้</span> เราเปลี่ยนพื้นที่แข่งขันให้กลายเป็นโอกาสให้คุณได้ทดลอง สร้างสรรค์ และเรียนรู้จากการลงมือทำจริงได้แบบไม่ต้องกังวล ผ่านระบบเหล่านี้:</>
+                                            ) : (
+                                                <>At The Next Decade Hackathon 2026, <span className="text-[#91C4E3] font-medium">your background is not a limitation but a starting point for learning.</span> We turned a competition into a space to experiment, create, and learn by doing, supported by these systems:</>
+                                            )}
                                         </p>
                                     </div>
 
@@ -521,9 +433,9 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                                                 <MentorshipIllustration className="w-full h-full" />
                                             </div>
                                             <div className="flex-1 text-center md:text-left">
-                                                <h4 className="text-[#91C4E3] font-medium text-xl md:text-2xl mb-3">Personal Mentorship</h4>
+                                                <h4 className="text-[#91C4E3] font-medium text-xl md:text-2xl mb-3">{L("Personal Mentorship", "พี่เลี้ยงส่วนตัว")}</h4>
                                                 <p className="text-gray-300 text-base md:text-lg leading-relaxed">
-                                                    เรามีการจัดสรร Mentor ประจำแต่ละกลุ่มเพื่อคอยให้คำปรึกษาและ Feedback อย่างใกล้ชิด พี่ๆจะช่วยให้คำแนะนำและดูแลให้น้องๆมือใหม่ยังคงอยู่ในเส้นทางและพัฒนาไอเดียได้อย่างเต็มศักยภาพ
+                                                    {L("Each team was assigned a dedicated mentor who provided close guidance and feedback, helping newcomers stay on track and develop their ideas to full potential.", "เรามีการจัดสรร Mentor ประจำแต่ละกลุ่มเพื่อคอยให้คำปรึกษาและ Feedback อย่างใกล้ชิด พี่ๆจะช่วยให้คำแนะนำและดูแลให้น้องๆมือใหม่ยังคงอยู่ในเส้นทางและพัฒนาไอเดียได้อย่างเต็มศักยภาพ")}
                                                 </p>
                                             </div>
                                         </div>
@@ -536,9 +448,13 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                                                 <GuidelineIllustration className="w-full h-full" />
                                             </div>
                                             <div className="flex-1 text-center md:text-left">
-                                                <h4 className="text-[#A594BA] font-medium text-xl md:text-2xl mb-3">Learning Guideline</h4>
+                                                <h4 className="text-[#A594BA] font-medium text-xl md:text-2xl mb-3">{L("Learning Guideline", "แนวทางการเรียนรู้")}</h4>
                                                 <p className="text-gray-300 text-base md:text-lg leading-relaxed">
-                                                    คุณจะได้เรียนรู้กระบวนการสร้างนวัตกรรมอย่างเป็นระบบผ่านหลักสูตร <span className="text-[#A594BA] font-medium">Design Thinking</span> ที่มุ่งเน้นการลงมือทำจริงเพื่อให้ได้ผลงานที่ใช้งานได้จริง (Functional Prototype) และมีเว็บคอย guide ทางให้ในแต่ละขั้นตอน
+                                                    {lang === "th" ? (
+                                                        <>คุณจะได้เรียนรู้กระบวนการสร้างนวัตกรรมอย่างเป็นระบบผ่านหลักสูตร <span className="text-[#A594BA] font-medium">Design Thinking</span> ที่มุ่งเน้นการลงมือทำจริงเพื่อให้ได้ผลงานที่ใช้งานได้จริง (Functional Prototype) และมีเว็บคอย guide ทางให้ในแต่ละขั้นตอน</>
+                                                    ) : (
+                                                        <>Participants learned systematic innovation through a <span className="text-[#A594BA] font-medium">Design Thinking</span> curriculum focused on hands-on creation, building functional prototypes with step-by-step guidance.</>
+                                                    )}
                                                 </p>
                                             </div>
                                         </div>
@@ -551,9 +467,9 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                                                 <TesterIllustration className="w-full h-full" />
                                             </div>
                                             <div className="flex-1 text-center md:text-left">
-                                                <h4 className="text-[#91C4E3] font-medium text-xl md:text-2xl mb-3">Tester</h4>
+                                                <h4 className="text-[#91C4E3] font-medium text-xl md:text-2xl mb-3">{L("User Testing", "การทดสอบกับผู้ใช้จริง")}</h4>
                                                 <p className="text-gray-300 text-base md:text-lg leading-relaxed">
-                                                    หัวใจสำคัญคือการนำ Prototype ไปทดลองใช้จริง เพื่อรับ Feedback มาพัฒนาผลงานให้แม่นยำ ขั้นตอนนี้จะช่วยสร้างความมั่นใจว่าสิ่งที่คุณสร้างขึ้นนั้นสามารถแก้ปัญหาได้ตรงจุดและตอบโจทย์คนใช้งานจริง ก่อนนำเสนอผลงานในรอบสุดท้าย
+                                                    {L("The key step was testing prototypes with real users, gathering feedback to refine the product. This ensured every solution addressed real problems before the final presentation.", "หัวใจสำคัญคือการนำ Prototype ไปทดลองใช้จริง เพื่อรับ Feedback มาพัฒนาผลงานให้แม่นยำ ขั้นตอนนี้จะช่วยสร้างความมั่นใจว่าสิ่งที่คุณสร้างขึ้นนั้นสามารถแก้ปัญหาได้ตรงจุดและตอบโจทย์คนใช้งานจริง ก่อนนำเสนอผลงานในรอบสุดท้าย")}
                                                 </p>
                                             </div>
                                         </div>
@@ -565,15 +481,6 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
 
                     {/* Who Can Join & Team Format */}
                     <section className="py-32 relative z-10 overflow-hidden">
-                        {/* Ambient glow effects */}
-                        <div className="absolute left-1/4 top-1/2 w-[500px] h-[500px] bg-[#91C4E3] opacity-5 blur-[150px] rounded-full" />
-                        <div className="absolute right-1/4 bottom-1/4 w-[400px] h-[400px] bg-[#A594BA] opacity-5 blur-[150px] rounded-full" />
-
-                        {/* Floating small jelly decorations */}
-                        <div className="absolute right-1/4 top-1/3 opacity-15 pointer-events-none" style={{ animation: 'floatReverse 7s infinite ease-in-out' }}>
-                            <img src="/hackathon/Creature/Small Jelly.svg" alt="" className="w-36 h-36" loading="lazy" decoding="async" style={{ filter: 'drop-shadow(0 0 12px rgba(165,148,186,0.4))', transform: 'scaleX(-1) rotate(10deg)' }} />
-                        </div>
-
                         <div className="container mx-auto px-4 relative z-10">
                             <div className="max-w-6xl mx-auto">
                                 {/* Grid layout with two cards */}
@@ -599,7 +506,7 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                                                     textShadow: '0 0 30px rgba(145,196,227,0.5)',
                                                     letterSpacing: '-0.02em'
                                                 }}>
-                                                Who can join?
+                                                {L("Who can join?", "ใครเข้าร่วมได้?")}
                                             </h3>
 
                                             {/* Content */}
@@ -608,19 +515,19 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                                                     <div className="relative group/item">
                                                         <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#91C4E3] opacity-0 group-hover/item:opacity-100 transition-opacity" />
                                                         <p className="text-lg md:text-xl text-[#91C4E3] font-medium text-left group-hover/item:translate-x-2 transition-transform">
-                                                            Track 1: ระดับมัธยมศึกษา หรือเทียบเท่า (ปวช.)
+                                                            {L("Track 1: High school or equivalent (Vocational Certificate)", "Track 1: ระดับมัธยมศึกษา หรือเทียบเท่า (ปวช.)")}
                                                         </p>
                                                     </div>
                                                     <div className="relative group/item">
                                                         <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#91C4E3] opacity-0 group-hover/item:opacity-100 transition-opacity" />
                                                         <p className="text-lg md:text-xl text-[#91C4E3] font-medium text-left group-hover/item:translate-x-2 transition-transform">
-                                                            Track 2: ระดับมหาวิทยาลัย (ปริญญาตรี - ปริญญาเอก) หรือเทียบเท่า (ปวส.)
+                                                            {L("Track 2: University level (Bachelor's – Doctoral) or equivalent", "Track 2: ระดับมหาวิทยาลัย (ปริญญาตรี - ปริญญาเอก) หรือเทียบเท่า (ปวส.)")}
                                                         </p>
                                                     </div>
                                                 </div>
                                                 <div className="pt-4 mt-4 border-t border-[#91C4E3]/20">
-                                                    <p className="text-base text-gray-400 text-center italic">
-                                                        ทุกพื้นฐาน ไม่จำกัดสาขา
+                                                    <p className="text-base text-gray-300 text-center italic">
+                                                        {L("All backgrounds welcome, no field restriction", "ทุกพื้นฐาน ไม่จำกัดสาขา")}
                                                     </p>
                                                 </div>
                                             </div>
@@ -651,7 +558,7 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                                                     textShadow: '0 0 30px rgba(165,148,186,0.5)',
                                                     letterSpacing: '-0.02em'
                                                 }}>
-                                                Team Format
+                                                {L("Team Format", "รูปแบบทีม")}
                                             </h3>
 
                                             {/* Content */}
@@ -664,7 +571,7 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                                                             </div>
                                                         </div>
                                                         <span className="text-lg md:text-xl text-gray-200 leading-relaxed group-hover/item:text-white transition-colors">
-                                                            สามารถสมัครเดี่ยว แล้วมาทีม matching ได้
+                                                            {L("Can register solo and join via team matching", "สามารถสมัครเดี่ยว แล้วมาทีม matching ได้")}
                                                         </span>
                                                     </li>
                                                     <li className="flex items-start gap-4 group/item">
@@ -674,7 +581,7 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                                                             </div>
                                                         </div>
                                                         <span className="text-lg md:text-xl text-gray-200 leading-relaxed group-hover/item:text-white transition-colors">
-                                                            ทีมละ 2–5 คน
+                                                            {L("2–5 members per team", "ทีมละ 2–5 คน")}
                                                         </span>
                                                     </li>
                                                 </ul>
@@ -693,9 +600,8 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                     <section className="py-20 md:py-32 relative z-10">
                         <div className="container mx-auto px-4 relative z-10">
                             <div className="text-center mb-12 md:mb-16">
-                                <p className="text-xs tracking-[0.25em] uppercase text-[#91C4E3]/50 mb-3 font-[family-name:var(--font-mitr)]">9 Problems · 3 Tracks</p>
-                                <h2 className="text-4xl md:text-6xl font-medium text-white/90">
-                                    Tracks
+                                <h2 className="text-4xl md:text-5xl font-medium text-white/90">
+                                    {L("9 Problems, 3 Tracks", "9 โจทย์, 3 แทร็ก")}
                                 </h2>
                             </div>
 
@@ -715,8 +621,7 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                                         {/* Title block */}
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-0.5">
-                                                <span className="text-[10px] font-mono text-[#91C4E3]/40 tracking-widest">01</span>
-                                                <span className="text-[10px] text-[#91C4E3]/40 tracking-[0.15em] uppercase font-[family-name:var(--font-mitr)]">Healthcare</span>
+                                                <span className="text-[10px] text-[#91C4E3]/50 tracking-[0.15em] uppercase font-[family-name:var(--font-mitr)]">Healthcare</span>
                                             </div>
                                             <h3 className={`text-base md:text-2xl font-medium leading-snug transition-colors duration-200 ${expandedTrack === 1 ? 'text-[#91C4E3]' : 'text-white/90 group-hover:text-[#91C4E3]'}`}>
                                                 Traditional & Integrative Healthcare
@@ -725,7 +630,7 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
 
                                         {/* Expand toggle */}
                                         <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
-                                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border transition-colors ${expandedTrack === 1 ? 'text-[#91C4E3] border-[#91C4E3]/40 bg-[#91C4E3]/10' : 'text-white/30 border-white/10 group-hover:text-[#91C4E3]/60 group-hover:border-[#91C4E3]/20'}`}>3 problems</span>
+                                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border transition-colors ${expandedTrack === 1 ? 'text-[#91C4E3] border-[#91C4E3]/40 bg-[#91C4E3]/10' : 'text-white/30 border-white/10 group-hover:text-[#91C4E3]/60 group-hover:border-[#91C4E3]/20'}`}>{L("3 problems", "3 โจทย์")}</span>
                                             <svg
                                                 width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                                                 className={`transition-all duration-300 ${expandedTrack === 1 ? 'rotate-180 text-[#91C4E3]' : 'text-white/20 group-hover:text-[#91C4E3]/50'}`}
@@ -749,13 +654,13 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                                                         <span className="text-[10px] text-[#91C4E3]/50 font-mono mt-0.5 flex-shrink-0 bg-[#91C4E3]/10 px-1.5 py-0.5 rounded">{p.num}</span>
                                                         <div>
                                                             <p className="text-sm font-medium text-white/85 mb-1.5 leading-snug">{p.title}</p>
-                                                            <p className="text-xs text-gray-500 leading-relaxed">{p.brief}</p>
+                                                            <p className="text-sm text-gray-300 leading-relaxed">{p.brief}</p>
                                                         </div>
                                                     </div>
                                                 </div>
                                             ))}
                                             <a href="/hackathon/challenge" className="inline-flex items-center gap-1.5 text-xs text-[#91C4E3]/60 hover:text-[#91C4E3] transition-colors pt-1 font-[family-name:var(--font-mitr)]">
-                                                Read full brief →
+                                                {L("Read full brief →", "อ่านโจทย์เต็ม →")}
                                             </a>
                                         </div>
                                     </div>
@@ -773,8 +678,7 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
 
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-0.5">
-                                                <span className="text-[10px] font-mono text-[#A594BA]/40 tracking-widest">02</span>
-                                                <span className="text-[10px] text-[#A594BA]/40 tracking-[0.15em] uppercase font-[family-name:var(--font-mitr)]">Mental</span>
+                                                <span className="text-[10px] text-[#A594BA]/50 tracking-[0.15em] uppercase font-[family-name:var(--font-mitr)]">Mental Health</span>
                                             </div>
                                             <h3 className={`text-base md:text-2xl font-medium leading-snug transition-colors duration-200 ${expandedTrack === 2 ? 'text-[#A594BA]' : 'text-white/90 group-hover:text-[#A594BA]'}`}>
                                                 Mental Health
@@ -782,7 +686,7 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                                         </div>
 
                                         <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
-                                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border transition-colors ${expandedTrack === 2 ? 'text-[#A594BA] border-[#A594BA]/40 bg-[#A594BA]/10' : 'text-white/30 border-white/10 group-hover:text-[#A594BA]/60 group-hover:border-[#A594BA]/20'}`}>3 problems</span>
+                                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border transition-colors ${expandedTrack === 2 ? 'text-[#A594BA] border-[#A594BA]/40 bg-[#A594BA]/10' : 'text-white/30 border-white/10 group-hover:text-[#A594BA]/60 group-hover:border-[#A594BA]/20'}`}>{L("3 problems", "3 โจทย์")}</span>
                                             <svg
                                                 width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                                                 className={`transition-all duration-300 ${expandedTrack === 2 ? 'rotate-180 text-[#A594BA]' : 'text-white/20 group-hover:text-[#A594BA]/50'}`}
@@ -805,13 +709,13 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                                                         <span className="text-[10px] text-[#A594BA]/50 font-mono mt-0.5 flex-shrink-0 bg-[#A594BA]/10 px-1.5 py-0.5 rounded">{p.num}</span>
                                                         <div>
                                                             <p className="text-sm font-medium text-white/85 mb-1.5 leading-snug">{p.title}</p>
-                                                            <p className="text-xs text-gray-500 leading-relaxed">{p.brief}</p>
+                                                            <p className="text-sm text-gray-300 leading-relaxed">{p.brief}</p>
                                                         </div>
                                                     </div>
                                                 </div>
                                             ))}
                                             <a href="/hackathon/challenge" className="inline-flex items-center gap-1.5 text-xs text-[#A594BA]/60 hover:text-[#A594BA] transition-colors pt-1 font-[family-name:var(--font-mitr)]">
-                                                Read full brief →
+                                                {L("Read full brief →", "อ่านโจทย์เต็ม →")}
                                             </a>
                                         </div>
                                     </div>
@@ -820,28 +724,27 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                                 {/* Track 3 */}
                                 <div
                                     onClick={() => setExpandedTrack(expandedTrack === 3 ? null : 3)}
-                                    className={`group relative cursor-pointer rounded-2xl border transition-all duration-300 ${expandedTrack === 3 ? 'border-[#91C4E3]/40 bg-[#91C4E3]/5 shadow-[0_0_40px_rgba(145,196,227,0.08)]' : 'border-white/8 bg-white/[0.03] active:bg-[#91C4E3]/5'}`}
+                                    className={`group relative cursor-pointer rounded-2xl border transition-all duration-300 ${expandedTrack === 3 ? 'border-[#7ECBB4]/40 bg-[#7ECBB4]/5 shadow-[0_0_40px_rgba(126,203,180,0.08)]' : 'border-white/8 bg-white/[0.03] active:bg-[#7ECBB4]/5'}`}
                                 >
                                     <div className="flex items-center gap-4 p-5 md:p-8">
-                                        <div className={`flex-shrink-0 w-11 h-11 md:w-14 md:h-14 rounded-xl flex items-center justify-center transition-all duration-300 ${expandedTrack === 3 ? 'bg-[#91C4E3]/15 border border-[#91C4E3]/30' : 'bg-white/5 border border-white/10 group-hover:border-[#91C4E3]/30 group-hover:bg-[#91C4E3]/10'}`}>
-                                            <Globe className="w-5 h-5 md:w-6 md:h-6 text-[#91C4E3]" strokeWidth={1.5} />
+                                        <div className={`flex-shrink-0 w-11 h-11 md:w-14 md:h-14 rounded-xl flex items-center justify-center transition-all duration-300 ${expandedTrack === 3 ? 'bg-[#7ECBB4]/15 border border-[#7ECBB4]/30' : 'bg-white/5 border border-white/10 group-hover:border-[#7ECBB4]/30 group-hover:bg-[#7ECBB4]/10'}`}>
+                                            <Globe className="w-5 h-5 md:w-6 md:h-6 text-[#7ECBB4]" strokeWidth={1.5} />
                                         </div>
 
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-0.5">
-                                                <span className="text-[10px] font-mono text-[#91C4E3]/40 tracking-widest">03</span>
-                                                <span className="text-[10px] text-[#91C4E3]/40 tracking-[0.15em] uppercase font-[family-name:var(--font-mitr)]">Community</span>
+                                                <span className="text-[10px] text-[#7ECBB4]/50 tracking-[0.15em] uppercase font-[family-name:var(--font-mitr)]">Community</span>
                                             </div>
-                                            <h3 className={`text-base md:text-2xl font-medium leading-snug transition-colors duration-200 ${expandedTrack === 3 ? 'text-[#91C4E3]' : 'text-white/90 group-hover:text-[#91C4E3]'}`}>
+                                            <h3 className={`text-base md:text-2xl font-medium leading-snug transition-colors duration-200 ${expandedTrack === 3 ? 'text-[#7ECBB4]' : 'text-white/90 group-hover:text-[#7ECBB4]'}`}>
                                                 Community, Public & Environmental Health
                                             </h3>
                                         </div>
 
                                         <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
-                                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border transition-colors ${expandedTrack === 3 ? 'text-[#91C4E3] border-[#91C4E3]/40 bg-[#91C4E3]/10' : 'text-white/30 border-white/10 group-hover:text-[#91C4E3]/60 group-hover:border-[#91C4E3]/20'}`}>3 problems</span>
+                                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border transition-colors ${expandedTrack === 3 ? 'text-[#7ECBB4] border-[#7ECBB4]/40 bg-[#7ECBB4]/10' : 'text-white/30 border-white/10 group-hover:text-[#7ECBB4]/60 group-hover:border-[#7ECBB4]/20'}`}>{L("3 problems", "3 โจทย์")}</span>
                                             <svg
                                                 width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                                                className={`transition-all duration-300 ${expandedTrack === 3 ? 'rotate-180 text-[#91C4E3]' : 'text-white/20 group-hover:text-[#91C4E3]/50'}`}
+                                                className={`transition-all duration-300 ${expandedTrack === 3 ? 'rotate-180 text-[#7ECBB4]' : 'text-white/20 group-hover:text-[#7ECBB4]/50'}`}
                                             >
                                                 <polyline points="6 9 12 15 18 9" />
                                             </svg>
@@ -850,24 +753,24 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
 
                                     <div className={`overflow-hidden transition-all duration-500 ease-out ${expandedTrack === 3 ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
                                         <div className="px-5 md:px-8 pb-5 md:pb-8 space-y-3">
-                                            <div className="h-px bg-[#91C4E3]/15 mb-4" />
+                                            <div className="h-px bg-[#7ECBB4]/15 mb-4" />
                                             {[
                                                 { num: 'P7', title: 'Data Rich, Action Poor', brief: 'How might we turn real-time environmental health data into actionable community behavior change — at the neighborhood level, not just on a dashboard?' },
                                                 { num: 'P8', title: 'The Food Safety Blind Spot', brief: 'How might we design a community-powered food safety monitoring and early warning system that works without requiring top-down government enforcement?' },
                                                 { num: 'P9', title: 'PM2.5 vs. Our Children', brief: 'How might we build a predictive PM2.5 alert and response system that triggers preemptive protective actions for schools and children — before dangerous exposure occurs?' },
                                             ].map((p) => (
-                                                <div key={p.num} className="rounded-xl bg-white/[0.03] border border-white/6 p-4 hover:border-[#91C4E3]/25 hover:bg-[#91C4E3]/5 transition-all duration-200 cursor-default">
+                                                <div key={p.num} className="rounded-xl bg-white/[0.03] border border-white/6 p-4 hover:border-[#7ECBB4]/25 hover:bg-[#7ECBB4]/5 transition-all duration-200 cursor-default">
                                                     <div className="flex items-start gap-3">
-                                                        <span className="text-[10px] text-[#91C4E3]/50 font-mono mt-0.5 flex-shrink-0 bg-[#91C4E3]/10 px-1.5 py-0.5 rounded">{p.num}</span>
+                                                        <span className="text-[10px] text-[#7ECBB4]/50 font-mono mt-0.5 flex-shrink-0 bg-[#7ECBB4]/10 px-1.5 py-0.5 rounded">{p.num}</span>
                                                         <div>
                                                             <p className="text-sm font-medium text-white/85 mb-1.5 leading-snug">{p.title}</p>
-                                                            <p className="text-xs text-gray-500 leading-relaxed">{p.brief}</p>
+                                                            <p className="text-sm text-gray-300 leading-relaxed">{p.brief}</p>
                                                         </div>
                                                     </div>
                                                 </div>
                                             ))}
-                                            <a href="/hackathon/challenge" className="inline-flex items-center gap-1.5 text-xs text-[#91C4E3]/60 hover:text-[#91C4E3] transition-colors pt-1 font-[family-name:var(--font-mitr)]">
-                                                Read full brief →
+                                            <a href="/hackathon/challenge" className="inline-flex items-center gap-1.5 text-xs text-[#7ECBB4]/60 hover:text-[#7ECBB4] transition-colors pt-1 font-[family-name:var(--font-mitr)]">
+                                                {L("Read full brief →", "อ่านโจทย์เต็ม →")}
                                             </a>
                                         </div>
                                     </div>
@@ -881,7 +784,7 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                                     className="inline-flex items-center gap-3 px-8 py-3.5 rounded-full border border-[#91C4E3]/30 text-[#91C4E3] text-sm font-[family-name:var(--font-mitr)] hover:border-[#91C4E3]/60 hover:bg-[#91C4E3]/5 transition-all duration-300"
                                     style={{ textShadow: '0 0 12px rgba(145,196,227,0.4)' }}
                                 >
-                                    <span>View Full Challenge Brief</span>
+                                    <span>{L("View Full Challenge Brief", "ดูโจทย์ทั้งหมด")}</span>
                                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M3 8h10M9 4l4 4-4 4" />
                                     </svg>
@@ -896,40 +799,35 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
 
                     {/* Beyond the Hackathon */}
                     <section className="py-24 relative z-10">
-                        <div className="absolute right-20 top-1/3 opacity-20 pointer-events-none" style={{ animation: 'floatReverse 11s infinite ease-in-out' }}>
-                            <img src="/hackathon/Creature/Small Jelly.svg" alt="" className="w-40 h-40" loading="lazy" decoding="async" style={{ filter: 'drop-shadow(0 0 16px rgba(165,148,186,0.5))', transform: 'scaleX(-1) rotate(-15deg)' }} />
-                        </div>
-
-                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-[#A594BA] opacity-[0.03] blur-[150px] rounded-[100%]" />
-
                         <div className="container mx-auto px-4 relative z-10">
                             <div className="text-center mb-16">
-                                <h2 className="text-4xl md:text-5xl font-medium mb-6 tracking-tight" style={{ textShadow: '0 0 40px rgba(165,148,186,0.4)' }}>
-                                    <span className="bg-gradient-to-r from-[#91C4E3] to-[#A594BA] bg-clip-text text-transparent">
-                                        Beyond the Hackathon
-                                    </span>
+                                <h2 className="text-4xl md:text-5xl font-medium mb-6 tracking-tight text-white/90" style={{ textShadow: '0 0 30px rgba(145,196,227,0.15)' }}>
+                                    {L("Beyond the Hackathon", "ไม่จบแค่การแข่งขัน")}
                                 </h2>
                                 <p className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto flex flex-col md:inline-block">
-                                    <span>ประสบการณ์ไม่ได้จบลงที่การแข่งขัน</span>{' '}
-                                    <span className="text-[#91C4E3] whitespace-nowrap">แต่ต่อยอดสู่การพัฒนาในโลกจริง</span>
+                                    {lang === "th" ? (
+                                        <><span>ประสบการณ์ไม่ได้จบลงที่การแข่งขัน</span>{' '}<span className="text-[#91C4E3] whitespace-nowrap">แต่ต่อยอดสู่การพัฒนาในโลกจริง</span></>
+                                    ) : (
+                                        <><span>The experience doesn{"'"}t end at the competition</span>{' '}<span className="text-[#91C4E3] whitespace-nowrap">but extends into real-world development</span></>
+                                    )}
                                 </p>
                             </div>
 
                             <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
                                 {[
                                     {
-                                        title: 'Showcase in Futurist Fest',
-                                        desc: 'การนำเสนอผลงานในงาน Futurist Fest ต่อหน้าสาธารณชน',
+                                        title: L('Showcase in Futurist Fest', 'แสดงผลงานใน Futurist Fest'),
+                                        desc: L('Present products to the public at Futurist Fest', 'การนำเสนอผลงานในงาน Futurist Fest ต่อหน้าสาธารณชน'),
                                         icon: <Presentation className="w-10 h-10 text-[#A594BA]" />
                                     },
                                     {
-                                        title: 'Expand Your Network',
-                                        desc: 'การเชื่อมต่อกับนักวิจัย ผู้เชี่ยวชาญ และนักลงทุนในอุตสาหกรรม',
+                                        title: L('Expand Your Network', 'ขยายเครือข่าย'),
+                                        desc: L('Connect with researchers, experts, and industry investors', 'การเชื่อมต่อกับนักวิจัย ผู้เชี่ยวชาญ และนักลงทุนในอุตสาหกรรม'),
                                         icon: <Network className="w-10 h-10 text-[#91C4E3]" />
                                     },
                                     {
-                                        title: 'Real-world Incubation',
-                                        desc: 'โอกาสพัฒนาแนวคิดและ Prototype ต่อหลังจบโครงการ',
+                                        title: L('Real-world Incubation', 'บ่มเพาะสู่โลกจริง'),
+                                        desc: L('Opportunity to develop ideas and prototypes beyond the program', 'โอกาสพัฒนาแนวคิดและ Prototype ต่อหลังจบโครงการ'),
                                         icon: <Rocket className="w-10 h-10 text-[#A594BA]" />
                                     }
                                 ].map((item, idx) => (
@@ -939,7 +837,7 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                                             {item.icon}
                                         </div>
                                         <h3 className="text-2xl font-medium text-white mb-4">{item.title}</h3>
-                                        <p className="text-gray-400 text-lg leading-relaxed">{item.desc}</p>
+                                        <p className="text-gray-300 text-base leading-relaxed">{item.desc}</p>
                                     </div>
                                 ))}
                             </div>
@@ -980,7 +878,7 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
 
                                             {/* Subtitle */}
                                             <p className="text-[#A594BA] text-sm md:text-base font-medium tracking-[0.25em] uppercase">
-                                                The Grand Finale
+                                                {L("The Grand Finale", "งานแสดงผลงานรอบสุดท้าย")}
                                             </p>
 
                                             {/* Decorative line */}
@@ -1014,11 +912,11 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                                             {/* Description */}
                                             <div className="bg-[#91C4E3]/5 rounded-2xl p-6 border border-[#91C4E3]/10">
                                                 <p className="text-gray-300 text-center leading-relaxed text-sm md:text-base">
-                                                    พื้นที่ที่ผลงานไม่ได้จบลงที่การแข่งขัน
-                                                    <br className="hidden sm:block" />
-                                                    <span className="text-[#91C4E3]">นำเสนอ prototype • แลกเปลี่ยนแนวคิด • เชื่อมต่อนักวิจัย</span>
-                                                    <br className="hidden sm:block" />
-                                                    เพื่อต่อยอดสู่โลกจริง
+                                                    {lang === "th" ? (
+                                                        <>พื้นที่ที่ผลงานไม่ได้จบลงที่การแข่งขัน<br className="hidden sm:block" /><span className="text-[#91C4E3]">นำเสนอ prototype &bull; แลกเปลี่ยนแนวคิด &bull; เชื่อมต่อนักวิจัย</span><br className="hidden sm:block" />เพื่อต่อยอดสู่โลกจริง</>
+                                                    ) : (
+                                                        <>Where products go beyond the competition<br className="hidden sm:block" /><span className="text-[#91C4E3]">Present prototypes &bull; Exchange ideas &bull; Connect with researchers</span><br className="hidden sm:block" />to develop in the real world</>
+                                                    )}
                                                 </p>
                                             </div>
                                         </div>
@@ -1035,7 +933,7 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                                         { icon: Network, label: 'Networking' },
                                         { icon: Rocket, label: 'Incubation' }
                                     ].map((item, idx) => (
-                                        <div key={idx} className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-gray-400 text-sm">
+                                        <div key={idx} className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-gray-300 text-sm">
                                             <item.icon className="w-4 h-4" />
                                             <span>{item.label}</span>
                                         </div>
@@ -1047,15 +945,9 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
 
                     {/* Organizations & Partners Section */}
                     <section className="py-20 relative z-10">
-                        <div className="absolute right-1/4 bottom-10 opacity-15 pointer-events-none" style={{ animation: 'floatReverse 6s infinite ease-in-out' }}>
-                            <img src="/hackathon/Creature/Small Jelly.svg" alt="" className="w-28 h-28" loading="lazy" decoding="async" style={{ filter: 'drop-shadow(0 0 12px rgba(165,148,186,0.4))', transform: 'scaleX(-1) rotate(20deg)' }} />
-                        </div>
-
                         <div className="container mx-auto px-4">
-                            <h2 className="text-4xl md:text-5xl font-medium mb-16 text-center" style={{ textShadow: '0 0 30px rgba(145,196,227,0.3)' }}>
-                                <span className="bg-gradient-to-r from-[#91C4E3] to-[#A594BA] bg-clip-text text-transparent">
-                                    Organizations & Partners
-                                </span>
+                            <h2 className="text-4xl md:text-5xl font-medium mb-16 text-center text-white/90" style={{ textShadow: '0 0 30px rgba(145,196,227,0.15)' }}>
+                                {L("Organizations & Partners", "องค์กรและพาร์ทเนอร์")}
                             </h2>
 
                             <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-12">
@@ -1068,7 +960,7 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                                         <div className="flex-1">
                                             <h3 className="text-2xl font-medium text-[#91C4E3] mb-3">AMSA Thailand</h3>
                                             <p className="text-gray-300 leading-relaxed text-sm">
-                                                เครือข่ายนักศึกษาแพทย์ที่ทำงานด้านสาธารณสุข การแลกเปลี่ยนความรู้ และความร่วมมือด้านสุขภาพ
+                                                {L("A medical student network working on public health, knowledge exchange, and health collaboration", "เครือข่ายนักศึกษาแพทย์ที่ทำงานด้านสาธารณสุข การแลกเปลี่ยนความรู้ และความร่วมมือด้านสุขภาพ")}
                                             </p>
                                         </div>
                                     </div>
@@ -1083,7 +975,7 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                                         <div className="flex-1">
                                             <h3 className="text-2xl font-medium text-[#91C4E3] mb-3">Passionseed</h3>
                                             <p className="text-gray-300 leading-relaxed text-sm">
-                                                องค์กรที่พัฒนาเยาวชนผ่านการเรียนรู้ด้านเทคโนโลยี เช่น AI การสร้างผลิตภัณฑ์ดิจิทัล และนวัตกรรม เพื่อสร้างโปรเจกต์ที่ใช้ได้จริง
+                                                {L("An organization developing youth through technology education — AI, digital product building, and innovation — to create real-world projects", "องค์กรที่พัฒนาเยาวชนผ่านการเรียนรู้ด้านเทคโนโลยี เช่น AI การสร้างผลิตภัณฑ์ดิจิทัล และนวัตกรรม เพื่อสร้างโปรเจกต์ที่ใช้ได้จริง")}
                                             </p>
                                         </div>
                                     </div>
@@ -1098,7 +990,7 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                                         <div className="flex-1">
                                             <h3 className="text-2xl font-medium text-[#91C4E3] mb-3">STEM Like Her</h3>
                                             <p className="text-gray-300 leading-relaxed text-sm">
-                                                องค์กรนักศึกษาที่สนับสนุนและสร้างแรงบันดาลใจให้ผู้หญิงและเยาวชนในสาย STEM
+                                                {L("A student organization supporting and inspiring women and youth in STEM", "องค์กรนักศึกษาที่สนับสนุนและสร้างแรงบันดาลใจให้ผู้หญิงและเยาวชนในสาย STEM")}
                                             </p>
                                         </div>
                                     </div>
@@ -1107,66 +999,62 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                         </div>
                     </section>
 
-                    {/* CTA Section */}
+                    {/* Gallery CTA Section */}
                     <section className="py-24 relative z-10">
-                        {/* Large clione decoration */}
-                        <div className="absolute top-10 right-1/3 opacity-20 pointer-events-none" style={{ animation: 'float 12s infinite ease-in-out' }}>
-                            <img src="/hackathon/Creature/Clione.svg" alt="" className="w-52 h-52" loading="lazy" decoding="async" style={{ filter: 'drop-shadow(0 0 20px rgba(145,196,227,0.4))', transform: 'rotate(-20deg)' }} />
-                        </div>
-                        {/* Small Jelly decoration on left */}
-                        <div className="absolute bottom-20 left-1/4 opacity-15 pointer-events-none" style={{ animation: 'floatReverse 9s infinite ease-in-out' }}>
-                            <img src="/hackathon/Creature/Small Jelly.svg" alt="" className="w-36 h-36" loading="lazy" decoding="async" style={{ filter: 'drop-shadow(0 0 16px rgba(165,148,186,0.4))', transform: 'scaleX(-1) rotate(-30deg)' }} />
-                        </div>
-
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#91C4E3]/5 to-[#A594BA]/5 blur-3xl" />
-
                         <div className="container mx-auto px-4 relative z-10">
-                            <div className="text-center max-w-4xl mx-auto space-y-8">
-                                <h2 className="text-4xl md:text-5xl font-medium leading-tight">
-                                    <span className="bg-gradient-to-r from-[#91C4E3] to-[#A594BA] bg-clip-text text-transparent">
-                                        มาร่วมสำรวจและสร้างอนาคตของการดูแลสุขภาพไปด้วยกัน
-                                    </span>
+                            <div className="text-center max-w-3xl mx-auto space-y-6">
+                                <h2 className="text-3xl md:text-4xl font-medium leading-tight text-white/90">
+                                    {L("All products are ready to explore", "ผลงานทั้งหมดพร้อมให้สำรวจแล้ว")}
                                 </h2>
-                                {!mounted ? null : isLoggedIn ? (
-                                    <Button
-                                        size="lg"
-                                        onClick={handleRegister}
-                                        className="bg-gradient-to-r from-[#91C4E3] to-[#A594BA] hover:from-[#7ab3d3] hover:to-[#9484aa] text-white text-xl px-14 py-7 rounded-full shadow-[0_0_40px_rgba(145,196,227,0.5)] transition-all duration-300 hover:shadow-[0_0_60px_rgba(145,196,227,0.8)] transform hover:scale-105"
+                                <p className="text-lg text-gray-300 max-w-xl mx-auto leading-relaxed">
+                                    {L("9 problems, 800+ participants built real health products. Find the one that matters to you.", "9 ปัญหา 800+ ผู้เข้าแข่งขัน สร้างผลิตภัณฑ์ที่แก้ปัญหาสุขภาพจริง หาผลงานที่ตรงกับคุณ")}
+                                </p>
+                                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+                                    <a
+                                        href="/hackathon/gallery"
+                                        className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-[#91C4E3]/15 border border-[#91C4E3]/40 text-[#91C4E3] font-medium text-base hover:bg-[#91C4E3]/25 hover:border-[#91C4E3]/60 transition-all duration-300"
                                     >
-                                        Dashboard
-                                    </Button>
-                                ) : (
-                                    <div className="flex flex-col items-center gap-3">
-                                        <div className="flex items-center gap-3">
-                                            <div
-                                                className="inline-flex items-center gap-2.5 px-6 py-3 rounded-full"
-                                                style={{
-                                                    background: "rgba(101,171,252,0.08)",
-                                                    border: "1px solid rgba(101,171,252,0.3)",
-                                                }}
-                                            >
-                                                <span className="w-2 h-2 rounded-full bg-[#65ABFC]" style={{ boxShadow: "0 0 8px rgba(101,171,252,0.9)" }} />
-                                                <span className="text-base font-medium text-[#65ABFC] tracking-wide">Registration Closed</span>
-                                            </div>
-                                            <Button
-                                                size="sm"
-                                                onClick={() => router.push("/hackathon/login")}
-                                                className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full px-5 py-2 text-sm transition-all duration-300"
-                                            >
-                                                Login
-                                            </Button>
-                                        </div>
-                                        <p className="text-sm text-white/50 max-w-md leading-relaxed">
-                                            ขอขอบคุณผู้สมัครทุกท่านที่ให้ความสนใจ The Next Decade Hackathon อย่างล้นหลาม จนตอนนี้ยอดสมัครพุ่งขึ้นถึง 800 กว่าคน!
-                                        </p>
-                                        <p className="text-sm text-white/50 max-w-md leading-relaxed">
-                                            สำหรับใครที่สมัครไม่ทัน... ไม่ต้องเสียใจไปนะครับ/คะ! 🥺
-                                        </p>
-                                        <p className="text-sm text-white/60 max-w-md leading-relaxed font-medium">
-                                            โอกาสสุดท้ายกำลังจะมา! เราจะเปิดระบบให้ลงทะเบียนรอบเก็บตกอีกครั้งใน <span className="text-[#91C4E3]">วันที่ 4 เมษายนนี้</span> 🔥 จำกัดเพียง <span className="text-[#91C4E3]">20 ที่นั่งสุดท้าย</span>เท่านั้น! (First come, first served)
-                                        </p>
-                                    </div>
-                                )}
+                                        {L("Browse All Products", "ดูผลงานทั้งหมด")}
+                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M3 8h10M9 4l4 4-4 4" />
+                                        </svg>
+                                    </a>
+                                    <a
+                                        href="/hackathon/gallery/match"
+                                        className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-white/15 text-gray-300 text-sm hover:border-white/30 hover:text-white transition-all duration-300"
+                                    >
+                                        <span aria-hidden="true">🐋</span>
+                                        {L("Find your match", "หาผลงานที่ใช่สำหรับคุณ")}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Sponsors */}
+                    <section className="py-20 relative z-10">
+                        <div className="container mx-auto px-4">
+                            <p className="text-center text-sm font-medium tracking-widest text-white/40 mb-10">
+                                {L("THANK YOU TO OUR SPONSORS", "ขอบคุณผู้สนับสนุน")}
+                            </p>
+                            <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-8 max-w-3xl mx-auto">
+                                {[
+                                    { src: "/hackathon/sponsors/skinx.png", alt: "SkinX", h: "h-12" },
+                                    { src: "/hackathon/sponsors/garnier.png", alt: "Garnier", h: "h-10" },
+                                    { src: "/hackathon/sponsors/herb-guardian.png", alt: "Herb Guardian", h: "h-11" },
+                                    { src: "/hackathon/sponsors/zenichub.png", alt: "ZenicHub", h: "h-10" },
+                                    { src: "/hackathon/sponsors/onecha.png", alt: "OneCha", h: "h-11" },
+                                    { src: "/hackathon/sponsors/cocori.png", alt: "Cocori", h: "h-10" },
+                                ].map((s) => (
+                                    <img
+                                        key={s.alt}
+                                        src={s.src}
+                                        alt={s.alt}
+                                        className={`${s.h} w-auto object-contain opacity-100`}
+                                        loading="lazy"
+                                        decoding="async"
+                                    />
+                                ))}
                             </div>
                         </div>
                     </section>
@@ -1175,11 +1063,11 @@ export default function LandingPage({ isLoggedIn }: LandingPageProps) {
                     <footer className="py-12 border-t border-[#91C4E3]/20 relative z-10">
                         <div className="container mx-auto px-4">
                             <div className="text-center space-y-4">
-                                <p className="text-gray-400 text-lg">
+                                <p className="text-gray-300 text-lg">
                                     The Next Decade Hackathon 2026
                                 </p>
-                                <p className="text-gray-500 text-sm">
-                                    Reimagining Preventive & Predictive Healthcare
+                                <p className="text-gray-400 text-sm">
+                                    {L("Reimagining Preventive & Predictive Healthcare", "สร้างสรรค์อนาคตการดูแลสุขภาพเชิงป้องกันและพยากรณ์")}
                                 </p>
                             </div>
                         </div>
