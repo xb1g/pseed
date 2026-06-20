@@ -75,7 +75,6 @@ export async function getGalleryProducts(): Promise<GalleryProductSummary[]> {
       hackathon_year,
       hackathon_name,
       interest_count,
-      target_personas,
       hackathon_teams!inner ( name )
     `)
     .eq("is_published", true)
