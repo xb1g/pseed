@@ -97,7 +97,7 @@ export default function ProductCard({ product, style, onNavigate }: ProductCardP
           <img
             src={product.cover_image_url}
             alt={`${product.product_name} preview`}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover object-top"
             loading="lazy"
             decoding="async"
           />

@@ -18,25 +18,42 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, ExternalLink, Eye, EyeOff } from "lucide-react";
+import { Loader2, ExternalLink, Eye, EyeOff, X } from "lucide-react";
+import ProductDetail from "@/components/hackathon/gallery/ProductDetail";
+import { LangProvider } from "@/lib/hackathon/gallery-lang";
 
 interface GalleryProduct {
   id: string;
   team_id: string;
   team_name: string;
   product_name: string;
+  product_name_th: string | null;
   problem_statement: string;
+  problem_statement_th: string | null;
+  solution_description: string;
+  solution_description_th: string | null;
+  cover_image_url: string | null;
+  additional_images: string[];
+  test_mode: "direct" | "contact";
+  demo_url: string | null;
+  contact_email: string | null;
+  line_qr_url: string | null;
+  line_id: string | null;
   tags: string[];
+  hackathon_year: number;
+  hackathon_name: string;
+  interest_count: number;
+  match_count: number;
+  target_personas: { who: string[]; what: string[] } | null;
   is_published: boolean;
   created_at: string;
-  demo_url: string | null;
-  cover_image_url: string | null;
 }
 
 export function AdminHackathonGallery() {
   const [products, setProducts] = useState<GalleryProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState<GalleryProduct | null>(null);
 
   useEffect(() => {
     fetch("/api/admin/hackathon/gallery")
@@ -153,16 +170,10 @@ export function AdminHackathonGallery() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
-                        <a
-                          href={`/hackathon/gallery/${product.team_id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-foreground transition-colors"
-                          title="Preview gallery page"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
+                      <div className="flex gap-1.5">
+                        <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setPreviewing(product)}>
+                          <Eye className="h-3 w-3" /> Preview
+                        </Button>
                         {product.demo_url && (
                           <a
                             href={product.demo_url}
@@ -178,22 +189,6 @@ export function AdminHackathonGallery() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1.5">
-                        {product.is_published && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            asChild
-                            className="gap-1.5 text-xs"
-                          >
-                            <a
-                              href={`/hackathon/gallery/${product.team_id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <ExternalLink className="h-3 w-3" /> Preview
-                            </a>
-                          </Button>
-                        )}
                         <Button
                           size="sm"
                           variant={product.is_published ? "outline" : "default"}
@@ -218,6 +213,56 @@ export function AdminHackathonGallery() {
           )}
         </CardContent>
       </Card>
+
+      {/* Preview modal */}
+      {previewing && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={() => setPreviewing(null)}>
+          <div
+            className="fixed inset-4 md:inset-8 lg:inset-12 rounded-xl overflow-hidden flex flex-col bg-[#0a0f16]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 h-12 border-b border-white/10 bg-[#0a0f16] shrink-0">
+              <span className="text-xs font-semibold text-white/50 uppercase tracking-wider">
+                Preview — {previewing.product_name}
+              </span>
+              <Button size="sm" variant="ghost" className="gap-1.5 text-xs text-white/60 hover:text-white" onClick={() => setPreviewing(null)}>
+                <X className="h-3 w-3" /> Close
+              </Button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <LangProvider>
+                <ProductDetail
+                  product={{
+                    id: previewing.id,
+                    team_id: previewing.team_id,
+                    product_name: previewing.product_name,
+                    product_name_th: previewing.product_name_th,
+                    problem_statement: previewing.problem_statement,
+                    problem_statement_th: previewing.problem_statement_th,
+                    solution_description: previewing.solution_description,
+                    solution_description_th: previewing.solution_description_th,
+                    cover_image_url: previewing.cover_image_url,
+                    additional_images: previewing.additional_images,
+                    test_mode: previewing.test_mode,
+                    demo_url: previewing.demo_url,
+                    contact_email: previewing.contact_email,
+                    line_qr_url: previewing.line_qr_url,
+                    line_id: previewing.line_id,
+                    tags: previewing.tags,
+                    hackathon_year: previewing.hackathon_year,
+                    hackathon_name: previewing.hackathon_name,
+                    interest_count: previewing.interest_count,
+                    match_count: previewing.match_count,
+                    target_personas: previewing.target_personas,
+                    created_at: previewing.created_at,
+                    team: { name: previewing.team_name, members: [] },
+                  }}
+                />
+              </LangProvider>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
