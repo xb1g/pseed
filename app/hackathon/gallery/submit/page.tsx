@@ -23,6 +23,7 @@ type FormState = {
   additional_images: string[];
   line_qr_url: string;
   line_id: string;
+  youtube_url: string;
   target_personas: { who: string[]; what: string[] };
 };
 
@@ -41,6 +42,7 @@ const EMPTY_FORM: FormState = {
   additional_images: [],
   line_qr_url: "",
   line_id: "",
+  youtube_url: "",
   target_personas: { who: [], what: [] },
 };
 
@@ -91,6 +93,7 @@ export default function GallerySubmitPage() {
             additional_images: data.product.additional_images ?? [],
             line_qr_url: data.product.line_qr_url ?? "",
             line_id: data.product.line_id ?? "",
+            youtube_url: data.product.youtube_url ?? "",
             target_personas: data.product.target_personas ?? { who: [], what: [] },
           });
         }
@@ -153,6 +156,7 @@ export default function GallerySubmitPage() {
           cover_image_url: form.cover_image_url || null,
           line_qr_url: form.line_qr_url || null,
           line_id: form.line_id || null,
+          youtube_url: form.youtube_url || null,
           target_personas: (form.target_personas.who.length > 0 || form.target_personas.what.length > 0)
             ? form.target_personas
             : null,
@@ -473,6 +477,27 @@ export default function GallerySubmitPage() {
                 </div>
               )}
             </div>
+
+            {/* YouTube video */}
+            <FormField label="YouTube video" hint="Optional — paste a YouTube link">
+              <input
+                value={form.youtube_url}
+                onChange={(e) => setForm((p) => ({ ...p, youtube_url: e.target.value }))}
+                type="url"
+                placeholder="https://youtube.com/watch?v=... or https://youtu.be/..."
+                style={inputStyle}
+              />
+              {form.youtube_url && getYouTubeId(form.youtube_url) && (
+                <div style={{ marginTop: "0.75rem", borderRadius: "12px", overflow: "hidden", border: "1px solid rgba(97,154,210,0.2)" }}>
+                  <iframe
+                    src={`https://www.youtube.com/embed/${getYouTubeId(form.youtube_url)}`}
+                    style={{ width: "100%", aspectRatio: "16/9", border: "none", display: "block" }}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              )}
+            </FormField>
 
             {/* Cover image */}
             <FormField label="Cover image" hint="Optional — 16:9 recommended">
@@ -872,6 +897,7 @@ export default function GallerySubmitPage() {
               contact_email: form.contact_email || null,
               line_qr_url: form.line_qr_url || null,
               line_id: form.line_id || null,
+              youtube_url: form.youtube_url || null,
               tags: form.tags,
               hackathon_year: 2026,
               hackathon_name: "PassionSeed Hackathon",
@@ -965,6 +991,11 @@ function UploadZone({ uploading, label, hint, small, onFile, accent }: {
       />
     </label>
   );
+}
+
+function getYouTubeId(url: string): string | null {
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+  return match?.[1] ?? null;
 }
 
 const inputStyle: React.CSSProperties = {

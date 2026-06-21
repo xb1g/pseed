@@ -39,6 +39,7 @@ interface GalleryProduct {
   contact_email: string | null;
   line_qr_url: string | null;
   line_id: string | null;
+  youtube_url: string | null;
   tags: string[];
   hackathon_year: number;
   hackathon_name: string;
@@ -296,6 +297,7 @@ export function AdminHackathonGallery() {
                     contact_email: previewing.contact_email,
                     line_qr_url: previewing.line_qr_url,
                     line_id: previewing.line_id,
+                    youtube_url: previewing.youtube_url,
                     tags: previewing.tags,
                     hackathon_year: previewing.hackathon_year,
                     hackathon_name: previewing.hackathon_name,

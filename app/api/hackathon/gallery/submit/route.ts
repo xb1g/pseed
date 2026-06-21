@@ -71,6 +71,9 @@ export async function POST(req: NextRequest) {
   const line_id = body.line_id ? (body.line_id as string).trim().replace(/^@/, "") : null;
   if (!line_id) errors.push("line_id is required");
 
+  const youtube_url = body.youtube_url ? (body.youtube_url as string).trim() : null;
+  if (youtube_url && !isValidUrl(youtube_url)) errors.push("youtube_url must be a valid URL");
+
   const test_mode: "direct" | "contact" = body.test_mode === "direct" ? "direct" : "contact";
   if (test_mode === "direct" && !demo_url) errors.push("demo_url is required for direct access mode");
 
@@ -107,6 +110,7 @@ export async function POST(req: NextRequest) {
     additional_images,
     line_qr_url,
     line_id,
+    youtube_url,
     target_personas,
   };
 
