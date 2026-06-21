@@ -46,9 +46,17 @@ export async function POST(req: NextRequest) {
   if (!solution_description) errors.push("solution_description is required");
   else if (solution_description.length > 1000) errors.push("solution_description must be 1000 characters or fewer");
 
-  const product_name_th = (body.product_name_th ?? "").toString().trim() || null;
-  const problem_statement_th = (body.problem_statement_th ?? "").toString().trim() || null;
-  const solution_description_th = (body.solution_description_th ?? "").toString().trim() || null;
+  const product_name_th = (body.product_name_th ?? "").toString().trim();
+  if (!product_name_th) errors.push("product_name_th is required");
+  else if (product_name_th.length > 80) errors.push("product_name_th must be 80 characters or fewer");
+
+  const problem_statement_th = (body.problem_statement_th ?? "").toString().trim();
+  if (!problem_statement_th) errors.push("problem_statement_th is required");
+  else if (problem_statement_th.length > 300) errors.push("problem_statement_th must be 300 characters or fewer");
+
+  const solution_description_th = (body.solution_description_th ?? "").toString().trim();
+  if (!solution_description_th) errors.push("solution_description_th is required");
+  else if (solution_description_th.length > 1000) errors.push("solution_description_th must be 1000 characters or fewer");
 
   const tags: string[] = Array.isArray(body.tags) ? body.tags : [];
   if (tags.length < 1) errors.push("At least one tag is required");
