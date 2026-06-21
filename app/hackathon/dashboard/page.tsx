@@ -657,7 +657,7 @@ export default function HackathonDashboardPage() {
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <QrCode className="h-4 w-4 text-[#619AD2]" />
-                          <span className="text-xs font-semibold tracking-widest uppercase text-[#619AD2]">Bloom Gallery</span>
+                          <span className="text-xs font-semibold tracking-widest uppercase text-[#619AD2]">Hackathon Gallery</span>
                         </div>
                         <p className="text-lg font-semibold text-white leading-tight">
                           Submit your product
