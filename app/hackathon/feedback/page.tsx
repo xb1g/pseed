@@ -4,23 +4,16 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
-  LogIn,
   MessageSquareHeart,
   Sparkles,
   X,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { HackathonFeedbackForm } from "@/components/hackathon/feedback/HackathonFeedbackForm";
 import { FeedbackSuccessState } from "@/components/hackathon/feedback/FeedbackSuccessState";
 import {
   getFeedbackParticipant,
   type HackathonFeedbackInput,
 } from "@/lib/hackathon/feedback";
-
-type Participant = {
-  name: string;
-  grade_level: string;
-};
 
 type Toast = {
   type: "error";
@@ -33,17 +26,18 @@ type SubmissionSummary = {
 };
 
 export default function HackathonFeedbackPage() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [participant, setParticipant] = useState<Participant | null>(null);
-  const [storedFeedback, setStoredFeedback] = useState<Record<
-    string,
-    unknown
-  > | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [participantName, setParticipantName] = useState("");
+  const [participantGrade, setParticipantGrade] = useState("");
+  const [storedFeedback, setStoredFeedback] = useState<Record<string, unknown> | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
-  const [submissionSummary, setSubmissionSummary] =
-    useState<SubmissionSummary | null>(null);
+  const [submissionSummary, setSubmissionSummary] = useState<SubmissionSummary | null>(null);
+
+  // Guest fields
+  const [nickname, setNickname] = useState("");
+  const [teamName, setTeamName] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -51,42 +45,32 @@ export default function HackathonFeedbackPage() {
     async function loadFeedback() {
       try {
         const participantResponse = await fetch("/api/hackathon/me");
-        if (!participantResponse.ok) {
-          if (!cancelled) setParticipant(null);
-          return;
-        }
+        if (participantResponse.ok) {
+          const participantPayload = await participantResponse.json();
+          const feedbackParticipant = getFeedbackParticipant(participantPayload.participant);
+          if (feedbackParticipant) {
+            if (!cancelled) {
+              setIsLoggedIn(true);
+              setParticipantName(feedbackParticipant.name);
+              setParticipantGrade(feedbackParticipant.grade_level);
+            }
 
-        const participantPayload = await participantResponse.json();
-        const feedbackParticipant = getFeedbackParticipant(
-          participantPayload.participant
-        );
-        if (!feedbackParticipant) {
-          if (!cancelled) setParticipant(null);
-          return;
+            const feedbackResponse = await fetch("/api/hackathon/feedback");
+            if (feedbackResponse.ok) {
+              const feedbackPayload = await feedbackResponse.json();
+              if (!cancelled) setStoredFeedback(feedbackPayload.data || null);
+            }
+          }
         }
-
-        const feedbackResponse = await fetch("/api/hackathon/feedback");
-        if (feedbackResponse.status === 401) {
-          if (!cancelled) setParticipant(null);
-          return;
-        }
-
-        if (!cancelled) setParticipant(feedbackParticipant);
-        if (!feedbackResponse.ok) return;
-        const feedbackPayload = await feedbackResponse.json();
-        if (!cancelled) setStoredFeedback(feedbackPayload.data || null);
-      } catch (error) {
-        console.error("Failed to load hackathon feedback:", error);
-        if (!cancelled) setParticipant(null);
+      } catch {
+        // Not logged in — that's fine, show guest form
       } finally {
         if (!cancelled) setIsLoading(false);
       }
     }
 
     loadFeedback();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -96,21 +80,39 @@ export default function HackathonFeedbackPage() {
   }, [toast]);
 
   const submitFeedback = async (feedback: HackathonFeedbackInput) => {
+    if (!isLoggedIn && !nickname.trim()) {
+      setToast({ type: "error", message: "Please enter your nickname" });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const response = await fetch("/api/hackathon/feedback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(feedback),
-      });
+      let response: Response;
+
+      if (isLoggedIn) {
+        // Authenticated submit
+        response = await fetch("/api/hackathon/feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(feedback),
+        });
+      } else {
+        // Public submit
+        response = await fetch("/api/hackathon/feedback/public", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nickname: nickname.trim(),
+            team_name: teamName.trim(),
+            feedback,
+          }),
+        });
+      }
+
       const result = await response.json();
 
       if (!response.ok) {
-        if (response.status === 401) {
-          setParticipant(null);
-          throw new Error("เซสชันหมดอายุ กรุณาเข้าสู่ระบบ Hackathon อีกครั้ง");
-        }
-        throw new Error(result.error || "ส่งฟีดแบ็กไม่สำเร็จ");
+        throw new Error(result.error || "Failed to submit feedback");
       }
 
       setStoredFeedback(result.data);
@@ -123,10 +125,7 @@ export default function HackathonFeedbackPage() {
     } catch (error) {
       setToast({
         type: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "ส่งไม่สำเร็จ กรุณาลองอีกครั้ง",
+        message: error instanceof Error ? error.message : "Failed to submit. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -151,7 +150,7 @@ export default function HackathonFeedbackPage() {
             <button
               type="button"
               onClick={() => setToast(null)}
-              aria-label="ปิดข้อความ"
+              aria-label="Close"
               className="min-h-11 min-w-11 rounded-lg p-2 opacity-70 transition-opacity hover:opacity-100"
             >
               <X className="h-4 w-4" />
@@ -168,39 +167,79 @@ export default function HackathonFeedbackPage() {
           </div>
           <h1 className="font-[family-name:var(--font-kodchasan)] text-3xl font-semibold leading-tight text-white sm:text-4xl">
             {submissionSummary
-              ? "ส่งฟีดแบ็กเรียบร้อยแล้ว"
-              : "ช่วยเราทำรุ่นต่อไปให้ดีกว่าเดิม"}
+              ? "Thank you for your feedback!"
+              : "Help us make the next one even better"}
           </h1>
           <p className="mx-auto mt-3 max-w-xl font-[family-name:var(--font-bai-jamjuree)] text-sm leading-6 text-slate-400 sm:text-base">
             {submissionSummary
-              ? "ขอบคุณที่ช่วยบอกเราว่าอะไรควรทำต่อ"
-              : "เล่าแบบตรงไปตรงมา ทั้งสิ่งที่เวิร์ก สิ่งที่ควรปรับ และสิ่งที่อยากไปต่อหลังจบโครงการ"}
+              ? "Your response has been recorded."
+              : "Share what worked, what could improve, and what you want to see next."}
           </p>
         </header>
 
         {isLoading ? (
           <LoadingState />
-        ) : participant && submissionSummary ? (
+        ) : submissionSummary ? (
           <FeedbackSuccessState
             wantsContact={submissionSummary.wantsContact}
             hasFollowUpInterests={submissionSummary.hasFollowUpInterests}
-            onDashboard={() => router.push("/hackathon/dashboard")}
+            onDashboard={() => window.location.href = "/hackathon/dashboard"}
             onEdit={() => {
               setSubmissionSummary(null);
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}
           />
-        ) : participant ? (
-          <HackathonFeedbackForm
-            participantName={participant.name}
-            participantGrade={participant.grade_level}
-            initialFeedback={storedFeedback}
-            alreadySubmitted={Boolean(storedFeedback)}
-            isSubmitting={isSubmitting}
-            onSubmit={submitFeedback}
-          />
         ) : (
-          <LoginState onLogin={() => router.push("/hackathon/login")} />
+          <>
+            {/* Nickname + Team name for guests */}
+            {!isLoggedIn && (
+              <div className="mx-auto mb-6 max-w-2xl rounded-[20px] border border-white/10 bg-slate-950/50 p-5 backdrop-blur-xl sm:p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <MessageSquareHeart className="h-5 w-5 text-indigo-300" />
+                  <h2 className="font-[family-name:var(--font-bai-jamjuree)] text-sm font-bold text-white/80">
+                    Tell us who you are
+                  </h2>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1.5 block font-[family-name:var(--font-bai-jamjuree)] text-xs font-semibold text-slate-400">
+                      Nickname <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={nickname}
+                      onChange={(e) => setNickname(e.target.value)}
+                      placeholder="Your nickname"
+                      maxLength={120}
+                      className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 font-[family-name:var(--font-bai-jamjuree)] text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-indigo-400/50 focus:bg-white/[0.07]"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block font-[family-name:var(--font-bai-jamjuree)] text-xs font-semibold text-slate-400">
+                      Team name
+                    </label>
+                    <input
+                      type="text"
+                      value={teamName}
+                      onChange={(e) => setTeamName(e.target.value)}
+                      placeholder="Your team name (optional)"
+                      maxLength={120}
+                      className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 font-[family-name:var(--font-bai-jamjuree)] text-sm text-white placeholder:text-slate-500 outline-none transition-colors focus:border-indigo-400/50 focus:bg-white/[0.07]"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <HackathonFeedbackForm
+              participantName={isLoggedIn ? participantName : nickname || "Participant"}
+              participantGrade={isLoggedIn ? participantGrade : ""}
+              initialFeedback={storedFeedback}
+              alreadySubmitted={Boolean(storedFeedback)}
+              isSubmitting={isSubmitting}
+              onSubmit={submitFeedback}
+            />
+          </>
         )}
       </div>
     </div>
@@ -255,31 +294,6 @@ function LoadingState() {
         <div className="ei-skeleton h-16 w-full" />
         <div className="ei-skeleton h-16 w-full" />
       </div>
-    </div>
-  );
-}
-
-function LoginState({ onLogin }: { onLogin: () => void }) {
-  return (
-    <div className="mx-auto max-w-md rounded-[24px] border border-white/10 bg-slate-950/60 p-6 text-center shadow-[0_24px_80px_rgba(2,6,23,0.5)] backdrop-blur-xl sm:p-8">
-      <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-indigo-300/20 bg-indigo-300/10 text-indigo-200">
-        <MessageSquareHeart className="h-7 w-7" aria-hidden="true" />
-      </span>
-      <h2 className="mt-5 font-[family-name:var(--font-kodchasan)] text-2xl font-semibold text-white">
-        เข้าสู่ระบบก่อนส่งฟีดแบ็ก
-      </h2>
-      <p className="mt-2 font-[family-name:var(--font-bai-jamjuree)] text-sm leading-6 text-slate-400">
-        เราจะใช้ข้อมูลผู้เข้าร่วมที่มีอยู่แล้ว คุณไม่ต้องกรอกข้อมูลส่วนตัวซ้ำ
-      </p>
-      <button
-        type="button"
-        onClick={onLogin}
-        className="ei-button-dawn mt-6 min-h-12 w-full text-base"
-      >
-        <LogIn className="h-4 w-4" aria-hidden="true" />
-        <span>เข้าสู่ระบบ</span>
-        <ArrowRight className="h-4 w-4" aria-hidden="true" />
-      </button>
     </div>
   );
 }
