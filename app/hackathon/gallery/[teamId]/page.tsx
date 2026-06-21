@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import { getGalleryProduct } from "@/lib/hackathon/gallery";
 import { getPlaceholderProduct } from "@/lib/hackathon/gallery-placeholders";
 import ProductDetail from "@/components/hackathon/gallery/ProductDetail";
+import { ProductPageTracker } from "@/components/hackathon/gallery/GalleryTracker";
 
 export const revalidate = 60;
 
@@ -34,5 +35,10 @@ export default async function ProductDetailPage({ params }: Props) {
 
   if (!product) notFound();
 
-  return <ProductDetail product={product} />;
+  return (
+    <>
+      <ProductPageTracker productId={product.id} />
+      <ProductDetail product={product} />
+    </>
+  );
 }

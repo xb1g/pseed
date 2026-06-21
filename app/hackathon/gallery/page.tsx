@@ -6,6 +6,7 @@ import GalleryWithWave from "@/components/hackathon/gallery/GalleryWithWave";
 import ThemeToggle from "@/components/hackathon/gallery/ThemeToggle";
 import LangToggle from "@/components/hackathon/gallery/LangToggle";
 import JellyfishBackground from "@/components/hackathon/gallery/JellyfishBackground";
+import { GalleryPageTracker } from "@/components/hackathon/gallery/GalleryTracker";
 
 export const metadata: Metadata = {
   title: "Product Gallery | PassionSeed Hackathon",
@@ -35,6 +36,7 @@ export default async function GalleryPage({
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bloom-bg)" }}>
+      <GalleryPageTracker />
       <JellyfishBackground />
 
       {/* Hero band — steel-blue grainy gradient */}

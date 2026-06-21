@@ -322,7 +322,14 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                   <button
                     className="bloom-button"
                     style={{ width: "100%", fontSize: "0.9375rem" }}
-                    onClick={() => setDialogOpen(true)}
+                    onClick={() => {
+                      setDialogOpen(true);
+                      fetch("/api/hackathon/gallery/track", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ page: "test_click", product_id: product.id, session_id: sessionStorage.getItem("gallery-session") }),
+                      }).catch(() => {});
+                    }}
                   >
                     <span className="bloom-button__grain" aria-hidden="true" />
                     {product.test_mode === "direct" ? "Get access to try this" : "Contact team to test"}
