@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractHackathonToken, getCorsHeaders } from "@/lib/hackathon/auth";
 import { getSessionParticipant, getParticipantTeam } from "@/lib/hackathon/db";
-import { storageManager } from "@/lib/storage/storage-manager";
+import { b2 } from "@/lib/backblaze";
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
 
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+const MAX_WIDTH = 1600;
 
 export async function POST(req: NextRequest) {
   const corsHeaders = getCorsHeaders(req);
@@ -38,12 +40,31 @@ export async function POST(req: NextRequest) {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const ext = file.type.split("/")[1].replace("jpeg", "jpg");
-  const fileName = `hackathon/gallery/${team.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
   try {
-    const result = await storageManager.uploadImage(buffer, fileName, file.type);
-    return NextResponse.json({ url: result.url }, { headers: corsHeaders });
+    // Lightweight resize — skip blurhash, skip heavy WebP re-encode
+    const sharp = (await import("sharp")).default;
+    const meta = await sharp(buffer).metadata();
+    const needsResize = meta.width && meta.width > MAX_WIDTH;
+
+    let outputBuffer: Buffer;
+    let contentType = file.type;
+
+    if (needsResize) {
+      // Only resize if wider than MAX_WIDTH, keep original format
+      outputBuffer = await sharp(buffer)
+        .resize(MAX_WIDTH, undefined, { withoutEnlargement: true })
+        .toBuffer();
+    } else {
+      // Already small enough — upload as-is
+      outputBuffer = buffer;
+    }
+
+    const ext = file.type.split("/")[1].replace("jpeg", "jpg");
+    const fileName = `hackathon/gallery/${team.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+    const result = await b2.uploadImageBuffer(outputBuffer, fileName, contentType);
+    return NextResponse.json({ url: result.fileUrl }, { headers: corsHeaders });
   } catch (err) {
     console.error("[gallery/upload-image]", err);
     return NextResponse.json({ error: "Upload failed" }, { status: 500, headers: corsHeaders });

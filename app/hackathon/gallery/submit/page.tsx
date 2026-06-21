@@ -503,7 +503,7 @@ export default function GallerySubmitPage() {
             </FormField>
 
             {/* Cover image */}
-            <FormField label="Cover image" hint="Optional — 16:9 recommended">
+            <FormField label="Cover image" required hint="16:9 recommended">
               {form.cover_image_url ? (
                 <div style={{ position: "relative", borderRadius: "12px", overflow: "hidden", border: "1px solid rgba(97,154,210,0.2)" }}>
                   <img src={form.cover_image_url} alt="Cover preview" style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" }} />
@@ -522,7 +522,7 @@ export default function GallerySubmitPage() {
 
             {/* Additional images */}
             {(form.additional_images.length > 0 || true) && (
-              <FormField label="Additional screenshots" hint="Optional — up to 4">
+              <FormField label="Additional screenshots" required hint="At least 1, up to 4">
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "0.75rem" }}>
                   {form.additional_images.map((url, i) => (
                     <div key={i} style={{ position: "relative", borderRadius: "10px", overflow: "hidden", border: "1px solid rgba(97,154,210,0.2)" }}>
@@ -802,29 +802,32 @@ export default function GallerySubmitPage() {
               >
                 <Eye size={16} /> Preview
               </button>
-              <button
+              {(() => {
+                const cantSubmit = submitting || form.tags.length === 0 || !form.line_id || !form.cover_image_url || form.additional_images.length === 0;
+                return (<button
                 type="submit"
-                disabled={submitting || form.tags.length === 0 || !form.line_id}
+                disabled={cantSubmit}
                 style={{
                   display: "inline-flex", alignItems: "center", gap: "0.625rem",
                   padding: "0.875rem 2.25rem",
                   borderRadius: "12px",
                   fontFamily: "var(--font-bai-jamjuree), sans-serif",
                   fontWeight: 700, fontSize: "1rem",
-                  background: submitting || form.tags.length === 0 || !form.line_id
+                  background: cantSubmit
                     ? "rgba(97,154,210,0.2)"
                     : "linear-gradient(135deg, #3a6a9a 0%, #2a5a8a 100%)",
                   border: "1px solid rgba(97,154,210,0.4)",
-                  color: submitting || form.tags.length === 0 || !form.line_id ? "rgba(145,196,227,0.4)" : "#fff",
-                  cursor: submitting || form.tags.length === 0 || !form.line_id ? "not-allowed" : "pointer",
-                  boxShadow: submitting || form.tags.length === 0 || !form.line_id ? "none" : "0 0 24px rgba(97,154,210,0.3), 0 4px 16px rgba(0,0,0,0.3)",
+                  color: cantSubmit ? "rgba(145,196,227,0.4)" : "#fff",
+                  cursor: cantSubmit ? "not-allowed" : "pointer",
+                  boxShadow: cantSubmit ? "none" : "0 0 24px rgba(97,154,210,0.3), 0 4px 16px rgba(0,0,0,0.3)",
                   transition: "all 200ms",
                 }}
               >
                 {submitting ? (
                   <><Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> Saving...</>
                 ) : existingProduct ? "Update product" : "Submit for review"}
-              </button>
+              </button>);
+              })()}
             </div>
 
           </div>

@@ -67,10 +67,12 @@ export async function POST(req: NextRequest) {
   if (demo_url && !isValidUrl(demo_url)) errors.push("demo_url must be a valid URL");
 
   const cover_image_url = body.cover_image_url ? (body.cover_image_url as string).trim() : null;
-  if (cover_image_url && !isValidUrl(cover_image_url)) errors.push("cover_image_url must be a valid URL");
+  if (!cover_image_url) errors.push("Cover image is required");
+  else if (!isValidUrl(cover_image_url)) errors.push("cover_image_url must be a valid URL");
 
   const additional_images: string[] = Array.isArray(body.additional_images) ? body.additional_images : [];
-  if (additional_images.length > 4) errors.push("Maximum 4 additional images allowed");
+  if (additional_images.length === 0) errors.push("At least 1 screenshot is required");
+  else if (additional_images.length > 4) errors.push("Maximum 4 additional images allowed");
   if (additional_images.some((u) => !isValidUrl(u))) errors.push("One or more additional_images URLs are invalid");
 
   const line_qr_url = body.line_qr_url ? (body.line_qr_url as string).trim() : null;
