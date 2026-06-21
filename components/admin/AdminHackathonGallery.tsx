@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, ExternalLink, Eye, EyeOff, X } from "lucide-react";
+import { Loader2, ExternalLink, Eye, EyeOff, X, BarChart3, MousePointerClick, Heart } from "lucide-react";
 import ProductDetail from "@/components/hackathon/gallery/ProductDetail";
 import { LangProvider } from "@/lib/hackathon/gallery-lang";
 
@@ -54,11 +54,20 @@ export function AdminHackathonGallery() {
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState<GalleryProduct | null>(null);
+  const [analytics, setAnalytics] = useState<{
+    galleryViews: number;
+    viewsByProduct: Record<string, number>;
+    testClicksByProduct: Record<string, number>;
+    interestsByProduct: Record<string, number>;
+  }>({ galleryViews: 0, viewsByProduct: {}, testClicksByProduct: {}, interestsByProduct: {} });
 
   useEffect(() => {
     fetch("/api/admin/hackathon/gallery")
       .then((r) => r.json())
-      .then((data) => setProducts(data.products ?? []))
+      .then((data) => {
+        setProducts(data.products ?? []);
+        if (data.analytics) setAnalytics(data.analytics);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -110,6 +119,33 @@ export function AdminHackathonGallery() {
         </Card>
       </div>
 
+      <div className="grid grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-1.5"><BarChart3 className="h-3.5 w-3.5" /> Gallery Page Views</CardDescription>
+            <CardTitle className="text-3xl text-blue-500">{analytics.galleryViews}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-1.5"><MousePointerClick className="h-3.5 w-3.5" /> Product Clicks</CardDescription>
+            <CardTitle className="text-3xl text-violet-500">{Object.values(analytics.viewsByProduct).reduce((a, b) => a + b, 0)}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-1.5"><Eye className="h-3.5 w-3.5" /> Test Product Clicks</CardDescription>
+            <CardTitle className="text-3xl text-orange-500">{Object.values(analytics.testClicksByProduct).reduce((a, b) => a + b, 0)}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription className="flex items-center gap-1.5"><Heart className="h-3.5 w-3.5" /> Total Interests</CardDescription>
+            <CardTitle className="text-3xl text-rose-500">{Object.values(analytics.interestsByProduct).reduce((a, b) => a + b, 0)}</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Gallery Submissions</CardTitle>
@@ -131,6 +167,9 @@ export function AdminHackathonGallery() {
                   <TableHead>Tags</TableHead>
                   <TableHead>Submitted</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-center">Views</TableHead>
+                  <TableHead className="text-center">Test Clicks</TableHead>
+                  <TableHead className="text-center">Interests</TableHead>
                   <TableHead>Links</TableHead>
                   <TableHead>Publish</TableHead>
                 </TableRow>
@@ -168,6 +207,15 @@ export function AdminHackathonGallery() {
                       <Badge variant={product.is_published ? "default" : "outline"} className={product.is_published ? "bg-emerald-600" : ""}>
                         {product.is_published ? "Published" : "Draft"}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="text-center text-sm tabular-nums">
+                      {analytics.viewsByProduct[product.id] || 0}
+                    </TableCell>
+                    <TableCell className="text-center text-sm tabular-nums">
+                      {analytics.testClicksByProduct[product.id] || 0}
+                    </TableCell>
+                    <TableCell className="text-center text-sm tabular-nums">
+                      {analytics.interestsByProduct[product.id] || 0}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1.5">

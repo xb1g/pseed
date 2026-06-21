@@ -113,8 +113,16 @@ export default function GallerySubmitPage() {
       const fd = new FormData();
       fd.append("image", file);
       const res = await fetch("/api/hackathon/gallery/upload-image", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Upload failed");
+      const text = await res.text();
+      let data: any;
+      try { data = JSON.parse(text); } catch {
+        console.error("[upload-image] Non-JSON response:", res.status, text);
+        throw new Error(`Upload failed (${res.status})`);
+      }
+      if (!res.ok) {
+        console.error("[upload-image] Error:", res.status, data);
+        throw new Error(data.error ?? "Upload failed");
+      }
       if (type === "cover") setForm((p) => ({ ...p, cover_image_url: data.url }));
       else if (type === "additional") setForm((p) => ({ ...p, additional_images: [...p.additional_images, data.url].slice(0, 4) }));
       else setForm((p) => ({ ...p, line_qr_url: data.url }));
