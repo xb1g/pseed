@@ -13,10 +13,10 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { teamId } = await params;
   const product = (await getGalleryProduct(teamId)) ?? getPlaceholderProduct(teamId);
-  if (!product) return { title: "Product not found | Bloom Gallery" };
+  if (!product) return { title: "Product not found | Hackathon Gallery" };
 
   return {
-    title: `${product.product_name} by ${product.team?.name} | Bloom Gallery`,
+    title: `${product.product_name} by ${product.team?.name} | Hackathon Gallery`,
     description: product.problem_statement,
     openGraph: {
       title: product.product_name,
