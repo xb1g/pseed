@@ -9,6 +9,11 @@ import WaveEntry from "./WaveEntry";
 import type { GalleryProduct } from "@/lib/hackathon/gallery";
 import { useLang, t } from "@/lib/hackathon/gallery-lang";
 
+function getYouTubeId(url: string): string | null {
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+  return match?.[1] ?? null;
+}
+
 interface ProductDetailProps {
   product: GalleryProduct;
 }
@@ -202,6 +207,25 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                   </p>
                 ))}
               </div>
+
+              {/* YouTube video */}
+              {product.youtube_url && getYouTubeId(product.youtube_url) && (
+                <div style={{ marginTop: "2.5rem" }}>
+                  <div style={{
+                    borderRadius: "12px",
+                    overflow: "hidden",
+                    border: "1px solid var(--bloom-border-default)",
+                  }}>
+                    <iframe
+                      src={`https://www.youtube.com/embed/${getYouTubeId(product.youtube_url)}`}
+                      style={{ width: "100%", aspectRatio: "16/9", border: "none", display: "block" }}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      title={`${product.product_name} video`}
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Additional images */}
               {product.additional_images.length > 0 && (

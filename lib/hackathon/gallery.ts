@@ -30,6 +30,7 @@ export type GalleryProduct = {
   contact_email: string | null;
   line_qr_url: string | null;
   line_id: string | null;
+  youtube_url: string | null;
   tags: string[];
   hackathon_year: number;
   hackathon_name: string;
@@ -134,6 +135,7 @@ export async function getGalleryProduct(teamId: string): Promise<GalleryProduct 
     contact_email: data.contact_email ?? null,
     line_qr_url: data.line_qr_url ?? null,
     line_id: data.line_id ?? null,
+    youtube_url: data.youtube_url ?? null,
     tags: data.tags,
     hackathon_year: data.hackathon_year,
     hackathon_name: data.hackathon_name,
@@ -198,6 +200,7 @@ export type GalleryProductInput = {
   additional_images?: string[];
   line_qr_url?: string | null;
   line_id?: string | null;
+  youtube_url?: string | null;
   target_personas?: { who: string[]; what: string[] } | null;
 };
 
@@ -237,6 +240,7 @@ export async function getMyGalleryProduct(teamId: string): Promise<GalleryProduc
     contact_email: data.contact_email ?? null,
     line_qr_url: data.line_qr_url ?? null,
     line_id: data.line_id ?? null,
+    youtube_url: data.youtube_url ?? null,
     tags: data.tags,
     hackathon_year: data.hackathon_year,
     hackathon_name: data.hackathon_name,
@@ -277,6 +281,7 @@ export async function upsertGalleryProduct(
     additional_images: data.additional_images ?? [],
     line_qr_url: data.line_qr_url ?? null,
     line_id: data.line_id ?? null,
+    youtube_url: data.youtube_url ?? null,
     target_personas: data.target_personas ?? null,
     hackathon_year: new Date().getFullYear(),
     hackathon_name: "PassionSeed Hackathon",
@@ -303,6 +308,7 @@ export async function upsertGalleryProduct(
     contact_email: row.contact_email ?? null,
     line_qr_url: row.line_qr_url ?? null,
     line_id: row.line_id ?? null,
+    youtube_url: row.youtube_url ?? null,
     product_name_th: row.product_name_th ?? null,
     problem_statement_th: row.problem_statement_th ?? null,
     solution_description_th: row.solution_description_th ?? null,
@@ -343,6 +349,7 @@ export async function adminGetAllProducts(): Promise<(GalleryProductWithPublishe
     contact_email: row.contact_email ?? null,
     line_qr_url: row.line_qr_url ?? null,
     line_id: row.line_id ?? null,
+    youtube_url: row.youtube_url ?? null,
     product_name_th: row.product_name_th ?? null,
     problem_statement_th: row.problem_statement_th ?? null,
     solution_description_th: row.solution_description_th ?? null,
