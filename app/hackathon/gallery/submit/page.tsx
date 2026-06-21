@@ -148,9 +148,9 @@ export default function GallerySubmitPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
-          product_name_th: form.product_name_th || null,
-          problem_statement_th: form.problem_statement_th || null,
-          solution_description_th: form.solution_description_th || null,
+          product_name_th: form.product_name_th,
+          problem_statement_th: form.problem_statement_th,
+          solution_description_th: form.solution_description_th,
           demo_url: form.test_mode === "direct" ? (form.demo_url || null) : null,
           contact_email: form.contact_email || null,
           cover_image_url: form.cover_image_url || null,
@@ -325,11 +325,12 @@ export default function GallerySubmitPage() {
               />
             </FormField>
 
-            <FormField label="ชื่อผลิตภัณฑ์ (ภาษาไทย)" hint={`${form.product_name_th.length}/80 · optional`}>
+            <FormField label="ชื่อผลิตภัณฑ์ (ภาษาไทย)" required hint={`${form.product_name_th.length}/80`}>
               <input
                 value={form.product_name_th}
                 onChange={(e) => setForm((p) => ({ ...p, product_name_th: e.target.value }))}
                 maxLength={80}
+                required
                 placeholder="ชื่อผลิตภัณฑ์เป็นภาษาไทย"
                 style={inputStyle}
               />
@@ -348,11 +349,12 @@ export default function GallerySubmitPage() {
               />
             </FormField>
 
-            <FormField label="คำอธิบายปัญหา (ภาษาไทย)" hint={`${form.problem_statement_th.length}/300 · optional`}>
+            <FormField label="คำอธิบายปัญหา (ภาษาไทย)" required hint={`${form.problem_statement_th.length}/300`}>
               <textarea
                 value={form.problem_statement_th}
                 onChange={(e) => setForm((p) => ({ ...p, problem_statement_th: e.target.value }))}
                 maxLength={300}
+                required
                 rows={3}
                 placeholder="ปัญหานี้คืออะไร? (1–2 ประโยค)"
                 style={{ ...inputStyle, resize: "none" }}
@@ -372,11 +374,12 @@ export default function GallerySubmitPage() {
               />
             </FormField>
 
-            <FormField label="รายละเอียดแนวทางแก้ไข (ภาษาไทย)" hint={`${form.solution_description_th.length}/1000 · optional`}>
+            <FormField label="รายละเอียดแนวทางแก้ไข (ภาษาไทย)" required hint={`${form.solution_description_th.length}/1000`}>
               <textarea
                 value={form.solution_description_th}
                 onChange={(e) => setForm((p) => ({ ...p, solution_description_th: e.target.value }))}
                 maxLength={1000}
+                required
                 rows={6}
                 placeholder="ทำงานอย่างไร? มีประสิทธิภาพอย่างไร?"
                 style={{ ...inputStyle, resize: "vertical" }}
@@ -885,11 +888,11 @@ export default function GallerySubmitPage() {
               id: "preview",
               team_id: "preview",
               product_name: form.product_name || "Your product name",
-              product_name_th: form.product_name_th || null,
+              product_name_th: form.product_name_th,
               problem_statement: form.problem_statement || "Your problem statement will appear here.",
-              problem_statement_th: form.problem_statement_th || null,
+              problem_statement_th: form.problem_statement_th,
               solution_description: form.solution_description || "Your solution description will appear here.",
-              solution_description_th: form.solution_description_th || null,
+              solution_description_th: form.solution_description_th,
               cover_image_url: form.cover_image_url || null,
               additional_images: form.additional_images,
               test_mode: form.test_mode,
