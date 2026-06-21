@@ -42,28 +42,29 @@ export async function POST(req: NextRequest) {
   const buffer = Buffer.from(await file.arrayBuffer());
 
   try {
-    // Lightweight resize — skip blurhash, skip heavy WebP re-encode
     const sharp = (await import("sharp")).default;
+    const { encode } = await import("blurhash");
+
+    // Resize only if wider than MAX_WIDTH, keep original format
     const meta = await sharp(buffer).metadata();
     const needsResize = meta.width && meta.width > MAX_WIDTH;
 
-    let outputBuffer: Buffer;
-    let contentType = file.type;
+    const outputBuffer = needsResize
+      ? await sharp(buffer).resize(MAX_WIDTH, undefined, { withoutEnlargement: true }).toBuffer()
+      : buffer;
 
-    if (needsResize) {
-      // Only resize if wider than MAX_WIDTH, keep original format
-      outputBuffer = await sharp(buffer)
-        .resize(MAX_WIDTH, undefined, { withoutEnlargement: true })
-        .toBuffer();
-    } else {
-      // Already small enough — upload as-is
-      outputBuffer = buffer;
-    }
+    // Blurhash from tiny 32x32 — very fast
+    const { data, info } = await sharp(buffer)
+      .resize(32, 32, { fit: "inside" })
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const blurhash = encode(new Uint8ClampedArray(data), info.width, info.height, 4, 3);
 
     const ext = file.type.split("/")[1].replace("jpeg", "jpg");
     const fileName = `hackathon/gallery/${team.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
-    const result = await b2.uploadImageBuffer(outputBuffer, fileName, contentType);
+    const result = await b2.uploadImageBuffer(outputBuffer, fileName, file.type, { blurhash });
     return NextResponse.json({ url: result.fileUrl }, { headers: corsHeaders });
   } catch (err) {
     console.error("[gallery/upload-image]", err);
