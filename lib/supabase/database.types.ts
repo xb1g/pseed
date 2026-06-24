@@ -1118,6 +1118,270 @@ export type Database = {
           },
         ]
       }
+      radar_cards: {
+        Row: {
+          id: string
+          field_id: string
+          position: number
+          kind: string
+          content_th: Json | null
+          content_en: Json | null
+          image_url: string | null
+          image_prompt: string | null
+          image_credit: string | null
+          image_license: string | null
+          image_alt_th: string | null
+          image_alt_en: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          field_id: string
+          position?: number
+          kind?: string
+          content_th?: Json | null
+          content_en?: Json | null
+          image_url?: string | null
+          image_prompt?: string | null
+          image_credit?: string | null
+          image_license?: string | null
+          image_alt_th?: string | null
+          image_alt_en?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          field_id?: string
+          position?: number
+          kind?: string
+          content_th?: Json | null
+          content_en?: Json | null
+          image_url?: string | null
+          image_prompt?: string | null
+          image_credit?: string | null
+          image_license?: string | null
+          image_alt_th?: string | null
+          image_alt_en?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "radar_cards_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "radar_fields"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      radar_collections: {
+        Row: {
+          key: string
+          label_th: string | null
+          label_en: string | null
+          sort_order: number | null
+          is_active: boolean | null
+        }
+        Insert: {
+          key: string
+          label_th?: string | null
+          label_en?: string | null
+          sort_order?: number | null
+          is_active?: boolean | null
+        }
+        Update: {
+          key?: string
+          label_th?: string | null
+          label_en?: string | null
+          sort_order?: number | null
+          is_active?: boolean | null
+        }
+        Relationships: []
+      }
+      radar_fields: {
+        Row: {
+          id: string
+          slug: string | null
+          name_th: string | null
+          name_en: string | null
+          tagline_th: string | null
+          tagline_en: string | null
+          emoji: string | null
+          color: string | null
+          tile_size: string | null
+          tags: string[] | null
+          is_published: boolean | null
+          has_content: boolean | null
+          sort_order: number | null
+          squad_url: string | null
+          hero_image_url: string | null
+          hero_image_prompt: string | null
+          hero_image_credit: string | null
+          hero_image_license: string | null
+          hero_image_alt_th: string | null
+          hero_image_alt_en: string | null
+          research: Json | null
+          researched_at: string | null
+          research_model: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          slug?: string | null
+          name_th?: string | null
+          name_en?: string | null
+          tagline_th?: string | null
+          tagline_en?: string | null
+          emoji?: string | null
+          color?: string | null
+          tile_size?: string | null
+          tags?: string[] | null
+          is_published?: boolean | null
+          has_content?: boolean | null
+          sort_order?: number | null
+          squad_url?: string | null
+          hero_image_url?: string | null
+          hero_image_prompt?: string | null
+          hero_image_credit?: string | null
+          hero_image_license?: string | null
+          hero_image_alt_th?: string | null
+          hero_image_alt_en?: string | null
+          research?: Json | null
+          researched_at?: string | null
+          research_model?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          slug?: string | null
+          name_th?: string | null
+          name_en?: string | null
+          tagline_th?: string | null
+          tagline_en?: string | null
+          emoji?: string | null
+          color?: string | null
+          tile_size?: string | null
+          tags?: string[] | null
+          is_published?: boolean | null
+          has_content?: boolean | null
+          sort_order?: number | null
+          squad_url?: string | null
+          hero_image_url?: string | null
+          hero_image_prompt?: string | null
+          hero_image_credit?: string | null
+          hero_image_license?: string | null
+          hero_image_alt_th?: string | null
+          hero_image_alt_en?: string | null
+          research?: Json | null
+          researched_at?: string | null
+          research_model?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      radar_reflections: {
+        Row: {
+          id: string
+          user_id: string
+          session_id: string | null
+          field_slug: string | null
+          chapter_key: string | null
+          want_to_try: number | null
+          tags: string[] | null
+          response_text: string | null
+          lang: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          session_id?: string | null
+          field_slug?: string | null
+          chapter_key?: string | null
+          want_to_try?: number | null
+          tags?: string[] | null
+          response_text?: string | null
+          lang?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          session_id?: string | null
+          field_slug?: string | null
+          chapter_key?: string | null
+          want_to_try?: number | null
+          tags?: string[] | null
+          response_text?: string | null
+          lang?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "radar_reflections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      radar_sources: {
+        Row: {
+          id: string
+          field_id: string
+          ref: string | null
+          title: string | null
+          publisher: string | null
+          url: string | null
+          published_at: string | null
+          accessed_at: string | null
+          tier: string | null
+          quote_th: string | null
+          quote_en: string | null
+        }
+        Insert: {
+          id?: string
+          field_id: string
+          ref?: string | null
+          title?: string | null
+          publisher?: string | null
+          url?: string | null
+          published_at?: string | null
+          accessed_at?: string | null
+          tier?: string | null
+          quote_th?: string | null
+          quote_en?: string | null
+        }
+        Update: {
+          id?: string
+          field_id?: string
+          ref?: string | null
+          title?: string | null
+          publisher?: string | null
+          url?: string | null
+          published_at?: string | null
+          accessed_at?: string | null
+          tier?: string | null
+          quote_th?: string | null
+          quote_en?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "radar_sources_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "radar_fields"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reflections: {
         Row: {
           content: string
@@ -1648,7 +1912,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      analytics_radar_interest: {
+        Row: {
+          field_slug: string | null
+          responses: number | null
+          users: number | null
+          avg_want_to_try: number | null
+          keen_count: number | null
+          top_tags: string[] | null
+          last_at: string | null
+        }
+        Insert: {
+          field_slug?: string | null
+          responses?: number | null
+          users?: number | null
+          avg_want_to_try?: number | null
+          keen_count?: number | null
+          top_tags?: string[] | null
+          last_at?: string | null
+        }
+        Update: {
+          field_slug?: string | null
+          responses?: number | null
+          users?: number | null
+          avg_want_to_try?: number | null
+          keen_count?: number | null
+          top_tags?: string[] | null
+          last_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       is_community_admin: {
