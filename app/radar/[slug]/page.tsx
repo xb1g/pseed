@@ -8,6 +8,7 @@ import {
   submitRadarReflection,
 } from "@/lib/supabase/radar";
 import { RadarCardView } from "@/components/radar/RadarCards";
+import { CareerResearchView, type CareerResearch } from "@/components/radar/CareerResearchView";
 import type { Database } from "@/lib/supabase/database.types";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ChevronDown } from "lucide-react";
@@ -65,6 +66,7 @@ export default function RadarFieldPage() {
 
   const [field, setField] = useState<RadarField | null>(null);
   const [cards, setCards] = useState<RadarCard[]>([]);
+  const [research, setResearch] = useState<CareerResearch | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [current, setCurrent] = useState(0);
@@ -88,6 +90,7 @@ export default function RadarFieldPage() {
         if (!active) return;
         setField(f);
         setCards(cs);
+        setResearch((f.research as CareerResearch) ?? null);
       } catch (err) {
         if (active) setError(err instanceof Error ? err.message : "Failed to load");
       } finally {
@@ -170,7 +173,7 @@ export default function RadarFieldPage() {
             <ArrowLeft className="h-4 w-4" />
           </button>
           <div className="flex-1 flex gap-1">
-            {cards.map((_, i) => (
+            {Array.from({ length: cards.length + (research && cards.length > 0 ? 1 : 0) }).map((_, i) => (
               <span
                 key={i}
                 className="h-1 flex-1 rounded-full transition-colors duration-300"
@@ -182,41 +185,54 @@ export default function RadarFieldPage() {
         </div>
       </div>
 
-      {/* scroll-snap carousel */}
+      {/* scroll-snap carousel (cards) + research fallback */}
       <div
         ref={scrollRef}
         onScroll={handleScroll}
         className="h-full overflow-y-auto snap-y snap-mandatory scrollbar-hide scroll-smooth"
       >
-        {cards.length === 0 ? (
-          <section className="snap-start h-[100dvh] flex items-center justify-center px-6 text-center">
-            <p className="text-neutral-400">No cards yet for this field.</p>
+        {cards.length > 0 ? (
+          <>
+            {cards.map((card, i) => {
+              const content = pickContent(card);
+              const chapterKey = (content.chapterKey as string) || card.id;
+              return (
+                <section
+                  key={card.id}
+                  className="snap-start h-[100dvh] flex items-center justify-center px-6 py-20"
+                >
+                  <RadarCardView
+                    kind={card.kind}
+                    content={content}
+                    accent={accent}
+                    squadUrl={field.squad_url}
+                    reflectionSubmitted={submitted.has(card.id)}
+                    onReflect={(payload) => handleReflect(card, chapterKey, payload)}
+                  />
+                  {i === 0 && cards.length > 1 && (
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 animate-bounce">
+                      <ChevronDown className="h-6 w-6" />
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+            {/* Research data after cards */}
+            {research && (
+              <section className="snap-start min-h-[100dvh] flex items-start justify-center px-6 py-20">
+                <CareerResearchView research={research} accent={accent} />
+              </section>
+            )}
+          </>
+        ) : research ? (
+          /* No cards — show research data as the main content */
+          <section className="snap-start min-h-[100dvh] flex items-start justify-center px-6 py-20 overflow-y-auto">
+            <CareerResearchView research={research} accent={accent} />
           </section>
         ) : (
-          cards.map((card, i) => {
-            const content = pickContent(card);
-            const chapterKey = (content.chapterKey as string) || card.id;
-            return (
-              <section
-                key={card.id}
-                className="snap-start h-[100dvh] flex items-center justify-center px-6 py-20"
-              >
-                <RadarCardView
-                  kind={card.kind}
-                  content={content}
-                  accent={accent}
-                  squadUrl={field.squad_url}
-                  reflectionSubmitted={submitted.has(card.id)}
-                  onReflect={(payload) => handleReflect(card, chapterKey, payload)}
-                />
-                {i === 0 && cards.length > 1 && (
-                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 animate-bounce">
-                    <ChevronDown className="h-6 w-6" />
-                  </div>
-                )}
-              </section>
-            );
-          })
+          <section className="snap-start h-[100dvh] flex items-center justify-center px-6 text-center">
+            <p className="text-neutral-400">No content yet for this field.</p>
+          </section>
         )}
       </div>
     </div>
