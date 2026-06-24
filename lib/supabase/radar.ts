@@ -18,7 +18,7 @@ export async function getRadarCollections(): Promise<RadarCollection[]> {
 
   if (error) {
     console.error("Error fetching radar collections:", error);
-    throw new Error(error.message);
+    throw new Error("Radar request failed");
   }
 
   return data || [];
@@ -42,16 +42,21 @@ export async function getRadarFields(
   }
 
   if (filter?.search) {
-    query = query.or(
-      `name_th.ilike.%${filter.search}%,name_en.ilike.%${filter.search}%,tagline_th.ilike.%${filter.search}%,tagline_en.ilike.%${filter.search}%`
-    );
+    // Strip PostgREST filter meta-characters + LIKE wildcards so the user's
+    // search term can never be parsed as filter syntax (injection guard).
+    const safe = filter.search.replace(/[,.()*:%\\"]/g, " ").trim().slice(0, 64);
+    if (safe) {
+      query = query.or(
+        `name_th.ilike.%${safe}%,name_en.ilike.%${safe}%,tagline_th.ilike.%${safe}%,tagline_en.ilike.%${safe}%`
+      );
+    }
   }
 
   const { data, error } = await query;
 
   if (error) {
     console.error("Error fetching radar fields:", error);
-    throw new Error(error.message);
+    throw new Error("Failed to fetch radar fields");
   }
 
   return data || [];
@@ -68,7 +73,7 @@ export async function getRadarField(slug: string): Promise<RadarField | null> {
 
   if (error) {
     console.error("Error fetching radar field:", error);
-    throw new Error(error.message);
+    throw new Error("Radar request failed");
   }
 
   return data;
@@ -86,7 +91,7 @@ export async function getRadarCards(fieldId: string): Promise<RadarCard[]> {
 
   if (error) {
     console.error("Error fetching radar cards:", error);
-    throw new Error(error.message);
+    throw new Error("Radar request failed");
   }
 
   return data || [];
@@ -104,7 +109,7 @@ export async function getRadarSources(fieldId: string) {
 
   if (error) {
     console.error("Error fetching radar sources:", error);
-    throw new Error(error.message);
+    throw new Error("Radar request failed");
   }
 
   return data || [];
@@ -157,6 +162,6 @@ export async function submitRadarReflection(
 
   if (error) {
     console.error("Error submitting radar reflection:", error);
-    throw new Error(error.message);
+    throw new Error("Radar request failed");
   }
 }
