@@ -15,11 +15,17 @@ CREATE INDEX IF NOT EXISTS idx_gallery_views_created ON public.hackathon_gallery
 ALTER TABLE public.hackathon_gallery_views ENABLE ROW LEVEL SECURITY;
 
 -- Allow public inserts (anonymous tracking)
-CREATE POLICY gallery_views_public_insert
-  ON public.hackathon_gallery_views FOR INSERT
-  WITH CHECK (true);
+DO $$ BEGIN
+  CREATE POLICY gallery_views_public_insert
+    ON public.hackathon_gallery_views FOR INSERT
+    WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Only service role can read
-CREATE POLICY gallery_views_admin_select
-  ON public.hackathon_gallery_views FOR SELECT
-  USING (false);
+DO $$ BEGIN
+  CREATE POLICY gallery_views_admin_select
+    ON public.hackathon_gallery_views FOR SELECT
+    USING (false);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
