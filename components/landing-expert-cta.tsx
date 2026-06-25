@@ -70,8 +70,8 @@ export function LandingExpertCta() {
 
       <div className="container px-4 md:px-6 relative z-10 max-w-4xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
+          initial={false}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
           className="text-center"
@@ -92,8 +92,8 @@ export function LandingExpertCta() {
             {t.details.map((detail, index) => (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
+                initial={false}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true }}
                 className="ei-card flex items-center gap-4 p-6 border border-white/[0.05] bg-white/[0.02] font-[family-name:var(--font-bai-jamjuree)]"

@@ -102,8 +102,8 @@ export function LandingFeatures() {
         {/* Header */}
         <div className="text-center mb-12">
           <motion.span
-            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
+            initial={false}
             transition={{ duration: 0.5 }}
             viewport={{ once: true }}
             className="text-xs font-medium text-purple-400 tracking-widest uppercase mb-4 inline-block"
@@ -111,8 +111,8 @@ export function LandingFeatures() {
             {t.eyebrow}
           </motion.span>
           <motion.h2
-            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
+            initial={false}
             transition={{ duration: 0.6, delay: 0.1 }}
             viewport={{ once: true }}
             className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-[1.05]"
@@ -120,8 +120,8 @@ export function LandingFeatures() {
             {t.title}
           </motion.h2>
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
+            initial={false}
             transition={{ duration: 0.6, delay: 0.15 }}
             viewport={{ once: true }}
             className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto font-medium leading-relaxed"
@@ -135,8 +135,8 @@ export function LandingFeatures() {
           {t.steps.map((step, index) => (
             <motion.div
               key={index}
-              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
+              initial={false}
               transition={{ duration: 0.6, delay: index * 0.1 }}
               viewport={{ once: true }}
               className={`ei-card group relative p-6 md:p-8 border ${step.borderColor} bg-gradient-to-br ${step.color}`}

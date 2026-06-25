@@ -72,8 +72,8 @@ export function LandingParents() {
 
       <div className="container px-4 md:px-6 relative z-10 max-w-5xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
+          initial={false}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
           className="text-center mb-12"
@@ -93,8 +93,8 @@ export function LandingParents() {
           {t.features.map((feature, index) => (
             <motion.div
               key={index}
-              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
+              initial={false}
               transition={{ duration: 0.5, delay: index * 0.1 }}
               viewport={{ once: true }}
               className="ei-card group p-8 border border-white/[0.06] bg-white/[0.02]"
