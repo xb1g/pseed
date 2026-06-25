@@ -10,6 +10,8 @@ type RadarReflectionInsert = Database["public"]["Tables"]["radar_reflections"]["
 const RADAR_SESSION_KEY = "radar_session_id";
 const RADAR_PENDING_REFLECTIONS_KEY = "radar_pending_reflections";
 let radarReflectionSyncInFlight: Promise<{ synced: number; remaining: number }> | null = null;
+let memoryRadarSessionId = "";
+let memoryPendingRadarReflections: PendingRadarReflection[] = [];
 
 // ── Collections ────────────────────────────────────────────────
 
@@ -124,10 +126,12 @@ export async function getRadarSources(fieldId: string) {
 
 function getOrCreateSessionId(): string {
   if (typeof window === "undefined") return "";
-  let sessionId = localStorage.getItem(RADAR_SESSION_KEY);
+
+  let sessionId = readStorageValue(RADAR_SESSION_KEY) || memoryRadarSessionId;
   if (!sessionId) {
-    sessionId = crypto.randomUUID();
-    localStorage.setItem(RADAR_SESSION_KEY, sessionId);
+    sessionId = createReflectionId();
+    memoryRadarSessionId = sessionId;
+    writeStorageValue(RADAR_SESSION_KEY, sessionId);
   }
   return sessionId;
 }
@@ -150,14 +154,14 @@ export interface PendingRadarReflection extends RadarReflectionData {
 function readPendingRadarReflections(): PendingRadarReflection[] {
   if (typeof window === "undefined") return [];
 
-  const raw = localStorage.getItem(RADAR_PENDING_REFLECTIONS_KEY);
-  if (!raw) return [];
+  const raw = readStorageValue(RADAR_PENDING_REFLECTIONS_KEY);
+  if (!raw) return memoryPendingRadarReflections;
 
   try {
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
+    if (!Array.isArray(parsed)) return memoryPendingRadarReflections;
 
-    return parsed.filter(
+    const pending = parsed.filter(
       (item): item is PendingRadarReflection =>
         typeof item?.id === "string" &&
         typeof item?.sessionId === "string" &&
@@ -167,14 +171,54 @@ function readPendingRadarReflections(): PendingRadarReflection[] {
           item?.wantToTry === null ||
           typeof item?.wantToTry === "undefined")
     );
+    memoryPendingRadarReflections = pending;
+    return pending;
   } catch {
-    return [];
+    return memoryPendingRadarReflections;
   }
 }
 
 function writePendingRadarReflections(items: PendingRadarReflection[]) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(RADAR_PENDING_REFLECTIONS_KEY, JSON.stringify(items));
+  memoryPendingRadarReflections = items;
+  writeStorageValue(RADAR_PENDING_REFLECTIONS_KEY, JSON.stringify(items));
+}
+
+function readStorageValue(key: string): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(key);
+  } catch (error) {
+    console.warn("Radar local storage read failed:", error);
+    return null;
+  }
+}
+
+function writeStorageValue(key: string, value: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(key, value);
+  } catch (error) {
+    console.warn("Radar local storage write failed:", error);
+  }
+}
+
+function createReflectionId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0"));
+    return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex
+      .slice(6, 8)
+      .join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
+  }
+
+  return `radar-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 function toRadarReflectionInsert(
@@ -206,7 +250,7 @@ export function saveRadarReflectionLocally(
 ): PendingRadarReflection {
   const reflection: PendingRadarReflection = {
     ...data,
-    id: crypto.randomUUID(),
+    id: createReflectionId(),
     sessionId: getOrCreateSessionId(),
     createdAt: new Date().toISOString(),
   };
