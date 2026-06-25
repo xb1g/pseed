@@ -6,12 +6,15 @@ import {
   getRadarField,
   getRadarCards,
   submitRadarReflection,
+  syncPendingRadarReflections,
 } from "@/lib/supabase/radar";
 import { RadarCardView } from "@/components/radar/RadarCards";
 import { CareerResearchView, type CareerResearch } from "@/components/radar/CareerResearchView";
 import type { Database } from "@/lib/supabase/database.types";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ChevronDown } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
+import { isAnonymousUser } from "@/lib/supabase/auth";
 
 type RadarField = Database["public"]["Tables"]["radar_fields"]["Row"];
 type RadarCard = Database["public"]["Tables"]["radar_cards"]["Row"];
@@ -82,6 +85,8 @@ export default function RadarFieldPage() {
   const [error, setError] = useState<string | null>(null);
   const [current, setCurrent] = useState(0);
   const [submitted, setSubmitted] = useState<Set<string>>(new Set());
+  const [showSignupPrompt, setShowSignupPrompt] = useState(true);
+  const [hasGuestReflection, setHasGuestReflection] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -137,6 +142,33 @@ export default function RadarFieldPage() {
     };
   }, [slug]);
 
+  useEffect(() => {
+    let active = true;
+    const supabase = createClient();
+
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!active) return;
+      setShowSignupPrompt(!user || isAnonymousUser(user));
+      void syncPendingRadarReflections();
+    })();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setShowSignupPrompt(!session?.user || isAnonymousUser(session.user));
+      void syncPendingRadarReflections();
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
   useEffect(() => () => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
   }, []);
@@ -166,6 +198,9 @@ export default function RadarFieldPage() {
   ];
   const totalSlides = Math.max(progressItems.length, 1);
   const displayCurrent = Math.min(current + 1, totalSlides);
+  const signupHref = field?.slug
+    ? `/login?next=${encodeURIComponent(`/radar/${field.slug}`)}`
+    : "/login";
   const currentLabel =
     current < cards.length
       ? cardLabel(cards[current])
@@ -183,18 +218,22 @@ export default function RadarFieldPage() {
       await submitRadarReflection({
         fieldSlug: field.slug,
         chapterKey,
-        wantToTry: payload.rating ?? 0,
+        wantToTry: payload.rating ?? null,
         tags: payload.tags,
         responseText: payload.text,
       });
       setSubmitted((prev) => new Set(prev).add(card.id));
+      if (showSignupPrompt) {
+        setHasGuestReflection(true);
+      }
       // Auto-advance to the next card so the "Continue" button behaves
       // like a real next step instead of leaving the user stranded on a
       // "Saved — keep going" screen. Small delay lets the saved state render
       // first so the user sees confirmation before the snap transition.
       const idx = cards.findIndex((c) => c.id === card.id);
       const nextIdx = idx + 1;
-      if (nextIdx < cards.length) {
+      const slideCount = cards.length + (research ? 1 : 0);
+      if (nextIdx < slideCount) {
         setTimeout(() => {
           const el = scrollRef.current;
           if (!el) return;
@@ -202,7 +241,7 @@ export default function RadarFieldPage() {
         }, 400);
       }
     },
-    [field, cards]
+    [field, cards, research, showSignupPrompt]
   );
 
   if (isLoading) {
@@ -314,6 +353,26 @@ export default function RadarFieldPage() {
         )}
       </div>
 
+      {showSignupPrompt && hasGuestReflection && (
+        <div className="absolute bottom-5 left-1/2 z-30 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2">
+          <div className="flex flex-col gap-3 rounded-xl border border-white/10 bg-neutral-950/85 p-4 shadow-2xl backdrop-blur md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-white">Keep your Career Radar</p>
+              <p className="mt-1 text-xs leading-relaxed text-neutral-400">
+                Create an account so these answers can come back with you later.
+              </p>
+            </div>
+            <Button
+              asChild
+              className="shrink-0 font-semibold text-white"
+              style={{ background: accent }}
+            >
+              <a href={signupHref}>Sign up free</a>
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* scroll-snap carousel (cards) + research fallback */}
       <div
         ref={scrollRef}
@@ -336,6 +395,8 @@ export default function RadarFieldPage() {
                     accent={accent}
                     squadUrl={field.squad_url}
                     reflectionSubmitted={submitted.has(card.id)}
+                    showSignupPrompt={showSignupPrompt}
+                    signupHref={signupHref}
                     onReflect={(payload) => handleReflect(card, chapterKey, payload)}
                   />
                   {i === 0 && cards.length > 1 && (
