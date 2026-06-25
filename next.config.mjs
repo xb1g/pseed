@@ -19,6 +19,7 @@ try {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  allowedDevOrigins: ["big.lion-yo.ts.net", "*.lion-yo.ts.net", "*.ts.net"],
   eslint: {
     ignoreDuringBuilds: true,
   },
