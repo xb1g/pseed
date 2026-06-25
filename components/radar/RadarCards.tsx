@@ -536,17 +536,22 @@ function ReflectionCard({
   c,
   accent,
   submitted,
+  showSignupPrompt,
+  signupHref,
   onSubmit,
 }: {
   c: ReflectionContent;
   accent: string;
   submitted: boolean;
-  onSubmit: (payload: { rating?: number; tags?: string[]; text?: string }) => void;
+  showSignupPrompt?: boolean;
+  signupHref?: string;
+  onSubmit: (payload: { rating?: number; tags?: string[]; text?: string }) => Promise<void> | void;
 }) {
   const [rating, setRating] = useState<number | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const toggleChip = (chip: string) =>
     setSelected((prev) =>
@@ -558,12 +563,15 @@ function ReflectionCard({
   const handle = async () => {
     if (!canSubmit || busy) return;
     setBusy(true);
+    setError(null);
     try {
       await onSubmit({
         rating: rating ?? undefined,
         tags: selected.length ? selected : undefined,
         text: text.trim() || undefined,
       });
+    } catch {
+      setError("Could not save this answer. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -573,8 +581,25 @@ function ReflectionCard({
     return (
       <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
         <div className="flex items-center gap-2 text-emerald-300">
-          <Check className="h-5 w-5" /> <span>Saved — keep going</span>
+          <Check className="h-5 w-5" /> <span>Saved - keep going</span>
         </div>
+        {showSignupPrompt && signupHref && (
+          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+            <p className="text-sm font-semibold text-white">Keep your Career Radar</p>
+            <p className="mt-1 text-xs leading-relaxed text-neutral-400">
+              Create an account so these answers can come back with you later.
+            </p>
+            <Button
+              asChild
+              className="mt-3 w-full font-semibold text-white"
+              style={{ background: accent }}
+            >
+              <a href={signupHref}>
+                Sign up free <ArrowRight className="h-4 w-4 ml-1" />
+              </a>
+            </Button>
+          </div>
+        )}
       </CardFrame>
     );
   }
@@ -640,6 +665,7 @@ function ReflectionCard({
       >
         {busy ? "Saving..." : "Continue"}
       </Button>
+      {error && <p className="text-sm text-rose-300">{error}</p>}
     </CardFrame>
   );
 }
@@ -652,7 +678,9 @@ export interface RadarCardViewProps {
   accent: string;
   squadUrl?: string | null;
   reflectionSubmitted?: boolean;
-  onReflect?: (payload: { rating?: number; tags?: string[]; text?: string }) => void;
+  showSignupPrompt?: boolean;
+  signupHref?: string;
+  onReflect?: (payload: { rating?: number; tags?: string[]; text?: string }) => Promise<void> | void;
 }
 
 export function RadarCardView({
@@ -661,6 +689,8 @@ export function RadarCardView({
   accent,
   squadUrl,
   reflectionSubmitted = false,
+  showSignupPrompt = false,
+  signupHref,
   onReflect,
 }: RadarCardViewProps) {
   const c = content as never;
@@ -701,6 +731,8 @@ export function RadarCardView({
           c={c}
           accent={accent}
           submitted={reflectionSubmitted}
+          showSignupPrompt={showSignupPrompt}
+          signupHref={signupHref}
           onSubmit={onReflect ?? (() => {})}
         />
       );

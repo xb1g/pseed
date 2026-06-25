@@ -14,13 +14,23 @@ import { SiDiscord, SiGoogle } from "@icons-pack/react-simple-icons";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 
-export function LoginForm() {
+export function LoginForm({ next = "/" }: { next?: string }) {
   const { toast } = useToast();
 
   const supabase = createClient();
+  const safeNext = next.startsWith("/") ? next : "/";
+
+  function getRedirectTo() {
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      (typeof window !== "undefined" ? window.location.origin : "");
+    const callbackUrl = new URL("/auth/callback", siteUrl);
+    callbackUrl.searchParams.set("next", safeNext);
+    return callbackUrl.toString();
+  }
 
   async function signInWithDiscord() {
-    const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`;
+    const redirectTo = getRedirectTo();
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "discord",
@@ -41,7 +51,7 @@ export function LoginForm() {
   }
 
   async function signInWithGoogle() {
-    const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`;
+    const redirectTo = getRedirectTo();
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
