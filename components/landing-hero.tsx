@@ -75,8 +75,8 @@ export function LandingHero() {
           <div className="flex-1 flex flex-col items-center lg:items-start text-center lg:text-left">
             {/* Eyebrow */}
             <motion.span
-              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
+              initial={false}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               className="text-sm font-medium text-orange-300 tracking-wide uppercase mb-6"
             >
@@ -85,8 +85,8 @@ export function LandingHero() {
 
             {/* Headline */}
             <motion.h1
-              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
+              initial={false}
               transition={{
                 duration: 0.7,
                 delay: 0.05,
@@ -99,8 +99,8 @@ export function LandingHero() {
 
             {/* Subheadline */}
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
+              initial={false}
               transition={{
                 duration: 0.7,
                 delay: 0.15,
@@ -113,8 +113,8 @@ export function LandingHero() {
 
             {/* CTA */}
             <motion.div
-              initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
+              initial={false}
               transition={{
                 duration: 0.7,
                 delay: 0.25,
@@ -159,8 +159,8 @@ export function LandingHero() {
       </div>
 
       <motion.div
-        initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
+        initial={false}
         transition={{ duration: 1, delay: 1, ease: [0.22, 1, 0.36, 1] }}
         className="absolute bottom-8 left-1/2 -translate-x-1/2 hidden lg:block"
       >

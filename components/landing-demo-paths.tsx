@@ -194,8 +194,8 @@ export function LandingDemoPaths() {
       {/* Active Path Content */}
       <motion.div
         key={activePathId}
-        initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
+        initial={false}
         transition={{ duration: 0.3 }}
         className={`p-4 sm:p-5 rounded-2xl ${pathData.bgColor}`}
       >

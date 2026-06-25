@@ -123,8 +123,8 @@ function StatCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
+      initial={false}
       transition={{ duration: 0.6, delay }}
       viewport={{ once: true }}
       className="ei-card flex items-center gap-4 p-6 border border-white/[0.05] bg-white/[0.02]"
@@ -154,8 +154,8 @@ function TestimonialCard({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
+      initial={false}
       transition={{ duration: 0.6, delay: index * 0.1 + 0.3 }}
       viewport={{ once: true }}
       className={`ei-card group relative p-8 border border-white/[0.06] bg-gradient-to-br ${testimonial.color} hover:border-white/[0.12] transition-all duration-500`}
@@ -209,8 +209,8 @@ export function LandingTestimonials() {
         {/* Header */}
         <div className="text-center mb-12">
           <motion.span
-            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
+            initial={false}
             transition={{ duration: 0.5 }}
             viewport={{ once: true }}
             className="text-xs font-medium text-amber-400 tracking-widest uppercase mb-4 inline-block"
@@ -218,8 +218,8 @@ export function LandingTestimonials() {
             {t.eyebrow}
           </motion.span>
           <motion.h2
-            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
+            initial={false}
             transition={{ duration: 0.6, delay: 0.1 }}
             viewport={{ once: true }}
             className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-[1.05]"
@@ -227,8 +227,8 @@ export function LandingTestimonials() {
             {t.title}
           </motion.h2>
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
+            initial={false}
             transition={{ duration: 0.6, delay: 0.15 }}
             viewport={{ once: true }}
             className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto font-medium leading-relaxed"
