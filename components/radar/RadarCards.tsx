@@ -536,15 +536,11 @@ function ReflectionCard({
   c,
   accent,
   submitted,
-  showSignupPrompt,
-  signupHref,
   onSubmit,
 }: {
   c: ReflectionContent;
   accent: string;
   submitted: boolean;
-  showSignupPrompt?: boolean;
-  signupHref?: string;
   onSubmit: (payload: { rating?: number; tags?: string[]; text?: string }) => Promise<void> | void;
 }) {
   const [rating, setRating] = useState<number | null>(null);
@@ -583,23 +579,6 @@ function ReflectionCard({
         <div className="flex items-center gap-2 text-emerald-300">
           <Check className="h-5 w-5" /> <span>Saved - keep going</span>
         </div>
-        {showSignupPrompt && signupHref && (
-          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
-            <p className="text-sm font-semibold text-white">Keep your Career Radar</p>
-            <p className="mt-1 text-xs leading-relaxed text-neutral-400">
-              Create an account so these answers can come back with you later.
-            </p>
-            <Button
-              asChild
-              className="mt-3 w-full font-semibold text-white"
-              style={{ background: accent }}
-            >
-              <a href={signupHref}>
-                Sign up free <ArrowRight className="h-4 w-4 ml-1" />
-              </a>
-            </Button>
-          </div>
-        )}
       </CardFrame>
     );
   }
@@ -689,8 +668,6 @@ export function RadarCardView({
   accent,
   squadUrl,
   reflectionSubmitted = false,
-  showSignupPrompt = false,
-  signupHref,
   onReflect,
 }: RadarCardViewProps) {
   const c = content as never;
@@ -731,8 +708,6 @@ export function RadarCardView({
           c={c}
           accent={accent}
           submitted={reflectionSubmitted}
-          showSignupPrompt={showSignupPrompt}
-          signupHref={signupHref}
           onSubmit={onReflect ?? (() => {})}
         />
       );
