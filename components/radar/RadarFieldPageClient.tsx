@@ -13,7 +13,7 @@ import {
 import { RadarCardView } from "@/components/radar/RadarCards";
 import type { Database } from "@/lib/supabase/database.types";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ChevronDown } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, X } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { isAnonymousUser } from "@/lib/supabase/auth";
 
@@ -93,6 +93,10 @@ export function RadarFieldPageClient({
   const [submitted, setSubmitted] = useState<Set<string>>(new Set());
   const [showSignupPrompt, setShowSignupPrompt] = useState(true);
   const [hasGuestReflection, setHasGuestReflection] = useState(false);
+  const [signupToastVisible, setSignupToastVisible] = useState(false);
+  const [signupToastDismissed, setSignupToastDismissed] = useState(false);
+  const [finalToastDismissed, setFinalToastDismissed] = useState(false);
+  const [hasShownFirstToast, setHasShownFirstToast] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -178,7 +182,13 @@ export function RadarFieldPageClient({
   ];
   const totalSlides = Math.max(progressItems.length, 1);
   const displayCurrent = Math.min(current + 1, totalSlides);
-  const signupHref = `/login?next=${encodeURIComponent(`/radar/${field.slug}`)}`;
+  const keepRadarHref = `/radar/keep?next=${encodeURIComponent(`/radar/${field.slug}`)}`;
+  const isFinalSlide = current >= totalSlides - 1;
+  const shouldShowSignupToast =
+    showSignupPrompt &&
+    hasGuestReflection &&
+    signupToastVisible &&
+    !signupToastDismissed;
   const currentLabel =
     current < cards.length
       ? cardLabel(cards[current])
@@ -202,6 +212,11 @@ export function RadarFieldPageClient({
       setSubmitted((prev) => new Set(prev).add(card.id));
       if (showSignupPrompt) {
         setHasGuestReflection(true);
+        if (!hasShownFirstToast) {
+          setSignupToastVisible(true);
+          setHasShownFirstToast(true);
+          setSignupToastDismissed(false);
+        }
       }
       const idx = cards.findIndex((c) => c.id === card.id);
       const nextIdx = idx + 1;
@@ -214,8 +229,40 @@ export function RadarFieldPageClient({
         }, 400);
       }
     },
-    [field.slug, cards, research, showSignupPrompt]
+    [field.slug, cards, research, showSignupPrompt, hasShownFirstToast]
   );
+
+  useEffect(() => {
+    if (!signupToastVisible || !hasShownFirstToast || isFinalSlide) return;
+
+    const timer = window.setTimeout(() => {
+      setSignupToastVisible(false);
+    }, 6500);
+
+    return () => window.clearTimeout(timer);
+  }, [signupToastVisible, hasShownFirstToast, isFinalSlide]);
+
+  useEffect(() => {
+    if (
+      !showSignupPrompt ||
+      !hasGuestReflection ||
+      !isFinalSlide ||
+      finalToastDismissed
+    ) {
+      return;
+    }
+
+    setSignupToastDismissed(false);
+    setSignupToastVisible(true);
+  }, [showSignupPrompt, hasGuestReflection, isFinalSlide, finalToastDismissed]);
+
+  const dismissSignupToast = useCallback(() => {
+    setSignupToastVisible(false);
+    setSignupToastDismissed(true);
+    if (isFinalSlide) {
+      setFinalToastDismissed(true);
+    }
+  }, [isFinalSlide]);
 
   return (
     <div
@@ -295,15 +342,24 @@ export function RadarFieldPageClient({
         )}
       </div>
 
-      {showSignupPrompt && hasGuestReflection && (
+      {shouldShowSignupToast && (
         <div className="absolute bottom-5 left-1/2 z-30 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2">
-          <div className="flex flex-col gap-3 rounded-xl border border-white/10 bg-neutral-950/85 p-4 shadow-2xl backdrop-blur md:flex-row md:items-center md:justify-between">
+          <div className="relative flex flex-col gap-3 rounded-xl border border-white/10 bg-neutral-950/85 p-4 pr-12 shadow-2xl backdrop-blur md:flex-row md:items-center md:justify-between">
+            <button
+              onClick={dismissSignupToast}
+              className="absolute right-3 top-3 rounded-full p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+              aria-label="Hide signup prompt"
+            >
+              <X className="h-4 w-4" />
+            </button>
             <div>
               <p className="text-sm font-semibold text-white">
                 Keep your Career Radar
               </p>
               <p className="mt-1 text-xs leading-relaxed text-neutral-400">
-                Create an account so these answers can come back with you later.
+                {isFinalSlide
+                  ? "You reached the end. Save this radar so it can turn into next steps."
+                  : "Saved here. Create an account later if you want this to follow you."}
               </p>
             </div>
             <Button
@@ -311,7 +367,9 @@ export function RadarFieldPageClient({
               className="shrink-0 font-semibold text-white"
               style={{ background: accent }}
             >
-              <a href={signupHref}>Sign up free</a>
+              <a href={keepRadarHref}>
+                See why <ArrowRight className="ml-1 h-4 w-4" />
+              </a>
             </Button>
           </div>
         </div>
@@ -338,8 +396,7 @@ export function RadarFieldPageClient({
                     accent={accent}
                     squadUrl={field.squad_url}
                     reflectionSubmitted={submitted.has(card.id)}
-                    showSignupPrompt={showSignupPrompt}
-                    signupHref={signupHref}
+                    showSignupPrompt={false}
                     onReflect={(payload) =>
                       handleReflect(card, chapterKey, payload)
                     }
