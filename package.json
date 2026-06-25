@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "dev:prod": "dotenv -e .env.production -o -- next dev --turbopack",
-    "dev:local": "next dev --turbopack",
+    "dev": "next dev --turbopack -H 0.0.0.0 -p 3000",
+    "dev:prod": "dotenv -e .env.production -o -- next dev --turbopack -H 0.0.0.0 -p 3000",
+    "dev:local": "next dev --turbopack -H 0.0.0.0 -p 3000",
     "build": "next build",
     "build:analyze": "ANALYZE=true next build",
     "build:production": "./scripts/build-production.sh",
