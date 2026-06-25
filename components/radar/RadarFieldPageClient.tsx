@@ -1,0 +1,373 @@
+"use client";
+
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
+import {
+  submitRadarReflection,
+  syncPendingRadarReflections,
+} from "@/lib/supabase/radar";
+import {
+  CareerResearchView,
+  type CareerResearch,
+} from "@/components/radar/CareerResearchView";
+import { RadarCardView } from "@/components/radar/RadarCards";
+import type { Database } from "@/lib/supabase/database.types";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, ChevronDown } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
+import { isAnonymousUser } from "@/lib/supabase/auth";
+
+type RadarField = Database["public"]["Tables"]["radar_fields"]["Row"];
+type RadarCard = Database["public"]["Tables"]["radar_cards"]["Row"];
+
+function pickContent(card: RadarCard): Record<string, unknown> {
+  const th = card.content_th as Record<string, unknown> | null;
+  const en = card.content_en as Record<string, unknown> | null;
+  return th ?? en ?? {};
+}
+
+function cardLabel(card: RadarCard): string {
+  const c = pickContent(card);
+  return (
+    (c.eyebrow as string) ||
+    (c.title as string) ||
+    (typeof c.level === "string" ? (c.level as string) : "") ||
+    card.kind
+  );
+}
+
+function readableAccent(hex: string, fallback = "#60a5fa"): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return fallback;
+  const n = parseInt(m[1], 16);
+  let r = (n >> 16) / 255;
+  let g = ((n >> 8) & 0xff) / 255;
+  let b = (n & 0xff) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0;
+  const l = (max + min) / 2;
+  const d = max - min;
+  let s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+  if (d !== 0) {
+    if (max === r) h = ((g - b) / d) % 6;
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+    if (h < 0) h += 360;
+  }
+  const lightness = 0.68;
+  s = Math.max(s, 0.55);
+  const c = (1 - Math.abs(2 * lightness - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const mm = lightness - c / 2;
+  const seg = [
+    [c, x, 0],
+    [x, c, 0],
+    [0, c, x],
+    [0, x, c],
+    [x, 0, c],
+    [c, 0, x],
+  ][Math.floor(h / 60) % 6];
+  r = Math.round((seg[0] + mm) * 255);
+  g = Math.round((seg[1] + mm) * 255);
+  b = Math.round((seg[2] + mm) * 255);
+  return `#${[r, g, b]
+    .map((v) => v.toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+export function RadarFieldPageClient({
+  initialField,
+  initialCards,
+}: {
+  initialField: RadarField;
+  initialCards: RadarCard[];
+}) {
+  const router = useRouter();
+  const field = initialField;
+  const cards = initialCards;
+  const research = (field.research as CareerResearch) ?? null;
+
+  const [current, setCurrent] = useState(0);
+  const [submitted, setSubmitted] = useState<Set<string>>(new Set());
+  const [showSignupPrompt, setShowSignupPrompt] = useState(true);
+  const [hasGuestReflection, setHasGuestReflection] = useState(false);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const followRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
+
+  const handlePointer = useCallback((e: React.MouseEvent) => {
+    const root = rootRef.current;
+    const glow = followRef.current;
+    if (!root || !glow) return;
+    const { left, top, width, height } = root.getBoundingClientRect();
+    const x = e.clientX - left;
+    const y = e.clientY - top;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      glow.style.transform = `translate(${x - width / 2}px, ${y - height / 2}px)`;
+    });
+  }, []);
+
+  const goTo = useCallback((i: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: i * el.clientHeight, behavior: "smooth" });
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const supabase = createClient();
+
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!active) return;
+      setShowSignupPrompt(!user || isAnonymousUser(user));
+      void syncPendingRadarReflections();
+    })();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setShowSignupPrompt(!session?.user || isAnonymousUser(session.user));
+      void syncPendingRadarReflections();
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    },
+    []
+  );
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const idx = Math.round(el.scrollTop / el.clientHeight);
+    setCurrent((prev) => (prev === idx ? prev : idx));
+  }, []);
+
+  const accent = readableAccent(field.color || "#3b82f6");
+  const progressItems = [
+    ...cards.map((card, i) => ({
+      key: card.id,
+      label: cardLabel(card),
+      scrollIndex: i,
+    })),
+    ...(research
+      ? [
+          {
+            key: "research",
+            label: "Research brief",
+            scrollIndex: cards.length,
+          },
+        ]
+      : []),
+  ];
+  const totalSlides = Math.max(progressItems.length, 1);
+  const displayCurrent = Math.min(current + 1, totalSlides);
+  const signupHref = `/login?next=${encodeURIComponent(`/radar/${field.slug}`)}`;
+  const currentLabel =
+    current < cards.length
+      ? cardLabel(cards[current])
+      : research
+        ? "Research brief"
+        : null;
+
+  const handleReflect = useCallback(
+    async (
+      card: RadarCard,
+      chapterKey: string,
+      payload: { rating?: number; tags?: string[]; text?: string }
+    ) => {
+      await submitRadarReflection({
+        fieldSlug: field.slug,
+        chapterKey,
+        wantToTry: payload.rating ?? null,
+        tags: payload.tags,
+        responseText: payload.text,
+      });
+      setSubmitted((prev) => new Set(prev).add(card.id));
+      if (showSignupPrompt) {
+        setHasGuestReflection(true);
+      }
+      const idx = cards.findIndex((c) => c.id === card.id);
+      const nextIdx = idx + 1;
+      const slideCount = cards.length + (research ? 1 : 0);
+      if (nextIdx < slideCount) {
+        setTimeout(() => {
+          const el = scrollRef.current;
+          if (!el) return;
+          el.scrollTo({ top: nextIdx * el.clientHeight, behavior: "smooth" });
+        }, 400);
+      }
+    },
+    [field.slug, cards, research, showSignupPrompt]
+  );
+
+  return (
+    <div
+      ref={rootRef}
+      onMouseMove={handlePointer}
+      className="fixed inset-0 z-[100] h-[100dvh] overflow-hidden bg-neutral-950"
+    >
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div
+          className="radar-glow-a absolute top-0 left-1/2 w-[720px] h-[420px] rounded-full blur-[140px]"
+          style={{
+            background: accent,
+            filter: `blur(140px) saturate(${1 + Math.min(current, 12) * 0.06})`,
+          }}
+        />
+        <div
+          className="radar-glow-b absolute bottom-[-10%] left-[-5%] w-[480px] h-[480px] rounded-full blur-[150px]"
+          style={{ background: accent }}
+        />
+        <div
+          className="radar-glow-c absolute top-[35%] right-[-8%] w-[420px] h-[420px] rounded-full blur-[150px]"
+          style={{ background: accent }}
+        />
+        <div
+          ref={followRef}
+          className="radar-glow-follow absolute top-1/2 left-1/2 -ml-[200px] -mt-[200px] w-[400px] h-[400px] rounded-full blur-[120px] opacity-[0.14]"
+          style={{ background: accent }}
+        />
+      </div>
+
+      <div className="absolute top-0 inset-x-0 z-30 px-4 pt-4">
+        <div className="flex items-center gap-3 max-w-xl mx-auto">
+          <button
+            onClick={() => router.push("/radar")}
+            className="shrink-0 rounded-full border border-white/10 bg-white/5 p-2 text-white/80 hover:bg-white/10 transition-colors"
+            aria-label="Back to Radar"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div className="flex-1 flex gap-1">
+            {progressItems.map((item, i) => (
+              <button
+                key={item.key}
+                onClick={() => goTo(item.scrollIndex)}
+                aria-label={`Go to: ${item.label}`}
+                className="group relative h-3 flex-1 flex items-center"
+              >
+                <span
+                  className="h-1 w-full rounded-full transition-all duration-300 group-hover:h-1.5"
+                  style={{
+                    background: i <= current ? accent : "rgba(255,255,255,0.12)",
+                    boxShadow: i === current ? `0 0 8px ${accent}` : "none",
+                  }}
+                />
+                <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-2 whitespace-nowrap rounded-md border border-white/10 bg-neutral-900/95 px-2 py-1 text-[11px] text-white/90 opacity-0 translate-y-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-y-0 z-40 shadow-lg">
+                  <span className="text-white/40 tabular-nums mr-1.5">
+                    {i + 1}
+                  </span>
+                  {item.label}
+                </span>
+              </button>
+            ))}
+          </div>
+          <span className="shrink-0 text-xs tabular-nums text-white/40">
+            {displayCurrent}/{totalSlides}
+          </span>
+          <span className="shrink-0 text-lg">{field.emoji}</span>
+        </div>
+        {currentLabel && (
+          <p
+            key={currentLabel}
+            className="max-w-xl mx-auto mt-2 text-[11px] font-medium uppercase tracking-[0.18em] truncate animate-[radar-fade_0.4s_ease]"
+            style={{ color: accent }}
+          >
+            {currentLabel}
+          </p>
+        )}
+      </div>
+
+      {showSignupPrompt && hasGuestReflection && (
+        <div className="absolute bottom-5 left-1/2 z-30 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2">
+          <div className="flex flex-col gap-3 rounded-xl border border-white/10 bg-neutral-950/85 p-4 shadow-2xl backdrop-blur md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-white">
+                Keep your Career Radar
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-neutral-400">
+                Create an account so these answers can come back with you later.
+              </p>
+            </div>
+            <Button
+              asChild
+              className="shrink-0 font-semibold text-white"
+              style={{ background: accent }}
+            >
+              <a href={signupHref}>Sign up free</a>
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="h-full overflow-y-auto snap-y snap-mandatory scrollbar-hide scroll-smooth"
+      >
+        {cards.length > 0 ? (
+          <>
+            {cards.map((card, i) => {
+              const content = pickContent(card);
+              const chapterKey = (content.chapterKey as string) || card.id;
+              return (
+                <section
+                  key={card.id}
+                  className="snap-start h-[100dvh] flex items-center justify-center px-6 py-20"
+                >
+                  <RadarCardView
+                    kind={card.kind}
+                    content={content}
+                    accent={accent}
+                    squadUrl={field.squad_url}
+                    reflectionSubmitted={submitted.has(card.id)}
+                    showSignupPrompt={showSignupPrompt}
+                    signupHref={signupHref}
+                    onReflect={(payload) =>
+                      handleReflect(card, chapterKey, payload)
+                    }
+                  />
+                  {i === 0 && cards.length > 1 && (
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 animate-bounce">
+                      <ChevronDown className="h-6 w-6" />
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+            {research && (
+              <section className="snap-start min-h-[100dvh] flex items-start justify-center px-6 py-20">
+                <CareerResearchView research={research} accent={accent} />
+              </section>
+            )}
+          </>
+        ) : research ? (
+          <section className="snap-start min-h-[100dvh] flex items-start justify-center px-6 py-20 overflow-y-auto">
+            <CareerResearchView research={research} accent={accent} />
+          </section>
+        ) : (
+          <section className="snap-start h-[100dvh] flex items-center justify-center px-6 text-center">
+            <p className="text-neutral-400">No content yet for this field.</p>
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}
