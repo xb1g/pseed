@@ -259,6 +259,48 @@ export function saveRadarReflectionLocally(
   return reflection;
 }
 
+export async function getSavedRadarReflectionChapterKeys(
+  fieldSlug: string
+): Promise<Set<string>> {
+  const saved = new Set<string>();
+
+  readPendingRadarReflections()
+    .filter((reflection) => reflection.fieldSlug === fieldSlug)
+    .forEach((reflection) => {
+      if (reflection.chapterKey) saved.add(reflection.chapterKey);
+    });
+
+  try {
+    const supabase = createClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user || isAnonymousUser(user)) {
+      return saved;
+    }
+
+    const { data, error } = await supabase
+      .from("radar_reflections")
+      .select("chapter_key")
+      .eq("field_slug", fieldSlug);
+
+    if (error) {
+      console.error("Error loading saved radar reflections:", error);
+      return saved;
+    }
+
+    (data || []).forEach((reflection) => {
+      if (reflection.chapter_key) saved.add(reflection.chapter_key);
+    });
+  } catch (error) {
+    console.error("Error loading saved radar reflections:", error);
+  }
+
+  return saved;
+}
+
 export async function syncPendingRadarReflections(): Promise<{
   synced: number;
   remaining: number;

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
+  getSavedRadarReflectionChapterKeys,
   submitRadarReflection,
   syncPendingRadarReflections,
 } from "@/lib/supabase/radar";
@@ -34,6 +35,11 @@ function cardLabel(card: RadarCard): string {
     (typeof c.level === "string" ? (c.level as string) : "") ||
     card.kind
   );
+}
+
+function cardChapterKey(card: RadarCard): string {
+  const content = pickContent(card);
+  return (content.chapterKey as string) || card.id;
 }
 
 function readableAccent(hex: string, fallback = "#60a5fa"): string {
@@ -126,6 +132,20 @@ export function RadarFieldPageClient({
     let active = true;
     const supabase = createClient();
 
+    const loadSavedReflections = async () => {
+      const savedChapterKeys = await getSavedRadarReflectionChapterKeys(field.slug);
+      if (!active || savedChapterKeys.size === 0) return;
+
+      const savedCardIds = cards
+        .filter((card) => savedChapterKeys.has(cardChapterKey(card)))
+        .map((card) => card.id);
+      setSubmitted((prev) => new Set([...prev, ...savedCardIds]));
+      setHasGuestReflection(true);
+      setHasShownFirstToast(true);
+    };
+
+    void loadSavedReflections();
+
     (async () => {
       const {
         data: { user },
@@ -133,21 +153,21 @@ export function RadarFieldPageClient({
 
       if (!active) return;
       setShowSignupPrompt(!user || isAnonymousUser(user));
-      void syncPendingRadarReflections();
+      void syncPendingRadarReflections().then(loadSavedReflections);
     })();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setShowSignupPrompt(!session?.user || isAnonymousUser(session.user));
-      void syncPendingRadarReflections();
+      void syncPendingRadarReflections().then(loadSavedReflections);
     });
 
     return () => {
       active = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [field.slug, cards]);
 
   useEffect(
     () => () => {
@@ -384,7 +404,7 @@ export function RadarFieldPageClient({
           <>
             {cards.map((card, i) => {
               const content = pickContent(card);
-              const chapterKey = (content.chapterKey as string) || card.id;
+              const chapterKey = cardChapterKey(card);
               return (
                 <section
                   key={card.id}
