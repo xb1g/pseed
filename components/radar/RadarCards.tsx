@@ -56,7 +56,18 @@ export type EntryRoutesContent = CardBase & {
 };
 export type RisksContent = CardBase & { risks?: string[] };
 export type RealPeopleContent = CardBase & {
-  people?: Array<{ background: string; role?: string; publisher?: string; url?: string }>;
+  people?: Array<{
+    name?: string;
+    role?: string;
+    background: string; // short bio (kept for back-compat)
+    salary?: string; // honest, only if the person shared it — never fabricated
+    path?: Array<{ year?: string; label: string }>; // trajectory: started → pivots → now
+    nowDoing?: string; // what they do daily + with whom
+    whereHeading?: string; // where they think the role is going next
+    advice?: string; // what they wish they'd known at the start
+    publisher?: string;
+    url?: string;
+  }>;
 };
 export type CtaContent = CardBase & { body?: string; button?: string };
 export type SourcesContent = CardBase & {
@@ -379,10 +390,73 @@ function RealPeopleCard({ c, accent }: { c: RealPeopleContent; accent: string })
       <div className="flex flex-col gap-3">
         {(c.people ?? []).map((p, i) => (
           <Panel key={i}>
+            {/* header: name / role + honest salary chip */}
+            {(p.name || p.role || p.salary) && (
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div>
+                  {p.name && <span className="text-white font-semibold">{p.name}</span>}
+                  {p.role && (
+                    <p className="text-xs text-neutral-400 mt-0.5">{p.role}</p>
+                  )}
+                </div>
+                {p.salary && (
+                  <span
+                    className="shrink-0 text-xs font-bold rounded-full px-2.5 py-1"
+                    style={{ color: accent, background: `${accent}1a` }}
+                  >
+                    {p.salary}
+                  </span>
+                )}
+              </div>
+            )}
+
             <p className="text-neutral-200 text-sm leading-relaxed">{p.background}</p>
-            <div className="flex items-center gap-2 mt-2 text-xs text-neutral-500">
-              {p.role && <span>{p.role}</span>}
-              {p.publisher && <span>· {p.publisher}</span>}
+
+            {/* trajectory: started → pivots → now */}
+            {p.path && p.path.length > 0 && (
+              <div className="mt-3 flex flex-col">
+                {p.path.map((step, j) => (
+                  <div key={j} className="flex gap-3 pb-2.5 last:pb-0">
+                    <div className="flex flex-col items-center">
+                      <span className="h-1.5 w-1.5 rounded-full mt-1.5 shrink-0" style={{ background: accent }} />
+                      {j < p.path!.length - 1 && <span className="flex-1 w-px bg-white/10 mt-1" />}
+                    </div>
+                    <p className="text-neutral-300 text-xs leading-relaxed">
+                      {step.year && (
+                        <span className="font-semibold tabular-nums mr-1.5" style={{ color: accent }}>
+                          {step.year}
+                        </span>
+                      )}
+                      {step.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {p.nowDoing && (
+              <p className="mt-3 text-neutral-300 text-xs leading-relaxed">
+                <span className="text-neutral-500">Now · </span>
+                {p.nowDoing}
+              </p>
+            )}
+            {p.whereHeading && (
+              <p className="mt-1.5 text-neutral-300 text-xs leading-relaxed">
+                <span className="text-neutral-500">Heading · </span>
+                {p.whereHeading}
+              </p>
+            )}
+            {p.advice && (
+              <p
+                className="mt-3 text-sm italic leading-relaxed border-l-2 pl-3"
+                style={{ borderColor: accent, color: "rgb(229 229 229)" }}
+              >
+                “{p.advice}”
+              </p>
+            )}
+
+            <div className="flex items-center gap-2 mt-3 text-xs text-neutral-500">
+              {p.publisher && <span>{p.publisher}</span>}
               {p.url && (
                 <a
                   href={p.url}

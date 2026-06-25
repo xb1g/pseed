@@ -22,6 +22,17 @@ function pickContent(card: RadarCard): Record<string, unknown> {
   return th ?? en ?? {};
 }
 
+// Short human label for a card, used by the top-bar hover tooltips + current chapter readout.
+function cardLabel(card: RadarCard): string {
+  const c = pickContent(card);
+  return (
+    (c.eyebrow as string) ||
+    (c.title as string) ||
+    (typeof c.level === "string" ? (c.level as string) : "") ||
+    card.kind
+  );
+}
+
 // Field `color` is a dark brand/tile color (e.g. #0F172A). On a dark carousel it
 // is unreadable as foreground, so lighten it to a guaranteed-legible accent.
 function readableAccent(hex: string, fallback = "#60a5fa"): string {
@@ -73,6 +84,30 @@ export default function RadarFieldPage() {
   const [submitted, setSubmitted] = useState<Set<string>>(new Set());
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const followRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
+
+  // Pointer-follow glow (desktop only). rAF-throttled so mousemove never thrashes.
+  const handlePointer = useCallback((e: React.MouseEvent) => {
+    const root = rootRef.current;
+    const glow = followRef.current;
+    if (!root || !glow) return;
+    const { left, top, width, height } = root.getBoundingClientRect();
+    const x = e.clientX - left;
+    const y = e.clientY - top;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      glow.style.transform = `translate(${x - width / 2}px, ${y - height / 2}px)`;
+    });
+  }, []);
+
+  // jump straight to a card (top-bar segment click)
+  const goTo = useCallback((i: number) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: i * el.clientHeight, behavior: "smooth" });
+  }, []);
 
   useEffect(() => {
     if (!slug) return;
@@ -102,6 +137,10 @@ export default function RadarFieldPage() {
     };
   }, [slug]);
 
+  useEffect(() => () => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+  }, []);
+
   // track which card is in view (scroll-snap sections)
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -111,6 +150,28 @@ export default function RadarFieldPage() {
   }, []);
 
   const accent = readableAccent(field?.color || "#3b82f6");
+  const progressItems = [
+    ...cards.map((card, i) => ({
+      key: card.id,
+      label: cardLabel(card),
+      scrollIndex: i,
+    })),
+    ...(research
+      ? [{
+          key: "research",
+          label: "Research brief",
+          scrollIndex: cards.length,
+        }]
+      : []),
+  ];
+  const totalSlides = Math.max(progressItems.length, 1);
+  const displayCurrent = Math.min(current + 1, totalSlides);
+  const currentLabel =
+    current < cards.length
+      ? cardLabel(cards[current])
+      : research
+        ? "Research brief"
+        : null;
 
   const handleReflect = useCallback(
     async (
@@ -118,7 +179,7 @@ export default function RadarFieldPage() {
       chapterKey: string,
       payload: { rating?: number; tags?: string[]; text?: string }
     ) => {
-      if (!field) return;
+      if (!field?.slug) return;
       await submitRadarReflection({
         fieldSlug: field.slug,
         chapterKey,
@@ -127,8 +188,21 @@ export default function RadarFieldPage() {
         responseText: payload.text,
       });
       setSubmitted((prev) => new Set(prev).add(card.id));
+      // Auto-advance to the next card so the "Continue" button behaves
+      // like a real next step instead of leaving the user stranded on a
+      // "Saved — keep going" screen. Small delay lets the saved state render
+      // first so the user sees confirmation before the snap transition.
+      const idx = cards.findIndex((c) => c.id === card.id);
+      const nextIdx = idx + 1;
+      if (nextIdx < cards.length) {
+        setTimeout(() => {
+          const el = scrollRef.current;
+          if (!el) return;
+          el.scrollTo({ top: nextIdx * el.clientHeight, behavior: "smooth" });
+        }, 400);
+      }
     },
-    [field]
+    [field, cards]
   );
 
   if (isLoading) {
@@ -155,14 +229,39 @@ export default function RadarFieldPage() {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] h-[100dvh] overflow-hidden bg-neutral-950">
-      {/* ambient field-colored glow */}
-      <div
-        className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full blur-[140px] opacity-30"
-        style={{ background: accent }}
-      />
+    <div
+      ref={rootRef}
+      onMouseMove={handlePointer}
+      className="fixed inset-0 z-[100] h-[100dvh] overflow-hidden bg-neutral-950"
+    >
+      {/* ambient field-colored glows — layered, drifting, pointer-reactive */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {/* primary top glow — drifts + brightens as you progress through cards */}
+        <div
+          className="radar-glow-a absolute top-0 left-1/2 w-[720px] h-[420px] rounded-full blur-[140px]"
+          style={{
+            background: accent,
+            filter: `blur(140px) saturate(${1 + Math.min(current, 12) * 0.06})`,
+          }}
+        />
+        {/* secondary drifting blobs */}
+        <div
+          className="radar-glow-b absolute bottom-[-10%] left-[-5%] w-[480px] h-[480px] rounded-full blur-[150px]"
+          style={{ background: accent }}
+        />
+        <div
+          className="radar-glow-c absolute top-[35%] right-[-8%] w-[420px] h-[420px] rounded-full blur-[150px]"
+          style={{ background: accent }}
+        />
+        {/* pointer-follow glow (desktop) — centered, translated toward cursor via rAF */}
+        <div
+          ref={followRef}
+          className="radar-glow-follow absolute top-1/2 left-1/2 -ml-[200px] -mt-[200px] w-[400px] h-[400px] rounded-full blur-[120px] opacity-[0.14]"
+          style={{ background: accent }}
+        />
+      </div>
 
-      {/* top bar: back + progress */}
+      {/* top bar: back + interactive progress + current-chapter readout */}
       <div className="absolute top-0 inset-x-0 z-30 px-4 pt-4">
         <div className="flex items-center gap-3 max-w-xl mx-auto">
           <button
@@ -172,17 +271,47 @@ export default function RadarFieldPage() {
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
+          {/* progress segments — each hoverable (reveals chapter) + clickable (jumps) */}
           <div className="flex-1 flex gap-1">
-            {Array.from({ length: cards.length + (research && cards.length > 0 ? 1 : 0) }).map((_, i) => (
-              <span
-                key={i}
-                className="h-1 flex-1 rounded-full transition-colors duration-300"
-                style={{ background: i <= current ? accent : "rgba(255,255,255,0.12)" }}
-              />
+            {progressItems.map((item, i) => (
+              <button
+                key={item.key}
+                onClick={() => goTo(item.scrollIndex)}
+                aria-label={`Go to: ${item.label}`}
+                className="group relative h-3 flex-1 flex items-center"
+              >
+                <span
+                  className="h-1 w-full rounded-full transition-all duration-300 group-hover:h-1.5"
+                  style={{
+                    background: i <= current ? accent : "rgba(255,255,255,0.12)",
+                    boxShadow: i === current ? `0 0 8px ${accent}` : "none",
+                  }}
+                />
+                {/* hover tooltip */}
+                <span
+                  className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-2 whitespace-nowrap rounded-md border border-white/10 bg-neutral-900/95 px-2 py-1 text-[11px] text-white/90 opacity-0 translate-y-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-y-0 z-40 shadow-lg"
+                >
+                  <span className="text-white/40 tabular-nums mr-1.5">{i + 1}</span>
+                  {item.label}
+                </span>
+              </button>
             ))}
           </div>
+          <span className="shrink-0 text-xs tabular-nums text-white/40">
+            {displayCurrent}/{totalSlides}
+          </span>
           <span className="shrink-0 text-lg">{field.emoji}</span>
         </div>
+        {/* always-on current-chapter readout */}
+        {currentLabel && (
+          <p
+            key={currentLabel}
+            className="max-w-xl mx-auto mt-2 text-[11px] font-medium uppercase tracking-[0.18em] truncate animate-[radar-fade_0.4s_ease]"
+            style={{ color: accent }}
+          >
+            {currentLabel}
+          </p>
+        )}
       </div>
 
       {/* scroll-snap carousel (cards) + research fallback */}

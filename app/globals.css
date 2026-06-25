@@ -2411,3 +2411,50 @@
     animation: none;
   }
 }
+
+/* ── Career Radar: interactive ambient background ──────────────────────────── */
+/* Drifting glow blobs. Prime-number durations prevent visual sync (design rule).
+   Each animates transform + opacity together so the motion reads as alive. */
+@keyframes radar-drift-a {
+  0%   { transform: translate(-50%, 0) scale(1);     opacity: 0.30; }
+  50%  { transform: translate(-42%, 6%) scale(1.12); opacity: 0.42; }
+  100% { transform: translate(-50%, 0) scale(1);     opacity: 0.30; }
+}
+@keyframes radar-drift-b {
+  0%   { transform: translate(0, 0) scale(1);        opacity: 0.16; }
+  50%  { transform: translate(8%, -5%) scale(1.18);  opacity: 0.26; }
+  100% { transform: translate(0, 0) scale(1);        opacity: 0.16; }
+}
+@keyframes radar-drift-c {
+  0%   { transform: translate(0, 0) scale(1.05);     opacity: 0.12; }
+  50%  { transform: translate(-7%, 7%) scale(0.92);  opacity: 0.22; }
+  100% { transform: translate(0, 0) scale(1.05);     opacity: 0.12; }
+}
+.radar-glow-a { animation: radar-drift-a 23s ease-in-out infinite; }
+.radar-glow-b { animation: radar-drift-b 17s ease-in-out infinite; }
+.radar-glow-c { animation: radar-drift-c 13s ease-in-out infinite; }
+
+/* Pointer-follow glow: smooth lag toward cursor (desktop only). */
+.radar-glow-follow {
+  transition: transform 0.5s cubic-bezier(0.05, 0.7, 0.35, 0.99);
+  will-change: transform;
+}
+
+/* Touch / no-hover: keep gentle drift, drop pointer-follow + slow it down. */
+@media (hover: none) {
+  .radar-glow-follow { display: none; }
+  .radar-glow-a { animation-duration: 31s; }
+  .radar-glow-b { animation-duration: 29s; }
+  .radar-glow-c { animation-duration: 19s; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .radar-glow-a, .radar-glow-b, .radar-glow-c { animation: none; }
+  .radar-glow-follow { transition: none; }
+}
+
+/* Career Radar: current-chapter readout fade */
+@keyframes radar-fade {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
