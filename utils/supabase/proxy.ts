@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Fail fast when Supabase is unreachable in local dev (Docker not running)
@@ -28,7 +28,7 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet: { name: string; value: string; options: any }[]) {
+        setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({
             request,
@@ -69,6 +69,7 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith('/api/expert-interview') &&
     !request.nextUrl.pathname.startsWith('/epic-sprint') &&
     !request.nextUrl.pathname.startsWith('/about') &&
+    !request.nextUrl.pathname.startsWith('/business-model-canvas') &&
     !request.nextUrl.pathname.startsWith('/radar') &&
     !request.nextUrl.pathname.startsWith('/fireball') &&
     !request.nextUrl.pathname.endsWith('.md') &&

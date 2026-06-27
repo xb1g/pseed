@@ -17,7 +17,6 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const [user, setUser] = useState<User | null>(null);
-  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const { language, setLanguage } = useLanguage();
 
@@ -31,6 +30,7 @@ export function Layout({ children }: LayoutProps) {
     pathname === "/" ||
     pathname === "/support" ||
     pathname === "/contact" ||
+    pathname === "/business-model-canvas" ||
     pathname?.includes("finish-profile") ||
     pathname?.includes("complete-profile") ||
     isPublicHackathonRoute ||
@@ -38,7 +38,6 @@ export function Layout({ children }: LayoutProps) {
     pathname?.startsWith("/expert-interview");
 
   useEffect(() => {
-    setMounted(true);
     async function getUser() {
       try {
         const supabase = createClient();
