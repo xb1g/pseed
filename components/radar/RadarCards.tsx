@@ -56,6 +56,9 @@ export type EntryRoutesContent = CardBase & {
 };
 export type RisksContent = CardBase & { risks?: string[] };
 export type RealPeopleContent = CardBase & {
+  // NOTE: If you change this shape, also update the prompt template in
+  // app/admin/radar-interview/RadarInterviewClient.tsx so AI-generated
+  // JSON stays compatible with the renderer below.
   people?: Array<{
     name?: string;
     role?: string;
