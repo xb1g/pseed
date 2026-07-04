@@ -143,13 +143,13 @@ function FantasyRealityCard({ c, accent }: { c: FantasyRealityContent; accent: s
         <p className="text-xs font-semibold uppercase tracking-wider text-amber-300/80 mb-1">
           Fantasy
         </p>
-        <p className="text-neutral-200 text-sm leading-relaxed">{c.fantasy}</p>
+        <p className="text-neutral-200 text-base leading-relaxed">{c.fantasy}</p>
       </Panel>
       <Panel className="border-emerald-400/20 bg-emerald-400/5">
         <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300/80 mb-1">
           Reality
         </p>
-        <p className="text-neutral-200 text-sm leading-relaxed">{c.reality}</p>
+        <p className="text-neutral-200 text-base leading-relaxed">{c.reality}</p>
       </Panel>
     </CardFrame>
   );
@@ -198,7 +198,7 @@ function JobsCard({ c, accent }: { c: JobsContent; accent: string }) {
               {job.demand && <span>Demand: {job.demand}</span>}
               {job.growth && <span style={{ color: accent }}>{job.growth} growth</span>}
             </div>
-            {job.note && <p className="text-neutral-400 text-xs mt-2 leading-relaxed">{job.note}</p>}
+            {job.note && <p className="text-neutral-400 text-sm mt-2 leading-relaxed">{job.note}</p>}
           </Panel>
         ))}
       </div>
@@ -223,7 +223,7 @@ function SalaryProgressionCard({ c, accent }: { c: SalaryProgressionContent; acc
                 </span>
               )}
             </div>
-            {lvl.note && <p className="text-neutral-400 text-xs mt-2 leading-relaxed">{lvl.note}</p>}
+            {lvl.note && <p className="text-neutral-400 text-sm mt-2 leading-relaxed">{lvl.note}</p>}
           </Panel>
         ))}
       </div>
@@ -269,7 +269,7 @@ function AiImpactCard({ c, accent }: { c: AiImpactContent; accent: string }) {
     <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
       {c.verdict && (
         <Panel>
-          <p className="text-neutral-100 text-sm leading-relaxed">{c.verdict}</p>
+          <p className="text-neutral-100 text-base leading-relaxed">{c.verdict}</p>
         </Panel>
       )}
       {c.augmented && c.augmented.length > 0 && (
@@ -279,7 +279,7 @@ function AiImpactCard({ c, accent }: { c: AiImpactContent; accent: string }) {
           </p>
           <ul className="flex flex-col gap-1.5">
             {c.augmented.map((t, i) => (
-              <li key={i} className="text-neutral-200 text-sm leading-relaxed">
+              <li key={i} className="text-neutral-200 text-base leading-relaxed">
                 • {t}
               </li>
             ))}
@@ -293,7 +293,7 @@ function AiImpactCard({ c, accent }: { c: AiImpactContent; accent: string }) {
           </p>
           <ul className="flex flex-col gap-1.5">
             {c.automated.map((t, i) => (
-              <li key={i} className="text-neutral-200 text-sm leading-relaxed">
+              <li key={i} className="text-neutral-200 text-base leading-relaxed">
                 • {t}
               </li>
             ))}
@@ -341,7 +341,7 @@ function DayInLifeCard({ c, accent }: { c: DayInLifeContent; accent: string }) {
               </span>
               <span className="flex-1 w-px bg-white/10 mt-1" />
             </div>
-            <p className="text-neutral-200 text-sm leading-relaxed pb-1">{s.label}</p>
+            <p className="text-neutral-200 text-base leading-relaxed pb-1">{s.label}</p>
           </div>
         ))}
       </div>
@@ -360,7 +360,7 @@ function EntryRoutesCard({ c, accent }: { c: EntryRoutesContent; accent: string 
               {r.tag && <span className="text-white font-semibold">{r.tag}</span>}
             </div>
             {r.subtitle && <p className="text-xs text-neutral-500 mt-0.5">{r.subtitle}</p>}
-            <p className="text-neutral-200 text-sm mt-2 leading-relaxed">{r.route}</p>
+            <p className="text-neutral-200 text-base mt-2 leading-relaxed">{r.route}</p>
             <div className="flex gap-3 mt-2 text-xs text-neutral-400">
               {r.time && <span>⏱ {r.time}</span>}
               {r.cost && <span>{r.cost}</span>}
@@ -379,7 +379,7 @@ function RisksCard({ c, accent }: { c: RisksContent; accent: string }) {
         {(c.risks ?? []).map((r, i) => (
           <li key={i} className="flex items-start gap-3">
             <span className="text-rose-400 mt-0.5 shrink-0">⚠</span>
-            <span className="text-neutral-200 text-sm leading-relaxed">{r}</span>
+            <span className="text-neutral-200 text-base leading-relaxed">{r}</span>
           </li>
         ))}
       </ul>
@@ -413,7 +413,7 @@ function RealPeopleCard({ c, accent }: { c: RealPeopleContent; accent: string })
               </div>
             )}
 
-            <p className="text-neutral-200 text-sm leading-relaxed">{p.background}</p>
+            <p className="text-neutral-200 text-base leading-relaxed">{p.background}</p>
 
             {/* trajectory: started → pivots → now */}
             {p.path && p.path.length > 0 && (
@@ -424,7 +424,7 @@ function RealPeopleCard({ c, accent }: { c: RealPeopleContent; accent: string })
                       <span className="h-1.5 w-1.5 rounded-full mt-1.5 shrink-0" style={{ background: accent }} />
                       {j < p.path!.length - 1 && <span className="flex-1 w-px bg-white/10 mt-1" />}
                     </div>
-                    <p className="text-neutral-300 text-xs leading-relaxed">
+                    <p className="text-neutral-300 text-sm leading-relaxed">
                       {step.year && (
                         <span className="font-semibold tabular-nums mr-1.5" style={{ color: accent }}>
                           {step.year}
@@ -438,13 +438,13 @@ function RealPeopleCard({ c, accent }: { c: RealPeopleContent; accent: string })
             )}
 
             {p.nowDoing && (
-              <p className="mt-3 text-neutral-300 text-xs leading-relaxed">
+              <p className="mt-3 text-neutral-300 text-sm leading-relaxed">
                 <span className="text-neutral-500">Now · </span>
                 {p.nowDoing}
               </p>
             )}
             {p.whereHeading && (
-              <p className="mt-1.5 text-neutral-300 text-xs leading-relaxed">
+              <p className="mt-1.5 text-neutral-300 text-sm leading-relaxed">
                 <span className="text-neutral-500">Heading · </span>
                 {p.whereHeading}
               </p>
