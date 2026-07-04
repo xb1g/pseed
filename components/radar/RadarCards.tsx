@@ -73,6 +73,13 @@ export type RealPeopleContent = CardBase & {
   }>;
 };
 export type CtaContent = CardBase & { body?: string; button?: string };
+export type FutureOutlookContent = CardBase & {
+  growthRate?: string;
+  growthLabel?: string;
+  timeline?: Array<{ year?: string; event: string }>;
+  demandSignal?: string;
+  risk?: string;
+};
 export type SourcesContent = CardBase & {
   items?: Array<{ ref: number; title: string; publisher?: string; url: string }>;
 };
@@ -478,6 +485,52 @@ function RealPeopleCard({ c, accent }: { c: RealPeopleContent; accent: string })
   );
 }
 
+function FutureOutlookCard({ c, accent }: { c: FutureOutlookContent; accent: string }) {
+  return (
+    <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
+      {c.growthRate && (
+        <div className="mb-6">
+          <div className="text-5xl font-bold tracking-tight" style={{ color: accent }}>
+            {c.growthRate}
+          </div>
+          <p className="text-sm text-neutral-400 mt-1">{c.growthLabel}</p>
+        </div>
+      )}
+
+      {c.timeline && c.timeline.length > 0 && (
+        <div className="space-y-3 mb-6">
+          {c.timeline.map((t, i) => (
+            <div key={i} className="flex gap-3">
+              <span className="shrink-0 w-14 text-sm font-semibold tabular-nums" style={{ color: accent }}>
+                {t.year}
+              </span>
+              <p className="text-neutral-200 text-base leading-relaxed">{t.event}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {c.demandSignal && (
+        <Panel className="border-emerald-400/20 bg-emerald-400/5 mb-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300/80 mb-2">
+            Demand Signal
+          </p>
+          <p className="text-neutral-200 text-base leading-relaxed">{c.demandSignal}</p>
+        </Panel>
+      )}
+
+      {c.risk && (
+        <Panel className="border-amber-400/20 bg-amber-400/5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-amber-300/80 mb-2">
+            Risk
+          </p>
+          <p className="text-neutral-200 text-base leading-relaxed">{c.risk}</p>
+        </Panel>
+      )}
+    </CardFrame>
+  );
+}
+
 function SourcesCard({ c, accent }: { c: SourcesContent; accent: string }) {
   return (
     <CardFrame eyebrow={c.eyebrow ?? "Sources"} title={c.title ?? "Where this comes from"} accent={accent}>
@@ -701,6 +754,8 @@ export function RadarCardView({
       return <RisksCard c={c} accent={accent} />;
     case "realPeople":
       return <RealPeopleCard c={c} accent={accent} />;
+    case "futureOutlook":
+      return <FutureOutlookCard c={c} accent={accent} />;
     case "sources":
       return <SourcesCard c={c} accent={accent} />;
     case "cta":
