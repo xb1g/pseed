@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { CareerPath } from "@/types/career";
+import { CareerListView } from "@/components/careers/CareerListView";
+import { CareerCaseGrid } from "@/components/careers/CareerCaseGrid";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,7 @@ export function CareerListView({ paths }: CareerListViewProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("featured");
+  const [selectedPath, setSelectedPath] = useState<CareerPath | null>(null);
 
   const filteredPaths = useMemo(() => {
     let result = [...paths];
@@ -77,7 +80,33 @@ export function CareerListView({ paths }: CareerListViewProps) {
 
   const handlePathClick = (path: CareerPath) => {
     track("path_clicked", { path_id: path.id, path_title: path.title });
+    setSelectedPath(path);
   };
+
+  const handleBack = () => {
+    setSelectedPath(null);
+  };
+
+  if (selectedPath) {
+    return (
+      <div className="space-y-6">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold">{selectedPath.title}</h2>
+          <p className="text-muted-foreground">{selectedPath.description}</p>
+        </div>
+        {selectedPath.cases && selectedPath.cases.length > 0 ? (
+          <CareerCaseGrid cases={selectedPath.cases} onBack={handleBack} />
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">No case studies yet for this path.</p>
+            <Button variant="ghost" onClick={handleBack} className="mt-4">
+              Back to paths
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
