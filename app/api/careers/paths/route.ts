@@ -10,9 +10,9 @@ export async function GET() {
       .select(
         `
         *,
-        examples:career_examples(*)
-      `
-      )
+        examples:career_examples(),
+        cases:career_cases())
+      ` )
       .eq("is_published", true)
       .order("sort_order", { ascending: true });
 
