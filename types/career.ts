@@ -9,6 +9,18 @@ export interface CareerExample {
   notable_for?: string;
 }
 
+export interface CareerCase {
+  id: string;
+  persona_type: "global_idol" | "local_legend" | "current_icon";
+  name: string;
+  bio: string;
+  history: { age: number; event: string }[];
+  path_steps: { step: number; title: string; desc: string }[];
+  achievements: string[];
+  tags: string[];
+  image_url?: string;
+}
+
 export interface CareerPath {
   id: string;
   title: string;
@@ -21,6 +33,7 @@ export interface CareerPath {
   hero_image?: string;
   is_featured: boolean;
   examples?: CareerExample[];
+  cases?: CareerCase[];
 }
 
 export type ViewType = "list" | "rpg";
