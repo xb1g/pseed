@@ -363,3 +363,59 @@ export async function submitRadarReflection(
   saveRadarReflectionLocally(data);
   void syncPendingRadarReflections();
 }
+
+// ── Field views & path intents ─────────────────────────────────
+
+export interface RadarPathIntentData {
+  fieldSlug: string;
+  fieldId?: string;
+  pathSlug: string;
+  buttonLabel?: string;
+}
+
+export async function recordRadarFieldView(
+  fieldSlug: string,
+  fieldId?: string
+): Promise<void> {
+  if (typeof window === "undefined") return;
+
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { error } = await supabase.from("radar_field_views").insert({
+    user_id: user?.id,
+    session_id: getOrCreateSessionId(),
+    field_id: fieldId || null,
+    field_slug: fieldSlug,
+  });
+
+  if (error) {
+    console.error("Error recording radar field view:", error);
+  }
+}
+
+export async function recordRadarPathIntent(
+  data: RadarPathIntentData
+): Promise<void> {
+  if (typeof window === "undefined") return;
+
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { error } = await supabase.from("radar_path_intents").insert({
+    user_id: user?.id,
+    session_id: getOrCreateSessionId(),
+    field_id: data.fieldId || null,
+    field_slug: data.fieldSlug,
+    path_slug: data.pathSlug,
+    button_label: data.buttonLabel || null,
+  });
+
+  if (error) {
+    console.error("Error recording radar path intent:", error);
+  }
+}

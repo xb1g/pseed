@@ -1382,6 +1382,96 @@ export type Database = {
           },
         ]
       }
+      radar_field_views: {
+        Row: {
+          id: string
+          user_id: string | null
+          session_id: string
+          field_id: string | null
+          field_slug: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          session_id: string
+          field_id?: string | null
+          field_slug: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          session_id?: string
+          field_id?: string | null
+          field_slug?: string
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "radar_field_views_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "radar_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "radar_field_views_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      radar_path_intents: {
+        Row: {
+          id: string
+          user_id: string | null
+          session_id: string
+          field_id: string | null
+          field_slug: string
+          path_slug: string
+          button_label: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          session_id: string
+          field_id?: string | null
+          field_slug: string
+          path_slug: string
+          button_label?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          session_id?: string
+          field_id?: string | null
+          field_slug?: string
+          path_slug?: string
+          button_label?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "radar_path_intents_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "radar_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "radar_path_intents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reflections: {
         Row: {
           content: string
@@ -1938,6 +2028,42 @@ export type Database = {
           avg_want_to_try?: number | null
           keen_count?: number | null
           top_tags?: string[] | null
+          last_at?: string | null
+        }
+        Relationships: []
+      }
+      analytics_radar_engagement: {
+        Row: {
+          field_slug: string | null
+          field_name_th: string | null
+          field_name_en: string | null
+          views: number | null
+          unique_viewers: number | null
+          intents: number | null
+          unique_intenters: number | null
+          intent_paths: string[] | null
+          last_at: string | null
+        }
+        Insert: {
+          field_slug?: string | null
+          field_name_th?: string | null
+          field_name_en?: string | null
+          views?: number | null
+          unique_viewers?: number | null
+          intents?: number | null
+          unique_intenters?: number | null
+          intent_paths?: string[] | null
+          last_at?: string | null
+        }
+        Update: {
+          field_slug?: string | null
+          field_name_th?: string | null
+          field_name_en?: string | null
+          views?: number | null
+          unique_viewers?: number | null
+          intents?: number | null
+          unique_intenters?: number | null
+          intent_paths?: string[] | null
           last_at?: string | null
         }
         Relationships: []
