@@ -209,12 +209,6 @@ export function RadarFieldPageClient({
     hasGuestReflection &&
     signupToastVisible &&
     !signupToastDismissed;
-  const currentLabel =
-    current < cards.length
-      ? cardLabel(cards[current])
-      : research
-        ? "Research brief"
-        : null;
 
   const handleReflect = useCallback(
     async (
@@ -351,15 +345,6 @@ export function RadarFieldPageClient({
           </span>
           <span className="shrink-0 text-lg">{field.emoji}</span>
         </div>
-        {currentLabel && (
-          <p
-            key={currentLabel}
-            className="max-w-xl mx-auto mt-2 text-[11px] font-medium uppercase tracking-[0.18em] truncate animate-[radar-fade_0.4s_ease]"
-            style={{ color: accent }}
-          >
-            {currentLabel}
-          </p>
-        )}
       </div>
 
       {shouldShowSignupToast && (
@@ -408,7 +393,7 @@ export function RadarFieldPageClient({
               return (
                 <section
                   key={card.id}
-                  className="snap-start h-[100dvh] flex items-center justify-center px-6 py-20"
+                  className="snap-start min-h-[100dvh] flex items-center justify-center px-6 py-20"
                 >
                   <RadarCardView
                     kind={card.kind}
