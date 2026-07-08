@@ -56,7 +56,7 @@ export async function fetchFromGoogleDrive(fileUrl: string): Promise<string> {
       });
 
       const ext = path.extname(meta.data.name || '') || '.bin';
-      const filePath = path.join(tmpDir, `${fileId}${ext}`);
+      const filePath = path.join(/*turbopackIgnore: true*/ tmpDir, `${fileId}${ext}`);
 
       // Download the file
       const dest = fs.createWriteStream(filePath);
@@ -77,7 +77,7 @@ export async function fetchFromGoogleDrive(fileUrl: string): Promise<string> {
   }
 
   // Fallback: Direct public download for "Anyone with the link can view" files
-  const filePath = path.join(tmpDir, `${fileId}.bin`);
+  const filePath = path.join(/*turbopackIgnore: true*/ tmpDir, `${fileId}.bin`);
   
   // If it's a doc/spreadsheet/presentation, export as PDF.
   // Otherwise, use the standard uc?export=download endpoint for files

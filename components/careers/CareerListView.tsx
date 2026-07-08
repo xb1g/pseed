@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import { CareerPath } from "@/types/career";
-import { CareerListView } from "@/components/careers/CareerListView";
 import { CareerCaseGrid } from "@/components/careers/CareerCaseGrid";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
