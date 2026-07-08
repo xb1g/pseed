@@ -559,11 +559,24 @@ function CtaCard({
   c,
   accent,
   squadUrl,
+  onIntent,
 }: {
   c: CtaContent;
   accent: string;
   squadUrl?: string | null;
+  onIntent?: (pathSlug: string) => void;
 }) {
+  const handleClick = () => {
+    if (!squadUrl || !onIntent) return;
+    try {
+      const url = new URL(squadUrl, window.location.origin);
+      const pathSlug = url.pathname.split("/").filter(Boolean).pop();
+      if (pathSlug) onIntent(pathSlug);
+    } catch {
+      // Ignore malformed squad URLs.
+    }
+  };
+
   return (
     <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
       {c.body && <p className="text-neutral-300 text-base leading-relaxed">{c.body}</p>}
@@ -574,7 +587,12 @@ function CtaCard({
           style={{ background: accent }}
         >
           {squadUrl ? (
-            <a href={squadUrl} target="_blank" rel="noopener noreferrer">
+            <a
+              href={squadUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={handleClick}
+            >
               {c.button} <ArrowRight className="h-4 w-4 ml-1" />
             </a>
           ) : (
@@ -716,6 +734,7 @@ export interface RadarCardViewProps {
   showSignupPrompt?: boolean;
   signupHref?: string;
   onReflect?: (payload: { rating?: number; tags?: string[]; text?: string }) => Promise<void> | void;
+  onIntent?: (pathSlug: string) => void;
 }
 
 export function RadarCardView({
@@ -725,6 +744,7 @@ export function RadarCardView({
   squadUrl,
   reflectionSubmitted = false,
   onReflect,
+  onIntent,
 }: RadarCardViewProps) {
   const c = content as never;
   switch (kind) {
@@ -759,7 +779,7 @@ export function RadarCardView({
     case "sources":
       return <SourcesCard c={c} accent={accent} />;
     case "cta":
-      return <CtaCard c={c} accent={accent} squadUrl={squadUrl} />;
+      return <CtaCard c={c} accent={accent} squadUrl={squadUrl} onIntent={onIntent} />;
     case "reflection":
       return (
         <ReflectionCard

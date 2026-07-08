@@ -6,6 +6,8 @@ import {
   getSavedRadarReflectionChapterKeys,
   submitRadarReflection,
   syncPendingRadarReflections,
+  recordRadarFieldView,
+  recordRadarPathIntent,
 } from "@/lib/supabase/radar";
 import {
   CareerResearchView,
@@ -163,11 +165,16 @@ export function RadarFieldPageClient({
       void syncPendingRadarReflections().then(loadSavedReflections);
     });
 
+    // Track that this field page was viewed (anonymous via session_id, logged-in via user_id).
+    if (field.slug && field.id) {
+      void recordRadarFieldView(field.slug, field.id);
+    }
+
     return () => {
       active = false;
       subscription.unsubscribe();
     };
-  }, [field.slug, cards]);
+  }, [field.slug, field.id, cards]);
 
   useEffect(
     () => () => {
@@ -393,40 +400,66 @@ export function RadarFieldPageClient({
               return (
                 <section
                   key={card.id}
-                  className="snap-start min-h-[100dvh] flex items-center justify-center px-6 py-20"
+                  className="snap-start h-[100dvh] overflow-y-auto px-6 py-20"
                 >
-                  <RadarCardView
-                    kind={card.kind}
-                    content={content}
-                    accent={accent}
-                    squadUrl={field.squad_url}
-                    reflectionSubmitted={submitted.has(card.id)}
-                    showSignupPrompt={false}
-                    onReflect={(payload) =>
-                      handleReflect(card, chapterKey, payload)
-                    }
-                  />
-                  {i === 0 && cards.length > 1 && (
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 animate-bounce">
-                      <ChevronDown className="h-6 w-6" />
+                  <div className="min-h-[calc(100dvh-10rem)] flex flex-col">
+                    <div className="my-auto">
+                      <RadarCardView
+                        kind={card.kind}
+                        content={content}
+                        accent={accent}
+                        squadUrl={field.squad_url}
+                        reflectionSubmitted={submitted.has(card.id)}
+                        showSignupPrompt={false}
+                        onReflect={(payload) =>
+                          handleReflect(card, chapterKey, payload)
+                        }
+                        onIntent={(pathSlug) => {
+                          if (!field.slug || !field.id) return;
+                          void recordRadarPathIntent({
+                            fieldSlug: field.slug,
+                            fieldId: field.id,
+                            pathSlug,
+                            buttonLabel:
+                              (content.button as string | undefined) || undefined,
+                          });
+                        }}
+                      />
+                      {i === 0 && cards.length > 1 && (
+                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 animate-bounce">
+                          <ChevronDown className="h-6 w-6" />
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </section>
               );
             })}
             {research && (
-              <section className="snap-start min-h-[100dvh] flex items-start justify-center px-6 py-20">
-                <CareerResearchView research={research} accent={accent} />
+              <section className="snap-start h-[100dvh] overflow-y-auto px-6 py-20">
+                <div className="min-h-[calc(100dvh-10rem)] flex flex-col">
+                  <div className="my-auto">
+                    <CareerResearchView research={research} accent={accent} />
+                  </div>
+                </div>
               </section>
             )}
           </>
         ) : research ? (
-          <section className="snap-start min-h-[100dvh] flex items-start justify-center px-6 py-20 overflow-y-auto">
-            <CareerResearchView research={research} accent={accent} />
+          <section className="snap-start h-[100dvh] overflow-y-auto px-6 py-20">
+            <div className="min-h-[calc(100dvh-10rem)] flex flex-col">
+              <div className="my-auto">
+                <CareerResearchView research={research} accent={accent} />
+              </div>
+            </div>
           </section>
         ) : (
-          <section className="snap-start h-[100dvh] flex items-center justify-center px-6 text-center">
-            <p className="text-neutral-400">No content yet for this field.</p>
+          <section className="snap-start h-[100dvh] overflow-y-auto px-6 py-20">
+            <div className="min-h-[calc(100dvh-10rem)] flex flex-col">
+              <div className="my-auto text-center">
+                <p className="text-neutral-400">No content yet for this field.</p>
+              </div>
+            </div>
           </section>
         )}
       </div>
