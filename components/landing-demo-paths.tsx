@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { 
   Stethoscope, Bot, Rocket, X, Brain, Database, Lightbulb, 
   FileCode, Scale, Search, HeartPulse, Microscope, Siren, 
@@ -370,17 +371,32 @@ function PathDetailModal({ pathId, isOpen, onClose, language }: PathDetailModalP
               })}
             </div>
 
-            <button
-              onClick={onClose}
-              className={`
-                w-full mt-4 py-3 rounded-xl text-sm font-medium text-white
-                ${data.bgColor} border border-white/10
-                hover:bg-white/10 active:bg-white/15 active:scale-[0.98]
-                transition-all duration-150
-              `}
-            >
-              {language === 'th' ? 'เริ่มต้นการทดลอง' : 'Start Trial'}
-            </button>
+            {pathId === 'ai-engineer' ? (
+              <Link
+                href="/seeds/pathlab/ai-engineer"
+                onClick={onClose}
+                className={`
+                  block w-full mt-4 py-3 rounded-xl text-sm font-medium text-white text-center
+                  ${data.bgColor} border border-white/10
+                  hover:bg-white/10 active:bg-white/15 active:scale-[0.98]
+                  transition-all duration-150
+                `}
+              >
+                {language === 'th' ? 'เริ่มต้นการทดลอง' : 'Start Trial'}
+              </Link>
+            ) : (
+              <button
+                onClick={onClose}
+                className={`
+                  w-full mt-4 py-3 rounded-xl text-sm font-medium text-white
+                  ${data.bgColor} border border-white/10
+                  hover:bg-white/10 active:bg-white/15 active:scale-[0.98]
+                  transition-all duration-150
+                `}
+              >
+                {language === 'th' ? 'เริ่มต้นการทดลอง' : 'Start Trial'}
+              </button>
+            )}
           </motion.div>
         </>
       )}

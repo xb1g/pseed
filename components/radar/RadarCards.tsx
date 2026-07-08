@@ -404,7 +404,16 @@ function RealPeopleCard({ c, accent }: { c: RealPeopleContent; accent: string })
             {(p.name || p.role || p.salary) && (
               <div className="flex items-start justify-between gap-3 mb-2">
                 <div>
-                  {p.name && <span className="text-white font-semibold">{p.name}</span>}
+                  {p.name && (
+                    <a
+                      href={`https://www.google.com/search?q=${encodeURIComponent(p.name)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-white hover:underline"
+                    >
+                      {p.name}
+                    </a>
+                  )}
                   {p.role && (
                     <p className="text-xs text-neutral-400 mt-0.5">{p.role}</p>
                   )}
