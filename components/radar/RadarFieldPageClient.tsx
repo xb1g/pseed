@@ -16,7 +16,7 @@ import {
 import { RadarCardView } from "@/components/radar/RadarCards";
 import type { Database } from "@/lib/supabase/database.types";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, ChevronDown, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { isAnonymousUser } from "@/lib/supabase/auth";
 
@@ -94,7 +94,12 @@ export function RadarFieldPageClient({
 }) {
   const router = useRouter();
   const field = initialField;
-  const cards = initialCards;
+  const HIDDEN_KINDS = new Set(["jobs", "growthCompare", "list", "entryRoutes", "cta", "reflection"]);
+  const cards = initialCards.filter((c) => {
+    if (HIDDEN_KINDS.has(c.kind)) return false;
+    if (c.kind === "text" && (c.content_th as Record<string, string>)?.title === "ทางนี้คืออะไร") return false;
+    return true;
+  });
   const research = (field.research as CareerResearch) ?? null;
 
   const [current, setCurrent] = useState(0);
@@ -332,10 +337,12 @@ export function RadarFieldPageClient({
                 className="group relative h-3 flex-1 flex items-center"
               >
                 <span
-                  className="h-1 w-full rounded-full transition-all duration-300 group-hover:h-1.5"
+                  className={`h-1 w-full rounded-full transition-all duration-300 group-hover:h-1.5 ${
+                    i === current ? "radar-dot-active" : ""
+                  }`}
                   style={{
                     background: i <= current ? accent : "rgba(255,255,255,0.12)",
-                    boxShadow: i === current ? `0 0 8px ${accent}` : "none",
+                    ["--dot-color" as string]: accent,
                   }}
                 />
                 <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-2 whitespace-nowrap rounded-md border border-white/10 bg-neutral-900/95 px-2 py-1 text-[11px] text-white/90 opacity-0 translate-y-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-y-0 z-40 shadow-lg">
@@ -398,41 +405,34 @@ export function RadarFieldPageClient({
               const content = pickContent(card);
               const chapterKey = cardChapterKey(card);
               return (
-                <section
+                <RadarCardSection
                   key={card.id}
-                  className="snap-start h-[100dvh] overflow-y-auto px-6 py-20"
+                  isFirst={i === 0}
+                  hasMore={cards.length > 1}
+                  accent={accent}
                 >
-                  <div className="min-h-[calc(100dvh-10rem)] flex flex-col">
-                    <div className="my-auto">
-                      <RadarCardView
-                        kind={card.kind}
-                        content={content}
-                        accent={accent}
-                        squadUrl={field.squad_url}
-                        reflectionSubmitted={submitted.has(card.id)}
-                        showSignupPrompt={false}
-                        onReflect={(payload) =>
-                          handleReflect(card, chapterKey, payload)
-                        }
-                        onIntent={(pathSlug) => {
-                          if (!field.slug || !field.id) return;
-                          void recordRadarPathIntent({
-                            fieldSlug: field.slug,
-                            fieldId: field.id,
-                            pathSlug,
-                            buttonLabel:
-                              (content.button as string | undefined) || undefined,
-                          });
-                        }}
-                      />
-                      {i === 0 && cards.length > 1 && (
-                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/40 animate-bounce">
-                          <ChevronDown className="h-6 w-6" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </section>
+                  <RadarCardView
+                    kind={card.kind}
+                    content={content}
+                    accent={accent}
+                    squadUrl={field.squad_url}
+                    reflectionSubmitted={submitted.has(card.id)}
+                    showSignupPrompt={false}
+                    onReflect={(payload) =>
+                      handleReflect(card, chapterKey, payload)
+                    }
+                    onIntent={(pathSlug) => {
+                      if (!field.slug || !field.id) return;
+                      void recordRadarPathIntent({
+                        fieldSlug: field.slug,
+                        fieldId: field.id,
+                        pathSlug,
+                        buttonLabel:
+                          (content.button as string | undefined) || undefined,
+                      });
+                    }}
+                  />
+                </RadarCardSection>
               );
             })}
             {research && (
@@ -464,5 +464,79 @@ export function RadarFieldPageClient({
         )}
       </div>
     </div>
+  );
+}
+
+function RadarCardSection({
+  children,
+  isFirst,
+  hasMore,
+  accent,
+}: {
+  children: React.ReactNode;
+  isFirst: boolean;
+  hasMore: boolean;
+  accent: string;
+}) {
+  const ref = useRef<HTMLElement>(null);
+  const [hasScrolled, setHasScrolled] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    // First card starts visible
+    if (isFirst) {
+      el.classList.add("in-view");
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.classList.add("in-view");
+          observer.unobserve(el);
+        }
+      },
+      { threshold: 0.3 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isFirst]);
+
+  // Hide scroll cue after first scroll
+  useEffect(() => {
+    if (!isFirst || !hasMore) return;
+    const handler = () => {
+      setHasScrolled(true);
+      window.removeEventListener("scroll", handler, true);
+    };
+    window.addEventListener("scroll", handler, true);
+    return () => window.removeEventListener("scroll", handler, true);
+  }, [isFirst, hasMore]);
+
+  return (
+    <section
+      ref={ref}
+      className="radar-card-section snap-start h-[100dvh] overflow-y-auto px-6 py-20"
+    >
+      <div className="min-h-[calc(100dvh-10rem)] flex flex-col">
+        <div className="my-auto">
+          {children}
+          {isFirst && hasMore && !hasScrolled && (
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+              <span className="text-[11px] uppercase tracking-[0.2em] text-white/30 font-medium">
+                เลื่อนขึ้น
+              </span>
+              <div
+                className="radar-scroll-cue"
+                style={{ color: accent }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }

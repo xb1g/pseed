@@ -2458,3 +2458,163 @@
   from { opacity: 0; transform: translateY(3px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ── Radar card entrance animations ────────────────────────────────────────── */
+
+/* Base: cards start invisible, animate when .in-view is added */
+.radar-card-section {
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.radar-card-section .rc-eyebrow,
+.radar-card-section .rc-title,
+.radar-card-section .rc-content {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s var(--ease-out-expo), transform 0.6s var(--ease-out-expo);
+}
+
+.radar-card-section.in-view .rc-eyebrow {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.05s;
+}
+.radar-card-section.in-view .rc-title {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.15s;
+}
+.radar-card-section.in-view .rc-content {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.25s;
+}
+
+/* Fantasy/Reality: panels slide from sides */
+.radar-card-section .rc-panel-left {
+  opacity: 0;
+  transform: translateX(-32px);
+  transition: opacity 0.5s var(--ease-out-expo), transform 0.5s var(--ease-out-expo);
+}
+.radar-card-section .rc-panel-right {
+  opacity: 0;
+  transform: translateX(32px);
+  transition: opacity 0.5s var(--ease-out-expo), transform 0.5s var(--ease-out-expo);
+}
+.radar-card-section.in-view .rc-panel-left {
+  opacity: 1;
+  transform: translateX(0);
+  transition-delay: 0.2s;
+}
+.radar-card-section.in-view .rc-panel-right {
+  opacity: 1;
+  transform: translateX(0);
+  transition-delay: 0.35s;
+}
+
+/* Score bars: animate width from 0 */
+.radar-card-section .rc-bar-fill {
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.8s var(--ease-out-expo);
+}
+.radar-card-section.in-view .rc-bar-fill {
+  transform: scaleX(1);
+  transition-delay: 0.3s;
+}
+
+/* Score value: fade + scale in */
+.radar-card-section .rc-score-value {
+  opacity: 0;
+  transform: scale(0.5);
+  transition: opacity 0.4s var(--ease-out-expo), transform 0.4s var(--ease-out-expo);
+}
+.radar-card-section.in-view .rc-score-value {
+  opacity: 1;
+  transform: scale(1);
+  transition-delay: 0.35s;
+}
+
+/* Tier badge: pop in */
+.radar-card-section .rc-tier-badge {
+  opacity: 0;
+  transform: scale(0.6) rotate(-8deg);
+  transition: opacity 0.5s var(--ease-out-expo), transform 0.5s var(--ease-out-expo);
+}
+.radar-card-section.in-view .rc-tier-badge {
+  opacity: 1;
+  transform: scale(1) rotate(0);
+  transition-delay: 0.15s;
+}
+
+/* AI risk bar: smooth pour from left */
+.radar-card-section .rc-risk-fill {
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 1s cubic-bezier(0.05, 0.7, 0.35, 0.99);
+}
+.radar-card-section.in-view .rc-risk-fill {
+  transform: scaleX(1);
+  transition-delay: 0.2s;
+}
+
+/* Staggered list items */
+.radar-card-section .rc-stagger {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.4s var(--ease-out-expo), transform 0.4s var(--ease-out-expo);
+}
+.radar-card-section.in-view .rc-stagger {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Progress bar pulse on active dot */
+@keyframes radar-dot-pulse {
+  0%, 100% { box-shadow: 0 0 6px var(--dot-color, #60a5fa); }
+  50%      { box-shadow: 0 0 14px var(--dot-color, #60a5fa), 0 0 24px var(--dot-color, #60a5fa); }
+}
+.radar-dot-active {
+  animation: radar-dot-pulse 2s ease-in-out infinite;
+}
+
+/* Scroll cue */
+@keyframes radar-scroll-cue {
+  0%   { opacity: 0; transform: translateY(-4px); }
+  30%  { opacity: 1; transform: translateY(0); }
+  70%  { opacity: 1; transform: translateY(8px); }
+  100% { opacity: 0; transform: translateY(12px); }
+}
+.radar-scroll-cue {
+  animation: radar-scroll-cue 2s var(--ease-out-expo) infinite;
+}
+.radar-scroll-cue::before {
+  content: '';
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  opacity: 0.6;
+}
+
+/* Reduced motion: instant everything */
+@media (prefers-reduced-motion: reduce) {
+  .radar-card-section .rc-eyebrow,
+  .radar-card-section .rc-title,
+  .radar-card-section .rc-content,
+  .radar-card-section .rc-panel-left,
+  .radar-card-section .rc-panel-right,
+  .radar-card-section .rc-bar-fill,
+  .radar-card-section .rc-score-value,
+  .radar-card-section .rc-tier-badge,
+  .radar-card-section .rc-risk-fill,
+  .radar-card-section .rc-stagger {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .radar-dot-active { animation: none; }
+  .radar-scroll-cue { animation: none; opacity: 0.5; }
+}

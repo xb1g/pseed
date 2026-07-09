@@ -53,7 +53,6 @@ export default async function RadarFieldPage({
       kind: "careerSurvival",
       position: -1,
       content_th: {
-        eyebrow: "Career Survival",
         title: "อาชีพนี้รอดไหม?",
         metrics: research.metrics,
         global_metrics: research.global_metrics,
