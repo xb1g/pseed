@@ -7,6 +7,7 @@ import { LandingHackathonBanner } from "@/components/landing-hackathon-banner";
 import { LandingLogos } from "@/components/landing-logos";
 import { LandingTestimonials } from "@/components/landing-testimonials";
 import { LandingFeatures } from "@/components/landing-features";
+import { LandingCareerRadar } from "@/components/landing-career-radar";
 import { LandingExpertCta } from "@/components/landing-expert-cta";
 import { LandingParents } from "@/components/landing-parents";
 import { Button } from "@/components/ui/button";
@@ -142,6 +143,7 @@ export function LandingPageWrapper({ children }: LandingPageWrapperProps) {
         <LandingLogos />
         <LandingTestimonials />
         <LandingFeatures />
+        <LandingCareerRadar />
         <LandingExpertCta />
         {children}
         <LandingParents />
