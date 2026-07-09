@@ -126,9 +126,14 @@ Before writing to any database:
 | `marketThailand` | `eyebrow`, `title`, `body`, `openings`, `companies[]`, `source_refs` | 80 |
 | `dayInLife` | `eyebrow`, `title`, `steps[]` (each: `time`, `label`), `source_refs` | 90 |
 | `risks` | `eyebrow`, `title`, `risks[]`, `source_refs` | 110 |
+| `cta` | `eyebrow`, `title`, `body`, `button` | 140 |
 | `sources` | `eyebrow`, `title`, `items[]` (each: `ref`, `title`, `publisher`, `url`) | 150 |
 
-Hidden kinds (filtered in UI but valid): `text`, `jobs`, `growthCompare`, `list`, `entryRoutes`, `cta`, `reflection`
+The `cta` card is always generated with: `eyebrow: "สนใจไหม?"`, `title: "อยากลองสาย[field_name_th]"`, `body` inviting the user to tap if interested, and `button: "สนใจสายนี้"`. The button links to `field.squad_url` if set.
+
+The `careerSurvival` card is NOT stored in radar_cards — it's injected at runtime from `field.research.metrics` + `field.score` + `field.tier`.
+
+Hidden kinds (filtered in UI but valid): `text`, `jobs`, `growthCompare`, `list`, `entryRoutes`, `reflection`
 
 ### radar_sources
 

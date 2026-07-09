@@ -153,6 +153,22 @@ const template = {
       },
     },
     {
+      position: 140,
+      kind: "cta",
+      content_th: {
+        eyebrow: "สนใจไหม?",
+        title: "",
+        body: "",
+        button: "สนใจสายนี้",
+      },
+      content_en: {
+        eyebrow: "Interested?",
+        title: "",
+        body: "",
+        button: "Interested",
+      },
+    },
+    {
       position: 150,
       kind: "sources",
       content_th: {
