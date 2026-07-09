@@ -83,6 +83,28 @@ export type FutureOutlookContent = CardBase & {
 export type SourcesContent = CardBase & {
   items?: Array<{ ref: number; title: string; publisher?: string; url: string }>;
 };
+export type CareerSurvivalContent = CardBase & {
+  metrics?: {
+    demand_growth?: number | null;
+    grad_employment_pct?: number | null;
+    saturation_level?: number | null;
+    progression_difficulty?: number | null;
+    salary_floor?: number | null;
+    salary_ceiling?: number | null;
+  };
+  global_metrics?: {
+    demand_growth?: number | null;
+    grad_employment_pct?: number | null;
+    saturation_level?: number | null;
+    progression_difficulty?: number | null;
+    salary_floor?: number | null;
+    salary_ceiling?: number | null;
+  };
+  metric_details?: Record<string, { th?: string; en?: string }>;
+  global_metric_details?: Record<string, { th?: string; en?: string }>;
+  tier?: string;
+  reasoning?: string;
+};
 
 // ── shared frame ─────────────────────────────────────────────────────────────
 
@@ -613,6 +635,130 @@ function CtaCard({
   );
 }
 
+// ── career survival indicators ──────────────────────────────────────────────
+
+const SURVIVAL_METRICS: Array<{
+  key: string;
+  emoji: string;
+  label: string;
+  labelEn: string;
+  unit?: string;
+  max: number;
+  invert?: boolean;
+  isSalary?: boolean;
+}> = [
+  { key: "demand_growth", emoji: "📈", label: "ความต้องการตลาด", labelEn: "Market Demand", max: 10 },
+  { key: "grad_employment_pct", emoji: "🚀", label: "อัตราการจ้างจบใหม่", labelEn: "New Grad Employment", unit: "%", max: 100 },
+  { key: "saturation_level", emoji: "🧃", label: "ความอิ่มตัว", labelEn: "Market Saturation", max: 10, invert: true },
+  { key: "progression_difficulty", emoji: "🗼", label: "ความยากในการเติบโต", labelEn: "Growth Difficulty", max: 10, invert: true },
+  { key: "salary_floor", emoji: "💰", label: "เงินเดือนเริ่มต้น", labelEn: "Entry Salary", max: 1, isSalary: true },
+  { key: "salary_ceiling", emoji: "🚀", label: "เงินเดือนสูงสุด", labelEn: "Max Salary", max: 1, isSalary: true },
+];
+
+function survivalBarColor(value: number, max: number, invert?: boolean): string {
+  const ratio = value / max;
+  if (invert) {
+    return ratio >= 0.7 ? "#f59e0b" : ratio >= 0.4 ? "#f59e0b" : "#10b981";
+  }
+  return ratio >= 0.7 ? "#10b981" : ratio >= 0.4 ? "#f59e0b" : "#ef4444";
+}
+
+function formatSurvivalSalary(val: number): string {
+  if (val >= 1000) return `${(val / 1000).toFixed(0)},000`;
+  return val.toLocaleString();
+}
+
+function CareerSurvivalCard({ c, accent }: { c: CareerSurvivalContent; accent: string }) {
+  const [showGlobal, setShowGlobal] = useState(false);
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
+
+  const metrics = showGlobal ? c.global_metrics : c.metrics;
+  const details = showGlobal ? c.global_metric_details : c.metric_details;
+  if (!metrics) return null;
+
+  return (
+    <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 flex flex-col gap-1">
+        {/* Header + toggle */}
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-white font-bold text-lg">ตัวชี้วัดอาชีพ</h3>
+          {c.global_metrics && (
+            <div className="flex rounded-full border border-white/10 bg-white/5 overflow-hidden">
+              <button
+                onClick={() => setShowGlobal(false)}
+                className={`text-xs font-medium px-3 py-1 transition-colors ${
+                  !showGlobal ? "bg-white/15 text-white" : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                🇹🇭 TH
+              </button>
+              <button
+                onClick={() => setShowGlobal(true)}
+                className={`text-xs font-medium px-3 py-1 transition-colors ${
+                  showGlobal ? "bg-white/15 text-white" : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                🌐 Global
+              </button>
+            </div>
+          )}
+        </div>
+
+        {SURVIVAL_METRICS.map(({ key, emoji, label, max, invert, isSalary }) => {
+          const val = (metrics as Record<string, number | null | undefined>)[key];
+          if (val == null) return null;
+          const detail = details?.[key];
+          const isExpanded = expandedKey === key;
+
+          return (
+            <button
+              key={key}
+              onClick={() => detail ? setExpandedKey(isExpanded ? null : key) : undefined}
+              className="text-left py-3 border-b border-white/5 last:border-b-0"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-lg shrink-0">{emoji}</span>
+                <span className="text-sm text-neutral-300 flex-1">{label}</span>
+                <span className="text-xs text-neutral-500 ml-1">▼</span>
+              </div>
+
+              {isSalary ? (
+                <div className="mt-2 ml-9">
+                  <span className="text-white font-bold text-lg tabular-nums">
+                    {formatSurvivalSalary(val)}฿/mo
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 mt-2 ml-9">
+                  <div className="h-2.5 rounded-full bg-white/5 overflow-hidden flex-1">
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{
+                        width: `${Math.min(100, (val / max) * 100)}%`,
+                        background: survivalBarColor(val, max, invert),
+                      }}
+                    />
+                  </div>
+                  <span className="text-white font-bold text-sm tabular-nums w-12 text-right">
+                    {val}{key === "grad_employment_pct" ? "%" : "/10"}
+                  </span>
+                </div>
+              )}
+
+              {isExpanded && detail && (
+                <div className="mt-2 ml-9 text-xs text-neutral-400 leading-relaxed">
+                  {detail.th && <p>{detail.th}</p>}
+                  {detail.en && <p className="text-neutral-500 mt-1">{detail.en}</p>}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </CardFrame>
+  );
+}
+
 // ── reflection (interactive) ─────────────────────────────────────────────────
 
 function ReflectionCard({
@@ -759,6 +905,8 @@ export function RadarCardView({
   switch (kind) {
     case "hook":
       return <HookCard c={c} accent={accent} />;
+    case "careerSurvival":
+      return <CareerSurvivalCard c={c} accent={accent} />;
     case "fantasyReality":
       return <FantasyRealityCard c={c} accent={accent} />;
     case "text":
