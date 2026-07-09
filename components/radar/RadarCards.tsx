@@ -640,15 +640,23 @@ function CtaCard({
   squadUrl?: string | null;
   onIntent?: (pathSlug: string) => void;
 }) {
+  const [recorded, setRecorded] = useState(false);
+
   const handleClick = () => {
-    if (!squadUrl || !onIntent) return;
-    try {
-      const url = new URL(squadUrl, window.location.origin);
-      const pathSlug = url.pathname.split("/").filter(Boolean).pop();
-      if (pathSlug) onIntent(pathSlug);
-    } catch {
-      // Ignore malformed squad URLs.
+    if (!onIntent) return;
+    if (squadUrl) {
+      try {
+        const url = new URL(squadUrl, window.location.origin);
+        const pathSlug = url.pathname.split("/").filter(Boolean).pop();
+        if (pathSlug) onIntent(pathSlug);
+      } catch {
+        // Fallback: record with "interested" as pathSlug
+        onIntent("interested");
+      }
+    } else {
+      onIntent("interested");
     }
+    setRecorded(true);
   };
 
   return (
@@ -656,11 +664,14 @@ function CtaCard({
       {c.body && <p className="text-neutral-300 text-base leading-relaxed">{c.body}</p>}
       {c.button && (
         <Button
-          asChild={!!squadUrl}
-          className="mt-2 w-full font-semibold text-white"
-          style={{ background: accent }}
+          asChild={!!squadUrl && !recorded}
+          className="mt-2 w-full font-semibold text-white transition-all"
+          style={{ background: recorded ? undefined : accent }}
+          variant={recorded ? "outline" : "default"}
+          onClick={squadUrl ? undefined : handleClick}
+          disabled={recorded}
         >
-          {squadUrl ? (
+          {squadUrl && !recorded ? (
             <a
               href={squadUrl}
               target="_blank"
@@ -670,7 +681,13 @@ function CtaCard({
               {c.button} <ArrowRight className="h-4 w-4 ml-1" />
             </a>
           ) : (
-            <span>{c.button}</span>
+            <span className="inline-flex items-center gap-2">
+              {recorded ? (
+                <><Check className="h-4 w-4" /> บันทึกแล้ว!</>
+              ) : (
+                c.button
+              )}
+            </span>
           )}
         </Button>
       )}

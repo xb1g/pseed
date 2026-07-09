@@ -12,6 +12,21 @@ description: Research a career field and create full radar content (cards, sourc
 - Researching career metrics (salary, demand, AI impact) for a field
 - Seeding cards and sources for a radar field
 
+## Parallel Research (multiple fields at once)
+
+When asked to research multiple career fields (e.g. "add photographer, chef, and lawyer to radar"), dispatch one **sub-agent per field** using the Agent tool with `subagent_type=Task`. Each sub-agent independently:
+1. Web-searches for real data
+2. Builds the complete data JSON
+3. Writes to both local and production
+
+Give each sub-agent this context:
+- The full research phase instructions (Steps 1-4 below)
+- The data schema reference
+- The DB credentials from `.env.local`
+- The field name (Thai + English), slug, emoji, and color
+
+Do NOT wait for one field to finish before starting the next — run them all in parallel.
+
 ## Setup
 
 Before starting, read these files for current schema and patterns:
