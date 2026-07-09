@@ -13,7 +13,7 @@ import {
   CareerResearchView,
   type CareerResearch,
 } from "@/components/radar/CareerResearchView";
-import { RadarCardView } from "@/components/radar/RadarCards";
+import { RadarCardView, SourceRefs } from "@/components/radar/RadarCards";
 import type { Database } from "@/lib/supabase/database.types";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
@@ -85,16 +85,20 @@ function readableAccent(hex: string, fallback = "#60a5fa"): string {
     .join("")}`;
 }
 
+export type FieldSource = { ref: number; title: string; publisher?: string | null; url: string };
+
 export function RadarFieldPageClient({
   initialField,
   initialCards,
+  fieldSources = [],
 }: {
   initialField: RadarField;
   initialCards: RadarCard[];
+  fieldSources?: FieldSource[];
 }) {
   const router = useRouter();
   const field = initialField;
-  const HIDDEN_KINDS = new Set(["jobs", "growthCompare", "list", "entryRoutes", "cta", "reflection"]);
+  const HIDDEN_KINDS = new Set(["jobs", "growthCompare", "list", "entryRoutes", "reflection"]);
   const cards = initialCards.filter((c) => {
     if (HIDDEN_KINDS.has(c.kind)) return false;
     if (c.kind === "text" && (c.content_th as Record<string, string>)?.title === "ทางนี้คืออะไร") return false;
@@ -404,18 +408,22 @@ export function RadarFieldPageClient({
             {cards.map((card, i) => {
               const content = pickContent(card);
               const chapterKey = cardChapterKey(card);
+              const sourceRefs = (content.source_refs as number[] | undefined) ?? [];
               return (
                 <RadarCardSection
                   key={card.id}
                   isFirst={i === 0}
                   hasMore={cards.length > 1}
                   accent={accent}
+                  sourceRefs={sourceRefs}
+                  fieldSources={fieldSources}
                 >
                   <RadarCardView
                     kind={card.kind}
                     content={content}
                     accent={accent}
                     squadUrl={field.squad_url}
+                    fieldSources={fieldSources}
                     reflectionSubmitted={submitted.has(card.id)}
                     showSignupPrompt={false}
                     onReflect={(payload) =>
@@ -472,11 +480,15 @@ function RadarCardSection({
   isFirst,
   hasMore,
   accent,
+  sourceRefs = [],
+  fieldSources = [],
 }: {
   children: React.ReactNode;
   isFirst: boolean;
   hasMore: boolean;
   accent: string;
+  sourceRefs?: number[];
+  fieldSources?: FieldSource[];
 }) {
   const ref = useRef<HTMLElement>(null);
   const [hasScrolled, setHasScrolled] = useState(false);
@@ -524,18 +536,23 @@ function RadarCardSection({
       <div className="min-h-[calc(100dvh-10rem)] flex flex-col">
         <div className="my-auto">
           {children}
-          {isFirst && hasMore && !hasScrolled && (
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-              <span className="text-[11px] uppercase tracking-[0.2em] text-white/30 font-medium">
-                เลื่อนขึ้น
-              </span>
-              <div
-                className="radar-scroll-cue"
-                style={{ color: accent }}
-              />
-            </div>
-          )}
         </div>
+        {sourceRefs.length > 0 && fieldSources.length > 0 && (
+          <div className="shrink-0 pb-2 max-w-xl mx-auto w-full">
+            <SourceRefs refs={sourceRefs} sources={fieldSources} />
+          </div>
+        )}
+        {isFirst && hasMore && !hasScrolled && (
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+            <span className="text-[11px] uppercase tracking-[0.2em] text-white/30 font-medium">
+              เลื่อนขึ้น
+            </span>
+            <div
+              className="radar-scroll-cue"
+              style={{ color: accent }}
+            />
+          </div>
+        )}
       </div>
     </section>
   );

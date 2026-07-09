@@ -55,7 +55,10 @@ coverage
 .agent/
 .agents/
 .augment/
-.claude/
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/radar-research/
 .factory/
 .gstack/
 .impeccable/live/

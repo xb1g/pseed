@@ -43,6 +43,12 @@ export default async function RadarFieldPage({
     throw new Error("Radar request failed");
   }
 
+  const { data: sources } = await supabase
+    .from("radar_sources")
+    .select("ref, title, publisher, url")
+    .eq("field_id", field.id)
+    .order("ref", { ascending: true });
+
   // Inject score card at position 2 from field-level score/tier + research metrics
   const allCards = [...(cards || [])] as RadarCard[];
   const research = field.research as Record<string, unknown> | null;
@@ -79,6 +85,7 @@ export default async function RadarFieldPage({
     <RadarFieldPageClient
       initialField={field as RadarField}
       initialCards={allCards}
+      fieldSources={sources ?? []}
     />
   );
 }

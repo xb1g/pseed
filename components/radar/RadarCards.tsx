@@ -101,8 +101,8 @@ export type CareerSurvivalContent = CardBase & {
     salary_floor?: number | null;
     salary_ceiling?: number | null;
   };
-  metric_details?: Record<string, { th?: string; en?: string }>;
-  global_metric_details?: Record<string, { th?: string; en?: string }>;
+  metric_details?: Record<string, { th?: string; en?: string; source?: string; source_url?: string }>;
+  global_metric_details?: Record<string, { th?: string; en?: string; source?: string; source_url?: string }>;
   tier?: string;
   reasoning?: string;
 };
@@ -843,6 +843,24 @@ function CareerSurvivalCard({ c, accent }: { c: CareerSurvivalContent; accent: s
                 <div className="mt-1.5 ml-7 text-xs text-neutral-400 leading-relaxed">
                   {detail.th && <p>{detail.th}</p>}
                   {detail.en && <p className="text-neutral-500 mt-0.5">{detail.en}</p>}
+                  {detail.source && (
+                    <p className="mt-1 text-[10px] text-neutral-500">
+                      📎{" "}
+                      {detail.source_url ? (
+                        <a
+                          href={detail.source_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline underline-offset-2 hover:text-neutral-300 transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {detail.source}
+                        </a>
+                      ) : (
+                        detail.source
+                      )}
+                    </p>
+                  )}
                 </div>
               )}
             </button>
@@ -974,11 +992,14 @@ function ReflectionCard({
 
 // ── dispatch ─────────────────────────────────────────────────────────────────
 
+export type FieldSource = { ref: number; title: string; publisher?: string | null; url: string };
+
 export interface RadarCardViewProps {
   kind: string;
   content: Record<string, unknown>;
   accent: string;
   squadUrl?: string | null;
+  fieldSources?: FieldSource[];
   reflectionSubmitted?: boolean;
   showSignupPrompt?: boolean;
   signupHref?: string;
@@ -986,53 +1007,98 @@ export interface RadarCardViewProps {
   onIntent?: (pathSlug: string) => void;
 }
 
+export function SourceRefs({ refs, sources }: { refs: number[]; sources: FieldSource[] }) {
+  const matched = refs
+    .map((r) => sources.find((s) => s.ref === r))
+    .filter((s): s is FieldSource => !!s);
+  if (matched.length === 0) return null;
+  return (
+    <div className="mt-4 pt-3 border-t border-white/10 flex flex-wrap gap-x-4 gap-y-1">
+      {matched.map((s) => (
+        <a
+          key={s.ref}
+          href={s.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors inline-flex items-center gap-1"
+        >
+          <span className="tabular-nums">[{s.ref}]</span>
+          <span className="truncate max-w-[200px]">{s.title}</span>
+          <ExternalLink className="h-2.5 w-2.5 shrink-0" />
+        </a>
+      ))}
+    </div>
+  );
+}
+
 export function RadarCardView({
   kind,
   content,
   accent,
   squadUrl,
+  fieldSources = [],
   reflectionSubmitted = false,
   onReflect,
   onIntent,
 }: RadarCardViewProps) {
   const c = content as never;
+  const sourceRefs = (content.source_refs as number[] | undefined) ?? [];
+
+  let cardNode: React.ReactNode;
   switch (kind) {
     case "hook":
-      return <HookCard c={c} accent={accent} />;
+      cardNode = <HookCard c={c} accent={accent} />;
+      break;
     case "careerSurvival":
-      return <CareerSurvivalCard c={c} accent={accent} />;
+      cardNode = <CareerSurvivalCard c={c} accent={accent} />;
+      break;
     case "fantasyReality":
-      return <FantasyRealityCard c={c} accent={accent} />;
+      cardNode = <FantasyRealityCard c={c} accent={accent} />;
+      break;
     case "text":
-      return <TextCard c={c} accent={accent} />;
+      cardNode = <TextCard c={c} accent={accent} />;
+      break;
     case "list":
-      return <ListCard c={c} accent={accent} />;
+      cardNode = <ListCard c={c} accent={accent} />;
+      break;
     case "jobs":
-      return <JobsCard c={c} accent={accent} />;
+      cardNode = <JobsCard c={c} accent={accent} />;
+      break;
     case "salaryProgression":
-      return <SalaryProgressionCard c={c} accent={accent} />;
+      cardNode = <SalaryProgressionCard c={c} accent={accent} />;
+      break;
     case "growthCompare":
-      return <GrowthCompareCard c={c} accent={accent} />;
+      cardNode = <GrowthCompareCard c={c} accent={accent} />;
+      break;
     case "aiImpact":
-      return <AiImpactCard c={c} accent={accent} />;
+      cardNode = <AiImpactCard c={c} accent={accent} />;
+      break;
     case "marketThailand":
-      return <MarketThailandCard c={c} accent={accent} />;
+      cardNode = <MarketThailandCard c={c} accent={accent} />;
+      break;
     case "dayInLife":
-      return <DayInLifeCard c={c} accent={accent} />;
+      cardNode = <DayInLifeCard c={c} accent={accent} />;
+      break;
     case "entryRoutes":
-      return <EntryRoutesCard c={c} accent={accent} />;
+      cardNode = <EntryRoutesCard c={c} accent={accent} />;
+      break;
     case "risks":
-      return <RisksCard c={c} accent={accent} />;
+      cardNode = <RisksCard c={c} accent={accent} />;
+      break;
     case "realPeople":
-      return <RealPeopleCard c={c} accent={accent} />;
+      cardNode = <RealPeopleCard c={c} accent={accent} />;
+      break;
     case "futureOutlook":
-      return <FutureOutlookCard c={c} accent={accent} />;
+      cardNode = <FutureOutlookCard c={c} accent={accent} />;
+      break;
     case "sources":
-      return <SourcesCard c={c} accent={accent} />;
+      cardNode = <SourcesCard c={c} accent={accent} />;
+      break;
     case "cta":
-      return <CtaCard c={c} accent={accent} squadUrl={squadUrl} onIntent={onIntent} />;
+      cardNode = <CtaCard c={c} accent={accent} squadUrl={squadUrl} onIntent={onIntent} />;
+      break;
     case "reflection":
-      return (
+      cardNode = (
         <ReflectionCard
           c={c}
           accent={accent}
@@ -1040,7 +1106,10 @@ export function RadarCardView({
           onSubmit={onReflect ?? (() => {})}
         />
       );
+      break;
     default:
-      return <TextCard c={c} accent={accent} />;
+      cardNode = <TextCard c={c} accent={accent} />;
   }
+
+  return cardNode;
 }
