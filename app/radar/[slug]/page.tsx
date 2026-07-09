@@ -43,10 +43,43 @@ export default async function RadarFieldPage({
     throw new Error("Radar request failed");
   }
 
+  // Inject score card at position 2 from field-level score/tier + research metrics
+  const allCards = [...(cards || [])] as RadarCard[];
+  const research = field.research as Record<string, unknown> | null;
+  if (field.score != null && research?.metrics) {
+    const scoreCard = {
+      id: "__score__",
+      field_id: field.id,
+      kind: "careerSurvival",
+      position: -1,
+      content_th: {
+        eyebrow: "Career Survival",
+        title: "อาชีพนี้รอดไหม?",
+        metrics: research.metrics,
+        global_metrics: research.global_metrics,
+        metric_details: research.metric_details,
+        global_metric_details: research.global_metric_details,
+        tier: field.tier,
+        reasoning: research.reasoning,
+      },
+      content_en: null,
+      image_url: null,
+      image_prompt: null,
+      image_credit: null,
+      image_license: null,
+      image_alt_th: null,
+      image_alt_en: null,
+      created_at: field.created_at,
+      updated_at: field.updated_at,
+    } as unknown as RadarCard;
+    const insertIdx = allCards.length > 0 ? 1 : 0;
+    allCards.splice(insertIdx, 0, scoreCard);
+  }
+
   return (
     <RadarFieldPageClient
       initialField={field as RadarField}
-      initialCards={(cards || []) as RadarCard[]}
+      initialCards={allCards}
     />
   );
 }
