@@ -15,6 +15,7 @@ import {
   Compass,
   CheckCircle2,
   Heart,
+  Radar,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
@@ -282,6 +283,40 @@ export function UserPortal({ dashboardData }: UserPortalProps) {
           </div>
         </div>
       </div>
+
+      {/* Career Radar Card */}
+      <Link href="/radar" className="block group">
+        <div className="ei-card p-6 md:p-8 relative overflow-hidden">
+          {/* Soft radar glow */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-transparent opacity-60 pointer-events-none" />
+          <div className="absolute -right-10 -top-10 w-48 h-48 bg-blue-500/10 rounded-full blur-[80px] group-hover:bg-blue-500/15 transition-colors duration-500" />
+
+          <div className="relative flex flex-col md:flex-row md:items-center gap-6">
+            <div className="relative w-16 h-16 shrink-0">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl blur-xl opacity-40 group-hover:opacity-75 transition-opacity" />
+              <div className="relative bg-gradient-to-br from-[#0a0a12] to-[#130a1a] border border-blue-500/10 p-4 rounded-2xl flex items-center justify-center h-full w-full group-hover:scale-105 transition-transform duration-300">
+                <Radar suppressHydrationWarning className="w-8 h-8 text-blue-400" />
+              </div>
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <h3 className="text-xl md:text-2xl font-bold font-kodchasan bg-gradient-to-r from-blue-200 via-purple-200 to-blue-100 bg-clip-text text-transparent mb-2">
+                Career Radar
+              </h3>
+              <p className="text-slate-400 text-sm md:text-base font-bai-jamjuree max-w-2xl leading-relaxed">
+                Explore career fields, compare survival scores and growth signals, and discover paths that match your energy.
+              </p>
+            </div>
+
+            <div className="shrink-0">
+              <div className="ei-button-dusk text-sm">
+                <span>Explore</span>
+                <ArrowRight suppressHydrationWarning className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </Link>
 
       {/* Reflections Card Section */}
       <div className="ei-card p-6 md:p-8">
