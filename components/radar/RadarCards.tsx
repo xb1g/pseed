@@ -44,6 +44,7 @@ export type AiImpactContent = CardBase & {
   verdict?: string;
   augmented?: string[];
   automated?: string[];
+  ai_risk_score?: number;
 };
 export type MarketThailandContent = CardBase & {
   body?: string;
@@ -123,18 +124,20 @@ function CardFrame({
     <div className="w-full max-w-xl mx-auto flex flex-col gap-5">
       {eyebrow && (
         <span
-          className="text-xs font-semibold uppercase tracking-[0.18em]"
+          className="rc-eyebrow text-xs font-semibold uppercase tracking-[0.18em]"
           style={{ color: accent }}
         >
           {eyebrow}
         </span>
       )}
       {title && (
-        <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-[1.1]">
+        <h2 className="rc-title text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-[1.1]">
           {title}
         </h2>
       )}
-      {children}
+      <div className="rc-content flex flex-col gap-5">
+        {children}
+      </div>
     </div>
   );
 }
@@ -168,18 +171,22 @@ function HookCard({ c, accent }: { c: HookContent; accent: string }) {
 function FantasyRealityCard({ c, accent }: { c: FantasyRealityContent; accent: string }) {
   return (
     <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
-      <Panel className="border-amber-400/20 bg-amber-400/5">
-        <p className="text-xs font-semibold uppercase tracking-wider text-amber-300/80 mb-1">
-          Fantasy
-        </p>
-        <p className="text-neutral-200 text-base leading-relaxed">{c.fantasy}</p>
-      </Panel>
-      <Panel className="border-emerald-400/20 bg-emerald-400/5">
-        <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300/80 mb-1">
-          Reality
-        </p>
-        <p className="text-neutral-200 text-base leading-relaxed">{c.reality}</p>
-      </Panel>
+      <div className="rc-panel-left">
+        <Panel className="border-amber-400/20 bg-amber-400/5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-amber-300/80 mb-1">
+            Fantasy
+          </p>
+          <p className="text-neutral-200 text-base leading-relaxed">{c.fantasy}</p>
+        </Panel>
+      </div>
+      <div className="rc-panel-right">
+        <Panel className="border-emerald-400/20 bg-emerald-400/5">
+          <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300/80 mb-1">
+            Reality
+          </p>
+          <p className="text-neutral-200 text-base leading-relaxed">{c.reality}</p>
+        </Panel>
+      </div>
     </CardFrame>
   );
 }
@@ -293,41 +300,77 @@ function GrowthCompareCard({ c, accent }: { c: GrowthCompareContent; accent: str
   );
 }
 
+function aiRiskColor(score: number): string {
+  if (score <= 3) return "#10b981";
+  if (score <= 6) return "#f59e0b";
+  return "#ef4444";
+}
+
+function aiRiskLabel(score: number): string {
+  if (score <= 3) return "ปลอดภัย";
+  if (score <= 6) return "เปลี่ยนบ้าง";
+  return "เสี่ยงสูง";
+}
+
 function AiImpactCard({ c, accent }: { c: AiImpactContent; accent: string }) {
+  const score = c.ai_risk_score ?? null;
   return (
     <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
+      {score !== null && (
+        <Panel>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-neutral-300">ความเสี่ยงถูก AI แทน</span>
+            <span className="text-sm font-bold tabular-nums" style={{ color: aiRiskColor(score) }}>
+              {score}/10 · {aiRiskLabel(score)}
+            </span>
+          </div>
+          <div className="h-3 rounded-full bg-white/5 overflow-hidden">
+            <div
+              className="rc-risk-fill h-full rounded-full"
+              style={{
+                width: `${score * 10}%`,
+                background: aiRiskColor(score),
+              }}
+            />
+          </div>
+        </Panel>
+      )}
       {c.verdict && (
         <Panel>
           <p className="text-neutral-100 text-base leading-relaxed">{c.verdict}</p>
         </Panel>
       )}
       {c.augmented && c.augmented.length > 0 && (
-        <Panel className="border-emerald-400/20 bg-emerald-400/5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300/80 mb-2">
-            AI helps you
-          </p>
-          <ul className="flex flex-col gap-1.5">
-            {c.augmented.map((t, i) => (
-              <li key={i} className="text-neutral-200 text-base leading-relaxed">
-                • {t}
-              </li>
-            ))}
-          </ul>
-        </Panel>
+        <div className="rc-panel-left">
+          <Panel className="border-emerald-400/20 bg-emerald-400/5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300/80 mb-2">
+              AI ช่วยเธอ
+            </p>
+            <ul className="flex flex-col gap-1.5">
+              {c.augmented.map((t, i) => (
+                <li key={i} className="rc-stagger text-neutral-200 text-base leading-relaxed" style={{ transitionDelay: `${0.3 + i * 0.08}s` }}>
+                  • {t}
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        </div>
       )}
       {c.automated && c.automated.length > 0 && (
-        <Panel className="border-rose-400/20 bg-rose-400/5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-rose-300/80 mb-2">
-            AI may replace
-          </p>
-          <ul className="flex flex-col gap-1.5">
-            {c.automated.map((t, i) => (
-              <li key={i} className="text-neutral-200 text-base leading-relaxed">
-                • {t}
-              </li>
-            ))}
-          </ul>
-        </Panel>
+        <div className="rc-panel-right">
+          <Panel className="border-rose-400/20 bg-rose-400/5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-rose-300/80 mb-2">
+              AI อาจแทน
+            </p>
+            <ul className="flex flex-col gap-1.5">
+              {c.automated.map((t, i) => (
+                <li key={i} className="rc-stagger text-neutral-200 text-base leading-relaxed" style={{ transitionDelay: `${0.45 + i * 0.08}s` }}>
+                  • {t}
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        </div>
       )}
     </CardFrame>
   );
@@ -676,17 +719,47 @@ function CareerSurvivalCard({ c, accent }: { c: CareerSurvivalContent; accent: s
   const details = showGlobal ? c.global_metric_details : c.metric_details;
   if (!metrics) return null;
 
+  const tierConfig = {
+    growing: { emoji: "🟢", label: "Growing", labelTh: "กำลังเติบโต", color: "#10b981" },
+    shifting: { emoji: "🟡", label: "Shifting", labelTh: "กำลังเปลี่ยน", color: "#f59e0b" },
+    exposed: { emoji: "🔴", label: "Exposed", labelTh: "เสี่ยงสูง", color: "#ef4444" },
+  } as const;
+  const tier = c.tier ? tierConfig[c.tier as keyof typeof tierConfig] : null;
+
+  const scoreMetrics = SURVIVAL_METRICS.filter((m) => !m.isSalary);
+  const vals = scoreMetrics
+    .map(({ key, max, invert }) => {
+      const v = (metrics as Record<string, number | null | undefined>)[key];
+      if (v == null) return null;
+      const ratio = v / max;
+      return invert ? 1 - ratio : ratio;
+    })
+    .filter((v): v is number => v !== null);
+  const overallScore = vals.length > 0 ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) : null;
+
   return (
     <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 flex flex-col gap-1">
-        {/* Header + toggle */}
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-white font-bold text-lg">ตัวชี้วัดอาชีพ</h3>
+      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 flex flex-col gap-0">
+        {/* Header row: tier + score + toggle */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            {tier && (
+              <span className="rc-tier-badge text-lg">{tier.emoji}</span>
+            )}
+            {overallScore !== null && (
+              <span className="rc-score-value text-xl font-black tabular-nums" style={{ color: tier?.color ?? accent }}>
+                {overallScore}<span className="text-xs font-medium text-neutral-400">/10</span>
+              </span>
+            )}
+            {tier && (
+              <span className="text-xs text-neutral-400">{tier.labelTh}</span>
+            )}
+          </div>
           {c.global_metrics && (
             <div className="flex rounded-full border border-white/10 bg-white/5 overflow-hidden">
               <button
                 onClick={() => setShowGlobal(false)}
-                className={`text-xs font-medium px-3 py-1 transition-colors ${
+                className={`text-[11px] font-medium px-2.5 py-0.5 transition-colors ${
                   !showGlobal ? "bg-white/15 text-white" : "text-neutral-400 hover:text-white"
                 }`}
               >
@@ -694,7 +767,7 @@ function CareerSurvivalCard({ c, accent }: { c: CareerSurvivalContent; accent: s
               </button>
               <button
                 onClick={() => setShowGlobal(true)}
-                className={`text-xs font-medium px-3 py-1 transition-colors ${
+                className={`text-[11px] font-medium px-2.5 py-0.5 transition-colors ${
                   showGlobal ? "bg-white/15 text-white" : "text-neutral-400 hover:text-white"
                 }`}
               >
@@ -704,7 +777,7 @@ function CareerSurvivalCard({ c, accent }: { c: CareerSurvivalContent; accent: s
           )}
         </div>
 
-        {SURVIVAL_METRICS.map(({ key, emoji, label, max, invert, isSalary }) => {
+        {SURVIVAL_METRICS.map(({ key, emoji, label, max, invert, isSalary }, idx) => {
           const val = (metrics as Record<string, number | null | undefined>)[key];
           if (val == null) return null;
           const detail = details?.[key];
@@ -714,41 +787,62 @@ function CareerSurvivalCard({ c, accent }: { c: CareerSurvivalContent; accent: s
             <button
               key={key}
               onClick={() => detail ? setExpandedKey(isExpanded ? null : key) : undefined}
-              className="text-left py-3 border-b border-white/5 last:border-b-0"
+              className={`rc-stagger text-left py-2 border-b border-white/5 last:border-b-0 rounded-lg transition-colors ${
+                detail ? "cursor-pointer hover:bg-white/[0.04] active:bg-white/[0.06] -mx-2 px-2" : ""
+              }`}
+              style={{ transitionDelay: `${0.3 + idx * 0.07}s` }}
             >
-              <div className="flex items-center gap-3">
-                <span className="text-lg shrink-0">{emoji}</span>
-                <span className="text-sm text-neutral-300 flex-1">{label}</span>
-                <span className="text-xs text-neutral-500 ml-1">▼</span>
-              </div>
-
               {isSalary ? (
-                <div className="mt-2 ml-9">
-                  <span className="text-white font-bold text-lg tabular-nums">
-                    {formatSurvivalSalary(val)}฿/mo
-                  </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-base shrink-0">{emoji}</span>
+                    <span className="text-xs text-neutral-400 flex-1">{label}</span>
+                    <span className="text-white font-bold text-sm tabular-nums">
+                      {formatSurvivalSalary(val)}฿/mo
+                    </span>
+                    {detail && (
+                      <span className={`text-[10px] text-neutral-500 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}>
+                        ▾
+                      </span>
+                    )}
+                  </div>
+                  {detail && !isExpanded && (
+                    <p className="text-[10px] text-neutral-500 ml-7 mt-0.5">แตะเพื่อดูรายละเอียด</p>
+                  )}
                 </div>
               ) : (
-                <div className="flex items-center gap-3 mt-2 ml-9">
-                  <div className="h-2.5 rounded-full bg-white/5 overflow-hidden flex-1">
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{
-                        width: `${Math.min(100, (val / max) * 100)}%`,
-                        background: survivalBarColor(val, max, invert),
-                      }}
-                    />
+                <>
+                  <div className="flex items-center gap-2">
+                    <span className="text-base shrink-0">{emoji}</span>
+                    <span className="text-xs text-neutral-300 flex-1">{label}</span>
+                    <span className="text-white font-bold text-xs tabular-nums w-10 text-right">
+                      {val}{key === "grad_employment_pct" ? "%" : "/10"}
+                    </span>
+                    {detail && (
+                      <span className={`text-[10px] text-neutral-500 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}>
+                        ▾
+                      </span>
+                    )}
                   </div>
-                  <span className="text-white font-bold text-sm tabular-nums w-12 text-right">
-                    {val}{key === "grad_employment_pct" ? "%" : "/10"}
-                  </span>
-                </div>
+                  <div className="flex items-center gap-2 mt-1 ml-7">
+                    <div className="h-2 rounded-full bg-white/5 overflow-hidden flex-1">
+                      <div
+                        className="rc-bar-fill h-full rounded-full"
+                        style={{
+                          width: `${Math.min(100, (val / max) * 100)}%`,
+                          background: survivalBarColor(val, max, invert),
+                          transitionDelay: `${0.35 + idx * 0.1}s`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </>
               )}
 
               {isExpanded && detail && (
-                <div className="mt-2 ml-9 text-xs text-neutral-400 leading-relaxed">
+                <div className="mt-1.5 ml-7 text-xs text-neutral-400 leading-relaxed">
                   {detail.th && <p>{detail.th}</p>}
-                  {detail.en && <p className="text-neutral-500 mt-1">{detail.en}</p>}
+                  {detail.en && <p className="text-neutral-500 mt-0.5">{detail.en}</p>}
                 </div>
               )}
             </button>
