@@ -9,7 +9,10 @@ const isLocal = process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('127.0.0.1') ||
 
 const fetchWithLocalTimeout = (url: RequestInfo | URL, options?: RequestInit) => {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 3000);
+  const timer = setTimeout(
+    () => controller.abort(new Error("Local Supabase request timed out after 3000ms")),
+    3000
+  );
   return fetch(url, { ...options, signal: controller.signal })
     .finally(() => clearTimeout(timer));
 };

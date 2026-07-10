@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { type ReactNode, useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import { isAbortError } from '@/lib/supabase/errors'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -232,7 +233,7 @@ export default function ProfilePage() {
       if (profileError) {
         if (profileError.code === 'PGRST116') {
           nextProfile = await createProfile(user)
-        } else {
+        } else if (!isAbortError(profileError)) {
           console.error('Error fetching profile:', profileError)
           toast.error('Failed to load profile')
         }
@@ -253,8 +254,10 @@ export default function ProfilePage() {
 
       await fetchDashboard()
     } catch (error) {
-      console.error('Profile fetch error:', error)
-      toast.error('Failed to load profile')
+      if (!isAbortError(error)) {
+        console.error('Profile fetch error:', error)
+        toast.error('Failed to load profile')
+      }
     } finally {
       setLoading(false)
     }

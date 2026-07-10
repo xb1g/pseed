@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { createClient } from "@/utils/supabase/client";
+import { isAbortError } from "@/lib/supabase/errors";
 import {
   LogOut,
   Settings,
@@ -82,7 +83,7 @@ export function UserNav({ user }: UserNavProps) {
         if (error.code === "PGRST116") {
           // Profile doesn't exist, create one
           await createProfile();
-        } else {
+        } else if (!isAbortError(error)) {
           console.error("Error fetching profile:", error.message || error);
           console.error("Error details:", {
             code: error.code,
@@ -95,7 +96,9 @@ export function UserNav({ user }: UserNavProps) {
 
       setProfile(profileData);
     } catch (error) {
-      console.error("Profile fetch error:", error);
+      if (!isAbortError(error)) {
+        console.error("Profile fetch error:", error);
+      }
     }
   };
 
