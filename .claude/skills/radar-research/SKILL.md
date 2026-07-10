@@ -130,20 +130,23 @@ Before writing to any database:
 }
 ```
 
-### radar_cards kinds and content_th shapes
+### radar_cards — exactly 11 cards per field
 
-| Kind | Required fields | Position range |
-|------|----------------|---------------|
-| `hook` | `eyebrow`, `title`, `body`, `stat`, `statLabel` | 0 |
-| `fantasyReality` | `eyebrow`, `title`, `fantasy`, `reality`, `source_refs` | 10 |
-| `salaryProgression` | `eyebrow`, `title`, `levels[]` (each: `level`, `years`, `salary`, `note`), `source_refs` | 40 |
-| `aiImpact` | `eyebrow`, `title`, `verdict`, `augmented[]`, `automated[]`, `ai_risk_score`, `source_refs` | 70 |
-| `marketThailand` | `eyebrow`, `title`, `body`, `openings`, `companies[]`, `source_refs` | 80 |
-| `dayInLife` | `eyebrow`, `title`, `steps[]` (each: `time`, `label`), `source_refs` | 90 |
-| `risks` | `eyebrow`, `title`, `risks[]`, `source_refs` | 110 |
-| `entryRoutes` | `eyebrow`, `title`, `description`, `faculties[]` (each: `name`, `tier`, `examples?`, `note?`), `source_refs` | 120 |
-| `cta` | `eyebrow`, `title`, `body`, `button` | 140 |
-| `sources` | `eyebrow`, `title`, `items[]` (each: `ref`, `title`, `publisher`, `url`) | 150 |
+Every field MUST have exactly these 11 cards, no more, no less. Do NOT add extra cards like `reflection`, `jobs`, `growthCompare`, `list`, `realPeople`, or `futureOutlook`.
+
+| # | Kind | Position | Required fields |
+|---|------|----------|----------------|
+| 1 | `hook` | 0 | `eyebrow`, `title`, `body`, `stat`, `statLabel` |
+| 2 | `fantasyReality` | 10 | `eyebrow`, `title`, `fantasy`, `reality`, `source_refs` |
+| 3 | `salaryProgression` | 40 | `eyebrow`, `title`, `levels[]` (each: `level`, `years`, `salary`, `note`), `source_refs` |
+| 4 | `aiImpact` | 70 | `eyebrow`, `title`, `verdict`, `augmented[]`, `automated[]`, `ai_risk_score`, `source_refs` |
+| 5 | `marketThailand` | 80 | `eyebrow`, `title`, `body`, `openings`, `companies[]`, `source_refs` |
+| 6 | `dayInLife` | 90 | `eyebrow`, `title`, `steps[]` (each: `time`, `label`), `source_refs` |
+| 7 | `risks` | 110 | `eyebrow`, `title`, `risks[]`, `source_refs` |
+| 8 | `entryRoutes` | 120 | `eyebrow`, `title`, `description`, `faculties[]` (each: `name`, `tier`, `examples?`, `note?`), `source_refs` |
+| 9 | `text` | 130 | `eyebrow`, `title`, `body` — "How to start now" practical steps, comes after entryRoutes |
+| 10 | `cta` | 140 | `eyebrow`, `title`, `body`, `button` |
+| 11 | `sources` | 150 | `eyebrow`, `title`, `items[]` (each: `ref`, `title`, `publisher`, `url`) |
 
 The `entryRoutes` card shows which university faculties/majors lead to the career. Each faculty has a `tier`:
 - `direct` — the faculty directly teaches this career's core skills (e.g., CS for Software Engineer)
@@ -156,7 +159,7 @@ The `cta` card is always generated with: `eyebrow: "สนใจไหม?"`, `t
 
 The `careerSurvival` card is NOT stored in radar_cards — it's injected at runtime from `field.research.metrics` + `field.score` + `field.tier`.
 
-Hidden kinds (filtered in UI but valid): `text`, `jobs`, `growthCompare`, `list`, `reflection`
+Hidden/deprecated kinds (do NOT use): `jobs`, `growthCompare`, `list`, `reflection`, `realPeople`, `futureOutlook`. Cards with these kinds are hidden via `is_hidden = true` in the database.
 
 ### radar_sources
 
