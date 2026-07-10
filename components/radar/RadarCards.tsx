@@ -53,7 +53,13 @@ export type MarketThailandContent = CardBase & {
 };
 export type DayInLifeContent = CardBase & { steps?: Array<{ time: string; label: string }> };
 export type EntryRoutesContent = CardBase & {
-  routes?: Array<{ tag?: string; route: string; subtitle?: string; cost?: string; time?: string; icon?: string }>;
+  description?: string;
+  faculties?: Array<{
+    name: string;
+    tier: "direct" | "related" | "alternative";
+    examples?: string;
+    note?: string;
+  }>;
 };
 export type RisksContent = CardBase & { risks?: string[] };
 export type RealPeopleContent = CardBase & {
@@ -421,24 +427,38 @@ function DayInLifeCard({ c, accent }: { c: DayInLifeContent; accent: string }) {
   );
 }
 
+const TIER_STYLES: Record<string, { label: string; bg: string; text: string }> = {
+  direct: { label: "ตรงสาย", bg: "bg-emerald-500/20", text: "text-emerald-400" },
+  related: { label: "เกี่ยวข้อง", bg: "bg-amber-500/20", text: "text-amber-400" },
+  alternative: { label: "ข้ามสาย", bg: "bg-sky-500/20", text: "text-sky-400" },
+};
+
 function EntryRoutesCard({ c, accent }: { c: EntryRoutesContent; accent: string }) {
   return (
-    <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
+    <CardFrame eyebrow={c.eyebrow} title={c.title ?? "เรียนคณะไหนทำงานนี้ได้?"} accent={accent}>
+      {c.description && (
+        <p className="text-neutral-400 text-sm leading-relaxed mb-4">{c.description}</p>
+      )}
       <div className="flex flex-col gap-3">
-        {(c.routes ?? []).map((r, i) => (
-          <Panel key={i}>
-            <div className="flex items-center gap-2">
-              {r.icon && <span className="text-xl">{r.icon}</span>}
-              {r.tag && <span className="text-white font-semibold">{r.tag}</span>}
-            </div>
-            {r.subtitle && <p className="text-xs text-neutral-500 mt-0.5">{r.subtitle}</p>}
-            <p className="text-neutral-200 text-base mt-2 leading-relaxed">{r.route}</p>
-            <div className="flex gap-3 mt-2 text-xs text-neutral-400">
-              {r.time && <span>⏱ {r.time}</span>}
-              {r.cost && <span>{r.cost}</span>}
-            </div>
-          </Panel>
-        ))}
+        {(c.faculties ?? []).map((f, i) => {
+          const style = TIER_STYLES[f.tier] ?? TIER_STYLES.related;
+          return (
+            <Panel key={i}>
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}>
+                  {style.label}
+                </span>
+                <span className="text-white font-semibold text-base">{f.name}</span>
+              </div>
+              {f.examples && (
+                <p className="text-neutral-400 text-sm mt-1">{f.examples}</p>
+              )}
+              {f.note && (
+                <p className="text-neutral-500 text-xs mt-1 italic">{f.note}</p>
+              )}
+            </Panel>
+          );
+        })}
       </div>
     </CardFrame>
   );

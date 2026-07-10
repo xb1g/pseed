@@ -98,7 +98,7 @@ export function RadarFieldPageClient({
 }) {
   const router = useRouter();
   const field = initialField;
-  const HIDDEN_KINDS = new Set(["jobs", "growthCompare", "list", "entryRoutes", "reflection"]);
+  const HIDDEN_KINDS = new Set(["jobs", "growthCompare", "list", "reflection"]);
   const cards = initialCards.filter((c) => {
     if (HIDDEN_KINDS.has(c.kind)) return false;
     if (c.kind === "text" && (c.content_th as Record<string, string>)?.title === "ทางนี้คืออะไร") return false;
