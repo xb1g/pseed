@@ -153,6 +153,21 @@ const template = {
       },
     },
     {
+      position: 120,
+      kind: "entryRoutes",
+      content_th: {
+        eyebrow: "เรียนอะไรดี?",
+        title: "เรียนคณะไหนทำงานนี้ได้?",
+        description: "",
+        faculties: [
+          { name: "", tier: "direct", examples: "", note: "" },
+          { name: "", tier: "related", examples: "", note: "" },
+          { name: "", tier: "alternative", examples: "", note: "" },
+        ],
+        source_refs: [],
+      },
+    },
+    {
       position: 140,
       kind: "cta",
       content_th: {

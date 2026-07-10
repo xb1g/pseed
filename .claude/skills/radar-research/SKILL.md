@@ -141,14 +141,22 @@ Before writing to any database:
 | `marketThailand` | `eyebrow`, `title`, `body`, `openings`, `companies[]`, `source_refs` | 80 |
 | `dayInLife` | `eyebrow`, `title`, `steps[]` (each: `time`, `label`), `source_refs` | 90 |
 | `risks` | `eyebrow`, `title`, `risks[]`, `source_refs` | 110 |
+| `entryRoutes` | `eyebrow`, `title`, `description`, `faculties[]` (each: `name`, `tier`, `examples?`, `note?`), `source_refs` | 120 |
 | `cta` | `eyebrow`, `title`, `body`, `button` | 140 |
 | `sources` | `eyebrow`, `title`, `items[]` (each: `ref`, `title`, `publisher`, `url`) | 150 |
+
+The `entryRoutes` card shows which university faculties/majors lead to the career. Each faculty has a `tier`:
+- `direct` — the faculty directly teaches this career's core skills (e.g., CS for Software Engineer)
+- `related` — the faculty covers related knowledge that transfers well (e.g., Statistics for Data Scientist)
+- `alternative` — a non-obvious path that can still lead to the career with extra effort (e.g., Liberal Arts for UX Design)
+
+The `description` field gives a brief intro explaining that multiple paths exist. The `examples` field on each faculty lists specific departments or programs. The `note` field adds context like "ต้องเรียนเพิ่มด้าน X" (need to self-study X additionally).
 
 The `cta` card is always generated with: `eyebrow: "สนใจไหม?"`, `title: "อยากลองสาย[field_name_th]"`, `body` inviting the user to tap if interested, and `button: "สนใจสายนี้"`. The button links to `field.squad_url` if set.
 
 The `careerSurvival` card is NOT stored in radar_cards — it's injected at runtime from `field.research.metrics` + `field.score` + `field.tier`.
 
-Hidden kinds (filtered in UI but valid): `text`, `jobs`, `growthCompare`, `list`, `entryRoutes`, `reflection`
+Hidden kinds (filtered in UI but valid): `text`, `jobs`, `growthCompare`, `list`, `reflection`
 
 ### radar_sources
 
