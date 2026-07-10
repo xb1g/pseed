@@ -32,6 +32,7 @@ export function RadarPageClient({
   const [activeCollection, setActiveCollection] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoad] = useState(!initialFields.length);
   const [error, setError] = useState<string | null>(initialError);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -163,7 +164,7 @@ export function RadarPageClient({
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {isLoading ? (
+        {isLoading && isInitialLoad ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div
@@ -190,7 +191,7 @@ export function RadarPageClient({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 items-start">
+          <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 items-start transition-opacity duration-200 ${isLoading ? "opacity-60 pointer-events-none" : ""}`}>
             {columns.map((col, colIndex) => (
               <div key={colIndex} className="flex flex-col gap-4">
                 {col.map((field) => (

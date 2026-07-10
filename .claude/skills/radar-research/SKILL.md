@@ -53,6 +53,7 @@ Use `WebSearch` and `WebFetch` to find **current, real data** for the career fie
 5. **Thailand market** — number of openings on JobsDB/Indeed Thailand, top employers
 6. **Professional requirements** — certifications, licenses, education paths
 7. **Day in life** — search: `"day in the life of a [field]"`, Reddit, Quora
+8. **Skills used in this path** — research the skills a practitioner in the field would actually name, not a generic outsider's guess. Search official occupation profiles, practitioner guides, certification bodies, professional bodies, employer/career sources, and field-specific frameworks for fundamentals, workflows, tools/processes, judgment calls, communication requirements, ethics/responsibility, and AI/digital tool expectations. Prefer O*NET, BLS/OOH, professional bodies, credential bodies, reputable employer/career pages, and role-specific frameworks.
 
 ### Step 2: Verify every source
 
@@ -75,6 +76,8 @@ Before writing to any database:
 - [ ] Every `source.url` has been fetched and verified
 - [ ] Salary figures match what the source actually says (not training data)
 - [ ] `source_refs` on each card point to sources that actually support that card's claims
+- [ ] The `text` card at position 125 explains "Skill ที่สายนี้ใช้" with practitioner-depth skill requirements, not generic soft skills or shallow tool lists
+- [ ] The skills card sounds like an expert in the field reviewed it: it includes field-specific fundamentals, workflows, judgment, tools/processes by context, and common failure modes
 - [ ] `metrics.demand_growth` (0-10), `saturation_level` (0-10), `progression_difficulty` (0-10) are justified
 - [ ] `metrics.grad_employment_pct` is a real percentage from a real source
 - [ ] `metrics.salary_floor` and `salary_ceiling` are in THB/month from Thai sources
@@ -133,21 +136,29 @@ Before writing to any database:
 
 All `content_th` fields are required for display; `content_en` is optional and the UI falls back to Thai when English is absent.
 
-### radar_cards kinds and content_th shapes
+### radar_cards — exactly 12 cards per field
 
-| Kind | Required fields | Position range |
-|------|----------------|---------------|
-| `hook` | `eyebrow`, `title`, `body`, `stat`, `statLabel` | 0 |
-| `fantasyReality` | `eyebrow`, `title`, `fantasy`, `reality`, `source_refs` | 10 |
-| `salaryProgression` | `eyebrow`, `title`, `currency` (default e.g. `USD`), `levels[]` (each: `level`, `years`, `salary`, `note`), optional `eyebrow_thb`/`title_thb`/`levels_thb[]` for Thai-Baht toggle, `source_refs` | 40 |
-| `aiImpact` | `eyebrow`, `title`, `verdict`, `augmented[]`, `automated[]`, `ai_risk_score`, `source_refs` | 70 |
-| `marketThailand` | `eyebrow`, `title`, `body`, `openings`, `companies[]`, `source_refs` | 80 |
-| `dayInLife` | `eyebrow`, `title`, `steps[]` (each: `time`, `label`), `source_refs` | 90 |
-| `realPeople` | `eyebrow`, `title`, `people[]` (each: `name?`, `role?`, `imageUrl?`, `background`, `salary?`, `path[]?`, `nowDoing?`, `whereHeading?`, `advice?`, `publisher?`, `url?`), `source_refs` | 100 |
-| `risks` | `eyebrow`, `title`, `risks[]`, `source_refs` | 110 |
-| `futureOutlook` | `eyebrow`, `title`, `growthRate?`, `growthLabel?`, `timeline[]?`, `demandSignal?`, `risk?`, `source_refs` | 120 |
-| `cta` | `eyebrow`, `title`, `body`, `button` | 140 |
-| `sources` | `eyebrow`, `title`, `items[]` (each: `ref`, `title`, `publisher`, `url`) | 150 |
+Every field MUST have exactly these 12 cards, no more, no less. Do NOT add extra cards like `reflection`, `jobs`, `growthCompare`, `list`.
+
+| # | Kind | Position | Required fields |
+|---|------|----------|----------------|
+| 1 | `hook` | 0 | `eyebrow`, `title`, `body`, `stat`, `statLabel` |
+| 2 | `fantasyReality` | 10 | `eyebrow`, `title`, `fantasy`, `reality`, `source_refs` |
+| 3 | `salaryProgression` | 40 | `eyebrow`, `title`, `currency` (default e.g. `USD`), `levels[]` (each: `level`, `years`, `salary`, `note`), optional `eyebrow_thb`/`title_thb`/`levels_thb[]` for Thai-Baht toggle, `source_refs` |
+| 4 | `aiImpact` | 70 | `eyebrow`, `title`, `verdict`, `augmented[]`, `automated[]`, `ai_risk_score`, `source_refs` |
+| 5 | `marketThailand` | 80 | `eyebrow`, `title`, `body`, `openings`, `companies[]`, `source_refs` |
+| 6 | `dayInLife` | 90 | `eyebrow`, `title`, `steps[]` (each: `time`, `label`), `source_refs` |
+| 7 | `risks` | 110 | `eyebrow`, `title`, `risks[]`, `source_refs` |
+| 8 | `entryRoutes` | 120 | `eyebrow`, `title`, `description`, `faculties[]` (each: `name`, `tier`: `direct`/`related`/`alternative`, `examples?`, `note?`), `source_refs` |
+| 9 | `text` | 125 | `eyebrow`, `title`, `body`, `source_refs` — "Skill ที่สายนี้ใช้" researched skills needed/used in this path, comes after entryRoutes |
+| 10 | `text` | 130 | `eyebrow`, `title`, `body`, `source_refs?` — "How to start now" practical steps, comes after the skills card |
+| 11 | `cta` | 140 | `eyebrow`, `title`, `body`, `button` |
+| 12 | `sources` | 150 | `eyebrow`, `title`, `items[]` (each: `ref`, `title`, `publisher`, `url`) |
+
+The `entryRoutes` card shows which university faculties/majors lead to the career. Each faculty has a `tier`:
+- `direct` — the faculty directly teaches this career's core skills (e.g., CS for Software Engineer)
+- `related` — the faculty covers related knowledge that transfers well (e.g., Statistics for Data Scientist)
+- `alternative` — a non-obvious path that can still lead to the career with extra effort (e.g., Liberal Arts for UX Design)
 
 ## Content Depth Guidelines
 
@@ -155,14 +166,14 @@ Depth determines whether a smart teen trusts the card or skips it. Follow these 
 
 - **hook**: 1-2 sentences. Lead with the mission/shift, not a big salary number. If you use a stat, label it honestly (e.g., "experienced level", "global median").
 - **fantasyReality**: Fantasy ~1 sentence; reality 1-2 sentences that name the boring but real work.
-- **salaryProgression**: 4 levels (`Entry`, `Mid`, `Senior`, `Staff+`). Every level needs `years` + `salary` + a `note`. The note must answer: (a) what it takes at this level and (b) the durable skill underneath that survives tool changes. Never leave a level without a note.
+- **salaryProgression**: 4 levels (`Entry`, `Mid`, `Senior`, `Staff+`). Every level needs `years` + `salary` + a `note`. The note must answer: (a) what it takes at this level and (b) the durable skill underneath that survives tool changes. Never leave a level without a note. Include `levels_thb` for Thai-Baht toggle when Thai salary data is available.
 - **aiImpact**: Verdict 1-2 sentences. 3-5 `augmented` items, 2-4 `automated` items. `ai_risk_score` (0-10) must be justified by the verdict, not by keyword matching.
 - **marketThailand**: Body 1-2 sentences; `openings` as a real number or range; 4-8 `companies`. Do not invent opening counts.
 - **dayInLife**: 5-7 `steps` that show a realistic mix of meetings, deep work, and waiting for results.
-- **realPeople**: 3-4 people. Each person: `background` 1-2 sentences; `path` 3-5 steps; `nowDoing` 1 sentence; `whereHeading` 1 sentence; `advice` 1 sentence. Only include `salary` if the person shared it. Sourced/consented `imageUrl` only.
 - **risks**: 3-5 risks, each 1 sentence. Be honest — this builds trust.
-- **futureOutlook**: `growthRate` + `growthLabel` if you have a real figure; `timeline` 3-5 items; `demandSignal` 1 sentence; `risk` 1 sentence.
-- **entryRoutes**: 3-5 routes, each with a `tag` and a clear `route` sentence.
+- **entryRoutes**: 4-6 faculties with tiers (`direct`, `related`, `alternative`). Each faculty has `examples` (university names) and a `note` explaining the path.
+- **text (pos 125)**: "Skill ที่สายนี้ใช้" — practitioner-level depth, 7-9 Thai bullets. See below.
+- **text (pos 130)**: "How to start now" — practical steps students can try now.
 - **cta**: `body` 1-2 sentences; `button` 2-4 words.
 - **sources**: 3-6 sources. Every card that uses `source_refs` must point to a real source in this list.
 
@@ -172,12 +183,24 @@ Cross-cutting rules from the editorial spine:
 - Anchor on durable skills (judgment, framing, decisions under uncertainty), not tools that churn every 6 months.
 - If a number is uncertain, omit it. Empty is better than fake.
 
-Notes on `realPeople`:
-- Use the interview prompt in `app/admin/radar-interview/RadarInterviewClient.tsx` as the shape guide.
-- `imageUrl` only if the photo is sourced and the person consented.
-- `salary` only if the person actually shared it; never fabricate a salary, quote, year, or fact. Empty is better than fake.
+### Skills card depth (position 125)
 
-The `cta` card content comes from the seed data (`content_th.body` and `content_th.button`). The button links to `field.squad_url` if it is set; otherwise it records intent. A typical Thai CTA uses: `eyebrow: "สนใจไหม?"`, `title: "อยากลองสาย[field_name_th]"`, `body` inviting the user to tap if interested, and `button: "สนใจสายนี้"`.
+The position 125 `text` card is a separate skills page shown immediately after "เรียนคณะไหนทำงานนี้ได้?". Always set `eyebrow: "Skill ที่สายนี้ใช้"` and write a concise Thai `title` such as "ต้องเก่งอะไรถึงทำงานสายนี้ได้จริง?".
+
+The skills card must have practitioner-level depth. It should read like it came from someone inside that field, not from a generic career article. Do not write vague bullets like "communication", "problem solving", "attention to detail", or "use tools" unless each one is anchored to the field's actual work.
+
+Write 7-9 Thai bullets. Each bullet should have:
+- a specific skill name or competency;
+- a short explanation of how it is used in real work;
+- field-specific nouns, workflows, artifacts, tools, or decisions.
+
+Prioritize durable fundamentals over random tool lists. Include tools only as examples and clarify when tools differ by sub-role.
+
+Add `source_refs` to sources that specifically support the skill claims, such as O*NET, BLS/OOH, professional bodies, certification bodies, role-specific frameworks, or reputable employer/career sources.
+
+The position 130 `text` card remains the "How to start now" page. Do not merge it with the skills card. It should give practical steps students can try now: beginner resources, small projects/practice, tools to learn, portfolio or internship ideas, and next milestones.
+
+The `cta` card is always generated with: `eyebrow: "สนใจไหม?"`, `title: "อยากลองสาย[field_name_th]"`, `body` inviting the user to tap if interested, and `button: "สนใจสายนี้"`. The button links to `field.squad_url` if set.
 
 The `careerSurvival` card is NOT stored in radar_cards — it's injected at runtime from `field.research.metrics` + `field.score` + `field.tier`.
 
@@ -266,6 +289,10 @@ The `careerSurvival` card is NOT stored in radar_cards. It's injected server-sid
 - Forgetting to add `source_refs` to cards — every card (except hook, sources) should have them
 - Using `title` instead of `level` in salaryProgression levels
 - Using `yearsExp` instead of `years` in salaryProgression levels
+- Merging "Skill ที่สายนี้ใช้" and "How to start now" into one card — keep them separate at positions 125 and 130
+- Writing generic soft skills without researching occupation-specific skills and citing sources
+- Listing tools as if every sub-role uses all of them — name fundamentals first, then tools by context/sub-role
+- Writing "normal person guessing the job" content — use practitioner vocabulary, workflows, artifacts, and judgment calls
 - Setting `ai_risk_score` by keyword matching instead of reading the actual research
 - Forgetting to write to both local AND production
 - Hardcoding UUIDs that differ between environments
