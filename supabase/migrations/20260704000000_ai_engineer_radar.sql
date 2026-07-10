@@ -41,7 +41,6 @@ INSERT INTO radar_fields (
   0,
   jsonb_build_object(
     'tier', 'growing',
-    'reasoning', 'AI Engineers are in extreme demand. This is the job category most actively hiring across every major tech company and startup. Growth is exponential.',
     'demand_signal', jsonb_build_object(
       'job_postings_growth', '+340% YoY',
       'top_hiring_companies', ARRAY['OpenAI', 'Anthropic', 'Google DeepMind', 'Meta', 'Microsoft', 'xAI', 'Cohere', 'Mistral', 'NVIDIA', 'Scale AI'],

@@ -109,6 +109,7 @@ radar_fields.slug = "${slug}"   (persona lens: ${persona})
   "realPerson": {
     "name": "<omit per identity consent>",
     "role": "<role>",
+    "imageUrl": "<optional headshot URL, only if provided and consented>",
     "background": "<1-line bio, back-compat>",
     "salary": "<omit unless shared; band or exact per salary consent>",
     "path": [ { "year": "<rough year, or omit>", "label": "<step>" } ],

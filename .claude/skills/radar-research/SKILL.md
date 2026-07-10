@@ -30,9 +30,10 @@ Do NOT wait for one field to finish before starting the next — run them all in
 ## Setup
 
 Before starting, read these files for current schema and patterns:
-1. `components/radar/RadarCards.tsx` lines 10-110 (card content type definitions)
-2. `components/radar/CareerResearchView.tsx` lines 1-47 (CareerResearch type)
+1. `components/radar/RadarCards.tsx` lines 16-105 (card content type definitions)
+2. `components/radar/CareerResearchView.tsx` lines 8-45 (CareerResearch type)
 3. `app/radar/[slug]/page.tsx` (how careerSurvival card is injected)
+4. `docs/CAREER_RADAR_EDITORIAL_SPINE.md` (content rules: money de-heroed, snapshot→trajectory, durable-skill anchor, real paths)
 
 DB credentials:
 - Production: `HACKATHON_SUPABASE_URL` and `HACKATHON_SUPABASE_SERVICE_ROLE_KEY` from `.env.local`
@@ -104,7 +105,7 @@ Before writing to any database:
 ```json
 {
   "tier": "growing|shifting|exposed",
-  "reasoning": "Thai explanation of tier",
+  "reasoning": "Thai explanation of tier (optional; keep it honest and de-heroed — omit if it would sound like hype)",
   "metrics": {
     "demand_growth": 7,
     "grad_employment_pct": 85,
@@ -130,36 +131,57 @@ Before writing to any database:
 }
 ```
 
-### radar_cards — exactly 11 cards per field
+All `content_th` fields are required for display; `content_en` is optional and the UI falls back to Thai when English is absent.
 
-Every field MUST have exactly these 11 cards, no more, no less. Do NOT add extra cards like `reflection`, `jobs`, `growthCompare`, `list`, `realPeople`, or `futureOutlook`.
+### radar_cards kinds and content_th shapes
 
-| # | Kind | Position | Required fields |
-|---|------|----------|----------------|
-| 1 | `hook` | 0 | `eyebrow`, `title`, `body`, `stat`, `statLabel` |
-| 2 | `fantasyReality` | 10 | `eyebrow`, `title`, `fantasy`, `reality`, `source_refs` |
-| 3 | `salaryProgression` | 40 | `eyebrow`, `title`, `levels[]` (each: `level`, `years`, `salary`, `note`), `source_refs` |
-| 4 | `aiImpact` | 70 | `eyebrow`, `title`, `verdict`, `augmented[]`, `automated[]`, `ai_risk_score`, `source_refs` |
-| 5 | `marketThailand` | 80 | `eyebrow`, `title`, `body`, `openings`, `companies[]`, `source_refs` |
-| 6 | `dayInLife` | 90 | `eyebrow`, `title`, `steps[]` (each: `time`, `label`), `source_refs` |
-| 7 | `risks` | 110 | `eyebrow`, `title`, `risks[]`, `source_refs` |
-| 8 | `entryRoutes` | 120 | `eyebrow`, `title`, `description`, `faculties[]` (each: `name`, `tier`, `examples?`, `note?`), `source_refs` |
-| 9 | `text` | 130 | `eyebrow`, `title`, `body` — "How to start now" practical steps, comes after entryRoutes |
-| 10 | `cta` | 140 | `eyebrow`, `title`, `body`, `button` |
-| 11 | `sources` | 150 | `eyebrow`, `title`, `items[]` (each: `ref`, `title`, `publisher`, `url`) |
+| Kind | Required fields | Position range |
+|------|----------------|---------------|
+| `hook` | `eyebrow`, `title`, `body`, `stat`, `statLabel` | 0 |
+| `fantasyReality` | `eyebrow`, `title`, `fantasy`, `reality`, `source_refs` | 10 |
+| `salaryProgression` | `eyebrow`, `title`, `currency` (default e.g. `USD`), `levels[]` (each: `level`, `years`, `salary`, `note`), optional `eyebrow_thb`/`title_thb`/`levels_thb[]` for Thai-Baht toggle, `source_refs` | 40 |
+| `aiImpact` | `eyebrow`, `title`, `verdict`, `augmented[]`, `automated[]`, `ai_risk_score`, `source_refs` | 70 |
+| `marketThailand` | `eyebrow`, `title`, `body`, `openings`, `companies[]`, `source_refs` | 80 |
+| `dayInLife` | `eyebrow`, `title`, `steps[]` (each: `time`, `label`), `source_refs` | 90 |
+| `realPeople` | `eyebrow`, `title`, `people[]` (each: `name?`, `role?`, `imageUrl?`, `background`, `salary?`, `path[]?`, `nowDoing?`, `whereHeading?`, `advice?`, `publisher?`, `url?`), `source_refs` | 100 |
+| `risks` | `eyebrow`, `title`, `risks[]`, `source_refs` | 110 |
+| `futureOutlook` | `eyebrow`, `title`, `growthRate?`, `growthLabel?`, `timeline[]?`, `demandSignal?`, `risk?`, `source_refs` | 120 |
+| `cta` | `eyebrow`, `title`, `body`, `button` | 140 |
+| `sources` | `eyebrow`, `title`, `items[]` (each: `ref`, `title`, `publisher`, `url`) | 150 |
 
-The `entryRoutes` card shows which university faculties/majors lead to the career. Each faculty has a `tier`:
-- `direct` — the faculty directly teaches this career's core skills (e.g., CS for Software Engineer)
-- `related` — the faculty covers related knowledge that transfers well (e.g., Statistics for Data Scientist)
-- `alternative` — a non-obvious path that can still lead to the career with extra effort (e.g., Liberal Arts for UX Design)
+## Content Depth Guidelines
 
-The `description` field gives a brief intro explaining that multiple paths exist. The `examples` field on each faculty lists specific departments or programs. The `note` field adds context like "ต้องเรียนเพิ่มด้าน X" (need to self-study X additionally).
+Depth determines whether a smart teen trusts the card or skips it. Follow these targets:
 
-The `cta` card is always generated with: `eyebrow: "สนใจไหม?"`, `title: "อยากลองสาย[field_name_th]"`, `body` inviting the user to tap if interested, and `button: "สนใจสายนี้"`. The button links to `field.squad_url` if set.
+- **hook**: 1-2 sentences. Lead with the mission/shift, not a big salary number. If you use a stat, label it honestly (e.g., "experienced level", "global median").
+- **fantasyReality**: Fantasy ~1 sentence; reality 1-2 sentences that name the boring but real work.
+- **salaryProgression**: 4 levels (`Entry`, `Mid`, `Senior`, `Staff+`). Every level needs `years` + `salary` + a `note`. The note must answer: (a) what it takes at this level and (b) the durable skill underneath that survives tool changes. Never leave a level without a note.
+- **aiImpact**: Verdict 1-2 sentences. 3-5 `augmented` items, 2-4 `automated` items. `ai_risk_score` (0-10) must be justified by the verdict, not by keyword matching.
+- **marketThailand**: Body 1-2 sentences; `openings` as a real number or range; 4-8 `companies`. Do not invent opening counts.
+- **dayInLife**: 5-7 `steps` that show a realistic mix of meetings, deep work, and waiting for results.
+- **realPeople**: 3-4 people. Each person: `background` 1-2 sentences; `path` 3-5 steps; `nowDoing` 1 sentence; `whereHeading` 1 sentence; `advice` 1 sentence. Only include `salary` if the person shared it. Sourced/consented `imageUrl` only.
+- **risks**: 3-5 risks, each 1 sentence. Be honest — this builds trust.
+- **futureOutlook**: `growthRate` + `growthLabel` if you have a real figure; `timeline` 3-5 items; `demandSignal` 1 sentence; `risk` 1 sentence.
+- **entryRoutes**: 3-5 routes, each with a `tag` and a clear `route` sentence.
+- **cta**: `body` 1-2 sentences; `button` 2-4 words.
+- **sources**: 3-6 sources. Every card that uses `source_refs` must point to a real source in this list.
+
+Cross-cutting rules from the editorial spine:
+- Every snapshot carries a price tag: years, effort, or what it takes.
+- Every snapshot points to a trajectory: where is this heading in 3-5 years?
+- Anchor on durable skills (judgment, framing, decisions under uncertainty), not tools that churn every 6 months.
+- If a number is uncertain, omit it. Empty is better than fake.
+
+Notes on `realPeople`:
+- Use the interview prompt in `app/admin/radar-interview/RadarInterviewClient.tsx` as the shape guide.
+- `imageUrl` only if the photo is sourced and the person consented.
+- `salary` only if the person actually shared it; never fabricate a salary, quote, year, or fact. Empty is better than fake.
+
+The `cta` card content comes from the seed data (`content_th.body` and `content_th.button`). The button links to `field.squad_url` if it is set; otherwise it records intent. A typical Thai CTA uses: `eyebrow: "สนใจไหม?"`, `title: "อยากลองสาย[field_name_th]"`, `body` inviting the user to tap if interested, and `button: "สนใจสายนี้"`.
 
 The `careerSurvival` card is NOT stored in radar_cards — it's injected at runtime from `field.research.metrics` + `field.score` + `field.tier`.
 
-Hidden/deprecated kinds (do NOT use): `jobs`, `growthCompare`, `list`, `reflection`, `realPeople`, `futureOutlook`. Cards with these kinds are hidden via `is_hidden = true` in the database.
+Hidden kinds (filtered in UI but valid): `jobs`, `growthCompare`, `list`, `entryRoutes`, `reflection`. `text` cards are only hidden when their title is exactly `"ทางนี้คืออะไร"`.
 
 ### radar_sources
 
@@ -212,6 +234,15 @@ docker exec supabase_db_pseed psql -U postgres -d postgres -c "INSERT INTO ... O
 - Use `ON CONFLICT DO UPDATE` / `Prefer: resolution=merge-duplicates` for idempotency
 - Verify writes with a SELECT after each table
 
+### Post-write verification
+
+After seeding, do these checks before considering the task done:
+
+1. **Render check** — open `/radar/<slug>` locally and scroll through every card. Confirm no blank panels, no broken layout, and the currency toggle works if `levels_thb` was provided.
+2. **Lint / type check** — run `npx eslint components/radar/RadarCards.tsx app/radar/[slug]/page.tsx` and `npx tsc --noEmit | grep -E "RadarCards|RadarField|CareerResearchView"` to catch schema mismatches.
+3. **Data audit** — query the DB to confirm `radar_fields.research`, `radar_sources`, and `radar_cards` all landed, and that every `source_refs` number points to an existing source ref.
+4. **Content audit** — re-read the seeded cards against `docs/CAREER_RADAR_EDITORIAL_SPINE.md`. No hype numbers, no fabricated salaries/quotes, every snapshot carries its price tag.
+
 ## Score Calculation
 
 The `score` column on `radar_fields` is calculated from metrics:
@@ -238,3 +269,6 @@ The `careerSurvival` card is NOT stored in radar_cards. It's injected server-sid
 - Setting `ai_risk_score` by keyword matching instead of reading the actual research
 - Forgetting to write to both local AND production
 - Hardcoding UUIDs that differ between environments
+- Fabricating salaries, quotes, or years in `realPeople` — omit the field if the source did not provide it
+- Treating `text` cards as always hidden — only the title `"ทางนี้คืออะไร"` is filtered
+- Skipping the render and lint checks after seeding
