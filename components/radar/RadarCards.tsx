@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ExternalLink, ArrowRight, Check } from "lucide-react";
+import Image from "next/image";
+import { ExternalLink, ArrowRight, Check, ChevronDown, ChevronUp } from "lucide-react";
 
 // ── content shapes (one per radar_cards.kind) ────────────────────────────────
 
@@ -33,7 +34,12 @@ export type JobsContent = CardBase & {
   }>;
 };
 export type SalaryProgressionContent = CardBase & {
+  currency?: string; // default currency code (e.g. 'USD')
   levels?: Array<{ level: string; years?: string; salary?: string; note?: string }>;
+  // Optional Thai-Baht variant; UI shows a TH/USD toggle when present
+  eyebrow_thb?: string;
+  title_thb?: string;
+  levels_thb?: Array<{ level: string; years?: string; salary?: string; note?: string }>;
 };
 export type GrowthCompareContent = CardBase & {
   unit?: string;
@@ -69,6 +75,7 @@ export type RealPeopleContent = CardBase & {
   people?: Array<{
     name?: string;
     role?: string;
+    imageUrl?: string; // small headshot or sourced photo
     background: string; // short bio (kept for back-compat)
     salary?: string; // honest, only if the person shared it — never fabricated
     path?: Array<{ year?: string; label: string }>; // trajectory: started → pivots → now
@@ -249,10 +256,36 @@ function JobsCard({ c, accent }: { c: JobsContent; accent: string }) {
 }
 
 function SalaryProgressionCard({ c, accent }: { c: SalaryProgressionContent; accent: string }) {
+  const [currency, setCurrency] = useState<"USD" | "THB">("USD");
+  const hasThb = Array.isArray(c.levels_thb) && c.levels_thb.length > 0;
+  const activeLevels = currency === "THB" && hasThb ? c.levels_thb : c.levels;
+  const eyebrow = currency === "THB" && c.eyebrow_thb ? c.eyebrow_thb : c.eyebrow;
+  const title = currency === "THB" && c.title_thb ? c.title_thb : c.title;
+
   return (
-    <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
+    <CardFrame eyebrow={eyebrow} title={title} accent={accent}>
       <div className="flex flex-col gap-3">
-        {(c.levels ?? []).map((lvl, i) => (
+        {hasThb && (
+          <div className="flex rounded-full border border-white/10 bg-white/5 overflow-hidden self-start">
+            <button
+              onClick={() => setCurrency("USD")}
+              className={`text-[11px] font-medium px-2.5 py-0.5 transition-colors inline-flex items-center gap-1 ${
+                currency === "USD" ? "bg-white/15 text-white" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              🇺🇸 USD
+            </button>
+            <button
+              onClick={() => setCurrency("THB")}
+              className={`text-[11px] font-medium px-2.5 py-0.5 transition-colors inline-flex items-center gap-1 ${
+                currency === "THB" ? "bg-white/15 text-white" : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              🇹🇭 THB
+            </button>
+          </div>
+        )}
+        {(activeLevels ?? []).map((lvl, i) => (
           <Panel key={i}>
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -480,100 +513,158 @@ function RisksCard({ c, accent }: { c: RisksContent; accent: string }) {
 }
 
 function RealPeopleCard({ c, accent }: { c: RealPeopleContent; accent: string }) {
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+
+  const toggle = (i: number) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+
   return (
     <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
       <div className="flex flex-col gap-3">
-        {(c.people ?? []).map((p, i) => (
-          <Panel key={i}>
-            {/* header: name / role + honest salary chip */}
-            {(p.name || p.role || p.salary) && (
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <div>
-                  {p.name && (
-                    <a
-                      href={`https://www.google.com/search?q=${encodeURIComponent(p.name)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-semibold text-white hover:underline"
-                    >
-                      {p.name}
-                    </a>
-                  )}
-                  {p.role && (
-                    <p className="text-xs text-neutral-400 mt-0.5">{p.role}</p>
-                  )}
-                </div>
-                {p.salary && (
-                  <span
-                    className="shrink-0 text-xs font-bold rounded-full px-2.5 py-1"
-                    style={{ color: accent, background: `${accent}1a` }}
-                  >
-                    {p.salary}
-                  </span>
+        {(c.people ?? []).map((p, i) => {
+          const isExpanded = expanded.has(i);
+          const hasMore =
+            (p.path && p.path.length > 0) ||
+            p.nowDoing ||
+            p.whereHeading ||
+            p.advice ||
+            p.publisher ||
+            p.url;
+
+          return (
+            <Panel key={i}>
+              {/* header: image + name / role + salary chip */}
+              <div className="flex items-start gap-3 mb-2">
+                {p.imageUrl && (
+                  <Image
+                    src={p.imageUrl}
+                    alt={p.name || "profile"}
+                    width={48}
+                    height={48}
+                    className="h-12 w-12 rounded-full object-cover border border-white/10 shrink-0 bg-white/5"
+                  />
                 )}
-              </div>
-            )}
-
-            <p className="text-neutral-200 text-base leading-relaxed">{p.background}</p>
-
-            {/* trajectory: started → pivots → now */}
-            {p.path && p.path.length > 0 && (
-              <div className="mt-3 flex flex-col">
-                {p.path.map((step, j) => (
-                  <div key={j} className="flex gap-3 pb-2.5 last:pb-0">
-                    <div className="flex flex-col items-center">
-                      <span className="h-1.5 w-1.5 rounded-full mt-1.5 shrink-0" style={{ background: accent }} />
-                      {j < p.path!.length - 1 && <span className="flex-1 w-px bg-white/10 mt-1" />}
-                    </div>
-                    <p className="text-neutral-300 text-sm leading-relaxed">
-                      {step.year && (
-                        <span className="font-semibold tabular-nums mr-1.5" style={{ color: accent }}>
-                          {step.year}
-                        </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      {p.name && (
+                        <a
+                          href={`https://www.google.com/search?q=${encodeURIComponent(p.name)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-white hover:underline"
+                        >
+                          {p.name}
+                        </a>
                       )}
-                      {step.label}
-                    </p>
+                      {p.role && (
+                        <p className="text-xs text-neutral-400 mt-0.5">{p.role}</p>
+                      )}
+                    </div>
+                    {p.salary && (
+                      <span
+                        className="shrink-0 text-xs font-bold rounded-full px-2.5 py-1"
+                        style={{ color: accent, background: `${accent}1a` }}
+                      >
+                        {p.salary}
+                      </span>
+                    )}
                   </div>
-                ))}
+                </div>
               </div>
-            )}
 
-            {p.nowDoing && (
-              <p className="mt-3 text-neutral-300 text-sm leading-relaxed">
-                <span className="text-neutral-500">Now · </span>
-                {p.nowDoing}
-              </p>
-            )}
-            {p.whereHeading && (
-              <p className="mt-1.5 text-neutral-300 text-sm leading-relaxed">
-                <span className="text-neutral-500">Heading · </span>
-                {p.whereHeading}
-              </p>
-            )}
-            {p.advice && (
-              <p
-                className="mt-3 text-sm italic leading-relaxed border-l-2 pl-3"
-                style={{ borderColor: accent, color: "rgb(229 229 229)" }}
-              >
-                “{p.advice}”
-              </p>
-            )}
+              <p className="text-neutral-200 text-base leading-relaxed">{p.background}</p>
 
-            <div className="flex items-center gap-2 mt-3 text-xs text-neutral-500">
-              {p.publisher && <span>{p.publisher}</span>}
-              {p.url && (
-                <a
-                  href={p.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ml-auto inline-flex items-center gap-1 hover:text-neutral-300"
-                >
-                  source <ExternalLink className="h-3 w-3" />
-                </a>
+              {/* expanded detail */}
+              {isExpanded && (
+                <div className="mt-3 flex flex-col gap-3">
+                  {/* trajectory: started → pivots → now */}
+                  {p.path && p.path.length > 0 && (
+                    <div className="flex flex-col">
+                      {p.path.map((step, j) => (
+                        <div key={j} className="flex gap-3 pb-2.5 last:pb-0">
+                          <div className="flex flex-col items-center">
+                            <span
+                              className="h-1.5 w-1.5 rounded-full mt-1.5 shrink-0"
+                              style={{ background: accent }}
+                            />
+                            {j < p.path!.length - 1 && <span className="flex-1 w-px bg-white/10 mt-1" />}
+                          </div>
+                          <p className="text-neutral-300 text-sm leading-relaxed">
+                            {step.year && (
+                              <span className="font-semibold tabular-nums mr-1.5" style={{ color: accent }}>
+                                {step.year}
+                              </span>
+                            )}
+                            {step.label}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {p.nowDoing && (
+                    <p className="text-neutral-300 text-sm leading-relaxed">
+                      <span className="text-neutral-500">Now · </span>
+                      {p.nowDoing}
+                    </p>
+                  )}
+                  {p.whereHeading && (
+                    <p className="text-neutral-300 text-sm leading-relaxed">
+                      <span className="text-neutral-500">Heading · </span>
+                      {p.whereHeading}
+                    </p>
+                  )}
+                  {p.advice && (
+                    <p
+                      className="text-sm italic leading-relaxed border-l-2 pl-3"
+                      style={{ borderColor: accent, color: "rgb(229 229 229)" }}
+                    >
+                      “{p.advice}”
+                    </p>
+                  )}
+
+                  <div className="flex items-center gap-2 text-xs text-neutral-500">
+                    {p.publisher && <span>{p.publisher}</span>}
+                    {p.url && (
+                      <a
+                        href={p.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-auto inline-flex items-center gap-1 hover:text-neutral-300"
+                      >
+                        source <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
+                </div>
               )}
-            </div>
-          </Panel>
-        ))}
+
+              {hasMore && (
+                <button
+                  onClick={() => toggle(i)}
+                  className="mt-3 inline-flex items-center gap-1 text-xs font-medium transition-colors hover:text-white"
+                  style={{ color: accent }}
+                >
+                  {isExpanded ? (
+                    <>
+                      Show less <ChevronUp className="h-3.5 w-3.5" />
+                    </>
+                  ) : (
+                    <>
+                      Read more <ChevronDown className="h-3.5 w-3.5" />
+                    </>
+                  )}
+                </button>
+              )}
+            </Panel>
+          );
+        })}
       </div>
     </CardFrame>
   );

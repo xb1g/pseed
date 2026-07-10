@@ -99,7 +99,13 @@ const template = {
       content_th: {
         eyebrow: "",
         title: "",
+        eyebrow_thb: "",
+        title_thb: "",
+        currency: "USD",
         levels: [
+          { level: "", years: "", salary: "", note: "" },
+        ],
+        levels_thb: [
           { level: "", years: "", salary: "", note: "" },
         ],
         source_refs: [],
@@ -143,6 +149,30 @@ const template = {
       },
     },
     {
+      position: 100,
+      kind: "realPeople",
+      content_th: {
+        eyebrow: "คนจริง",
+        title: "",
+        people: [
+          {
+            name: "",
+            role: "",
+            imageUrl: "",
+            background: "",
+            salary: "",
+            path: [{ year: "", label: "" }],
+            nowDoing: "",
+            whereHeading: "",
+            advice: "",
+            publisher: "",
+            url: "",
+          },
+        ],
+        source_refs: [],
+      },
+    },
+    {
       position: 110,
       kind: "risks",
       content_th: {
@@ -154,26 +184,16 @@ const template = {
     },
     {
       position: 120,
-      kind: "entryRoutes",
+      kind: "futureOutlook",
       content_th: {
-        eyebrow: "เรียนอะไรดี?",
-        title: "เรียนคณะไหนทำงานนี้ได้?",
-        description: "",
-        faculties: [
-          { name: "", tier: "direct", examples: "", note: "" },
-          { name: "", tier: "related", examples: "", note: "" },
-          { name: "", tier: "alternative", examples: "", note: "" },
-        ],
-        source_refs: [],
-      },
-    },
-    {
-      position: 130,
-      kind: "text",
-      content_th: {
-        eyebrow: "เริ่มยังไง",
+        eyebrow: "",
         title: "",
-        body: "",
+        growthRate: "",
+        growthLabel: "",
+        timeline: [{ year: "", event: "" }],
+        demandSignal: "",
+        risk: "",
+        source_refs: [],
       },
     },
     {

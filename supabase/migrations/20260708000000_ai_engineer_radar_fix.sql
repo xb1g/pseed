@@ -94,27 +94,45 @@ BEGIN
     )
   );
 
-  -- Card 3: Salary Progression  (fixed: range -> salary, + years, price-tagged notes)
+  -- Card 3: Salary Progression  (fixed: range -> salary, + years, price-tagged notes, + THB toggle)
   INSERT INTO radar_cards (field_id, position, kind, content_th, content_en) VALUES
   (v_field_id, 3, 'salaryProgression',
     jsonb_build_object(
       'eyebrow', 'เงินเดือน',
       'title', 'รายได้ AI Engineer (USD/ปี)',
+      'eyebrow_thb', 'เงินเดือน',
+      'title_thb', 'รายได้ AI Engineer (THB/เดือน)',
+      'currency', 'USD',
       'levels', jsonb_build_array(
         jsonb_build_object('level', 'Entry', 'years', '0-2', 'salary', '$80k — $120k', 'note', 'New grad หรือ bootcamp จบใหม่ ที่ startup หรือ big tech — สิ่งที่ต้องมี: implement โมเดลจาก paper เองได้ ไม่ใช่แค่เรียก API'),
         jsonb_build_object('level', 'Mid', 'years', '3-5', 'salary', '$150k — $250k', 'note', 'เคย ship AI feature จริงที่คนใช้ — สิ่งที่ต้องมี: ตัดสินใจได้ว่าปัญหาไหนควรใช้ AI และปัญหาไหนไม่ควร'),
         jsonb_build_object('level', 'Senior', 'years', '6-10', 'salary', '$300k — $500k', 'note', 'Lead ทีม AI หรือ Staff Engineer — สิ่งที่ต้องมี: วางกรอบปัญหาที่ยังไม่มีใครแก้ และพาทีมไปถึง'),
         jsonb_build_object('level', 'Staff+', 'years', '10+', 'salary', '$500k — $1.2M+', 'note', 'Principal / Distinguished / CTO AI — สิ่งที่ต้องมี: เดิมพันทิศทางเทคโนโลยีของทั้งบริษัทถูกต่อเนื่อง')
+      ),
+      'levels_thb', jsonb_build_array(
+        jsonb_build_object('level', 'Entry', 'years', '0-2', 'salary', '฿35k — ฿60k', 'note', 'จบใหม่หรือ bootcamp ในบริษัทไทย / startup — สิ่งที่ต้องมี: project โชว์ skill ได้ ไม่ใช่แค่เรียก API'),
+        jsonb_build_object('level', 'Mid', 'years', '3-5', 'salary', '฿60k — ฿100k', 'note', 'เคย ship AI feature จริงในบริษัทไทยหรือ remote เอเชีย — สิ่งที่ต้องมี: ตัดสินใจได้ว่าปัญหาไหนควรใช้ AI'),
+        jsonb_build_object('level', 'Senior', 'years', '6-10', 'salary', '฿100k — ฿200k', 'note', 'Lead ทีม AI หรือ Staff ในองค์กรใหญ่ — ระดับนี้หายากมากในตลาดไทย มักต้องมีผลงานหรือประสบการณ์ต่างประเทศ'),
+        jsonb_build_object('level', 'Staff+', 'years', '10+', 'salary', '฿200k+', 'note', 'Principal / Distinguished / CTO AI — มักต้อง remote หรือมีประสบการณ์ระดับสากล ตลาดไทยยังมีน้อย')
       )
     ),
     jsonb_build_object(
       'eyebrow', 'Salary',
       'title', 'AI Engineer Pay (USD/year)',
+      'eyebrow_thb', 'Salary',
+      'title_thb', 'AI Engineer Pay (THB/month)',
+      'currency', 'USD',
       'levels', jsonb_build_array(
         jsonb_build_object('level', 'Entry', 'years', '0-2', 'salary', '$80k — $120k', 'note', 'New grad or bootcamp grad at a startup or big tech. What it takes: implement a model from a paper yourself, not just call an API.'),
         jsonb_build_object('level', 'Mid', 'years', '3-5', 'salary', '$150k — $250k', 'note', 'Shipped real AI features people use. What it takes: judgment on which problems AI should — and should not — solve.'),
         jsonb_build_object('level', 'Senior', 'years', '6-10', 'salary', '$300k — $500k', 'note', 'AI team lead or Staff Engineer. What it takes: framing problems no one has solved yet and getting a team there.'),
         jsonb_build_object('level', 'Staff+', 'years', '10+', 'salary', '$500k — $1.2M+', 'note', 'Principal / Distinguished / AI CTO. What it takes: betting the company''s technical direction right, again and again.')
+      ),
+      'levels_thb', jsonb_build_array(
+        jsonb_build_object('level', 'Entry', 'years', '0-2', 'salary', '฿35k — ฿60k', 'note', 'New grad or bootcamp grad at Thai companies or startups. What it takes: projects that prove your skill, not just API calls.'),
+        jsonb_build_object('level', 'Mid', 'years', '3-5', 'salary', '฿60k — ฿100k', 'note', 'Shipped real AI features at Thai tech companies or Asia remote. What it takes: judgment on which problems AI should solve.'),
+        jsonb_build_object('level', 'Senior', 'years', '6-10', 'salary', '฿100k — ฿200k', 'note', 'AI team lead or Staff at a large org. Very rare in Thailand; usually requires a strong portfolio or international experience.'),
+        jsonb_build_object('level', 'Staff+', 'years', '10+', 'salary', '฿200k+', 'note', 'Principal / Distinguished / AI CTO. Usually remote or requires global experience; the Thai market has very few of these roles.')
       )
     )
   );
