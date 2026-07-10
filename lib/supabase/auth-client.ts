@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/client";
+import { isAbortError } from "./errors";
 
 // Types for auth utilities
 export type UserRole = "instructor" | "TA" | "student" | "admin" | "beta-tester" | "passion-seed-team";
@@ -44,8 +45,10 @@ export const checkClientAuth = async (
 
 
     if (roleError) {
-      console.error("Error checking user roles:", roleError.message || roleError);
-      console.error("Error details:", { code: roleError.code, details: roleError.details, hint: roleError.hint });
+      if (!isAbortError(roleError)) {
+        console.error("Error checking user roles:", roleError.message || roleError);
+        console.error("Error details:", { code: roleError.code, details: roleError.details, hint: roleError.hint });
+      }
       return {
         user,
         isAuthenticated: true,
@@ -65,7 +68,9 @@ export const checkClientAuth = async (
       userRoles,
     };
   } catch (error) {
-    console.error("Client auth check failed:", error);
+    if (!isAbortError(error)) {
+      console.error("Client auth check failed:", error);
+    }
     return {
       user: null,
       isAuthenticated: false,

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { isAbortError } from "@/lib/supabase/errors";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -39,8 +40,10 @@ export function TOSAcceptanceModal() {
         .single();
 
       if (error) {
-        console.error("Error checking TOS acceptance:", error.message || error);
-        console.error("Error details:", { code: error.code, details: error.details, hint: error.hint });
+        if (!isAbortError(error)) {
+          console.error("Error checking TOS acceptance:", error.message || error);
+          console.error("Error details:", { code: error.code, details: error.details, hint: error.hint });
+        }
         return;
       }
 
