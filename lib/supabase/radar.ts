@@ -94,6 +94,7 @@ export async function getRadarCards(fieldId: string): Promise<RadarCard[]> {
     .from("radar_cards")
     .select("*")
     .eq("field_id", fieldId)
+    .eq("is_hidden", false)
     .order("position", { ascending: true });
 
   if (error) {

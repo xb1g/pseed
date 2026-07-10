@@ -1132,6 +1132,7 @@ export type Database = {
           image_license: string | null
           image_alt_th: string | null
           image_alt_en: string | null
+          is_hidden: boolean
           created_at: string | null
           updated_at: string | null
         }
@@ -1148,6 +1149,7 @@ export type Database = {
           image_license?: string | null
           image_alt_th?: string | null
           image_alt_en?: string | null
+          is_hidden?: boolean
           created_at?: string | null
           updated_at?: string | null
         }
@@ -1164,6 +1166,7 @@ export type Database = {
           image_license?: string | null
           image_alt_th?: string | null
           image_alt_en?: string | null
+          is_hidden?: boolean
           created_at?: string | null
           updated_at?: string | null
         }

@@ -168,6 +168,15 @@ const template = {
       },
     },
     {
+      position: 130,
+      kind: "text",
+      content_th: {
+        eyebrow: "เริ่มยังไง",
+        title: "",
+        body: "",
+      },
+    },
+    {
       position: 140,
       kind: "cta",
       content_th: {
