@@ -283,9 +283,45 @@ score = ROUND(
 
 The `careerSurvival` card is NOT stored in radar_cards. It's injected server-side from `field.research.metrics` + `field.score` + `field.tier`.
 
+## Metric Integrity — CRITICAL
+
+**NEVER use training data or gut feeling for metrics.** Every single metric value must come from a verified source found via web search in the current session. This section exists because past sessions hallucinated metrics that looked plausible but were wrong — leading to misleading career advice for students.
+
+### Rules
+
+1. **Every metric needs a source URL.** If you cannot find a real source for a metric, set it to `null` rather than guessing. A missing metric is better than a fake one.
+
+2. **Cross-check relative rankings.** After updating any field's metrics, query ALL published fields and sanity-check the ranking. Ask yourself:
+   - Does QA Engineer really score higher than AI Engineer? (It shouldn't.)
+   - Does IT Support really have higher demand growth than Software Engineer? (It shouldn't.)
+   - If a field's `salary_ceiling` looks unusually high or `progression_difficulty` unusually low, it's probably wrong.
+
+3. **Use the score formula to verify.** Calculate the score manually before writing:
+   ```
+   score = ROUND((demand_growth/10 + grad_employment_pct/100 + (1-saturation_level/10) + (1-progression_difficulty/10)) / 4 * 10)
+   ```
+   If the score doesn't match your intuition about the field's prospects, re-examine each metric.
+
+4. **metric_details must have real source URLs.** Every entry in `metric_details` and `global_metric_details` must include a `source_url` that was fetched and verified with `WebFetch` during research. Do not leave `source_url` empty or use a URL from training data.
+
+5. **Minimum source count.** Each field must have at least 4 verified sources in `research.sources`. If you can only find 2, search harder — try BLS, JobsDB, Glassdoor, professional associations, and industry reports.
+
+6. **When re-researching existing fields**, always compare before and after values. Log what changed and why in the sub-agent output. If a metric changes by more than 2 points, double-check the new source.
+
+### Red flags that metrics are hallucinated
+
+- `research.sources` array is empty or has fewer than 3 entries
+- `metric_details` entries have empty `source_url` fields
+- A niche field scores higher than a mainstream high-demand field
+- `salary_ceiling` exceeds what senior roles actually pay (check JobsDB/Glassdoor)
+- `grad_employment_pct` is above 90% for a non-licensed profession
+- `demand_growth` is 8+ but BLS shows flat or declining growth
+
 ## Common Mistakes
 
 - Using training data instead of fetching real sources — ALWAYS web search first
+- **Writing plausible-looking metrics without sources** — this is the #1 integrity risk. Every number must trace to a URL.
+- **Not comparing across fields** — a metric only makes sense relative to other fields. Always check the leaderboard after updating.
 - Forgetting to add `source_refs` to cards — every card (except hook, sources) should have them
 - Using `title` instead of `level` in salaryProgression levels
 - Using `yearsExp` instead of `years` in salaryProgression levels
