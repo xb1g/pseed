@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, ArrowRight } from "lucide-react";
-import { RotatingBilingualText } from "./RotatingBilingualText";
 
 type RadarField = Database["public"]["Tables"]["radar_fields"]["Row"];
 type RadarCollection = Database["public"]["Tables"]["radar_collections"]["Row"];
@@ -262,10 +261,7 @@ function FieldTile({
         <div className="text-3xl mb-3">{field.emoji}</div>
 
         <h3 className="text-white font-bold text-base sm:text-lg leading-tight mb-2">
-          <RotatingBilingualText
-            en={field.name_en || field.name_th || ""}
-            th={field.name_th || field.name_en || ""}
-          />
+          {field.name_en || field.name_th || ""}
         </h3>
 
         {field.tagline_th && (
