@@ -1,5 +1,4 @@
 import {
-  RadarDraftNotConfiguredError,
   createRadarDraftStore,
 } from "@/lib/radar/admin-draft-store";
 import { radarContentDraftSchema } from "@/lib/radar/admin-content";
@@ -104,26 +103,46 @@ describe("radarContentDraftSchema", () => {
 });
 
 describe("createRadarDraftStore", () => {
-  it("returns canonical content as an unpersisted editor seed", async () => {
+  it("returns canonical content when no saved draft exists", async () => {
     const canonical = { id: "field-1", slug: "ai-engineer" };
     const store = createRadarDraftStore({
       loadCanonical: async () => canonical,
+      loadDraft: async () => null,
+      persistDraft: async () => ({ revision: 1, updated_at: "2026-07-12" }),
     });
 
     await expect(store.read("field-1")).resolves.toEqual({
-      status: "not_configured",
+      status: "canonical",
       draft: null,
+      revision: null,
+      updatedAt: null,
       canonical,
     });
   });
 
-  it("refuses writes when draft persistence is not configured", async () => {
+  it("persists a WYSIWYG draft and returns its revision", async () => {
+    const persistDraft = jest.fn(async () => ({
+      revision: 2,
+      updated_at: "2026-07-12T12:00:00Z",
+    }));
     const store = createRadarDraftStore({
       loadCanonical: async () => ({ id: "field-1" }),
+      loadDraft: async () => null,
+      persistDraft,
     });
+    const wysiwygDraft = { field: {}, cards: [] };
 
-    await expect(store.save("field-1", validDraft, "admin-1")).rejects.toBeInstanceOf(
-      RadarDraftNotConfiguredError
-    );
+    await expect(
+      store.save("field-1", wysiwygDraft, "admin-1", 1)
+    ).resolves.toEqual({
+      revision: 2,
+      updatedAt: "2026-07-12T12:00:00Z",
+    });
+    expect(persistDraft).toHaveBeenCalledWith({
+      fieldId: "field-1",
+      content: wysiwygDraft,
+      actorId: "admin-1",
+      expectedRevision: 1,
+    });
   });
 });

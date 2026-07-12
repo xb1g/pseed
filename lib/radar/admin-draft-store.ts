@@ -1,19 +1,13 @@
-import type { RadarContentDraft } from "@/lib/radar/admin-content";
-
-export class RadarDraftNotConfiguredError extends Error {
-  readonly code = "RADAR_DRAFT_PERSISTENCE_NOT_CONFIGURED";
-
-  constructor() {
-    super(
-      "Radar draft persistence is not configured. Apply the radar_drafts/radar_versions schema before saving."
-    );
-    this.name = "RadarDraftNotConfiguredError";
-  }
-}
+export type RadarWysiwygDraft = {
+  field: Record<string, unknown>;
+  cards: Array<Record<string, unknown>>;
+};
 
 export type RadarDraftReadResult<TCanonical> = {
-  status: "not_configured";
-  draft: null;
+  status: "draft" | "canonical";
+  draft: RadarWysiwygDraft | null;
+  revision: number | null;
+  updatedAt: string | null;
   canonical: TCanonical | null;
 };
 
@@ -21,26 +15,52 @@ export interface RadarDraftStore<TCanonical> {
   read(fieldId: string): Promise<RadarDraftReadResult<TCanonical>>;
   save(
     fieldId: string,
-    draft: RadarContentDraft,
-    actorId: string
-  ): Promise<never>;
+    draft: RadarWysiwygDraft,
+    actorId: string,
+    expectedRevision: number | null
+  ): Promise<{ revision: number; updatedAt: string }>;
 }
 
 export function createRadarDraftStore<TCanonical>({
   loadCanonical,
+  loadDraft,
+  persistDraft,
 }: {
   loadCanonical: (fieldId: string) => Promise<TCanonical | null>;
+  loadDraft: (fieldId: string) => Promise<{
+    content: RadarWysiwygDraft;
+    revision: number;
+    updated_at: string;
+  } | null>;
+  persistDraft: (input: {
+    fieldId: string;
+    content: RadarWysiwygDraft;
+    actorId: string;
+    expectedRevision: number | null;
+  }) => Promise<{ revision: number; updated_at: string }>;
 }): RadarDraftStore<TCanonical> {
   return {
     async read(fieldId) {
+      const [canonical, draft] = await Promise.all([
+        loadCanonical(fieldId),
+        loadDraft(fieldId),
+      ]);
       return {
-        status: "not_configured",
-        draft: null,
-        canonical: await loadCanonical(fieldId),
+        status: draft ? "draft" : "canonical",
+        draft: draft?.content ?? null,
+        revision: draft?.revision ?? null,
+        updatedAt: draft?.updated_at ?? null,
+        canonical,
       };
     },
-    async save() {
-      throw new RadarDraftNotConfiguredError();
+    async save(fieldId, draft, actorId, expectedRevision) {
+      const saved = await persistDraft({
+        fieldId,
+        content: draft,
+        actorId,
+        expectedRevision,
+      });
+      return { revision: saved.revision, updatedAt: saved.updated_at };
     },
   };
 }

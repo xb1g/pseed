@@ -1,6 +1,9 @@
 import { createClient } from "@/utils/supabase/client";
 import { isAnonymousUser } from "@/lib/supabase/auth";
+import { shouldSkipRadarAnalytics } from "@/lib/radar/analytics-host";
 import type { Database } from "./database.types";
+
+export { shouldSkipRadarAnalytics } from "@/lib/radar/analytics-host";
 
 type RadarField = Database["public"]["Tables"]["radar_fields"]["Row"];
 type RadarCard = Database["public"]["Tables"]["radar_cards"]["Row"];
@@ -378,7 +381,7 @@ export async function recordRadarFieldView(
   fieldSlug: string,
   fieldId?: string
 ): Promise<void> {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || shouldSkipRadarAnalytics()) return;
 
   const supabase = createClient();
   const {
@@ -386,7 +389,7 @@ export async function recordRadarFieldView(
   } = await supabase.auth.getUser();
 
   const { error } = await supabase.from("radar_field_views").insert({
-    user_id: user?.id,
+    user_id: user && !isAnonymousUser(user) ? user.id : null,
     session_id: getOrCreateSessionId(),
     field_id: fieldId || null,
     field_slug: fieldSlug,
@@ -400,7 +403,7 @@ export async function recordRadarFieldView(
 export async function recordRadarPathIntent(
   data: RadarPathIntentData
 ): Promise<void> {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || shouldSkipRadarAnalytics()) return;
 
   const supabase = createClient();
   const {
@@ -408,7 +411,7 @@ export async function recordRadarPathIntent(
   } = await supabase.auth.getUser();
 
   const { error } = await supabase.from("radar_path_intents").insert({
-    user_id: user?.id,
+    user_id: user && !isAnonymousUser(user) ? user.id : null,
     session_id: getOrCreateSessionId(),
     field_id: data.fieldId || null,
     field_slug: data.fieldSlug,
@@ -425,6 +428,8 @@ export async function recordRadarStartOptionInterest(
   startOptionId: string,
   eventType: "interested" | "opened" | "saved" | "dismissed"
 ): Promise<void> {
+  if (typeof window === "undefined" || shouldSkipRadarAnalytics()) return;
+
   const supabase = createClient();
   const { error } = await (supabase as unknown as {
     rpc: (

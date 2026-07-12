@@ -1,11 +1,3 @@
-UPDATE public.radar_reflections
-SET prompt_th = CASE prompt_th
-  WHEN 'อะไรที่ดึงดูดเธอในทางนี้?' THEN 'อะไรดึงดูดคุณในเส้นทางนี้?'
-  WHEN 'ทำไมเธอถึงสนใจทางนี้?' THEN 'อะไรทำให้คุณสนใจเส้นทางนี้?'
-  ELSE replace(prompt_th, 'เธอ', 'คุณ')
-END
-WHERE prompt_th LIKE '%เธอ%';
-
 UPDATE public.radar_cards
 SET content_th = replace(
   replace(

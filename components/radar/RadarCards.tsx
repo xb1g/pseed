@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { createContext, useContext, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   getAiImpactLabel,
@@ -142,6 +142,63 @@ export type CareerSurvivalContent = CardBase & {
 
 // ── shared frame ─────────────────────────────────────────────────────────────
 
+type RadarInlineEditor = {
+  onChange: (path: string[], value: unknown) => void;
+};
+
+export const RadarInlineEditorContext = createContext<RadarInlineEditor | null>(null);
+
+function EditableText({
+  value,
+  field,
+  className,
+  style,
+  valueType = "string",
+  onValueChange,
+}: {
+  value: string;
+  field: string | string[];
+  className: string;
+  style?: React.CSSProperties;
+  valueType?: "string" | "number";
+  onValueChange?: (value: string) => void;
+}) {
+  const editor = useContext(RadarInlineEditorContext);
+  const path = Array.isArray(field) ? field : [field];
+  const label = path.join(".");
+  if (!editor) return <span className={className} style={style}>{value}</span>;
+
+  return (
+    <span
+      className={`${className} radar-inline-edit`}
+      style={style}
+      contentEditable
+      suppressContentEditableWarning
+      role="textbox"
+      aria-label={`Edit ${label}`}
+      onMouseDown={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+      }}
+      onKeyDown={(event) => event.stopPropagation()}
+      onBlur={(event) => {
+        const nextValue = event.currentTarget.textContent?.trim() ?? "";
+        if (onValueChange) {
+          onValueChange(nextValue);
+          return;
+        }
+        editor.onChange(
+          path,
+          valueType === "number" ? Number(nextValue) : nextValue
+        );
+      }}
+    >
+      {value}
+    </span>
+  );
+}
+
 function CardFrame({
   eyebrow,
   title,
@@ -156,16 +213,20 @@ function CardFrame({
   return (
     <div className="w-full max-w-xl mx-auto flex flex-col gap-5">
       {eyebrow && (
-        <span
+        <EditableText
+          value={eyebrow}
+          field="eyebrow"
           className="rc-eyebrow text-xs font-semibold uppercase tracking-[0.18em]"
           style={{ color: accent }}
-        >
-          {eyebrow}
-        </span>
+        />
       )}
       {title && (
-        <h2 className="rc-title text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-[1.1]">
-          {title}
+        <h2>
+          <EditableText
+            value={title}
+            field="title"
+            className="rc-title block text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-[1.1]"
+          />
         </h2>
       )}
       <div className="rc-content flex flex-col gap-5">
@@ -191,12 +252,18 @@ function HookCard({ c, accent }: { c: HookContent; accent: string }) {
       {c.stat && (
         <div className="flex items-baseline gap-3">
           <span className="text-4xl sm:text-5xl font-extrabold" style={{ color: accent }}>
-            {c.stat}
+            <EditableText value={c.stat} field="stat" className="inline" />
           </span>
-          {c.statLabel && <span className="text-sm text-neutral-400">{c.statLabel}</span>}
+          {c.statLabel && (
+            <EditableText value={c.statLabel} field="statLabel" className="text-sm text-neutral-400" />
+          )}
         </div>
       )}
-      {c.body && <p className="text-neutral-300 text-base leading-relaxed">{c.body}</p>}
+      {c.body && (
+        <p>
+          <EditableText value={c.body} field="body" className="block text-neutral-300 text-base leading-relaxed" />
+        </p>
+      )}
     </CardFrame>
   );
 }
@@ -209,7 +276,11 @@ function FantasyRealityCard({ c, accent }: { c: FantasyRealityContent; accent: s
           <p className="text-xs font-semibold uppercase tracking-wider text-amber-300/80 mb-1">
             Fantasy
           </p>
-          <p className="text-neutral-200 text-base leading-relaxed">{c.fantasy}</p>
+          {c.fantasy && (
+            <p>
+              <EditableText value={c.fantasy} field="fantasy" className="block text-neutral-200 text-base leading-relaxed" />
+            </p>
+          )}
         </Panel>
       </div>
       <div className="rc-panel-right">
@@ -217,7 +288,11 @@ function FantasyRealityCard({ c, accent }: { c: FantasyRealityContent; accent: s
           <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300/80 mb-1">
             Reality
           </p>
-          <p className="text-neutral-200 text-base leading-relaxed">{c.reality}</p>
+          {c.reality && (
+            <p>
+              <EditableText value={c.reality} field="reality" className="block text-neutral-200 text-base leading-relaxed" />
+            </p>
+          )}
         </Panel>
       </div>
     </CardFrame>
@@ -233,8 +308,26 @@ function isStartText(c: TextContent): boolean {
 }
 
 function SkillsTextCard({ c, accent }: { c: TextContent; accent: string }) {
+  const editor = useContext(RadarInlineEditorContext);
   const items = c.skills?.map(({ title, description = "" }) => ({ title, description }))
     ?? parseRadarListItems(c.body);
+  const updateLegacyItem = (
+    index: number,
+    key: "title" | "description",
+    value: string
+  ) => {
+    const next = items.map((item, itemIndex) =>
+      itemIndex === index ? { ...item, [key]: value } : item
+    );
+    editor?.onChange(
+      ["body"],
+      next
+        .map((item) =>
+          item.description ? `${item.title}: ${item.description}` : item.title
+        )
+        .join("\n")
+    );
+  };
 
   return (
     <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
@@ -243,7 +336,11 @@ function SkillsTextCard({ c, accent }: { c: TextContent; accent: string }) {
       </p>
       <div className="grid gap-2 sm:grid-cols-2">
         {items.map((item, index) => (
-          <details key={`${item.title}-${index}`} className="group rounded-xl border border-white/10 bg-white/[0.03]">
+          <details
+            key={`${item.title}-${index}`}
+            open={editor ? true : undefined}
+            className="group rounded-xl border border-white/10 bg-white/[0.03]"
+          >
             <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 py-3 focus-visible:outline-none focus-visible:ring-2">
               <span
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-neutral-950"
@@ -251,12 +348,40 @@ function SkillsTextCard({ c, accent }: { c: TextContent; accent: string }) {
               >
                 {index + 1}
               </span>
-              <span className="min-w-0 flex-1 font-semibold text-white">{item.title}</span>
+              {c.skills ? (
+                <EditableText
+                  value={item.title}
+                  field={["skills", String(index), "title"]}
+                  className="min-w-0 flex-1 font-semibold text-white"
+                />
+              ) : (
+                <EditableText
+                  value={item.title}
+                  field="body"
+                  className="min-w-0 flex-1 font-semibold text-white"
+                  onValueChange={(value) => updateLegacyItem(index, "title", value)}
+                />
+              )}
               <ChevronDown className="h-4 w-4 shrink-0 text-neutral-500 transition-transform group-open:rotate-180" />
             </summary>
             {item.description && (
               <p className="px-4 pb-4 pl-16 text-sm leading-relaxed text-neutral-400">
-                {item.description}
+                {c.skills ? (
+                  <EditableText
+                    value={item.description}
+                    field={["skills", String(index), "description"]}
+                    className="block"
+                  />
+                ) : (
+                  <EditableText
+                    value={item.description}
+                    field="body"
+                    className="block"
+                    onValueChange={(value) =>
+                      updateLegacyItem(index, "description", value)
+                    }
+                  />
+                )}
               </p>
             )}
           </details>
@@ -275,6 +400,7 @@ function StartCarouselTextCard({
   accent: string;
   onIntent?: (pathSlug: string) => void;
 }) {
+  const editor = useContext(RadarInlineEditorContext);
   const trackRef = useRef<HTMLDivElement>(null);
   const [recorded, setRecorded] = useState<Set<number>>(new Set());
   const parsed = parseRadarListItems(c.body);
@@ -284,6 +410,23 @@ function StartCarouselTextCard({
     type: "ลองทำ",
     cta: "สนใจวิธีนี้",
   }));
+  const updateLegacyOption = (
+    index: number,
+    key: "title" | "description",
+    value: string
+  ) => {
+    const next = parsed.map((item, itemIndex) =>
+      itemIndex === index ? { ...item, [key]: value } : item
+    );
+    editor?.onChange(
+      ["body"],
+      next
+        .map((item) =>
+          item.description ? `${item.title}: ${item.description}` : item.title
+        )
+        .join("\n")
+    );
+  };
 
   const move = (direction: -1 | 1) => {
     const track = trackRef.current;
@@ -311,17 +454,70 @@ function StartCarouselTextCard({
         {options.map((option, index) => (
           <article key={`${option.title}-${index}`} className="w-[82vw] max-w-[320px] shrink-0 snap-center rounded-2xl border border-white/10 bg-white/[0.04] p-5">
             <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: accent }}>
-              {option.type ?? `ทางเลือก ${index + 1}`}
+              {c.options && option.type ? (
+                <EditableText
+                  value={option.type}
+                  field={["options", String(index), "type"]}
+                  className="inline"
+                />
+              ) : (
+                option.type ?? `ทางเลือก ${index + 1}`
+              )}
             </span>
-            <h3 className="mt-2 text-xl font-bold text-white">{option.title}</h3>
+            <h3 className="mt-2">
+              {c.options ? (
+                <EditableText
+                  value={option.title}
+                  field={["options", String(index), "title"]}
+                  className="block text-xl font-bold text-white"
+                />
+              ) : (
+                <EditableText
+                  value={option.title}
+                  field="body"
+                  className="block text-xl font-bold text-white"
+                  onValueChange={(value) => updateLegacyOption(index, "title", value)}
+                />
+              )}
+            </h3>
             {option.description && (
               <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-neutral-400">
-                {option.description}
+                {c.options ? (
+                  <EditableText
+                    value={option.description}
+                    field={["options", String(index), "description"]}
+                    className="block"
+                  />
+                ) : (
+                  <EditableText
+                    value={option.description}
+                    field="body"
+                    className="block"
+                    onValueChange={(value) =>
+                      updateLegacyOption(index, "description", value)
+                    }
+                  />
+                )}
               </p>
             )}
             <div className="mt-4 flex flex-wrap gap-2 text-xs text-neutral-500">
-              {option.duration && <span>{option.duration}</span>}
-              {option.cost && <span>· {option.cost}</span>}
+              {option.duration && (
+                <EditableText
+                  value={option.duration}
+                  field={["options", String(index), "duration"]}
+                  className="inline"
+                />
+              )}
+              {option.cost && (
+                <span>
+                  ·{" "}
+                  <EditableText
+                    value={option.cost}
+                    field={["options", String(index), "cost"]}
+                    className="inline"
+                  />
+                </span>
+              )}
             </div>
             <div className="mt-5 grid gap-2">
               {option.url && (
@@ -339,7 +535,17 @@ function StartCarouselTextCard({
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-neutral-950 disabled:bg-white/10 disabled:text-white/60"
                 style={recorded.has(index) ? undefined : { background: accent }}
               >
-                {recorded.has(index) ? <><Check className="h-4 w-4" /> สนใจแล้ว</> : option.cta ?? "สนใจวิธีนี้"}
+                {recorded.has(index) ? (
+                  <><Check className="h-4 w-4" /> สนใจแล้ว</>
+                ) : c.options && option.cta ? (
+                  <EditableText
+                    value={option.cta}
+                    field={["options", String(index), "cta"]}
+                    className="inline"
+                  />
+                ) : (
+                  option.cta ?? "สนใจวิธีนี้"
+                )}
               </button>
             </div>
           </article>
@@ -369,8 +575,12 @@ function TextCard({
   return (
     <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
       {c.body && (
-        <p className="text-neutral-300 text-base leading-relaxed whitespace-pre-line">
-          {Array.isArray(c.body) ? c.body.join("\n") : c.body}
+        <p>
+          <EditableText
+            value={Array.isArray(c.body) ? c.body.join("\n") : c.body}
+            field="body"
+            className="block text-neutral-300 text-base leading-relaxed whitespace-pre-line"
+          />
         </p>
       )}
     </CardFrame>
@@ -384,7 +594,11 @@ function ListCard({ c, accent }: { c: ListContent; accent: string }) {
         {(c.items ?? []).map((item, i) => (
           <li key={i} className="flex items-start gap-3">
             <Check className="h-4 w-4 mt-1 shrink-0" style={{ color: accent }} />
-            <span className="text-neutral-200 text-base">{item}</span>
+            <EditableText
+              value={item}
+              field={["items", String(i)]}
+              className="text-neutral-200 text-base"
+            />
           </li>
         ))}
       </ul>
@@ -399,18 +613,39 @@ function JobsCard({ c, accent }: { c: JobsContent; accent: string }) {
         {(c.jobs ?? []).map((job, i) => (
           <Panel key={i}>
             <div className="flex items-start justify-between gap-3">
-              <span className="text-white font-semibold">{job.title}</span>
+              <EditableText
+                value={job.title}
+                field={["jobs", String(i), "title"]}
+                className="text-white font-semibold"
+              />
               {job.salary && (
                 <span className="text-sm font-bold shrink-0" style={{ color: accent }}>
-                  {job.salary}
+                  <EditableText value={job.salary} field={["jobs", String(i), "salary"]} className="inline" />
                 </span>
               )}
             </div>
             <div className="flex flex-wrap gap-2 mt-2 text-xs text-neutral-400">
-              {job.demand && <span>Demand: {job.demand}</span>}
-              {job.growth && <span style={{ color: accent }}>{job.growth} growth</span>}
+              {job.demand && (
+                <span>
+                  Demand:{" "}
+                  <EditableText value={job.demand} field={["jobs", String(i), "demand"]} className="inline" />
+                </span>
+              )}
+              {job.growth && (
+                <span style={{ color: accent }}>
+                  <EditableText value={job.growth} field={["jobs", String(i), "growth"]} className="inline" /> growth
+                </span>
+              )}
             </div>
-            {job.note && <p className="text-neutral-400 text-sm mt-2 leading-relaxed">{job.note}</p>}
+            {job.note && (
+              <p className="mt-2">
+                <EditableText
+                  value={job.note}
+                  field={["jobs", String(i), "note"]}
+                  className="block text-neutral-400 text-sm leading-relaxed"
+                />
+              </p>
+            )}
           </Panel>
         ))}
       </div>
@@ -452,16 +687,40 @@ function SalaryProgressionCard({ c, accent }: { c: SalaryProgressionContent; acc
           <Panel key={i}>
             <div className="flex items-center justify-between gap-3">
               <div>
-                <span className="text-white font-semibold">{lvl.level}</span>
-                {lvl.years && <span className="text-neutral-500 text-xs ml-2">{lvl.years} yrs</span>}
+                <EditableText
+                  value={lvl.level}
+                  field={[currency === "THB" && hasThb ? "levels_thb" : "levels", String(i), "level"]}
+                  className="text-white font-semibold"
+                />
+                {lvl.years && (
+                  <span className="text-neutral-500 text-xs ml-2">
+                    <EditableText
+                      value={lvl.years}
+                      field={[currency === "THB" && hasThb ? "levels_thb" : "levels", String(i), "years"]}
+                      className="inline"
+                    /> yrs
+                  </span>
+                )}
               </div>
               {lvl.salary && (
                 <span className="text-sm font-bold shrink-0" style={{ color: accent }}>
-                  {lvl.salary}
+                  <EditableText
+                    value={lvl.salary}
+                    field={[currency === "THB" && hasThb ? "levels_thb" : "levels", String(i), "salary"]}
+                    className="inline"
+                  />
                 </span>
               )}
             </div>
-            {lvl.note && <p className="text-neutral-400 text-sm mt-2 leading-relaxed">{lvl.note}</p>}
+            {lvl.note && (
+              <p className="mt-2">
+                <EditableText
+                  value={lvl.note}
+                  field={[currency === "THB" && hasThb ? "levels_thb" : "levels", String(i), "note"]}
+                  className="block text-neutral-400 text-sm leading-relaxed"
+                />
+              </p>
+            )}
           </Panel>
         ))}
       </div>
@@ -479,10 +738,15 @@ function GrowthCompareCard({ c, accent }: { c: GrowthCompareContent; accent: str
           <div key={i} className="flex flex-col gap-1">
             <div className="flex justify-between text-sm">
               <span className={it.self ? "text-white font-semibold" : "text-neutral-400"}>
-                {it.label}
+                <EditableText value={it.label} field={["items", String(i), "label"]} className="inline" />
               </span>
               <span className="text-neutral-300">
-                +{it.growth}
+                +<EditableText
+                  value={String(it.growth)}
+                  field={["items", String(i), "growth"]}
+                  className="inline"
+                  valueType="number"
+                />
                 {c.unit ? ` ${c.unit}` : "%"}
               </span>
             </div>
@@ -537,7 +801,9 @@ function AiImpactCard({ c, accent }: { c: AiImpactContent; accent: string }) {
       )}
       {c.verdict && (
         <Panel>
-          <p className="text-neutral-100 text-base leading-relaxed">{c.verdict}</p>
+          <p>
+            <EditableText value={c.verdict} field="verdict" className="block text-neutral-100 text-base leading-relaxed" />
+          </p>
         </Panel>
       )}
       {c.augmented && c.augmented.length > 0 && (
@@ -549,7 +815,7 @@ function AiImpactCard({ c, accent }: { c: AiImpactContent; accent: string }) {
             <ul className="flex flex-col gap-1.5">
               {c.augmented.map((t, i) => (
                 <li key={i} className="rc-stagger text-neutral-200 text-base leading-relaxed" style={{ transitionDelay: `${0.3 + i * 0.08}s` }}>
-                  • {t}
+                  • <EditableText value={t} field={["augmented", String(i)]} className="inline" />
                 </li>
               ))}
             </ul>
@@ -565,7 +831,7 @@ function AiImpactCard({ c, accent }: { c: AiImpactContent; accent: string }) {
             <ul className="flex flex-col gap-1.5">
               {c.automated.map((t, i) => (
                 <li key={i} className="rc-stagger text-neutral-200 text-base leading-relaxed" style={{ transitionDelay: `${0.45 + i * 0.08}s` }}>
-                  • {t}
+                  • <EditableText value={t} field={["automated", String(i)]} className="inline" />
                 </li>
               ))}
             </ul>
@@ -580,11 +846,31 @@ function MarketThailandCard({ c, accent }: { c: MarketThailandContent; accent: s
   return (
     <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
       {c.openings && (
-        <div className="text-xl font-bold" style={{ color: accent }}>
-          {c.openings}
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+          <p className="text-xs font-medium text-neutral-400">
+            ประกาศงานที่พบในไทย
+          </p>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-xl font-bold" style={{ color: accent }}>
+              <EditableText value={c.openings} field="openings" className="inline" />
+            </span>
+            <span className="text-sm text-neutral-300">ตำแหน่ง</span>
+          </div>
+          <p className="mt-2 text-xs leading-relaxed text-neutral-500">
+            จำนวนประกาศรับสมัครโดยประมาณ ณ เวลาที่เก็บข้อมูล
+            จากแหล่งอ้างอิงของหน้านี้ ไม่ใช่จำนวนงานทั้งหมดในตลาด
+          </p>
+          <p className="mt-2 text-xs font-medium leading-relaxed text-neutral-300">
+            แปลว่า: มีความต้องการจ้างงานให้เห็นชัด แต่ตัวเลขนี้เพียงอย่างเดียว
+            ยังบอกไม่ได้ว่าสมัครง่ายหรือการแข่งขันสูงแค่ไหน
+          </p>
         </div>
       )}
-      {c.body && <p className="text-neutral-300 text-base leading-relaxed">{c.body}</p>}
+      {c.body && (
+        <p>
+          <EditableText value={c.body} field="body" className="block text-neutral-300 text-base leading-relaxed" />
+        </p>
+      )}
       {c.companies && c.companies.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {c.companies.map((co, i) => (
@@ -592,7 +878,7 @@ function MarketThailandCard({ c, accent }: { c: MarketThailandContent; accent: s
               key={i}
               className="text-xs rounded-full border border-white/10 bg-white/5 px-3 py-1 text-neutral-300"
             >
-              {co}
+              <EditableText value={co} field={["companies", String(i)]} className="inline" />
             </span>
           ))}
         </div>
@@ -609,11 +895,17 @@ function DayInLifeCard({ c, accent }: { c: DayInLifeContent; accent: string }) {
           <div key={i} className="flex gap-4 pb-4 last:pb-0">
             <div className="flex flex-col items-center">
               <span className="text-xs font-bold tabular-nums" style={{ color: accent }}>
-                {s.time}
+                <EditableText value={s.time} field={["steps", String(i), "time"]} className="inline" />
               </span>
               <span className="flex-1 w-px bg-white/10 mt-1" />
             </div>
-            <p className="text-neutral-200 text-base leading-relaxed pb-1">{s.label}</p>
+            <p className="pb-1">
+              <EditableText
+                value={s.label}
+                field={["steps", String(i), "label"]}
+                className="block text-neutral-200 text-base leading-relaxed"
+              />
+            </p>
           </div>
         ))}
       </div>
@@ -631,7 +923,9 @@ function EntryRoutesCard({ c, accent }: { c: EntryRoutesContent; accent: string 
   return (
     <CardFrame eyebrow={c.eyebrow} title={c.title ?? "มีเส้นทางไหนเข้าสู่อาชีพนี้ได้บ้าง?"} accent={accent}>
       {c.description && (
-        <p className="text-neutral-400 text-sm leading-relaxed mb-4">{c.description}</p>
+        <p className="mb-4">
+          <EditableText value={c.description} field="description" className="block text-neutral-400 text-sm leading-relaxed" />
+        </p>
       )}
       <div className="flex flex-col gap-3">
         {(c.faculties ?? []).map((f, i) => {
@@ -642,13 +936,29 @@ function EntryRoutesCard({ c, accent }: { c: EntryRoutesContent; accent: string 
                 <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}>
                   {style.label}
                 </span>
-                <span className="text-white font-semibold text-base">{f.name}</span>
+                <EditableText
+                  value={f.name}
+                  field={["faculties", String(i), "name"]}
+                  className="text-white font-semibold text-base"
+                />
               </div>
               {f.examples && (
-                <p className="text-neutral-400 text-sm mt-1">{f.examples}</p>
+                <p className="mt-1">
+                  <EditableText
+                    value={f.examples}
+                    field={["faculties", String(i), "examples"]}
+                    className="block text-neutral-400 text-sm"
+                  />
+                </p>
               )}
               {f.note && (
-                <p className="text-neutral-500 text-xs mt-1 italic">{f.note}</p>
+                <p className="mt-1">
+                  <EditableText
+                    value={f.note}
+                    field={["faculties", String(i), "note"]}
+                    className="block text-neutral-500 text-xs italic"
+                  />
+                </p>
               )}
             </Panel>
           );
@@ -665,7 +975,11 @@ function RisksCard({ c, accent }: { c: RisksContent; accent: string }) {
         {(c.risks ?? []).map((r, i) => (
           <li key={i} className="flex items-start gap-3">
             <span className="text-rose-400 mt-0.5 shrink-0">⚠</span>
-            <span className="text-neutral-200 text-base leading-relaxed">{r}</span>
+            <EditableText
+              value={r}
+              field={["risks", String(i)]}
+              className="text-neutral-200 text-base leading-relaxed"
+            />
           </li>
         ))}
       </ul>
@@ -714,17 +1028,20 @@ function RealPeopleCard({ c, accent }: { c: RealPeopleContent; accent: string })
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       {p.name && (
-                        <a
-                          href={`https://www.google.com/search?q=${encodeURIComponent(p.name)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-semibold text-white hover:underline"
-                        >
-                          {p.name}
-                        </a>
+                        <EditableText
+                          value={p.name}
+                          field={["people", String(i), "name"]}
+                          className="font-semibold text-white"
+                        />
                       )}
                       {p.role && (
-                        <p className="text-xs text-neutral-400 mt-0.5">{p.role}</p>
+                        <p className="mt-0.5">
+                          <EditableText
+                            value={p.role}
+                            field={["people", String(i), "role"]}
+                            className="block text-xs text-neutral-400"
+                          />
+                        </p>
                       )}
                     </div>
                     {p.salary && (
@@ -732,14 +1049,24 @@ function RealPeopleCard({ c, accent }: { c: RealPeopleContent; accent: string })
                         className="shrink-0 text-xs font-bold rounded-full px-2.5 py-1"
                         style={{ color: accent, background: `${accent}1a` }}
                       >
-                        {p.salary}
+                        <EditableText
+                          value={p.salary}
+                          field={["people", String(i), "salary"]}
+                          className="inline"
+                        />
                       </span>
                     )}
                   </div>
                 </div>
               </div>
 
-              <p className="text-neutral-200 text-base leading-relaxed">{p.background}</p>
+              <p>
+                <EditableText
+                  value={p.background}
+                  field={["people", String(i), "background"]}
+                  className="block text-neutral-200 text-base leading-relaxed"
+                />
+              </p>
 
               {/* expanded detail */}
               {isExpanded && (
@@ -758,11 +1085,18 @@ function RealPeopleCard({ c, accent }: { c: RealPeopleContent; accent: string })
                           </div>
                           <p className="text-neutral-300 text-sm leading-relaxed">
                             {step.year && (
-                              <span className="font-semibold tabular-nums mr-1.5" style={{ color: accent }}>
-                                {step.year}
-                              </span>
+                              <EditableText
+                                value={step.year}
+                                field={["people", String(i), "path", String(j), "year"]}
+                                className="font-semibold tabular-nums mr-1.5"
+                                style={{ color: accent }}
+                              />
                             )}
-                            {step.label}
+                            <EditableText
+                              value={step.label}
+                              field={["people", String(i), "path", String(j), "label"]}
+                              className="inline"
+                            />
                           </p>
                         </div>
                       ))}
@@ -772,13 +1106,21 @@ function RealPeopleCard({ c, accent }: { c: RealPeopleContent; accent: string })
                   {p.nowDoing && (
                     <p className="text-neutral-300 text-sm leading-relaxed">
                       <span className="text-neutral-500">Now · </span>
-                      {p.nowDoing}
+                      <EditableText
+                        value={p.nowDoing}
+                        field={["people", String(i), "nowDoing"]}
+                        className="inline"
+                      />
                     </p>
                   )}
                   {p.whereHeading && (
                     <p className="text-neutral-300 text-sm leading-relaxed">
                       <span className="text-neutral-500">Heading · </span>
-                      {p.whereHeading}
+                      <EditableText
+                        value={p.whereHeading}
+                        field={["people", String(i), "whereHeading"]}
+                        className="inline"
+                      />
                     </p>
                   )}
                   {p.advice && (
@@ -786,12 +1128,24 @@ function RealPeopleCard({ c, accent }: { c: RealPeopleContent; accent: string })
                       className="text-sm italic leading-relaxed border-l-2 pl-3"
                       style={{ borderColor: accent, color: "rgb(229 229 229)" }}
                     >
-                      “{p.advice}”
+                      “
+                      <EditableText
+                        value={p.advice}
+                        field={["people", String(i), "advice"]}
+                        className="inline"
+                      />
+                      ”
                     </p>
                   )}
 
                   <div className="flex items-center gap-2 text-xs text-neutral-500">
-                    {p.publisher && <span>{p.publisher}</span>}
+                    {p.publisher && (
+                      <EditableText
+                        value={p.publisher}
+                        field={["people", String(i), "publisher"]}
+                        className="inline"
+                      />
+                    )}
                     {p.url && (
                       <a
                         href={p.url}
@@ -837,9 +1191,13 @@ function FutureOutlookCard({ c, accent }: { c: FutureOutlookContent; accent: str
       {c.growthRate && (
         <div className="mb-6">
           <div className="text-5xl font-bold tracking-tight" style={{ color: accent }}>
-            {c.growthRate}
+            <EditableText value={c.growthRate} field="growthRate" className="inline" />
           </div>
-          <p className="text-sm text-neutral-400 mt-1">{c.growthLabel}</p>
+          {c.growthLabel && (
+            <p className="mt-1">
+              <EditableText value={c.growthLabel} field="growthLabel" className="block text-sm text-neutral-400" />
+            </p>
+          )}
         </div>
       )}
 
@@ -848,9 +1206,21 @@ function FutureOutlookCard({ c, accent }: { c: FutureOutlookContent; accent: str
           {c.timeline.map((t, i) => (
             <div key={i} className="flex gap-3">
               <span className="shrink-0 w-14 text-sm font-semibold tabular-nums" style={{ color: accent }}>
-                {t.year}
+                {t.year && (
+                  <EditableText
+                    value={t.year}
+                    field={["timeline", String(i), "year"]}
+                    className="inline"
+                  />
+                )}
               </span>
-              <p className="text-neutral-200 text-base leading-relaxed">{t.event}</p>
+              <p>
+                <EditableText
+                  value={t.event}
+                  field={["timeline", String(i), "event"]}
+                  className="block text-neutral-200 text-base leading-relaxed"
+                />
+              </p>
             </div>
           ))}
         </div>
@@ -861,7 +1231,9 @@ function FutureOutlookCard({ c, accent }: { c: FutureOutlookContent; accent: str
           <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300/80 mb-2">
             Demand Signal
           </p>
-          <p className="text-neutral-200 text-base leading-relaxed">{c.demandSignal}</p>
+          <p>
+            <EditableText value={c.demandSignal} field="demandSignal" className="block text-neutral-200 text-base leading-relaxed" />
+          </p>
         </Panel>
       )}
 
@@ -870,7 +1242,9 @@ function FutureOutlookCard({ c, accent }: { c: FutureOutlookContent; accent: str
           <p className="text-xs font-semibold uppercase tracking-wider text-amber-300/80 mb-2">
             Risk
           </p>
-          <p className="text-neutral-200 text-base leading-relaxed">{c.risk}</p>
+          <p>
+            <EditableText value={c.risk} field="risk" className="block text-neutral-200 text-base leading-relaxed" />
+          </p>
         </Panel>
       )}
     </CardFrame>
@@ -881,7 +1255,7 @@ function SourcesCard({ c, accent }: { c: SourcesContent; accent: string }) {
   return (
     <CardFrame eyebrow={c.eyebrow ?? "Sources"} title={c.title ?? "Where this comes from"} accent={accent}>
       <ol className="flex flex-col gap-2">
-        {(c.items ?? []).map((s) => (
+        {(c.items ?? []).map((s, index) => (
           <li key={s.ref} className="flex gap-2 text-sm">
             <span className="text-neutral-500 tabular-nums">[{s.ref}]</span>
             <a
@@ -890,8 +1264,21 @@ function SourcesCard({ c, accent }: { c: SourcesContent; accent: string }) {
               rel="noopener noreferrer"
               className="text-neutral-300 hover:text-white inline-flex items-center gap-1"
             >
-              {s.title}
-              {s.publisher && <span className="text-neutral-600">· {s.publisher}</span>}
+              <EditableText
+                value={s.title}
+                field={["items", String(index), "title"]}
+                className="inline"
+              />
+              {s.publisher && (
+                <span className="text-neutral-600">
+                  ·{" "}
+                  <EditableText
+                    value={s.publisher}
+                    field={["items", String(index), "publisher"]}
+                    className="inline"
+                  />
+                </span>
+              )}
               <ExternalLink className="h-3 w-3 shrink-0" />
             </a>
           </li>
@@ -933,7 +1320,11 @@ function CtaCard({
 
   return (
     <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
-      {c.body && <p className="text-neutral-300 text-base leading-relaxed">{c.body}</p>}
+      {c.body && (
+        <p>
+          <EditableText value={c.body} field="body" className="block text-neutral-300 text-base leading-relaxed" />
+        </p>
+      )}
       {c.button && (
         <Button
           asChild={!!squadUrl && !recorded}
@@ -950,14 +1341,14 @@ function CtaCard({
               rel="noopener noreferrer"
               onClick={handleClick}
             >
-              {c.button} <ArrowRight className="h-4 w-4 ml-1" />
+              <EditableText value={c.button} field="button" className="inline" /> <ArrowRight className="h-4 w-4 ml-1" />
             </a>
           ) : (
             <span className="inline-flex items-center gap-2">
               {recorded ? (
                 <><Check className="h-4 w-4" /> บันทึกแล้ว!</>
               ) : (
-                c.button
+                <EditableText value={c.button} field="button" className="inline" />
               )}
             </span>
           )}
@@ -1239,7 +1630,7 @@ function ReflectionCard({
 
       {c.chips && c.chips.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {c.chips.map((chip) => {
+          {c.chips.map((chip, index) => {
             const on = selected.includes(chip);
             return (
               <button
@@ -1252,7 +1643,11 @@ function ReflectionCard({
                   color: on ? accent : "#a3a3a3",
                 }}
               >
-                {chip}
+                <EditableText
+                  value={chip}
+                  field={["chips", String(index)]}
+                  className="inline"
+                />
               </button>
             );
           })}

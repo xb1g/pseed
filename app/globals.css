@@ -2481,6 +2481,23 @@
   display: none;
 }
 
+.radar-inline-edit {
+  border-radius: 0.375rem;
+  outline: 1px dashed transparent;
+  outline-offset: 0.25rem;
+  transition: background-color 160ms ease, outline-color 160ms ease;
+}
+
+.radar-inline-edit:hover {
+  background: rgba(125, 211, 252, 0.08);
+  outline-color: rgba(125, 211, 252, 0.45);
+}
+
+.radar-inline-edit:focus {
+  background: rgba(125, 211, 252, 0.12);
+  outline: 2px solid rgba(125, 211, 252, 0.75);
+}
+
 /* Touch / no-hover: keep gentle drift, drop pointer-follow + slow it down. */
 @media (hover: none) {
   .radar-glow-follow { display: none; }

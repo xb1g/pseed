@@ -179,16 +179,17 @@ export function RadarFieldPageClient({
       void syncPendingRadarReflections().then(loadSavedReflections);
     });
 
-    // Track that this field page was viewed (anonymous via session_id, logged-in via user_id).
-    if (fieldSlug && field.id) {
-      void recordRadarFieldView(fieldSlug, field.id);
-    }
-
     return () => {
       active = false;
       subscription.unsubscribe();
     };
   }, [fieldSlug, field.id, cards]);
+
+  // Record a field view once per field mount (not when cards/auth state churn).
+  useEffect(() => {
+    if (!fieldSlug || !field.id) return;
+    void recordRadarFieldView(fieldSlug, field.id);
+  }, [fieldSlug, field.id]);
 
   useEffect(
     () => () => {
