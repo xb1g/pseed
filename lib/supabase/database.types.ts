@@ -2071,6 +2071,24 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_radar_totals: {
+        Row: {
+          total_views: number | null
+          unique_viewers: number | null
+          total_intents: number | null
+        }
+        Insert: {
+          total_views?: number | null
+          unique_viewers?: number | null
+          total_intents?: number | null
+        }
+        Update: {
+          total_views?: number | null
+          unique_viewers?: number | null
+          total_intents?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       is_community_admin: {
