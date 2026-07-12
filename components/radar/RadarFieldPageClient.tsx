@@ -9,11 +9,11 @@ import {
   recordRadarFieldView,
   recordRadarPathIntent,
 } from "@/lib/supabase/radar";
-import {
-  CareerResearchView,
-  type CareerResearch,
-} from "@/components/radar/CareerResearchView";
 import { RadarCardView, SourceRefs } from "@/components/radar/RadarCards";
+import {
+  RadarSkillExperience,
+  type RadarSkillSummary,
+} from "@/components/radar/RadarSkillExperience";
 import type { Database } from "@/lib/supabase/database.types";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
@@ -91,21 +91,22 @@ export function RadarFieldPageClient({
   initialField,
   initialCards,
   fieldSources = [],
+  initialSkills = [],
 }: {
   initialField: RadarField;
   initialCards: RadarCard[];
   fieldSources?: FieldSource[];
+  initialSkills?: RadarSkillSummary[];
 }) {
   const router = useRouter();
   const field = initialField;
+  const fieldSlug = field.slug ?? "";
   const HIDDEN_KINDS = new Set(["jobs", "growthCompare", "list", "reflection"]);
   const cards = initialCards.filter((c) => {
     if (HIDDEN_KINDS.has(c.kind)) return false;
     if (c.kind === "text" && (c.content_th as Record<string, string>)?.title === "ทางนี้คืออะไร") return false;
     return true;
   });
-  const research = (field.research as CareerResearch) ?? null;
-
   const [current, setCurrent] = useState(0);
   const [submitted, setSubmitted] = useState<Set<string>>(new Set());
   const [showSignupPrompt, setShowSignupPrompt] = useState(true);
@@ -116,6 +117,7 @@ export function RadarFieldPageClient({
   const [hasShownFirstToast, setHasShownFirstToast] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const sectionRefs = useRef<Array<HTMLElement | null>>([]);
   const rootRef = useRef<HTMLDivElement>(null);
   const followRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
@@ -134,9 +136,12 @@ export function RadarFieldPageClient({
   }, []);
 
   const goTo = useCallback((i: number) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.scrollTo({ top: i * el.clientHeight, behavior: "smooth" });
+    sectionRefs.current[i]?.scrollIntoView({
+      block: "start",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
   }, []);
 
   useEffect(() => {
@@ -144,7 +149,7 @@ export function RadarFieldPageClient({
     const supabase = createClient();
 
     const loadSavedReflections = async () => {
-      const savedChapterKeys = await getSavedRadarReflectionChapterKeys(field.slug);
+      const savedChapterKeys = await getSavedRadarReflectionChapterKeys(fieldSlug);
       if (!active || savedChapterKeys.size === 0) return;
 
       const savedCardIds = cards
@@ -175,15 +180,15 @@ export function RadarFieldPageClient({
     });
 
     // Track that this field page was viewed (anonymous via session_id, logged-in via user_id).
-    if (field.slug && field.id) {
-      void recordRadarFieldView(field.slug, field.id);
+    if (fieldSlug && field.id) {
+      void recordRadarFieldView(fieldSlug, field.id);
     }
 
     return () => {
       active = false;
       subscription.unsubscribe();
     };
-  }, [field.slug, field.id, cards]);
+  }, [fieldSlug, field.id, cards]);
 
   useEffect(
     () => () => {
@@ -192,12 +197,23 @@ export function RadarFieldPageClient({
     []
   );
 
-  const handleScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const idx = Math.round(el.scrollTop / el.clientHeight);
-    setCurrent((prev) => (prev === idx ? prev : idx));
-  }, []);
+  useEffect(() => {
+    const root = scrollRef.current;
+    if (!root) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (!visible) return;
+        const index = Number((visible.target as HTMLElement).dataset.radarIndex);
+        if (Number.isInteger(index)) setCurrent(index);
+      },
+      { root, threshold: [0.25, 0.5, 0.75] }
+    );
+    sectionRefs.current.forEach((section) => section && observer.observe(section));
+    return () => observer.disconnect();
+  }, [cards.length, initialSkills.length]);
 
   const accent = readableAccent(field.color || "#3b82f6");
   const progressItems = [
@@ -206,19 +222,13 @@ export function RadarFieldPageClient({
       label: cardLabel(card),
       scrollIndex: i,
     })),
-    ...(research
-      ? [
-          {
-            key: "research",
-            label: "Research brief",
-            scrollIndex: cards.length,
-          },
-        ]
+    ...(initialSkills.length > 0
+      ? [{ key: "skills", label: "ทักษะและการเริ่มลงมือ", scrollIndex: cards.length }]
       : []),
   ];
   const totalSlides = Math.max(progressItems.length, 1);
   const displayCurrent = Math.min(current + 1, totalSlides);
-  const keepRadarHref = `/radar/keep?next=${encodeURIComponent(`/radar/${field.slug}`)}`;
+  const keepRadarHref = `/radar/keep?next=${encodeURIComponent(`/radar/${fieldSlug}`)}`;
   const isFinalSlide = current >= totalSlides - 1;
   const shouldShowSignupToast =
     showSignupPrompt &&
@@ -233,7 +243,7 @@ export function RadarFieldPageClient({
       payload: { rating?: number; tags?: string[]; text?: string }
     ) => {
       await submitRadarReflection({
-        fieldSlug: field.slug,
+        fieldSlug,
         chapterKey,
         wantToTry: payload.rating ?? null,
         tags: payload.tags,
@@ -250,16 +260,14 @@ export function RadarFieldPageClient({
       }
       const idx = cards.findIndex((c) => c.id === card.id);
       const nextIdx = idx + 1;
-      const slideCount = cards.length + (research ? 1 : 0);
+      const slideCount = cards.length;
       if (nextIdx < slideCount) {
         setTimeout(() => {
-          const el = scrollRef.current;
-          if (!el) return;
-          el.scrollTo({ top: nextIdx * el.clientHeight, behavior: "smooth" });
+          goTo(nextIdx);
         }, 400);
       }
     },
-    [field.slug, cards, research, showSignupPrompt, hasShownFirstToast]
+    [fieldSlug, cards, showSignupPrompt, hasShownFirstToast, goTo]
   );
 
   useEffect(() => {
@@ -338,7 +346,8 @@ export function RadarFieldPageClient({
                 key={item.key}
                 onClick={() => goTo(item.scrollIndex)}
                 aria-label={`Go to: ${item.label}`}
-                className="group relative h-3 flex-1 flex items-center"
+                aria-current={i === current ? "step" : undefined}
+                className="group relative min-h-12 flex-1 flex items-center"
               >
                 <span
                   className={`h-1 w-full rounded-full transition-all duration-300 group-hover:h-1.5 ${
@@ -400,8 +409,7 @@ export function RadarFieldPageClient({
 
       <div
         ref={scrollRef}
-        onScroll={handleScroll}
-        className="h-full overflow-y-auto snap-y snap-mandatory scrollbar-hide scroll-smooth"
+        className="radar-deck"
       >
         {cards.length > 0 ? (
           <>
@@ -417,6 +425,10 @@ export function RadarFieldPageClient({
                   accent={accent}
                   sourceRefs={sourceRefs}
                   fieldSources={fieldSources}
+                  sectionRef={(element) => {
+                    sectionRefs.current[i] = element;
+                  }}
+                  index={i}
                 >
                   <RadarCardView
                     kind={card.kind}
@@ -430,9 +442,9 @@ export function RadarFieldPageClient({
                       handleReflect(card, chapterKey, payload)
                     }
                     onIntent={(pathSlug) => {
-                      if (!field.slug || !field.id) return;
+                      if (!fieldSlug || !field.id) return;
                       void recordRadarPathIntent({
-                        fieldSlug: field.slug,
+                        fieldSlug,
                         fieldId: field.id,
                         pathSlug,
                         buttonLabel:
@@ -443,26 +455,20 @@ export function RadarFieldPageClient({
                 </RadarCardSection>
               );
             })}
-            {research && (
-              <section className="snap-start h-[100dvh] overflow-y-auto px-6 py-20">
-                <div className="min-h-[calc(100dvh-10rem)] flex flex-col">
-                  <div className="my-auto">
-                    <CareerResearchView research={research} accent={accent} />
-                  </div>
-                </div>
+            {initialSkills.length > 0 && (
+              <section
+                ref={(element) => {
+                  sectionRefs.current[cards.length] = element;
+                }}
+                data-radar-index={cards.length}
+                className="radar-card-section in-view px-6 py-24"
+              >
+                <RadarSkillExperience skills={initialSkills} accent={accent} />
               </section>
             )}
           </>
-        ) : research ? (
-          <section className="snap-start h-[100dvh] overflow-y-auto px-6 py-20">
-            <div className="min-h-[calc(100dvh-10rem)] flex flex-col">
-              <div className="my-auto">
-                <CareerResearchView research={research} accent={accent} />
-              </div>
-            </div>
-          </section>
         ) : (
-          <section className="snap-start h-[100dvh] overflow-y-auto px-6 py-20">
+          <section data-radar-index={0} className="radar-card-section px-6 py-20">
             <div className="min-h-[calc(100dvh-10rem)] flex flex-col">
               <div className="my-auto text-center">
                 <p className="text-neutral-400">No content yet for this field.</p>
@@ -482,6 +488,8 @@ function RadarCardSection({
   accent,
   sourceRefs = [],
   fieldSources = [],
+  sectionRef,
+  index,
 }: {
   children: React.ReactNode;
   isFirst: boolean;
@@ -489,6 +497,8 @@ function RadarCardSection({
   accent: string;
   sourceRefs?: number[];
   fieldSources?: FieldSource[];
+  sectionRef: (element: HTMLElement | null) => void;
+  index: number;
 }) {
   const ref = useRef<HTMLElement>(null);
   const [hasScrolled, setHasScrolled] = useState(false);
@@ -530,8 +540,12 @@ function RadarCardSection({
 
   return (
     <section
-      ref={ref}
-      className="radar-card-section snap-start h-[100dvh] overflow-y-auto px-6 py-20"
+      ref={(element) => {
+        ref.current = element;
+        sectionRef(element);
+      }}
+      data-radar-index={index}
+      className="radar-card-section px-6 py-20"
     >
       <div className="min-h-[calc(100dvh-10rem)] flex flex-col">
         <div className="my-auto">

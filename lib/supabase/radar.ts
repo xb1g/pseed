@@ -420,3 +420,25 @@ export async function recordRadarPathIntent(
     console.error("Error recording radar path intent:", error);
   }
 }
+
+export async function recordRadarStartOptionInterest(
+  startOptionId: string,
+  eventType: "interested" | "opened" | "saved" | "dismissed"
+): Promise<void> {
+  const supabase = createClient();
+  const { error } = await (supabase as unknown as {
+    rpc: (
+      name: string,
+      args: Record<string, unknown>
+    ) => Promise<{ error: { message: string } | null }>;
+  }).rpc("record_radar_interest", {
+    p_start_option_id: startOptionId,
+    p_event_type: eventType,
+    p_session_id: getOrCreateSessionId(),
+    p_metadata: {},
+  });
+
+  if (error) {
+    console.error("Failed to record Radar start option interest:", error);
+  }
+}

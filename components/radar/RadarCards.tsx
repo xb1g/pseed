@@ -1,10 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  getAiImpactLabel,
+  getEntryRouteLabel,
+  getOutlookLabel,
+  interpretRadarMetric,
+  parseRadarListItems,
+} from "@/lib/radar/presentation";
 import { Textarea } from "@/components/ui/textarea";
 import Image from "next/image";
-import { ExternalLink, ArrowRight, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { ExternalLink, ArrowRight, Check, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react";
 
 // ── content shapes (one per radar_cards.kind) ────────────────────────────────
 
@@ -15,7 +22,20 @@ export interface CardBase {
 
 export type HookContent = CardBase & { body?: string; stat?: string; statLabel?: string };
 export type FantasyRealityContent = CardBase & { fantasy?: string; reality?: string };
-export type TextContent = CardBase & { body?: string };
+export type TextContent = CardBase & {
+  body?: string | string[];
+  presentation?: "skills" | "startCarousel";
+  skills?: Array<{ title: string; description?: string; level?: string }>;
+  options?: Array<{
+    title: string;
+    description?: string;
+    type?: string;
+    url?: string;
+    duration?: string;
+    cost?: string;
+    cta?: string;
+  }>;
+};
 export type ReflectionContent = CardBase & {
   rating?: boolean;
   chips?: string[];
@@ -204,11 +224,154 @@ function FantasyRealityCard({ c, accent }: { c: FantasyRealityContent; accent: s
   );
 }
 
-function TextCard({ c, accent }: { c: TextContent; accent: string }) {
+function isSkillsText(c: TextContent): boolean {
+  return c.presentation === "skills" || /ทักษะ|skill/i.test(`${c.eyebrow ?? ""} ${c.title ?? ""}`);
+}
+
+function isStartText(c: TextContent): boolean {
+  return c.presentation === "startCarousel" || /เริ่ม|start|มหาวิทยาลัย/i.test(`${c.eyebrow ?? ""} ${c.title ?? ""}`);
+}
+
+function SkillsTextCard({ c, accent }: { c: TextContent; accent: string }) {
+  const items = c.skills?.map(({ title, description = "" }) => ({ title, description }))
+    ?? parseRadarListItems(c.body);
+
+  return (
+    <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
+      <p className="text-sm leading-relaxed text-neutral-400">
+        แตะดูทีละทักษะ แทนการอ่านรายการยาวๆ
+      </p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {items.map((item, index) => (
+          <details key={`${item.title}-${index}`} className="group rounded-xl border border-white/10 bg-white/[0.03]">
+            <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 py-3 focus-visible:outline-none focus-visible:ring-2">
+              <span
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-neutral-950"
+                style={{ background: accent }}
+              >
+                {index + 1}
+              </span>
+              <span className="min-w-0 flex-1 font-semibold text-white">{item.title}</span>
+              <ChevronDown className="h-4 w-4 shrink-0 text-neutral-500 transition-transform group-open:rotate-180" />
+            </summary>
+            {item.description && (
+              <p className="px-4 pb-4 pl-16 text-sm leading-relaxed text-neutral-400">
+                {item.description}
+              </p>
+            )}
+          </details>
+        ))}
+      </div>
+    </CardFrame>
+  );
+}
+
+function StartCarouselTextCard({
+  c,
+  accent,
+  onIntent,
+}: {
+  c: TextContent;
+  accent: string;
+  onIntent?: (pathSlug: string) => void;
+}) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [recorded, setRecorded] = useState<Set<number>>(new Set());
+  const parsed = parseRadarListItems(c.body);
+  const options: NonNullable<TextContent["options"]> = c.options ?? parsed.map((item) => ({
+    title: item.title,
+    description: item.description,
+    type: "ลองทำ",
+    cta: "สนใจวิธีนี้",
+  }));
+
+  const move = (direction: -1 | 1) => {
+    const track = trackRef.current;
+    if (!track) return;
+    track.scrollBy({
+      left: direction * Math.min(track.clientWidth * 0.82, 360),
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
+  };
+
+  return (
+    <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-neutral-400">ปัดซ้ายเพื่อดูวิธีเริ่มแบบอื่น</p>
+        <div className="hidden gap-1 sm:flex">
+          <button type="button" onClick={() => move(-1)} aria-label="ตัวเลือกก่อนหน้า" className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 text-white hover:bg-white/5">
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button type="button" onClick={() => move(1)} aria-label="ตัวเลือกถัดไป" className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 text-white hover:bg-white/5">
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+      <div ref={trackRef} className="radar-horizontal-carousel -mx-6 flex gap-3 overflow-x-auto px-6 pb-3">
+        {options.map((option, index) => (
+          <article key={`${option.title}-${index}`} className="w-[82vw] max-w-[320px] shrink-0 snap-center rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+            <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: accent }}>
+              {option.type ?? `ทางเลือก ${index + 1}`}
+            </span>
+            <h3 className="mt-2 text-xl font-bold text-white">{option.title}</h3>
+            {option.description && (
+              <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-neutral-400">
+                {option.description}
+              </p>
+            )}
+            <div className="mt-4 flex flex-wrap gap-2 text-xs text-neutral-500">
+              {option.duration && <span>{option.duration}</span>}
+              {option.cost && <span>· {option.cost}</span>}
+            </div>
+            <div className="mt-5 grid gap-2">
+              {option.url && (
+                <a href={option.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-white/10 text-sm font-semibold text-white">
+                  เปิดดู <ExternalLink className="h-4 w-4" />
+                </a>
+              )}
+              <button
+                type="button"
+                disabled={recorded.has(index)}
+                onClick={() => {
+                  onIntent?.(`start-option-${index + 1}`);
+                  setRecorded((current) => new Set(current).add(index));
+                }}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-neutral-950 disabled:bg-white/10 disabled:text-white/60"
+                style={recorded.has(index) ? undefined : { background: accent }}
+              >
+                {recorded.has(index) ? <><Check className="h-4 w-4" /> สนใจแล้ว</> : option.cta ?? "สนใจวิธีนี้"}
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+      <div className="flex justify-center gap-1.5" aria-hidden="true">
+        {options.map((_, index) => (
+          <span key={index} className="h-1.5 w-5 rounded-full bg-white/15" />
+        ))}
+      </div>
+    </CardFrame>
+  );
+}
+
+function TextCard({
+  c,
+  accent,
+  onIntent,
+}: {
+  c: TextContent;
+  accent: string;
+  onIntent?: (pathSlug: string) => void;
+}) {
+  if (isSkillsText(c)) return <SkillsTextCard c={c} accent={accent} />;
+  if (isStartText(c)) return <StartCarouselTextCard c={c} accent={accent} onIntent={onIntent} />;
+
   return (
     <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
       {c.body && (
-        <p className="text-neutral-300 text-base leading-relaxed whitespace-pre-line">{c.body}</p>
+        <p className="text-neutral-300 text-base leading-relaxed whitespace-pre-line">
+          {Array.isArray(c.body) ? c.body.join("\n") : c.body}
+        </p>
       )}
     </CardFrame>
   );
@@ -346,9 +509,7 @@ function aiRiskColor(score: number): string {
 }
 
 function aiRiskLabel(score: number): string {
-  if (score <= 3) return "ปลอดภัย";
-  if (score <= 6) return "เปลี่ยนบ้าง";
-  return "เสี่ยงสูง";
+  return getAiImpactLabel(score);
 }
 
 function AiImpactCard({ c, accent }: { c: AiImpactContent; accent: string }) {
@@ -358,7 +519,7 @@ function AiImpactCard({ c, accent }: { c: AiImpactContent; accent: string }) {
       {score !== null && (
         <Panel>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-neutral-300">ความเสี่ยงถูก AI แทน</span>
+            <span className="text-sm text-neutral-300">ระดับผลกระทบจาก AI</span>
             <span className="text-sm font-bold tabular-nums" style={{ color: aiRiskColor(score) }}>
               {score}/10 · {aiRiskLabel(score)}
             </span>
@@ -383,7 +544,7 @@ function AiImpactCard({ c, accent }: { c: AiImpactContent; accent: string }) {
         <div className="rc-panel-left">
           <Panel className="border-emerald-400/20 bg-emerald-400/5">
             <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300/80 mb-2">
-              AI ช่วยเธอ
+              AI ช่วยคุณทำอะไรได้บ้าง
             </p>
             <ul className="flex flex-col gap-1.5">
               {c.augmented.map((t, i) => (
@@ -399,7 +560,7 @@ function AiImpactCard({ c, accent }: { c: AiImpactContent; accent: string }) {
         <div className="rc-panel-right">
           <Panel className="border-rose-400/20 bg-rose-400/5">
             <p className="text-xs font-semibold uppercase tracking-wider text-rose-300/80 mb-2">
-              AI อาจแทน
+              งานที่ AI อาจทำแทนได้
             </p>
             <ul className="flex flex-col gap-1.5">
               {c.automated.map((t, i) => (
@@ -461,14 +622,14 @@ function DayInLifeCard({ c, accent }: { c: DayInLifeContent; accent: string }) {
 }
 
 const TIER_STYLES: Record<string, { label: string; bg: string; text: string }> = {
-  direct: { label: "ตรงสาย", bg: "bg-emerald-500/20", text: "text-emerald-400" },
-  related: { label: "เกี่ยวข้อง", bg: "bg-amber-500/20", text: "text-amber-400" },
-  alternative: { label: "ข้ามสาย", bg: "bg-sky-500/20", text: "text-sky-400" },
+  direct: { label: getEntryRouteLabel("direct"), bg: "bg-emerald-500/20", text: "text-emerald-400" },
+  related: { label: getEntryRouteLabel("related"), bg: "bg-amber-500/20", text: "text-amber-400" },
+  alternative: { label: getEntryRouteLabel("alternative"), bg: "bg-sky-500/20", text: "text-sky-400" },
 };
 
 function EntryRoutesCard({ c, accent }: { c: EntryRoutesContent; accent: string }) {
   return (
-    <CardFrame eyebrow={c.eyebrow} title={c.title ?? "เรียนคณะไหนทำงานนี้ได้?"} accent={accent}>
+    <CardFrame eyebrow={c.eyebrow} title={c.title ?? "มีเส้นทางไหนเข้าสู่อาชีพนี้ได้บ้าง?"} accent={accent}>
       {c.description && (
         <p className="text-neutral-400 text-sm leading-relaxed mb-4">{c.description}</p>
       )}
@@ -848,9 +1009,9 @@ function CareerSurvivalCard({ c, accent }: { c: CareerSurvivalContent; accent: s
   if (!metrics) return null;
 
   const tierConfig = {
-    growing: { emoji: "🟢", label: "Growing", labelTh: "กำลังเติบโต", color: "#10b981" },
-    shifting: { emoji: "🟡", label: "Shifting", labelTh: "กำลังเปลี่ยน", color: "#f59e0b" },
-    exposed: { emoji: "🔴", label: "Exposed", labelTh: "เสี่ยงสูง", color: "#ef4444" },
+    growing: { emoji: "🟢", label: "Growing", labelTh: getOutlookLabel("growing"), color: "#10b981" },
+    shifting: { emoji: "🟡", label: "Shifting", labelTh: getOutlookLabel("shifting"), color: "#f59e0b" },
+    exposed: { emoji: "🔴", label: "Exposed", labelTh: getOutlookLabel("exposed"), color: "#ef4444" },
   } as const;
   const tier = c.tier ? tierConfig[c.tier as keyof typeof tierConfig] : null;
 
@@ -910,6 +1071,7 @@ function CareerSurvivalCard({ c, accent }: { c: CareerSurvivalContent; accent: s
           if (val == null) return null;
           const detail = details?.[key];
           const isExpanded = expandedKey === key;
+          const interpretation = interpretRadarMetric(key, val, max);
 
           return (
             <button
@@ -937,6 +1099,7 @@ function CareerSurvivalCard({ c, accent }: { c: CareerSurvivalContent; accent: s
                   {detail && !isExpanded && (
                     <p className="text-[10px] text-neutral-500 ml-7 mt-0.5">แตะเพื่อดูรายละเอียด</p>
                   )}
+                  <p className="ml-7 mt-1 text-[11px] text-neutral-400">{interpretation}</p>
                 </div>
               ) : (
                 <>
@@ -964,6 +1127,7 @@ function CareerSurvivalCard({ c, accent }: { c: CareerSurvivalContent; accent: s
                       />
                     </div>
                   </div>
+                  <p className="ml-7 mt-1 text-[11px] text-neutral-400">{interpretation}</p>
                 </>
               )}
 
@@ -1184,7 +1348,7 @@ export function RadarCardView({
       cardNode = <FantasyRealityCard c={c} accent={accent} />;
       break;
     case "text":
-      cardNode = <TextCard c={c} accent={accent} />;
+      cardNode = <TextCard c={c} accent={accent} onIntent={onIntent} />;
       break;
     case "list":
       cardNode = <ListCard c={c} accent={accent} />;

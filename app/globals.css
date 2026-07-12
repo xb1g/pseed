@@ -2440,6 +2440,47 @@
   will-change: transform;
 }
 
+.radar-deck {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scroll-snap-type: y proximity;
+  scroll-padding-top: 4.5rem;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+.radar-card-section {
+  position: relative;
+  min-height: 100svh;
+  min-height: 100dvh;
+  overflow: visible;
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
+}
+
+.radar-horizontal-carousel {
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 1.5rem;
+  overscroll-behavior-inline: contain;
+  touch-action: pan-x;
+  scrollbar-width: none;
+}
+
+.radar-horizontal-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.radar-filter-chips {
+  scrollbar-width: none;
+  overscroll-behavior-inline: contain;
+  touch-action: pan-x;
+}
+
+.radar-filter-chips::-webkit-scrollbar {
+  display: none;
+}
+
 /* Touch / no-hover: keep gentle drift, drop pointer-follow + slow it down. */
 @media (hover: none) {
   .radar-glow-follow { display: none; }
@@ -2451,6 +2492,7 @@
 @media (prefers-reduced-motion: reduce) {
   .radar-glow-a, .radar-glow-b, .radar-glow-c { animation: none; }
   .radar-glow-follow { transition: none; }
+  .radar-deck { scroll-behavior: auto; }
 }
 
 /* Career Radar: current-chapter readout fade */

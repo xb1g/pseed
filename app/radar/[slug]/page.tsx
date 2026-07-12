@@ -36,6 +36,7 @@ export default async function RadarFieldPage({
     .from("radar_cards")
     .select("*")
     .eq("field_id", field.id)
+    .eq("is_hidden", false)
     .order("position", { ascending: true });
 
   if (cardsError) {
@@ -49,6 +50,55 @@ export default async function RadarFieldPage({
     .eq("field_id", field.id)
     .order("ref", { ascending: true });
 
+  const radarData = supabase as unknown as {
+    from: (table: string) => {
+      select: (columns: string) => {
+        eq: (column: string, value: string) => Promise<{
+          data: Array<Record<string, unknown>> | null;
+          error: { message: string } | null;
+        }>;
+      };
+    };
+  };
+  const { data: fieldSkills, error: skillsError } = await radarData
+    .from("radar_field_skills")
+    .select(
+      "is_primary, sort_order, radar_skills!inner(id, slug, name_th, name_en, description_th, is_published, radar_skill_start_options(id, kind, title_th, summary_th, provider, destination_url, destination_ref, metadata, sort_order, is_published))"
+    )
+    .eq("field_id", field.id);
+
+  if (skillsError) {
+    console.error("Error loading Radar skills:", skillsError);
+  }
+
+  const initialSkills = (fieldSkills ?? [])
+    .map((relation) => {
+      const skill = relation.radar_skills as Record<string, unknown> | undefined;
+      if (!skill || skill.is_published !== true) return null;
+      const options = Array.isArray(skill.radar_skill_start_options)
+        ? skill.radar_skill_start_options
+            .filter((option) => (option as Record<string, unknown>).is_published === true)
+            .sort(
+              (a, b) =>
+                Number((a as Record<string, unknown>).sort_order ?? 0) -
+                Number((b as Record<string, unknown>).sort_order ?? 0)
+            )
+        : [];
+      return {
+        id: String(skill.id),
+        slug: String(skill.slug),
+        name_th: String(skill.name_th),
+        name_en: String(skill.name_en),
+        description_th:
+          typeof skill.description_th === "string" ? skill.description_th : null,
+        is_primary: relation.is_primary === true,
+        start_options: options,
+        sort_order: Number(relation.sort_order ?? 0),
+      };
+    })
+    .filter((skill): skill is NonNullable<typeof skill> => skill !== null)
+    .sort((a, b) => a.sort_order - b.sort_order);
+
   // Inject score card at position 2 from field-level score/tier + research metrics
   const allCards = [...(cards || [])] as RadarCard[];
   const research = field.research as Record<string, unknown> | null;
@@ -59,7 +109,7 @@ export default async function RadarFieldPage({
       kind: "careerSurvival",
       position: -1,
       content_th: {
-        title: "อาชีพนี้รอดไหม?",
+        title: "แนวโน้มอาชีพนี้เป็นอย่างไร?",
         metrics: research.metrics,
         global_metrics: research.global_metrics,
         metric_details: research.metric_details,
@@ -86,6 +136,7 @@ export default async function RadarFieldPage({
       initialField={field as RadarField}
       initialCards={allCards}
       fieldSources={sources ?? []}
+      initialSkills={initialSkills as never}
     />
   );
 }

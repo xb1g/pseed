@@ -1,11 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  getRadarFields,
-  getRadarCollections,
-} from "@/lib/supabase/radar";
+import { getRadarFields, getRadarCollections } from "@/lib/supabase/radar";
+import { filterRadarFields, normalizeRadarCollections } from "@/lib/radar/filters";
 import type { Database } from "@/lib/supabase/database.types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,6 +32,10 @@ export function RadarPageClient({
   const [isInitialLoad] = useState(!initialFields.length);
   const [error, setError] = useState<string | null>(initialError);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { allLabel, filters: collectionFilters } = useMemo(
+    () => normalizeRadarCollections(collections),
+    [collections]
+  );
 
   const loadData = useCallback(async () => {
     try {
@@ -53,42 +55,15 @@ export function RadarPageClient({
     }
   }, []);
 
-  const handleCollectionClick = useCallback(
-    async (key: string | null) => {
-      setActiveCollection(key);
-      setIsLoading(true);
-      try {
-        const data = await getRadarFields(
-          key ? { collectionTag: key } : undefined
-        );
-        setFields(data);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to filter fields");
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    []
+  const handleCollectionClick = useCallback((key: string | null) => {
+    setActiveCollection(key);
+    setError(null);
+  }, []);
+
+  const filteredFields = useMemo(
+    () => filterRadarFields(fields, activeCollection, searchQuery),
+    [fields, activeCollection, searchQuery]
   );
-
-  const handleSearch = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await getRadarFields(
-        searchQuery.trim() ? { search: searchQuery.trim() } : undefined
-      );
-      setFields(data);
-      setActiveCollection(null);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Search failed");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [searchQuery]);
-
-  const filteredFields = fields;
 
   const getColumns = () => {
     const cols: RadarField[][] = [[], [], [], []];
@@ -125,30 +100,35 @@ export function RadarPageClient({
                 placeholder="Search fields..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                aria-label="ค้นหาอาชีพ"
                 className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-neutral-500 focus:border-blue-500/50 focus:ring-blue-500/20"
               />
             </div>
 
-            <div
-              ref={scrollRef}
-              className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide w-full sm:w-auto"
-            >
+            <div className="relative min-w-0 w-full sm:flex-1">
+              <div
+                ref={scrollRef}
+                role="group"
+                aria-label="กรองอาชีพ"
+                className="radar-filter-chips flex min-w-0 gap-2 overflow-x-auto py-1 pr-8"
+              >
               <button
                 onClick={() => handleCollectionClick(null)}
-                className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                aria-pressed={activeCollection === null}
+                className={`shrink-0 min-h-11 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
                   activeCollection === null
                     ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
                     : "bg-white/5 text-neutral-400 border border-white/10 hover:bg-white/10 hover:text-neutral-200"
                 }`}
               >
-                All
+                {allLabel}
               </button>
-              {collections.map((col) => (
+              {collectionFilters.map((col) => (
                 <button
                   key={col.key}
                   onClick={() => handleCollectionClick(col.key)}
-                  className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                  aria-pressed={activeCollection === col.key}
+                  className={`shrink-0 min-h-11 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
                     activeCollection === col.key
                       ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
                       : "bg-white/5 text-neutral-400 border border-white/10 hover:bg-white/10 hover:text-neutral-200"
@@ -157,6 +137,8 @@ export function RadarPageClient({
                   {col.label_th || col.label_en || col.key}
                 </button>
               ))}
+              </div>
+              <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-neutral-950 via-neutral-950/80 to-transparent" />
             </div>
           </div>
         </div>
