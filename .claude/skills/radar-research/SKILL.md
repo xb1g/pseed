@@ -76,7 +76,7 @@ Before writing to any database:
 - [ ] Every `source.url` has been fetched and verified
 - [ ] Salary figures match what the source actually says (not training data)
 - [ ] `source_refs` on each card point to sources that actually support that card's claims
-- [ ] The `text` card at position 125 explains "Skill ที่สายนี้ใช้" with practitioner-depth skill requirements, not generic soft skills or shallow tool lists
+- [ ] The `text` card at position 125 explains "ทักษะที่ใช้จริง" with practitioner-depth skill requirements, not generic soft skills or shallow tool lists
 - [ ] The skills card sounds like an expert in the field reviewed it: it includes field-specific fundamentals, workflows, judgment, tools/processes by context, and common failure modes
 - [ ] `metrics.demand_growth` (0-10), `saturation_level` (0-10), `progression_difficulty` (0-10) are justified
 - [ ] `metrics.grad_employment_pct` is a real percentage from a real source
@@ -150,8 +150,8 @@ Every field MUST have exactly these 12 cards, no more, no less. Do NOT add extra
 | 6 | `dayInLife` | 90 | `eyebrow`, `title`, `steps[]` (each: `time`, `label`), `source_refs` |
 | 7 | `risks` | 110 | `eyebrow`, `title`, `risks[]`, `source_refs` |
 | 8 | `entryRoutes` | 120 | `eyebrow`, `title`, `description`, `faculties[]` (each: `name`, `tier`: `direct`/`related`/`alternative`, `examples?`, `note?`), `source_refs` |
-| 9 | `text` | 125 | `eyebrow`, `title`, `body`, `source_refs` — "Skill ที่สายนี้ใช้" researched skills needed/used in this path, comes after entryRoutes |
-| 10 | `text` | 130 | `eyebrow`, `title`, `body`, `source_refs?` — "How to start now" practical steps, comes after the skills card |
+| 9 | `text` | 125 | `eyebrow`, `title`, `body`, `source_refs` — "ทักษะที่ใช้จริง" researched skills needed/used in this path, comes after entryRoutes |
+| 10 | `text` | 130 | `eyebrow`, `title`, `body`, `source_refs?` — "เริ่มลงมือ" practical, scannable recommendations such as YouTube, trusted resources, projects, courses, or PathLabs; include a separate interest CTA |
 | 11 | `cta` | 140 | `eyebrow`, `title`, `body`, `button` |
 | 12 | `sources` | 150 | `eyebrow`, `title`, `items[]` (each: `ref`, `title`, `publisher`, `url`) |
 
@@ -172,8 +172,8 @@ Depth determines whether a smart teen trusts the card or skips it. Follow these 
 - **dayInLife**: 5-7 `steps` that show a realistic mix of meetings, deep work, and waiting for results.
 - **risks**: 3-5 risks, each 1 sentence. Be honest — this builds trust.
 - **entryRoutes**: 4-6 faculties with tiers (`direct`, `related`, `alternative`). Each faculty has `examples` (university names) and a `note` explaining the path.
-- **text (pos 125)**: "Skill ที่สายนี้ใช้" — practitioner-level depth, 7-9 Thai bullets. See below.
-- **text (pos 130)**: "How to start now" — practical steps students can try now.
+- **text (pos 125)**: "ทักษะที่ใช้จริง" — practitioner-level depth, 7-9 Thai bullets. See below.
+- **text (pos 130)**: "เริ่มลงมือ" — short recommendation tiles students can scan and try now. Avoid a wall of text.
 - **cta**: `body` 1-2 sentences; `button` 2-4 words.
 - **sources**: 3-6 sources. Every card that uses `source_refs` must point to a real source in this list.
 
@@ -185,7 +185,7 @@ Cross-cutting rules from the editorial spine:
 
 ### Skills card depth (position 125)
 
-The position 125 `text` card is a separate skills page shown immediately after "เรียนคณะไหนทำงานนี้ได้?". Always set `eyebrow: "Skill ที่สายนี้ใช้"` and write a concise Thai `title` such as "ต้องเก่งอะไรถึงทำงานสายนี้ได้จริง?".
+The position 125 `text` card is a separate skills page shown immediately after "มีเส้นทางไหนเข้าสู่อาชีพนี้ได้บ้าง?". Always set `eyebrow: "ทักษะที่ใช้จริง"` and write a concise Thai `title` such as "งานนี้ต้องใช้ทักษะอะไรบ้าง?".
 
 The skills card must have practitioner-level depth. It should read like it came from someone inside that field, not from a generic career article. Do not write vague bullets like "communication", "problem solving", "attention to detail", or "use tools" unless each one is anchored to the field's actual work.
 
@@ -325,7 +325,7 @@ The `careerSurvival` card is NOT stored in radar_cards. It's injected server-sid
 - Forgetting to add `source_refs` to cards — every card (except hook, sources) should have them
 - Using `title` instead of `level` in salaryProgression levels
 - Using `yearsExp` instead of `years` in salaryProgression levels
-- Merging "Skill ที่สายนี้ใช้" and "How to start now" into one card — keep them separate at positions 125 and 130
+- Merging "ทักษะที่ใช้จริง" and "เริ่มลงมือ" into one wall of text — keep skills and scannable recommendations separate
 - Writing generic soft skills without researching occupation-specific skills and citing sources
 - Listing tools as if every sub-role uses all of them — name fundamentals first, then tools by context/sub-role
 - Writing "normal person guessing the job" content — use practitioner vocabulary, workflows, artifacts, and judgment calls

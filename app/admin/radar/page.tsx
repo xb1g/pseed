@@ -16,7 +16,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Eye, MousePointerClick, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Edit3, Eye, MousePointerClick, Users } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +40,11 @@ export default async function AdminRadarPage() {
     .select("*")
     .order("created_at", { ascending: false })
     .limit(100);
+
+  const { data: radarFields, error: fieldsError } = await supabase
+    .from("radar_fields")
+    .select("id, slug, name_th, name_en")
+    .order("sort_order", { ascending: true });
 
   const intentUserIds = (recentIntents || [])
     .map((i) => i.user_id)
@@ -64,7 +71,7 @@ export default async function AdminRadarPage() {
     (intentProfiles || []).map((p) => [p.id, p])
   );
 
-  const error = engagementError || intentsError || profilesError;
+  const error = engagementError || intentsError || profilesError || fieldsError;
 
   return (
     <div className="space-y-6">
@@ -81,6 +88,42 @@ export default async function AdminRadarPage() {
           Failed to load radar engagement data: {error.message}
         </div>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Content editor</CardTitle>
+          <CardDescription>
+            Review published field content and prepare structured bilingual drafts.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {(radarFields || []).length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No Radar fields are available.
+            </p>
+          ) : (
+            radarFields?.map((field) => (
+              <div
+                key={field.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3"
+              >
+                <div>
+                  <p className="font-medium">
+                    {field.name_th || field.name_en || field.slug}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{field.slug}</p>
+                </div>
+                <Button asChild size="sm" variant="outline">
+                  <Link href={`/admin/radar/${field.id}`}>
+                    <Edit3 className="mr-2 h-4 w-4" />
+                    Open editor
+                  </Link>
+                </Button>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
 
       {/* Top stats */}
       <div className="grid gap-4 md:grid-cols-3">
