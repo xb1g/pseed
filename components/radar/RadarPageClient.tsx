@@ -2,16 +2,84 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { getRadarFields, getRadarCollections } from "@/lib/supabase/radar";
 import { filterRadarFields, normalizeRadarCollections } from "@/lib/radar/filters";
 import type { Database } from "@/lib/supabase/database.types";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, ArrowRight } from "lucide-react";
+import { Search } from "lucide-react";
 
 type RadarField = Database["public"]["Tables"]["radar_fields"]["Row"];
 type RadarCollection = Database["public"]["Tables"]["radar_collections"]["Row"];
+
+const CAREER_FIGURES = [
+  "/images/radar/jojo-dio-hirose.png",
+  "/images/radar/jojo-full-body-blue.png",
+  "/images/radar/jojo-full-body-dark.webp",
+] as const;
+
+function stableHash(value: string) {
+  return Array.from(value).reduce(
+    (hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0,
+    0
+  );
+}
+
+function normalizeHex(value: string | null) {
+  const match = value?.trim().match(/^#?([\da-f]{3}|[\da-f]{6})$/i);
+  if (!match) return "#3b82f6";
+  const hex = match[1];
+  return `#${hex.length === 3 ? Array.from(hex).map((digit) => digit + digit).join("") : hex}`;
+}
+
+function mixHex(source: string, target: string, targetWeight: number) {
+  const parse = (hex: string) => [1, 3, 5].map((offset) => parseInt(hex.slice(offset, offset + 2), 16));
+  const sourceRgb = parse(source);
+  const targetRgb = parse(target);
+  return `#${sourceRgb
+    .map((channel, index) =>
+      Math.round(channel + (targetRgb[index] - channel) * targetWeight)
+        .toString(16)
+        .padStart(2, "0")
+    )
+    .join("")}`;
+}
+
+function getCareerCardVisual(field: RadarField) {
+  const seed = stableHash(field.slug);
+  const base = normalizeHex(field.color);
+  const light = mixHex(base, "#ffffff", 0.58);
+  const deep = mixHex(base, "#050505", 0.38);
+  const variant = seed % 4;
+  const backgrounds = [
+    `radial-gradient(circle at 78% 12%, ${light} 0%, transparent 38%), linear-gradient(150deg, ${base} 0%, ${deep} 100%)`,
+    `radial-gradient(circle at 12% 88%, ${light} 0%, transparent 54%), linear-gradient(35deg, ${light} 0%, ${base} 56%, ${deep} 100%)`,
+    `radial-gradient(circle at 50% 18%, ${light} 0%, transparent 44%), linear-gradient(180deg, ${base} 0%, ${deep} 100%)`,
+    `radial-gradient(circle at 82% 82%, ${light} 0%, transparent 56%), linear-gradient(145deg, ${deep} 0%, ${base} 100%)`,
+  ];
+  return {
+    background: backgrounds[variant],
+    figure: CAREER_FIGURES[seed % CAREER_FIGURES.length],
+    scrim:
+      "linear-gradient(to top, rgb(0 0 0 / 0.96) 0%, rgb(0 0 0 / 0.82) 30%, rgb(0 0 0 / 0.46) 58%, rgb(0 0 0 / 0.14) 78%, transparent 100%)",
+    tagBackground: "rgb(0 0 0 / 0.24)",
+  };
+}
+
+function getCareerLabels(field: RadarField) {
+  const english = field.name_en
+    ?.replace(/\s*\([^)]*[\u0E00-\u0E7F][^)]*\)\s*/g, " ")
+    .trim();
+  const thaiInParentheses = field.name_th?.match(/\(([^)]*[\u0E00-\u0E7F][^)]*)\)/)?.[1];
+  const primary = english || thaiInParentheses || field.name_th || "Career path";
+  const secondary = thaiInParentheses || field.name_th || field.slug;
+
+  return {
+    primary,
+    secondary: secondary === primary ? field.slug : secondary,
+  };
+}
 
 export function RadarPageClient({
   initialFields,
@@ -64,16 +132,6 @@ export function RadarPageClient({
     () => filterRadarFields(fields, activeCollection, searchQuery),
     [fields, activeCollection, searchQuery]
   );
-
-  const getColumns = () => {
-    const cols: RadarField[][] = [[], [], [], []];
-    filteredFields.forEach((field, i) => {
-      cols[i % 4].push(field);
-    });
-    return cols;
-  };
-
-  const columns = getColumns();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-neutral-950 via-neutral-900 to-neutral-950">
@@ -144,7 +202,7 @@ export function RadarPageClient({
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 pb-8 pt-24 sm:px-6 lg:px-8">
         {isLoading && isInitialLoad ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -172,17 +230,13 @@ export function RadarPageClient({
             </p>
           </div>
         ) : (
-          <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 items-start transition-opacity duration-200 ${isLoading ? "opacity-60 pointer-events-none" : ""}`}>
-            {columns.map((col, colIndex) => (
-              <div key={colIndex} className="flex flex-col gap-4">
-                {col.map((field) => (
-                  <FieldTile
-                    key={field.id}
-                    field={field}
-                    onClick={() => router.push(`/radar/${field.slug}`)}
-                  />
-                ))}
-              </div>
+          <div className={`grid grid-cols-1 gap-4 transition-opacity duration-200 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 ${isLoading ? "pointer-events-none opacity-60" : ""}`}>
+            {filteredFields.map((field) => (
+              <FieldTile
+                key={field.id}
+                field={field}
+                onClick={() => router.push(`/radar/${field.slug}`)}
+              />
             ))}
           </div>
         )}
@@ -198,7 +252,7 @@ function FieldTile({
   field: RadarField;
   onClick: () => void;
 }) {
-  const tileRef = useRef<HTMLDivElement>(null);
+  const tileRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -218,58 +272,76 @@ function FieldTile({
     return () => observer.disconnect();
   }, []);
 
-  const bgColor = field.color || "#3b82f6";
-  const isLarge = field.tile_size === "large";
+  const visual = getCareerCardVisual(field);
+  const labels = getCareerLabels(field);
+  const primaryLabel = labels.primary;
+  const secondaryLabel = labels.secondary;
+  const tags = field.tags?.slice(0, 2) || [];
+  if (tags.length === 0) tags.push(field.tier || "radar");
+  const titleSize =
+    primaryLabel.length > 42
+      ? "text-lg sm:text-xl"
+      : primaryLabel.length > 28
+        ? "text-xl sm:text-2xl"
+        : "text-2xl sm:text-[1.75rem]";
 
   return (
-    <div
+    <button
       ref={tileRef}
       onClick={onClick}
-      className={`group relative cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:border-white/20 hover:shadow-lg ${
-        isLarge ? "row-span-2 min-h-[280px]" : "min-h-[140px]"
-      }`}
+      className="radar-career-card group relative isolate aspect-[4/5] w-full cursor-pointer overflow-visible rounded-lg border text-left shadow-[0_18px_50px_rgba(0,0,0,0.28)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/60 sm:aspect-[3/5]"
       style={{
-        background: `linear-gradient(135deg, ${bgColor}15 0%, ${bgColor}08 100%)`,
+        borderColor: "rgb(255 255 255 / 0.28)",
+        background: visual.background,
+        color: "#ffffff",
       }}
     >
-      <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-        style={{
-          background: `radial-gradient(circle at 50% 100%, ${bgColor}30 0%, transparent 70%)`,
-        }}
+      <span className="radar-career-card__grain" aria-hidden="true" />
+
+      <span className="radar-career-card__figure" aria-hidden="true">
+        <Image
+          src={visual.figure}
+          alt=""
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 34vw, 25vw"
+          className="object-contain object-center"
+          draggable={false}
+        />
+      </span>
+
+      <span
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-[62%]"
+        style={{ background: visual.scrim }}
+        aria-hidden="true"
       />
 
-      <div className="relative p-5 flex flex-col h-full">
-        <div className="text-3xl mb-3">{field.emoji}</div>
-
-        <h3 className="text-white font-bold text-base sm:text-lg leading-tight mb-2">
-          {field.name_en || field.name_th || ""}
-        </h3>
-
-        {field.tagline_th && (
-          <p className="text-neutral-400 text-sm leading-relaxed mb-3 line-clamp-2">
-            {field.tagline_th}
-          </p>
-        )}
-
-        {field.tags && field.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-auto">
-            {field.tags.slice(0, 3).map((tag) => (
-              <Badge
-                key={tag}
-                variant="outline"
-                className="text-[10px] border-white/10 text-neutral-400 bg-white/5 px-2 py-0.5"
-              >
-                {tag}
-              </Badge>
-            ))}
-          </div>
-        )}
-
-        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <ArrowRight className="h-4 w-4 text-white/60" />
-        </div>
-      </div>
-    </div>
+      <span
+        className="absolute inset-x-0 bottom-0 z-30 block p-4 sm:p-5"
+        style={{ textShadow: "0 2px 18px rgb(0 0 0 / 0.62)" }}
+      >
+        <span
+          className={`block break-words font-heading font-semibold leading-[0.95] text-white ${titleSize}`}
+        >
+          {primaryLabel}
+        </span>
+        <span className="mt-1 block line-clamp-2 text-sm font-medium leading-tight opacity-90">
+          {secondaryLabel}
+        </span>
+        <span className={`mt-3 grid gap-1.5 ${tags.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+          {tags.map((tag, index) => (
+            <span
+              key={`${tag}-${index}`}
+              className="min-w-0 truncate rounded-md border px-2 py-1 text-center font-mono text-xs font-bold"
+              style={{
+                borderColor: "currentColor",
+                backgroundColor: visual.tagBackground,
+              }}
+            >
+              {tag}
+            </span>
+          ))}
+        </span>
+      </span>
+    </button>
   );
 }
