@@ -91,8 +91,8 @@ Before writing to any database:
 | Column | Type | Notes |
 |--------|------|-------|
 | slug | text | URL-safe, unique. e.g. `accountant` |
-| name_th | text | Thai display name |
-| name_en | text | English display name |
+| name_th | text | Thai display name. **Pure Thai only** — no English in parentheses. e.g. `นักบัญชี` not `Accountant (นักบัญชี)` |
+| name_en | text | English display name. **Pure English only** — no Thai in parentheses. e.g. `Accountant` not `Accountant (นักบัญชี)` |
 | emoji | text | Single emoji for the field |
 | color | text | Hex color for accent. e.g. `#4ade80` |
 | tile_size | text | `sm`, `md`, or `lg` |
@@ -147,7 +147,7 @@ Every field MUST have exactly these 12 cards, no more, no less. Do NOT add extra
 | 3 | `salaryProgression` | 40 | `eyebrow`, `title`, `currency` (default e.g. `USD`), `levels[]` (each: `level`, `years`, `salary`, `note`), optional `eyebrow_thb`/`title_thb`/`levels_thb[]` for Thai-Baht toggle, `source_refs` |
 | 4 | `aiImpact` | 70 | `eyebrow`, `title`, `verdict`, `augmented[]`, `automated[]`, `ai_risk_score`, `source_refs` |
 | 5 | `marketThailand` | 80 | `eyebrow`, `title`, `body`, `openings`, `companies[]`, `source_refs` |
-| 6 | `dayInLife` | 90 | `eyebrow`, `title`, `steps[]` (each: `time`, `label`), `source_refs` |
+| 6 | `dayInLife` | 90 | `eyebrow`, `title`, `steps[]` (each: `label`, `detail`), `source_refs`. **No `time` field** — steps describe activities, not a schedule. |
 | 7 | `risks` | 110 | `eyebrow`, `title`, `risks[]`, `source_refs` |
 | 8 | `entryRoutes` | 120 | `eyebrow`, `title`, `description`, `faculties[]` (each: `name`, `tier`: `direct`/`related`/`alternative`, `examples?`, `note?`), `source_refs` |
 | 9 | `text` | 125 | `eyebrow`, `title`, `body`, `source_refs` — "ทักษะที่ใช้จริง" researched skills needed/used in this path, comes after entryRoutes |
@@ -169,7 +169,7 @@ Depth determines whether a smart teen trusts the card or skips it. Follow these 
 - **salaryProgression**: 4 levels (`Entry`, `Mid`, `Senior`, `Staff+`). Every level needs `years` + `salary` + a `note`. The note must answer: (a) what it takes at this level and (b) the durable skill underneath that survives tool changes. Never leave a level without a note. Include `levels_thb` for Thai-Baht toggle when Thai salary data is available.
 - **aiImpact**: Verdict 1-2 sentences. 3-5 `augmented` items, 2-4 `automated` items. `ai_risk_score` (0-10) must be justified by the verdict, not by keyword matching.
 - **marketThailand**: Body 1-2 sentences; `openings` as a real number or range; 4-8 `companies`. Do not invent opening counts.
-- **dayInLife**: 5-7 `steps` that show a realistic mix of meetings, deep work, and waiting for results.
+- **dayInLife**: 5-7 `steps` describing **activities/tasks** the person actually does — NOT a time-based schedule. Each step has `label` (short activity description) and `detail` (expanded context: tools used, what it involves in practice). Do NOT include `time` field. Focus on what they work on, not when.
 - **risks**: 3-5 risks, each 1 sentence. Be honest — this builds trust.
 - **entryRoutes**: 4-6 faculties with tiers (`direct`, `related`, `alternative`). Each faculty has `examples` (university names) and a `note` explaining the path.
 - **text (pos 125)**: "ทักษะที่ใช้จริง" — practitioner-level depth, 7-9 Thai bullets. See below.
@@ -335,3 +335,5 @@ The `careerSurvival` card is NOT stored in radar_cards. It's injected server-sid
 - Fabricating salaries, quotes, or years in `realPeople` — omit the field if the source did not provide it
 - Treating `text` cards as always hidden — only the title `"ทางนี้คืออะไร"` is filtered
 - Skipping the render and lint checks after seeding
+- Using `time` field in dayInLife steps — steps should be activity-based with `label` and `detail`, NOT time-based schedules
+- Mixing languages in `name_th`/`name_en` — `name_th` must be pure Thai (e.g. `นักบัญชี`), `name_en` must be pure English (e.g. `Accountant`). Never `Accountant (นักบัญชี)` in either field

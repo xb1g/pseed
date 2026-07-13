@@ -77,7 +77,7 @@ export type MarketThailandContent = CardBase & {
   openings?: string;
   companies?: string[];
 };
-export type DayInLifeContent = CardBase & { steps?: Array<{ time: string; label: string }> };
+export type DayInLifeContent = CardBase & { steps?: Array<{ time?: string; label: string; detail?: string }> };
 export type EntryRoutesContent = CardBase & {
   description?: string;
   faculties?: Array<{
@@ -888,27 +888,76 @@ function MarketThailandCard({ c, accent }: { c: MarketThailandContent; accent: s
 }
 
 function DayInLifeCard({ c, accent }: { c: DayInLifeContent; accent: string }) {
+  const [expanded, setExpanded] = useState<number | null>(null);
+  const hasAnyTime = (c.steps ?? []).some((s) => s.time);
+
   return (
     <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
-      <div className="flex flex-col">
-        {(c.steps ?? []).map((s, i) => (
-          <div key={i} className="flex gap-4 pb-4 last:pb-0">
-            <div className="flex flex-col items-center">
-              <span className="text-xs font-bold tabular-nums" style={{ color: accent }}>
-                <EditableText value={s.time} field={["steps", String(i), "time"]} className="inline" />
-              </span>
-              <span className="flex-1 w-px bg-white/10 mt-1" />
+      {hasAnyTime ? (
+        /* Legacy time-based layout */
+        <div className="flex flex-col">
+          {(c.steps ?? []).map((s, i) => (
+            <div key={i} className="flex gap-4 pb-4 last:pb-0">
+              <div className="flex flex-col items-center">
+                <span className="text-xs font-bold tabular-nums" style={{ color: accent }}>
+                  <EditableText value={s.time ?? ""} field={["steps", String(i), "time"]} className="inline" />
+                </span>
+                <span className="flex-1 w-px bg-white/10 mt-1" />
+              </div>
+              <p className="pb-1">
+                <EditableText
+                  value={s.label}
+                  field={["steps", String(i), "label"]}
+                  className="block text-neutral-200 text-base leading-relaxed"
+                />
+              </p>
             </div>
-            <p className="pb-1">
-              <EditableText
-                value={s.label}
-                field={["steps", String(i), "label"]}
-                className="block text-neutral-200 text-base leading-relaxed"
-              />
-            </p>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        /* Activity cards layout */
+        <div className="flex flex-col gap-2.5">
+          {(c.steps ?? []).map((s, i) => {
+            const isOpen = expanded === i;
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setExpanded(isOpen ? null : i)}
+                className="text-left w-full rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3 transition-all duration-200 hover:bg-white/[0.06] hover:border-white/15"
+              >
+                <div className="flex items-start gap-3">
+                  <span
+                    className="mt-1.5 h-2 w-2 rounded-full shrink-0"
+                    style={{ background: accent }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-neutral-200 text-[15px] leading-relaxed">{s.label}</p>
+                    {s.detail && (
+                      <div
+                        className={`overflow-hidden transition-all duration-200 ${
+                          isOpen ? "max-h-40 opacity-100 mt-2" : "max-h-0 opacity-0"
+                        }`}
+                      >
+                        <p className="text-neutral-400 text-sm leading-relaxed border-t border-white/5 pt-2">
+                          {s.detail}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  {s.detail && (
+                    <ChevronDown
+                      className={`h-4 w-4 shrink-0 text-neutral-500 mt-1 transition-transform duration-200 ${
+                        isOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </CardFrame>
   );
 }
