@@ -25,6 +25,7 @@ export function Layout({ children }: LayoutProps) {
   // Only compute after mount to avoid hydration mismatch (pathname is null on server)
   const isPublicHackathonRoute =
     pathname?.startsWith("/hackathon") && !pathname?.startsWith("/admin");
+  const isRadarRoute = pathname === "/radar" || pathname?.startsWith("/radar/");
 
   const hideNavbar =
     pathname === "/" ||
@@ -60,7 +61,11 @@ export function Layout({ children }: LayoutProps) {
   return (
     <div className="flex min-h-screen flex-col bg-[#0d0d0d]">
       {!hideNavbar && (
-        <header className="sticky top-0 z-50 w-full border-b border-white/[0.06] bg-[#0d0d0d]/95 backdrop-blur supports-[backdrop-filter]:bg-[#0d0d0d]/60">
+        <header
+          className={`z-50 w-full border-b border-white/[0.06] bg-[#0d0d0d]/95 backdrop-blur supports-[backdrop-filter]:bg-[#0d0d0d]/60 ${
+            isRadarRoute ? "relative" : "sticky top-0"
+          }`}
+        >
           <div className="container px-4 flex h-16 items-center">
             <MainNav isAuthenticated={!!user} />
 
