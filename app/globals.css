@@ -3337,9 +3337,12 @@
   opacity: 0.9;
 }
 
-.radar-card-section.in-view .salary-chess-board--visited-detail .salary-chess-level--knight .salary-chess-piece::after,
-.radar-card-section.in-view .salary-chess-board--visited-detail .salary-chess-level--queen .salary-chess-piece::after {
+.radar-card-section.in-view .salary-chess-board--visited-detail .salary-chess-level--knight .salary-chess-piece::after {
   opacity: 0.94;
+}
+
+.radar-card-section.in-view .salary-chess-board--visited-detail .salary-chess-level--queen .salary-chess-piece::after {
+  opacity: 0.82;
 }
 
 .radar-card-section.in-view .salary-chess-board--visited-detail .salary-chess-piece::before {
