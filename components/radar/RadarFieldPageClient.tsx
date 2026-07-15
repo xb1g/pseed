@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   getSavedRadarReflectionChapterKeys,
   submitRadarReflection,
@@ -10,6 +11,7 @@ import {
   recordRadarPathIntent,
 } from "@/lib/supabase/radar";
 import { RadarCardView, SourceRefs } from "@/components/radar/RadarCards";
+import { getCareerCardVisual } from "@/components/radar/RadarPageClient";
 import {
   RadarSkillExperience,
   type RadarSkillSummary,
@@ -42,6 +44,67 @@ function cardLabel(card: RadarCard): string {
 function cardChapterKey(card: RadarCard): string {
   const content = pickContent(card);
   return (content.chapterKey as string) || card.id;
+}
+
+function normalizedCardText(card: RadarCard): string {
+  const content = pickContent(card);
+  return [
+    card.kind,
+    content.eyebrow,
+    content.title,
+    content.presentation,
+    content.chapterKey,
+  ]
+    .filter((value): value is string => typeof value === "string")
+    .join(" ")
+    .toLocaleLowerCase();
+}
+
+function radarCardDisplayOrder(card: RadarCard): number {
+  const text = normalizedCardText(card);
+
+  if (card.kind === "hook") return 10;
+  if (card.kind === "salaryProgression") return 20;
+  if (card.kind === "aiImpact") return 30;
+  if (card.kind === "marketThailand") return 40;
+  if (card.kind === "careerSurvival") return 50;
+  if (card.kind === "fantasyReality") return 60;
+  if (card.kind === "dayInLife") return 70;
+  if (card.kind === "risks") return 80;
+  if (card.kind === "entryRoutes") return 90;
+  if (
+    text.includes("skills") ||
+    text.includes("skill") ||
+    text.includes("ต้องเก่งอะไร") ||
+    text.includes("ทักษะ")
+  ) {
+    return 100;
+  }
+  if (
+    card.kind === "cta" ||
+    card.kind === "reflection" ||
+    text.includes("ทางนี้ใช่เธอจริงไหม")
+  ) {
+    return 110;
+  }
+  if (card.kind === "sources") return 10000;
+
+  return 1000;
+}
+
+function sortRadarCardsForStory(cards: RadarCard[]) {
+  return cards
+    .map((card, index) => ({ card, index }))
+    .sort((a, b) => {
+      const orderDiff = radarCardDisplayOrder(a.card) - radarCardDisplayOrder(b.card);
+      if (orderDiff !== 0) return orderDiff;
+
+      const positionDiff = (a.card.position ?? 0) - (b.card.position ?? 0);
+      if (positionDiff !== 0) return positionDiff;
+
+      return a.index - b.index;
+    })
+    .map(({ card }) => card);
 }
 
 function readableAccent(hex: string, fallback = "#60a5fa"): string {
@@ -101,12 +164,14 @@ export function RadarFieldPageClient({
   const router = useRouter();
   const field = initialField;
   const fieldSlug = field.slug ?? "";
-  const HIDDEN_KINDS = new Set(["jobs", "growthCompare", "list", "reflection"]);
-  const cards = initialCards.filter((c) => {
-    if (HIDDEN_KINDS.has(c.kind)) return false;
-    if (c.kind === "text" && (c.content_th as Record<string, string>)?.title === "ทางนี้คืออะไร") return false;
-    return true;
-  });
+  const HIDDEN_KINDS = new Set(["jobs", "growthCompare", "list"]);
+  const cards = sortRadarCardsForStory(
+    initialCards.filter((c) => {
+      if (HIDDEN_KINDS.has(c.kind)) return false;
+      if (c.kind === "text" && (c.content_th as Record<string, string>)?.title === "ทางนี้คืออะไร") return false;
+      return true;
+    })
+  );
   const [current, setCurrent] = useState(0);
   const [submitted, setSubmitted] = useState<Set<string>>(new Set());
   const [showSignupPrompt, setShowSignupPrompt] = useState(true);
@@ -217,6 +282,7 @@ export function RadarFieldPageClient({
   }, [cards.length, initialSkills.length]);
 
   const accent = readableAccent(field.color || "#3b82f6");
+  const visual = getCareerCardVisual(field);
   const progressItems = [
     ...cards.map((card, i) => ({
       key: card.id,
@@ -231,6 +297,7 @@ export function RadarFieldPageClient({
   const displayCurrent = Math.min(current + 1, totalSlides);
   const keepRadarHref = `/radar/keep?next=${encodeURIComponent(`/radar/${fieldSlug}`)}`;
   const isFinalSlide = current >= totalSlides - 1;
+  const isAiImpactSlide = current < cards.length && cards[current]?.kind === "aiImpact";
   const shouldShowSignupToast =
     showSignupPrompt &&
     hasGuestReflection &&
@@ -307,9 +374,18 @@ export function RadarFieldPageClient({
     <div
       ref={rootRef}
       onMouseMove={handlePointer}
-      className="fixed inset-0 z-[100] h-[100dvh] overflow-hidden bg-neutral-950"
+      className={`radar-field-page ${isAiImpactSlide ? "radar-field-page--ai" : ""} fixed inset-0 isolate z-[100] h-[100dvh] overflow-hidden bg-neutral-950`}
+      style={{ background: visual.background, ...visual.dotStyle }}
     >
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+        <span
+          className="radar-career-card__grain radar-detail-grain"
+          aria-hidden="true"
+        />
+        <div
+          className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,7,18,0.58)_0%,rgba(3,7,18,0.82)_48%,rgba(3,7,18,0.94)_100%)]"
+          aria-hidden="true"
+        />
         <div
           className="radar-glow-a absolute top-0 left-1/2 w-[720px] h-[420px] rounded-full blur-[140px]"
           style={{
@@ -330,6 +406,7 @@ export function RadarFieldPageClient({
           className="radar-glow-follow absolute top-1/2 left-1/2 -ml-[200px] -mt-[200px] w-[400px] h-[400px] rounded-full blur-[120px] opacity-[0.14]"
           style={{ background: accent }}
         />
+        <div className="radar-detail-blackout" aria-hidden="true" />
       </div>
 
       <div className="absolute top-0 inset-x-0 z-30 px-4 pt-4">
@@ -410,7 +487,7 @@ export function RadarFieldPageClient({
 
       <div
         ref={scrollRef}
-        className="radar-deck"
+        className="radar-deck relative z-10"
       >
         {cards.length > 0 ? (
           <>
@@ -424,6 +501,7 @@ export function RadarFieldPageClient({
                   isFirst={i === 0}
                   hasMore={cards.length > 1}
                   accent={accent}
+                  figure={visual.figure}
                   sourceRefs={sourceRefs}
                   fieldSources={fieldSources}
                   sectionRef={(element) => {
@@ -487,6 +565,7 @@ function RadarCardSection({
   isFirst,
   hasMore,
   accent,
+  figure,
   sourceRefs = [],
   fieldSources = [],
   sectionRef,
@@ -496,6 +575,7 @@ function RadarCardSection({
   isFirst: boolean;
   hasMore: boolean;
   accent: string;
+  figure?: string;
   sourceRefs?: number[];
   fieldSources?: FieldSource[];
   sectionRef: (element: HTMLElement | null) => void;
@@ -546,9 +626,29 @@ function RadarCardSection({
         sectionRef(element);
       }}
       data-radar-index={index}
-      className="radar-card-section px-6 py-20"
+      className={`radar-card-section px-6 py-20 ${
+        isFirst ? "radar-card-section--first" : ""
+      } ${index === 1 ? "radar-card-section--after-first" : ""}`}
     >
-      <div className="min-h-[calc(100dvh-10rem)] flex flex-col">
+      {isFirst && figure && (
+        <div
+          className="pointer-events-none absolute inset-0 overflow-hidden"
+          aria-hidden="true"
+        >
+          <div className="radar-detail-figure-bg">
+            <Image
+              src={figure}
+              alt=""
+              fill
+              sizes="100vw"
+              className="object-contain object-center"
+              draggable={false}
+              priority
+            />
+          </div>
+        </div>
+      )}
+      <div className="relative z-10 min-h-[calc(100dvh-10rem)] flex flex-col">
         <div className="my-auto">
           {children}
         </div>
@@ -560,7 +660,7 @@ function RadarCardSection({
         {isFirst && hasMore && !hasScrolled && (
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
             <span className="text-[11px] uppercase tracking-[0.2em] text-white/30 font-medium">
-              เลื่อนขึ้น
+              ปัดขึ้น
             </span>
             <div
               className="radar-scroll-cue"

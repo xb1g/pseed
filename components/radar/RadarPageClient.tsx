@@ -5,7 +5,7 @@ import type { CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { getRadarFields, getRadarCollections } from "@/lib/supabase/radar";
-import { filterRadarFields, normalizeRadarCollections } from "@/lib/radar/filters";
+import { normalizeRadarCollections } from "@/lib/radar/filters";
 import type { Database } from "@/lib/supabase/database.types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,131 @@ const CAREER_FIGURES = [
   "/images/radar/jojo-dio-hirose.png",
   "/images/radar/jojo-full-body-blue.png",
   "/images/radar/jojo-full-body-dark.webp",
+] as const;
+
+const CAREER_SEARCH_TAGS = [
+  {
+    key: "technology",
+    label: "Technology",
+    keywords: [
+      "technology",
+      "tech",
+      "software",
+      "developer",
+      "programmer",
+      "computer",
+      "data",
+      "ai",
+      "cyber",
+      "security",
+      "it",
+      "digital",
+      "stem",
+      "engineering",
+      "engineer",
+      "mechanical",
+      "เทคโนโลยี",
+      "ซอฟต์แวร์",
+      "คอมพิวเตอร์",
+      "ข้อมูล",
+      "ไซเบอร์",
+      "วิศวกร",
+    ],
+  },
+  {
+    key: "business",
+    label: "Business",
+    keywords: [
+      "business",
+      "marketing",
+      "market",
+      "sales",
+      "finance",
+      "account",
+      "accounting",
+      "management",
+      "strategy",
+      "operations",
+      "product manager",
+      "entrepreneur",
+      "ธุรกิจ",
+      "การตลาด",
+      "บัญชี",
+      "การเงิน",
+      "ผู้จัดการ",
+    ],
+  },
+  {
+    key: "law",
+    label: "Law",
+    keywords: ["law", "legal", "lawyer", "attorney", "compliance", "policy", "กฎหมาย", "ทนาย"],
+  },
+  {
+    key: "art",
+    label: "Art",
+    keywords: [
+      "art",
+      "artist",
+      "creative",
+      "design",
+      "designer",
+      "fashion",
+      "model",
+      "modeling",
+      "fashion model",
+      "animation",
+      "film",
+      "media",
+      "content",
+      "music",
+      "ศิลปะ",
+      "สร้างสรรค์",
+      "ออกแบบ",
+      "แฟชั่น",
+      "นางแบบ",
+      "นายแบบ",
+      "คอนเทนต์",
+    ],
+  },
+  {
+    key: "medical",
+    label: "Medical",
+    keywords: [
+      "medical",
+      "medicine",
+      "health",
+      "healthcare",
+      "doctor",
+      "nurse",
+      "clinical",
+      "hospital",
+      "pharma",
+      "biotech",
+      "lab",
+      "แพทย์",
+      "สุขภาพ",
+      "พยาบาล",
+      "โรงพยาบาล",
+      "คลินิก",
+    ],
+  },
+  {
+    key: "engineer",
+    label: "Engineer",
+    keywords: [
+      "engineer",
+      "engineering",
+      "mechanical",
+      "civil",
+      "electrical",
+      "industrial",
+      "software engineer",
+      "qa",
+      "test engineer",
+      "วิศวกร",
+      "วิศวกรรม",
+    ],
+  },
 ] as const;
 
 const CAREER_CARD_GRADIENT_TEMPLATES = [
@@ -301,7 +426,7 @@ function stableHash(value: string) {
   );
 }
 
-function getCareerCardVisual(field: RadarField) {
+export function getCareerCardVisual(field: RadarField) {
   const seed = stableHash(field.slug || field.id);
   const template =
     CAREER_CARD_GRADIENT_TEMPLATES[
@@ -347,6 +472,70 @@ function getCareerLabels(field: RadarField) {
   };
 }
 
+function getCareerSearchText(field: RadarField) {
+  return [
+    field.slug,
+    field.name_en,
+    field.name_th,
+    field.tagline_en,
+    field.tagline_th,
+    ...(field.tags || []),
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join(" ")
+    .toLocaleLowerCase();
+}
+
+function normalizeCareerKeywordText(value: string) {
+  return value
+    .toLocaleLowerCase()
+    .replace(/[-_/]+/g, " ")
+    .replace(/[^a-z0-9\u0E00-\u0E7F]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function hasThaiText(value: string) {
+  return /[\u0E00-\u0E7F]/.test(value);
+}
+
+function matchesCareerKeyword(searchText: string, keyword: string) {
+  const normalizedKeyword = normalizeCareerKeywordText(keyword);
+  if (!normalizedKeyword) return false;
+
+  if (hasThaiText(normalizedKeyword)) {
+    return searchText.includes(normalizedKeyword);
+  }
+
+  return ` ${normalizeCareerKeywordText(searchText)} `.includes(` ${normalizedKeyword} `);
+}
+
+function getCareerSearchTags(field: RadarField) {
+  const searchText = getCareerSearchText(field);
+  return CAREER_SEARCH_TAGS.filter((tag) =>
+    tag.keywords.some((keyword) => matchesCareerKeyword(searchText, keyword))
+  );
+}
+
+function filterFieldsByCareerTags(
+  fields: RadarField[],
+  activeTag: string | null,
+  searchQuery: string
+) {
+  const query = searchQuery.trim().toLocaleLowerCase();
+
+  return fields.filter((field) => {
+    const searchTags = getCareerSearchTags(field);
+    if (activeTag && !searchTags.some((tag) => tag.key === activeTag)) return false;
+    if (!query) return true;
+
+    return (
+      getCareerSearchText(field).includes(query) ||
+      searchTags.some((tag) => tag.label.toLocaleLowerCase().includes(query))
+    );
+  });
+}
+
 export function RadarPageClient({
   initialFields,
   initialCollections,
@@ -366,7 +555,7 @@ export function RadarPageClient({
   const [isInitialLoad] = useState(!initialFields.length);
   const [error, setError] = useState<string | null>(initialError);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { allLabel, filters: collectionFilters } = useMemo(
+  const { allLabel } = useMemo(
     () => normalizeRadarCollections(collections),
     [collections]
   );
@@ -395,7 +584,7 @@ export function RadarPageClient({
   }, []);
 
   const filteredFields = useMemo(
-    () => filterRadarFields(fields, activeCollection, searchQuery),
+    () => filterFieldsByCareerTags(fields, activeCollection, searchQuery),
     [fields, activeCollection, searchQuery]
   );
 
@@ -445,18 +634,18 @@ export function RadarPageClient({
                 >
                   {allLabel}
                 </button>
-                {collectionFilters.map((col) => (
+                {CAREER_SEARCH_TAGS.map((tag) => (
                   <button
-                    key={col.key}
-                    onClick={() => handleCollectionClick(col.key)}
-                    aria-pressed={activeCollection === col.key}
+                    key={tag.key}
+                    onClick={() => handleCollectionClick(tag.key)}
+                    aria-pressed={activeCollection === tag.key}
                     className={`shrink-0 min-h-11 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200/70 ${
-                      activeCollection === col.key
+                      activeCollection === tag.key
                         ? "border border-emerald-200/[0.36] bg-emerald-200/[0.16] text-emerald-50"
                         : "border border-white/10 bg-white/5 text-white/[0.62] hover:bg-white/10 hover:text-white"
                     }`}
                   >
-                    {col.label_th || col.label_en || col.key}
+                    {tag.label}
                   </button>
                 ))}
               </div>
@@ -542,8 +731,10 @@ function FieldTile({
   const labels = getCareerLabels(field);
   const primaryLabel = labels.primary;
   const secondaryLabel = labels.secondary;
-  const tags = field.tags?.slice(0, 2) || [];
-  if (tags.length === 0) tags.push("radar");
+  const tags: string[] = getCareerSearchTags(field)
+    .map((tag) => tag.label)
+    .slice(0, 2);
+  if (tags.length === 0) tags.push("Career");
   const titleSize =
     primaryLabel.length > 42
       ? "text-lg sm:text-xl"

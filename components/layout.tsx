@@ -32,6 +32,8 @@ export function Layout({ children }: LayoutProps) {
     pathname === "/support" ||
     pathname === "/contact" ||
     pathname === "/link" ||
+    pathname === "/experimental-graphic" ||
+    pathname === "/experimental-wall" ||
     pathname === "/business-model-canvas" ||
     pathname?.includes("finish-profile") ||
     pathname?.includes("complete-profile") ||
