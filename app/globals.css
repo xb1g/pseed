@@ -3448,6 +3448,10 @@
     opacity: 0;
     transform: translate(-82%, -48%) scale(0.88) rotate(-8deg);
   }
+  16% {
+    opacity: 1;
+    transform: translate(-82%, -48%) scale(0.88) rotate(-8deg);
+  }
   34% {
     opacity: 1;
     transform: translate(-82%, -48%) scale(0.88) rotate(-8deg);
@@ -3466,6 +3470,11 @@
 
 @keyframes salary-knight-l-image {
   0% {
+    opacity: 0;
+    transform: translate(-82%, -48%) scale(0.88) rotate(-8deg);
+    filter: grayscale(1) contrast(1.03) brightness(0.78);
+  }
+  16% {
     opacity: 0.76;
     transform: translate(-82%, -48%) scale(0.88) rotate(-8deg);
     filter: grayscale(1) contrast(1.03) brightness(0.78);
@@ -3490,6 +3499,10 @@
 
 @keyframes salary-knight-l-tint {
   0% {
+    opacity: 0;
+    transform: translate(-82%, -48%) scale(0.88) rotate(-8deg);
+  }
+  16% {
     opacity: 0.94;
     transform: translate(-82%, -48%) scale(0.88) rotate(-8deg);
   }
