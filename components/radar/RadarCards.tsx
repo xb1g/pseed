@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import { Button } from "@/components/ui/button";
 import {
   getAiImpactLabel,
@@ -11,7 +12,7 @@ import {
 } from "@/lib/radar/presentation";
 import { Textarea } from "@/components/ui/textarea";
 import Image from "next/image";
-import { ExternalLink, ArrowRight, Check, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react";
+import { ExternalLink, ArrowRight, Check, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 
 // ── content shapes (one per radar_cards.kind) ────────────────────────────────
 
@@ -655,76 +656,200 @@ function JobsCard({ c, accent }: { c: JobsContent; accent: string }) {
 
 function SalaryProgressionCard({ c, accent }: { c: SalaryProgressionContent; accent: string }) {
   const [currency, setCurrency] = useState<"USD" | "THB">("USD");
+  const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
+  const [introComplete, setIntroComplete] = useState(false);
+  const [hasOpenedDetail, setHasOpenedDetail] = useState(false);
   const hasThb = Array.isArray(c.levels_thb) && c.levels_thb.length > 0;
   const activeLevels = currency === "THB" && hasThb ? c.levels_thb : c.levels;
-  const eyebrow = currency === "THB" && c.eyebrow_thb ? c.eyebrow_thb : c.eyebrow;
-  const title = currency === "THB" && c.title_thb ? c.title_thb : c.title;
+  const levels = activeLevels ?? [];
+  const fieldRoot = currency === "THB" && hasThb ? "levels_thb" : "levels";
+  const displayedLevels = levels.slice(0, 4);
+  const selected = selectedLevel === null ? null : displayedLevels[selectedLevel] ?? null;
+  const selectedIndex = selectedLevel ?? 0;
+  const chessPieces =
+    displayedLevels.length === 3
+      ? SALARY_CHESS_PIECES.filter((piece) => piece.key !== "rook")
+      : SALARY_CHESS_PIECES;
+
+  useEffect(() => {
+    setIntroComplete(false);
+    const timer = window.setTimeout(() => setIntroComplete(true), 4600);
+    return () => window.clearTimeout(timer);
+  }, [currency, levels.length]);
 
   return (
-    <CardFrame eyebrow={eyebrow} title={title} accent={accent}>
-      <div className="flex flex-col gap-3">
-        {hasThb && (
-          <div className="flex rounded-full border border-white/10 bg-white/5 overflow-hidden self-start">
-            <button
-              onClick={() => setCurrency("USD")}
-              className={`text-[11px] font-medium px-2.5 py-0.5 transition-colors inline-flex items-center gap-1 ${
-                currency === "USD" ? "bg-white/15 text-white" : "text-neutral-400 hover:text-white"
-              }`}
-            >
-              🇺🇸 USD
-            </button>
-            <button
-              onClick={() => setCurrency("THB")}
-              className={`text-[11px] font-medium px-2.5 py-0.5 transition-colors inline-flex items-center gap-1 ${
-                currency === "THB" ? "bg-white/15 text-white" : "text-neutral-400 hover:text-white"
-              }`}
-            >
-              🇹🇭 THB
-            </button>
-          </div>
-        )}
-        {(activeLevels ?? []).map((lvl, i) => (
-          <Panel key={i}>
-            <div className="flex items-center justify-between gap-3">
-              <div>
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+      {hasThb && (
+        <div className="flex rounded-full border border-white/10 bg-white/5 overflow-hidden self-start">
+          <button
+            onClick={() => setCurrency("USD")}
+            className={`text-[11px] font-medium px-2.5 py-0.5 transition-colors inline-flex items-center gap-1 ${
+              currency === "USD" ? "bg-white/15 text-white" : "text-neutral-400 hover:text-white"
+            }`}
+          >
+            🇺🇸 USD
+          </button>
+          <button
+            onClick={() => setCurrency("THB")}
+            className={`text-[11px] font-medium px-2.5 py-0.5 transition-colors inline-flex items-center gap-1 ${
+              currency === "THB" ? "bg-white/15 text-white" : "text-neutral-400 hover:text-white"
+            }`}
+          >
+            🇹🇭 THB
+          </button>
+        </div>
+      )}
+      <div className="salary-chess-scene" style={{ "--salary-chess-accent": accent } as CSSProperties}>
+          {selected ? (
+            <div className="salary-chess-detail">
+              <button
+                type="button"
+                className="salary-chess-back"
+                onClick={() => setSelectedLevel(null)}
+                aria-label="Back to salary levels"
+              >
+                <ArrowLeft className="h-6 w-6" />
+              </button>
+              <div className="salary-chess-detail-copy">
                 <EditableText
-                  value={lvl.level}
-                  field={[currency === "THB" && hasThb ? "levels_thb" : "levels", String(i), "level"]}
-                  className="text-white font-semibold"
+                  value={selected.level}
+                  field={[fieldRoot, String(selectedIndex), "level"]}
+                  className="salary-chess-detail-title"
                 />
-                {lvl.years && (
-                  <span className="text-neutral-500 text-xs ml-2">
+                <div className="salary-chess-detail-meta">
+                  {selected.salary && (
                     <EditableText
-                      value={lvl.years}
-                      field={[currency === "THB" && hasThb ? "levels_thb" : "levels", String(i), "years"]}
-                      className="inline"
-                    /> yrs
-                  </span>
-                )}
+                      value={formatSalaryDisplay(selected.salary)}
+                      field={[fieldRoot, String(selectedIndex), "salary"]}
+                      className="salary-chess-detail-salary"
+                    />
+                  )}
+                  {selected.years && (
+                    <span className="salary-chess-detail-years">
+                      <EditableText
+                        value={selected.years}
+                        field={[fieldRoot, String(selectedIndex), "years"]}
+                        className="inline"
+                      />
+                      {needsYearSuffix(selected.years) ? " years" : ""}
+                    </span>
+                  )}
+                </div>
+                <EditableText
+                  value={selected.note || "Tap to add more details for this level."}
+                  field={[fieldRoot, String(selectedIndex), "note"]}
+                  className="salary-chess-detail-note"
+                />
               </div>
-              {lvl.salary && (
-                <span className="text-sm font-bold shrink-0" style={{ color: accent }}>
-                  <EditableText
-                    value={lvl.salary}
-                    field={[currency === "THB" && hasThb ? "levels_thb" : "levels", String(i), "salary"]}
-                    className="inline"
-                  />
-                </span>
+              <SalaryChessPieceImage
+                className={`salary-chess-detail-piece salary-chess-detail-piece--${chessPieces[selectedIndex]?.key ?? "pawn"}`}
+                src={chessPieces[selectedIndex]?.src ?? SALARY_CHESS_PIECES[0].src}
+              />
+            </div>
+          ) : (
+            <div
+              className={`salary-chess-board salary-chess-board--${displayedLevels.length || 0} ${
+                introComplete ? "salary-chess-board--intro-complete" : ""
+              } ${hasOpenedDetail ? "salary-chess-board--visited-detail" : ""}`}
+              aria-label="Salary progression chess pieces"
+            >
+              <div className="salary-chess-head" aria-label="Salary">
+                <div className="salary-chess-head-title">
+                  Salary
+                </div>
+                <div className="salary-chess-head-eyebrow">
+                  ฐานเงินเดือน
+                </div>
+              </div>
+              {displayedLevels.map((lvl, i) => {
+                const piece = chessPieces[i] ?? SALARY_CHESS_PIECES[SALARY_CHESS_PIECES.length - 1];
+                return (
+                  <button
+                    type="button"
+                    key={`${lvl.level}-${i}`}
+                    className={`salary-chess-level salary-chess-level--${piece.key}`}
+                    onClick={() => {
+                      setIntroComplete(true);
+                      setHasOpenedDetail(true);
+                      setSelectedLevel(i);
+                    }}
+                    aria-label={`View details for ${lvl.level}`}
+                  >
+                    <SalaryChessPieceImage
+                      className="salary-chess-piece"
+                      src={piece.src}
+                    />
+                    <span className="salary-chess-label">
+                      <EditableText
+                        value={lvl.level}
+                        field={[fieldRoot, String(i), "level"]}
+                        className="salary-chess-title"
+                      />
+                      {lvl.salary && (
+                        <EditableText
+                          value={formatSalaryDisplay(lvl.salary)}
+                          field={[fieldRoot, String(i), "salary"]}
+                          className="salary-chess-salary"
+                        />
+                      )}
+                      {lvl.years && (
+                        <span className="salary-chess-years">
+                          <EditableText
+                            value={lvl.years}
+                            field={[fieldRoot, String(i), "years"]}
+                            className="inline"
+                          />
+                          {needsYearSuffix(lvl.years) ? " years" : ""}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
+              {displayedLevels.length === 0 && (
+                <div className="salary-chess-empty">
+                  No salary levels yet.
+                </div>
               )}
             </div>
-            {lvl.note && (
-              <p className="mt-2">
-                <EditableText
-                  value={lvl.note}
-                  field={[currency === "THB" && hasThb ? "levels_thb" : "levels", String(i), "note"]}
-                  className="block text-neutral-400 text-sm leading-relaxed"
-                />
-              </p>
-            )}
-          </Panel>
-        ))}
+          )}
       </div>
-    </CardFrame>
+      {!selected && displayedLevels.length > 0 && (
+        <p className="salary-chess-hint">
+          กดตัวหมากเพื่ออ่านข้อมูลเพิ่มเติมได้
+        </p>
+      )}
+    </div>
+  );
+}
+
+const SALARY_CHESS_PIECES = [
+  { key: "pawn", src: "/images/experimental-pawn.svg" },
+  { key: "rook", src: "/images/experimental-piece-130.png" },
+  { key: "knight", src: "/images/experimental-piece-131.svg" },
+  { key: "queen", src: "/images/experimental-piece-129.svg" },
+] as const;
+
+function needsYearSuffix(value: string) {
+  return !/(yr|year|ปี)/i.test(value);
+}
+
+function formatSalaryDisplay(value: string) {
+  return value.replace(/^ประมาณ\s*/i, "");
+}
+
+function SalaryChessPieceImage({ className, src }: { className: string; src: string }) {
+  return (
+    <span
+      className={className}
+      style={{ "--salary-chess-piece-src": `url(${src})` } as CSSProperties}
+      aria-hidden="true"
+    >
+      <span className="salary-chess-intro-pawn" aria-hidden="true">
+        <img src={SALARY_CHESS_PIECES[0].src} alt="" draggable={false} />
+      </span>
+      <img className="salary-chess-piece-image" src={src} alt="" draggable={false} />
+    </span>
   );
 }
 
@@ -766,10 +891,14 @@ function GrowthCompareCard({ c, accent }: { c: GrowthCompareContent; accent: str
   );
 }
 
-function aiRiskColor(score: number): string {
-  if (score <= 3) return "#10b981";
-  if (score <= 6) return "#f59e0b";
-  return "#ef4444";
+function aiRiskChartColor(percent: number): string {
+  if (percent >= 80) return "#ef4444";
+  if (percent >= 60) return "#f97316";
+  if (percent >= 50) return "#facc15";
+  if (percent >= 40) return "#a3e635";
+  if (percent >= 30) return "#22c55e";
+  if (percent >= 20) return "#14b8a6";
+  return "#38bdf8";
 }
 
 function aiRiskLabel(score: number): string {
@@ -777,68 +906,115 @@ function aiRiskLabel(score: number): string {
 }
 
 function AiImpactCard({ c, accent }: { c: AiImpactContent; accent: string }) {
+  const [activePanel, setActivePanel] = useState<"augmented" | "automated" | null>(null);
   const score = c.ai_risk_score ?? null;
+  const percent = score === null ? 0 : Math.round(Math.max(0, Math.min(score, 10)) * 10);
+  const chartColor = aiRiskChartColor(percent);
+  const chartStyle = {
+    "--ai-impact-color": chartColor,
+    "--ai-impact-percent": `${percent}%`,
+    "--ai-impact-accent": accent,
+    "--ai-impact-vector-green": accent,
+  } as CSSProperties;
+  const augmented = c.augmented ?? [];
+  const automated = c.automated ?? [];
+  const visibleItems = activePanel === "augmented" ? augmented : activePanel === "automated" ? automated : [];
+  const activeTitle = activePanel === "augmented" ? "AI ช่วยไรได้บ้าง?" : "AI แทนไรได้บ้าง?";
+
   return (
-    <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
-      {score !== null && (
-        <Panel>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-neutral-300">ระดับผลกระทบจาก AI</span>
-            <span className="text-sm font-bold tabular-nums" style={{ color: aiRiskColor(score) }}>
-              {score}/10 · {aiRiskLabel(score)}
-            </span>
-          </div>
-          <div className="h-3 rounded-full bg-white/5 overflow-hidden">
-            <div
-              className="rc-risk-fill h-full rounded-full"
-              style={{
-                width: `${score * 10}%`,
-                background: aiRiskColor(score),
-              }}
-            />
-          </div>
-        </Panel>
-      )}
-      {c.verdict && (
-        <Panel>
-          <p>
-            <EditableText value={c.verdict} field="verdict" className="block text-neutral-100 text-base leading-relaxed" />
+    <div className="ai-pixel-page" style={chartStyle}>
+      <header className="ai-pixel-heading">
+        <h2 className="ai-pixel-title" aria-label="AI Impact">
+          <span className="ai-pixel-title-ai" data-text="AI">AI</span>
+          <span> Impact</span>
+        </h2>
+        <EditableText
+          value="โดน AI กระทบเยอะแค่ไหน"
+          field="eyebrow"
+          className="ai-pixel-subtitle"
+        />
+      </header>
+
+      <div className="ai-pixel-meter" aria-label={`AI replace risk ${score ?? 0} out of 10`}>
+        {score !== null && (
+          <p className="ai-pixel-score">
+            {score}/10 {aiRiskLabel(score)}
           </p>
-        </Panel>
-      )}
-      {c.augmented && c.augmented.length > 0 && (
-        <div className="rc-panel-left">
-          <Panel className="border-emerald-400/20 bg-emerald-400/5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300/80 mb-2">
-              AI ช่วยคุณทำอะไรได้บ้าง
-            </p>
-            <ul className="flex flex-col gap-1.5">
-              {c.augmented.map((t, i) => (
-                <li key={i} className="rc-stagger text-neutral-200 text-base leading-relaxed" style={{ transitionDelay: `${0.3 + i * 0.08}s` }}>
-                  • <EditableText value={t} field={["augmented", String(i)]} className="inline" />
-                </li>
-              ))}
-            </ul>
-          </Panel>
+        )}
+        <PixelHelperIcon className="ai-pixel-vector ai-pixel-vector--helper" />
+        <div className="ai-pixel-bar" aria-hidden="true">
+          <span className="ai-pixel-bar-fill" />
         </div>
+        <PixelMonsterIcon className="ai-pixel-vector ai-pixel-vector--monster" />
+      </div>
+
+      {c.verdict && (
+        <p className="ai-pixel-verdict">
+          <EditableText value={c.verdict} field="verdict" className="block" />
+        </p>
       )}
-      {c.automated && c.automated.length > 0 && (
-        <div className="rc-panel-right">
-          <Panel className="border-rose-400/20 bg-rose-400/5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-rose-300/80 mb-2">
-              งานที่ AI อาจทำแทนได้
-            </p>
-            <ul className="flex flex-col gap-1.5">
-              {c.automated.map((t, i) => (
-                <li key={i} className="rc-stagger text-neutral-200 text-base leading-relaxed" style={{ transitionDelay: `${0.45 + i * 0.08}s` }}>
-                  • <EditableText value={t} field={["automated", String(i)]} className="inline" />
-                </li>
-              ))}
-            </ul>
-          </Panel>
-        </div>
+
+      <div className="ai-pixel-actions">
+        <button
+          type="button"
+          className="ai-pixel-toggle"
+          aria-expanded={activePanel === "augmented"}
+          onClick={() => setActivePanel(activePanel === "augmented" ? null : "augmented")}
+        >
+          AI ช่วยไรได้บ้าง?
+        </button>
+        <button
+          type="button"
+          className="ai-pixel-toggle"
+          aria-expanded={activePanel === "automated"}
+          onClick={() => setActivePanel(activePanel === "automated" ? null : "automated")}
+        >
+          AI แทนไรได้บ้าง?
+        </button>
+      </div>
+
+      {activePanel && (
+        <section className="ai-pixel-panel" aria-label={activeTitle}>
+          <h3>{activeTitle}</h3>
+          <ul>
+            {visibleItems.map((t, i) => (
+              <li key={i}>
+                <EditableText
+                  value={t}
+                  field={[activePanel, String(i)]}
+                  className="inline"
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
-    </CardFrame>
+      </div>
+  );
+}
+
+function PixelHelperIcon({ className }: { className: string }) {
+  return (
+    <svg className={className} viewBox="0 0 102 117" fill="none" aria-hidden="true">
+      <path d="M21.8438 65.5312H29.125V72.8125H72.8125V65.5312H80.0938V58.25H94.6562V72.8125H80.0938V87.375H94.6562V94.6562H87.375V109.219H80.0938V116.5H58.25V109.219H43.6875V116.5H21.8438V109.219H14.5625V94.6562H7.28125V87.375H21.8438V72.8125H7.28125V58.25H21.8438V65.5312ZM7.28125 87.375H0V72.8125H7.28125V87.375ZM101.938 87.375H94.6562V72.8125H101.938V87.375ZM7.28125 58.25H0V43.6875H7.28125V58.25ZM101.938 58.25H94.6562V43.6875H101.938V58.25ZM72.8125 7.28125H80.0938V14.5625H87.375V29.125H94.6562V43.6875H87.375V50.9688H80.0938V36.4062H72.8125V43.6875H29.125V36.4062H21.8438V50.9688H14.5625V43.6875H7.28125V29.125H14.5625V14.5625H21.8438V7.28125H29.125V0H72.8125V7.28125Z" fill="black" />
+      <path d="M29.125 7.28125C43.5419 7.28125 57.9588 7.28125 72.8125 7.28125C72.8125 9.68406 72.8125 12.0869 72.8125 14.5625C75.2153 14.5625 77.6181 14.5625 80.0938 14.5625C80.0938 19.3681 80.0938 24.1737 80.0938 29.125C77.6909 29.125 75.2881 29.125 72.8125 29.125C72.8125 31.5278 72.8125 33.9306 72.8125 36.4062C58.3956 36.4062 43.9787 36.4062 29.125 36.4062C29.125 34.0034 29.125 31.6006 29.125 29.125C26.7222 29.125 24.3194 29.125 21.8438 29.125C21.8438 24.3194 21.8438 19.5138 21.8438 14.5625C24.2466 14.5625 26.6494 14.5625 29.125 14.5625C29.125 12.1597 29.125 9.75688 29.125 7.28125Z" fill="var(--ai-impact-vector-green, #487B47)" />
+      <path d="M29.125 87.375C33.9306 87.375 38.7362 87.375 43.6875 87.375C43.6875 89.7778 43.6875 92.1806 43.6875 94.6562C38.8819 94.6562 34.0763 94.6562 29.125 94.6562C29.125 92.2534 29.125 89.8506 29.125 87.375ZM58.25 87.375C63.0556 87.375 67.8612 87.375 72.8125 87.375C72.8125 89.7778 72.8125 92.1806 72.8125 94.6562C68.0069 94.6562 63.2013 94.6562 58.25 94.6562C58.25 92.2534 58.25 89.8506 58.25 87.375ZM21.8438 94.6562C24.2466 94.6562 26.6494 94.6562 29.125 94.6562C29.125 97.0591 29.125 99.4619 29.125 101.938C33.9306 101.938 38.7362 101.938 43.6875 101.938C43.6875 104.34 43.6875 106.743 43.6875 109.219C36.4791 109.219 29.2706 109.219 21.8438 109.219C21.8438 104.413 21.8438 99.6075 21.8438 94.6562ZM43.6875 94.6562C48.4931 94.6562 53.2987 94.6562 58.25 94.6562C58.25 97.0591 58.25 99.4619 58.25 101.938C53.4444 101.938 48.6388 101.938 43.6875 101.938C43.6875 99.5347 43.6875 97.1319 43.6875 94.6562ZM72.8125 94.6562C75.2153 94.6562 77.6181 94.6562 80.0938 94.6562C80.0938 99.4619 80.0938 104.267 80.0938 109.219C72.8853 109.219 65.6769 109.219 58.25 109.219C58.25 106.816 58.25 104.413 58.25 101.938C63.0556 101.938 67.8612 101.938 72.8125 101.938C72.8125 99.5347 72.8125 97.1319 72.8125 94.6562Z" fill="var(--ai-impact-vector-green, #487B47)" />
+      <path d="M36.4062 29.125C46.0175 29.125 55.6287 29.125 65.5312 29.125C65.5312 31.5278 65.5312 33.9306 65.5312 36.4062C55.92 36.4062 46.3088 36.4062 36.4062 36.4062C36.4062 34.0034 36.4062 31.6006 36.4062 29.125Z" fill="#FEFEFE" />
+      <path d="M43.6875 65.5312C48.4931 65.5312 53.2987 65.5312 58.25 65.5312C58.25 67.9341 58.25 70.3369 58.25 72.8125C53.4444 72.8125 48.6388 72.8125 43.6875 72.8125C43.6875 70.4097 43.6875 68.0069 43.6875 65.5312Z" fill="#BA5F61" />
+      <path d="M72.8125 72.8125H58.25V65.5312H65.5312V50.9688H58.25V65.5312H43.6875V50.9688H36.4062V65.5312H43.6875V72.8125H29.125V65.5312H21.8438V58.25H7.28125V43.6875H14.5625V50.9688H21.8438V36.4062H29.125V43.6875H72.8125V36.4062H80.0938V50.9688H87.375V43.6875H94.6562V58.25H80.0938V65.5312H72.8125V72.8125Z" fill="white" />
+      <path d="M7.28125 72.8125H21.8438V87.375H7.28125V72.8125Z" fill="white" />
+      <path d="M80.0938 72.8125H94.6562V87.375H80.0938V72.8125Z" fill="white" />
+      <path d="M58.25 50.9688C60.6528 50.9688 63.0556 50.9688 65.5312 50.9688C65.5312 55.7744 65.5312 60.58 65.5312 65.5312C63.1284 65.5312 60.7256 65.5312 58.25 65.5312C58.25 60.7256 58.25 55.92 58.25 50.9688Z" fill="black" />
+      <path d="M36.4062 50.9688C38.8091 50.9688 41.2119 50.9688 43.6875 50.9688C43.6875 55.7744 43.6875 60.58 43.6875 65.5312C41.2847 65.5312 38.8819 65.5312 36.4062 65.5312C36.4062 60.7256 36.4062 55.92 36.4062 50.9688Z" fill="black" />
+    </svg>
+  );
+}
+
+function PixelMonsterIcon({ className }: { className: string }) {
+  return (
+    <svg className={className} viewBox="0 0 137 103" fill="none" aria-hidden="true">
+      <path d="M44.1328 3.5V14.5889H55.2793V25.6787H81.7207V14.5889H92.8672V3.5H111.206V21.6846H99.9629V25.6787H111.206V36.8633H115.257V14.5889H133.5V66.1367H122.354V77.3213H111.206V81.3154H122.354V99.5H104.11V88.4111H92.8672V77.3213H44.1328V88.4111H32.8896V99.5H14.6465V81.3154H25.7939V77.3213H14.6465V66.1367H3.5V14.5889H21.7432V36.8633H25.7939V25.6787H37.0371V21.6846H25.7939V3.5H44.1328ZM88.8164 47.9521H92.8672V43.959H88.8164V47.9521ZM44.1328 47.9521H48.1836V43.959H44.1328V47.9521Z" fill="var(--ai-impact-vector-green, #487B47)" stroke="black" strokeWidth="7" />
+    </svg>
   );
 }
 
