@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -670,19 +670,33 @@ function SalaryProgressionCard({ c, accent }: { c: SalaryProgressionContent; acc
     displayedLevels.length === 3
       ? SALARY_CHESS_PIECES.filter((piece) => piece.key !== "rook")
       : SALARY_CHESS_PIECES;
+  const completionAnimationName = chessPieces.some((piece) => piece.key === "queen")
+    ? "salary-queen-image-reveal"
+    : chessPieces.some((piece) => piece.key === "knight")
+      ? "salary-knight-l-image"
+      : chessPieces.some((piece) => piece.key === "rook")
+        ? "salary-rook-crash-image"
+        : null;
 
-  useEffect(() => {
+  const changeCurrency = (nextCurrency: "USD" | "THB") => {
+    setCurrency(nextCurrency);
+    setSelectedLevel(null);
     setIntroComplete(false);
-    const timer = window.setTimeout(() => setIntroComplete(true), 4600);
-    return () => window.clearTimeout(timer);
-  }, [currency, levels.length]);
+    setHasOpenedDetail(false);
+  };
+
+  const handleBoardAnimationEnd = (event: React.AnimationEvent<HTMLDivElement>) => {
+    if (event.animationName === completionAnimationName) {
+      setIntroComplete(true);
+    }
+  };
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
       {hasThb && (
         <div className="flex rounded-full border border-white/10 bg-white/5 overflow-hidden self-start">
           <button
-            onClick={() => setCurrency("USD")}
+            onClick={() => changeCurrency("USD")}
             className={`text-[11px] font-medium px-2.5 py-0.5 transition-colors inline-flex items-center gap-1 ${
               currency === "USD" ? "bg-white/15 text-white" : "text-neutral-400 hover:text-white"
             }`}
@@ -690,7 +704,7 @@ function SalaryProgressionCard({ c, accent }: { c: SalaryProgressionContent; acc
             🇺🇸 USD
           </button>
           <button
-            onClick={() => setCurrency("THB")}
+            onClick={() => changeCurrency("THB")}
             className={`text-[11px] font-medium px-2.5 py-0.5 transition-colors inline-flex items-center gap-1 ${
               currency === "THB" ? "bg-white/15 text-white" : "text-neutral-400 hover:text-white"
             }`}
@@ -752,6 +766,7 @@ function SalaryProgressionCard({ c, accent }: { c: SalaryProgressionContent; acc
                 introComplete ? "salary-chess-board--intro-complete" : ""
               } ${hasOpenedDetail ? "salary-chess-board--visited-detail" : ""}`}
               aria-label="Salary progression chess pieces"
+              onAnimationEnd={handleBoardAnimationEnd}
             >
               <div className="salary-chess-head" aria-label="Salary">
                 <div className="salary-chess-head-title">
