@@ -4102,7 +4102,8 @@
   display: grid;
   align-content: center;
   gap: clamp(1.6rem, 4vw, 3.4rem);
-  padding: clamp(1.3rem, 4.8vw, 4.2rem);
+  padding-block: clamp(1.3rem, 4.8vw, 4.2rem);
+  padding-inline: 0;
   color: #f8f7f2;
   background: #141414;
 }
@@ -4472,7 +4473,7 @@
   .ai-pixel-page {
     min-height: min(76svh, 44rem);
     gap: 1.45rem;
-    padding: 1.2rem 0.95rem 1.4rem;
+    padding: 1.2rem 0 1.4rem;
   }
 
   .ai-pixel-meter {
