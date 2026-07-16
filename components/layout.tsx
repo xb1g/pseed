@@ -35,6 +35,7 @@ export function Layout({ children }: LayoutProps) {
     pathname === "/experimental-graphic" ||
     pathname === "/experimental-wall" ||
     pathname === "/business-model-canvas" ||
+    pathname?.startsWith("/plan") ||
     pathname?.includes("finish-profile") ||
     pathname?.includes("complete-profile") ||
     isPublicHackathonRoute ||

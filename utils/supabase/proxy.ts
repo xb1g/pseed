@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { isPublicRoute } from './public-routes'
 
 // Fail fast when Supabase is unreachable in local dev (Docker not running)
 const isLocal = process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('127.0.0.1') ||
@@ -62,24 +63,7 @@ export async function updateSession(request: NextRequest) {
 
   if (
     !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/auth') &&
-    !request.nextUrl.pathname.startsWith('/download') &&
-    !request.nextUrl.pathname.startsWith('/hackathon') &&
-    !request.nextUrl.pathname.startsWith('/api/hackathon') &&
-    !request.nextUrl.pathname.startsWith('/app/beta') &&
-    !request.nextUrl.pathname.startsWith('/expert-interview') &&
-    !request.nextUrl.pathname.startsWith('/api/expert-interview') &&
-    !request.nextUrl.pathname.startsWith('/epic-sprint') &&
-    !request.nextUrl.pathname.startsWith('/about') &&
-    !request.nextUrl.pathname.startsWith('/link') &&
-    !request.nextUrl.pathname.startsWith('/experimental-graphic') &&
-    !request.nextUrl.pathname.startsWith('/experimental-wall') &&
-    !request.nextUrl.pathname.startsWith('/business-model-canvas') &&
-    !request.nextUrl.pathname.startsWith('/radar') &&
-    !request.nextUrl.pathname.startsWith('/fireball') &&
-    !request.nextUrl.pathname.endsWith('.md') &&
-    request.nextUrl.pathname !== '/'
+    !isPublicRoute(request.nextUrl.pathname)
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone()
