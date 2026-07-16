@@ -442,14 +442,16 @@ export function RadarFieldPageClient({
                     onReflect={(payload) =>
                       handleReflect(card, chapterKey, payload)
                     }
-                    onIntent={(pathSlug) => {
+                    onIntent={(pathSlug, buttonLabel) => {
                       if (!fieldSlug || !field.id) return;
                       void recordRadarPathIntent({
                         fieldSlug,
                         fieldId: field.id,
                         pathSlug,
                         buttonLabel:
-                          (content.button as string | undefined) || undefined,
+                          buttonLabel ||
+                          (content.button as string | undefined) ||
+                          undefined,
                       });
                     }}
                   />

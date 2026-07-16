@@ -426,7 +426,7 @@ export async function recordRadarPathIntent(
 
 export async function recordRadarStartOptionInterest(
   startOptionId: string,
-  eventType: "interested" | "opened" | "saved" | "dismissed"
+  eventType: "interested" | "opened" | "saved" | "dismissed" | "not_interested"
 ): Promise<void> {
   if (typeof window === "undefined" || shouldSkipRadarAnalytics()) return;
 

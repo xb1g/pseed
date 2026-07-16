@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(27);
+SELECT plan(28);
 
 SELECT has_table('public', 'radar_skills', 'radar_skills exists');
 SELECT has_table('public', 'radar_field_skills', 'radar_field_skills exists');
@@ -26,7 +26,7 @@ SELECT isnt_empty(
   $$SELECT 1 FROM pg_constraint
     WHERE conrelid = 'public.radar_interest_events'::regclass
       AND contype = 'c'
-      AND pg_get_constraintdef(oid) LIKE '%interested%opened%saved%dismissed%'$$,
+      AND pg_get_constraintdef(oid) LIKE '%interested%opened%saved%dismissed%not_interested%'$$,
   'interest event kinds are constrained'
 );
 
@@ -159,6 +159,15 @@ SELECT lives_ok(
       '{}'::jsonb
     )$$,
   'each start option accepts its own interest signal'
+);
+SELECT lives_ok(
+  $$SELECT public.record_radar_interest(
+      '30000000-0000-0000-0000-000000000002',
+      'not_interested',
+      'session-one',
+      '{}'::jsonb
+    )$$,
+  'anonymous records negative intent through the validated RPC'
 );
 RESET ROLE;
 
