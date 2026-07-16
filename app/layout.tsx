@@ -10,6 +10,9 @@ import {
   Reenie_Beanie,
   Kodchasan,
   Noto_Sans_Thai,
+  Instrument_Serif,
+  Athiti,
+  Pixelify_Sans,
 } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -84,6 +87,26 @@ const notoSansThai = Noto_Sans_Thai({
   preload: false,
 });
 
+const instrumentSerif = Instrument_Serif({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-instrument-serif",
+  preload: false,
+});
+
+const athiti = Athiti({
+  weight: ["400", "500", "600", "700"],
+  subsets: ["thai", "latin"],
+  variable: "--font-athiti",
+  preload: false,
+});
+
+const pixelifySans = Pixelify_Sans({
+  subsets: ["latin"],
+  variable: "--font-pixelify-sans",
+  preload: false,
+});
+
 export const metadata: Metadata = {
   title: "Passion Seed",
   description: "Discover and nurture your passions",
@@ -147,7 +170,7 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${libreFranklin.variable} ${spaceMono.variable} ${krub.variable} ${baiJamjuree.variable} ${mitr.variable} ${poppins.variable} ${reenieBeanie.variable} ${kodchasan.variable} ${notoSansThai.variable}`}
+        className={`${libreFranklin.variable} ${spaceMono.variable} ${krub.variable} ${baiJamjuree.variable} ${mitr.variable} ${poppins.variable} ${reenieBeanie.variable} ${kodchasan.variable} ${notoSansThai.variable} ${instrumentSerif.variable} ${athiti.variable} ${pixelifySans.variable}`}
         style={{ backgroundColor: "#111214" }}
       >
         <ThemeProvider

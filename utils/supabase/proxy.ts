@@ -73,6 +73,8 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith('/epic-sprint') &&
     !request.nextUrl.pathname.startsWith('/about') &&
     !request.nextUrl.pathname.startsWith('/link') &&
+    !request.nextUrl.pathname.startsWith('/experimental-graphic') &&
+    !request.nextUrl.pathname.startsWith('/experimental-wall') &&
     !request.nextUrl.pathname.startsWith('/business-model-canvas') &&
     !request.nextUrl.pathname.startsWith('/radar') &&
     !request.nextUrl.pathname.startsWith('/fireball') &&
