@@ -32,6 +32,7 @@ export function Layout({ children }: LayoutProps) {
     pathname === "/contact" ||
     pathname === "/link" ||
     pathname === "/business-model-canvas" ||
+    pathname?.startsWith("/plan") ||
     pathname?.includes("finish-profile") ||
     pathname?.includes("complete-profile") ||
     isPublicHackathonRoute ||
