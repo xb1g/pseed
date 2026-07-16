@@ -27,6 +27,8 @@ const config = {
         sans: ["var(--font-libre-franklin)", "var(--font-bai-jamjuree)"],
         "bai-jamjuree": ["var(--font-bai-jamjuree)", "sans-serif"],
         heading: ["var(--font-libre-franklin)", "var(--font-krub)"],
+        "radar-title": ["var(--font-instrument-serif)", "var(--font-athiti)", "serif"],
+        "radar-thai": ["var(--font-athiti)", "sans-serif"],
         mono: ["var(--font-space-mono)"],
       },
       colors: {

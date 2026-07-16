@@ -1,0 +1,221 @@
+.canvas {
+  position: relative;
+  min-height: 100svh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(71, 118, 255, 0.42), transparent 35%),
+    radial-gradient(circle at 22% 74%, rgba(213, 94, 63, 0.34), transparent 39%),
+    linear-gradient(180deg, #4c2e70 0%, #0b1f4d 48%, #6d5048 100%);
+}
+
+.background {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.background::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background:
+    linear-gradient(180deg, rgba(3, 7, 18, 0.5) 0%, rgba(3, 7, 18, 0.78) 54%, rgba(3, 7, 18, 0.94) 100%),
+    radial-gradient(circle at 50% 42%, transparent 0 28rem, rgba(0, 0, 0, 0.38) 72%);
+}
+
+.grain {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  opacity: 0.32;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.18) 0 0.7px, transparent 0.95px),
+    radial-gradient(circle, rgba(0, 0, 0, 0.2) 0 0.8px, transparent 1.1px),
+    var(--bloom-grain-svg);
+  background-position:
+    3px 7px,
+    11px 13px,
+    41px 29px;
+  background-repeat: repeat;
+  background-size:
+    8px 8px,
+    11px 11px,
+    200px 200px;
+  mix-blend-mode: overlay;
+}
+
+.glowA,
+.glowB,
+.glowC {
+  position: absolute;
+  z-index: 1;
+  display: block;
+  border-radius: 999px;
+  filter: blur(140px);
+  opacity: 0.24;
+}
+
+.glowA {
+  top: -8%;
+  left: 48%;
+  width: 46rem;
+  height: 26rem;
+  background: #786cff;
+  animation: driftA 23s ease-in-out infinite;
+}
+
+.glowB {
+  bottom: -16%;
+  left: -8%;
+  width: 34rem;
+  height: 34rem;
+  background: #d95b3c;
+  animation: driftB 17s ease-in-out infinite;
+}
+
+.glowC {
+  top: 34%;
+  right: -10%;
+  width: 30rem;
+  height: 30rem;
+  background: #f2cf68;
+  animation: driftC 13s ease-in-out infinite;
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  background:
+    radial-gradient(circle at 50% 48%, transparent 0%, rgba(0, 0, 0, 0.38) 62%, rgba(0, 0, 0, 0.72) 100%);
+}
+
+.scene {
+  position: relative;
+  z-index: 10;
+  width: min(92vw, 72rem);
+  min-height: min(86svh, 42rem);
+  display: grid;
+  place-items: center;
+}
+
+.pieceRow {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: end;
+  gap: clamp(1rem, 4vw, 4rem);
+}
+
+.piece {
+  display: block;
+  justify-self: center;
+  width: 100%;
+  max-width: 12rem;
+  height: 18rem;
+  object-fit: contain;
+  object-position: center bottom;
+  user-select: none;
+  filter:
+    drop-shadow(0 1.6rem 1.3rem rgba(0, 0, 0, 0.54))
+    drop-shadow(0 0 1rem rgba(255, 255, 255, 0.14));
+}
+
+.rook {
+  max-width: 11rem;
+}
+
+.queen {
+  max-width: 10.5rem;
+}
+
+.pawn {
+  max-width: 10rem;
+}
+
+.knight {
+  max-width: 12.5rem;
+}
+
+@keyframes driftA {
+  0% {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 0.18;
+  }
+  50% {
+    transform: translate(-42%, 6%) scale(1.12);
+    opacity: 0.28;
+  }
+  100% {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 0.18;
+  }
+}
+
+@keyframes driftB {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.12;
+  }
+  50% {
+    transform: translate(8%, -5%) scale(1.18);
+    opacity: 0.18;
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.12;
+  }
+}
+
+@keyframes driftC {
+  0% {
+    transform: translate(0, 0) scale(1.05);
+    opacity: 0.09;
+  }
+  50% {
+    transform: translate(-7%, 7%) scale(0.92);
+    opacity: 0.15;
+  }
+  100% {
+    transform: translate(0, 0) scale(1.05);
+    opacity: 0.09;
+  }
+}
+
+@media (max-width: 760px) {
+  .scene {
+    width: 92vw;
+    min-height: 78svh;
+  }
+
+  .pieceRow {
+    gap: clamp(0.55rem, 2vw, 1rem);
+  }
+
+  .piece {
+    height: 12.5rem;
+  }
+}
+
+@media (max-width: 460px) {
+  .pieceRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 1.5rem;
+  }
+
+  .piece {
+    height: 10.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glowA,
+  .glowB,
+  .glowC {
+    animation: none;
+  }
+}
