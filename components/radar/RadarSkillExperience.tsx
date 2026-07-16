@@ -36,14 +36,17 @@ const KIND_LABELS: Record<RadarStartOption["kind"], string> = {
 };
 
 function StartOptionTile({ option, accent }: { option: RadarStartOption; accent: string }) {
-  const [recorded, setRecorded] = useState(false);
+  const [interestedRecorded, setInterestedRecorded] = useState(false);
+  const [notInterestedRecorded, setNotInterestedRecorded] = useState(false);
+  const anyIntentRecorded = interestedRecorded || notInterestedRecorded;
   const destination = option.destination_url ?? option.destination_ref;
   const duration = typeof option.metadata.duration === "string" ? option.metadata.duration : null;
   const cost = typeof option.metadata.cost === "string" ? option.metadata.cost : null;
 
-  const record = async (eventType: "opened" | "interested") => {
+  const record = async (eventType: "opened" | "interested" | "not_interested") => {
     await recordRadarStartOptionInterest(option.id, eventType);
-    if (eventType === "interested") setRecorded(true);
+    if (eventType === "interested") setInterestedRecorded(true);
+    if (eventType === "not_interested") setNotInterestedRecorded(true);
   };
 
   return (
@@ -89,15 +92,25 @@ function StartOptionTile({ option, accent }: { option: RadarStartOption; accent:
             </Link>
           )
         ) : <span />}
-        <button
-          type="button"
-          disabled={recorded}
-          onClick={() => void record("interested")}
-          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold text-neutral-950 disabled:bg-white/10 disabled:text-white/60"
-          style={recorded ? undefined : { background: accent }}
-        >
-          {recorded ? <><Check className="h-4 w-4" /> สนใจแล้ว</> : "บอกว่าสนใจ"}
-        </button>
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            disabled={anyIntentRecorded}
+            onClick={() => void record("interested")}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold text-neutral-950 disabled:bg-white/10 disabled:text-white/60"
+            style={interestedRecorded ? undefined : { background: accent }}
+          >
+            {interestedRecorded ? <><Check className="h-4 w-4" /> สนใจแล้ว</> : "บอกว่าสนใจ"}
+          </button>
+          <button
+            type="button"
+            disabled={anyIntentRecorded}
+            onClick={() => void record("not_interested")}
+            className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-white/10 px-3 text-xs font-medium text-neutral-400 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {notInterestedRecorded ? "บันทึกแล้ว" : "ไม่สนใจลอง"}
+          </button>
+        </div>
       </div>
     </article>
   );

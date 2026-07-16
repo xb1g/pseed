@@ -398,11 +398,12 @@ function StartCarouselTextCard({
 }: {
   c: TextContent;
   accent: string;
-  onIntent?: (pathSlug: string) => void;
+  onIntent?: (pathSlug: string, buttonLabel?: string) => void;
 }) {
   const editor = useContext(RadarInlineEditorContext);
   const trackRef = useRef<HTMLDivElement>(null);
-  const [recorded, setRecorded] = useState<Set<number>>(new Set());
+  const [interestedRecorded, setInterestedRecorded] = useState<Set<number>>(new Set());
+  const [notInterestedRecorded, setNotInterestedRecorded] = useState<Set<number>>(new Set());
   const parsed = parseRadarListItems(c.body);
   const options: NonNullable<TextContent["options"]> = c.options ?? parsed.map((item) => ({
     title: item.title,
@@ -437,6 +438,16 @@ function StartCarouselTextCard({
     });
   };
 
+  const recordInterested = (index: number) => {
+    onIntent?.(`start-option-${index + 1}`, "interested");
+    setInterestedRecorded((current) => new Set(current).add(index));
+  };
+
+  const recordNotInterested = (index: number) => {
+    onIntent?.(`start-option-${index + 1}`, "not-interested");
+    setNotInterestedRecorded((current) => new Set(current).add(index));
+  };
+
   return (
     <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
       <div className="flex items-center justify-between gap-3">
@@ -451,105 +462,117 @@ function StartCarouselTextCard({
         </div>
       </div>
       <div ref={trackRef} className="radar-horizontal-carousel -mx-6 flex gap-3 overflow-x-auto px-6 pb-3">
-        {options.map((option, index) => (
-          <article key={`${option.title}-${index}`} className="w-[82vw] max-w-[320px] shrink-0 snap-center rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-            <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: accent }}>
-              {c.options && option.type ? (
-                <EditableText
-                  value={option.type}
-                  field={["options", String(index), "type"]}
-                  className="inline"
-                />
-              ) : (
-                option.type ?? `ทางเลือก ${index + 1}`
-              )}
-            </span>
-            <h3 className="mt-2">
-              {c.options ? (
-                <EditableText
-                  value={option.title}
-                  field={["options", String(index), "title"]}
-                  className="block text-xl font-bold text-white"
-                />
-              ) : (
-                <EditableText
-                  value={option.title}
-                  field="body"
-                  className="block text-xl font-bold text-white"
-                  onValueChange={(value) => updateLegacyOption(index, "title", value)}
-                />
-              )}
-            </h3>
-            {option.description && (
-              <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-neutral-400">
+        {options.map((option, index) => {
+          const isInterested = interestedRecorded.has(index);
+          const isNotInterested = notInterestedRecorded.has(index);
+          const anyRecorded = isInterested || isNotInterested;
+          return (
+            <article key={`${option.title}-${index}`} className="w-[82vw] max-w-[320px] shrink-0 snap-center rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+              <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: accent }}>
+                {c.options && option.type ? (
+                  <EditableText
+                    value={option.type}
+                    field={["options", String(index), "type"]}
+                    className="inline"
+                  />
+                ) : (
+                  option.type ?? `ทางเลือก ${index + 1}`
+                )}
+              </span>
+              <h3 className="mt-2">
                 {c.options ? (
                   <EditableText
-                    value={option.description}
-                    field={["options", String(index), "description"]}
-                    className="block"
+                    value={option.title}
+                    field={["options", String(index), "title"]}
+                    className="block text-xl font-bold text-white"
                   />
                 ) : (
                   <EditableText
-                    value={option.description}
+                    value={option.title}
                     field="body"
-                    className="block"
-                    onValueChange={(value) =>
-                      updateLegacyOption(index, "description", value)
-                    }
+                    className="block text-xl font-bold text-white"
+                    onValueChange={(value) => updateLegacyOption(index, "title", value)}
                   />
                 )}
-              </p>
-            )}
-            <div className="mt-4 flex flex-wrap gap-2 text-xs text-neutral-500">
-              {option.duration && (
-                <EditableText
-                  value={option.duration}
-                  field={["options", String(index), "duration"]}
-                  className="inline"
-                />
+              </h3>
+              {option.description && (
+                <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-neutral-400">
+                  {c.options ? (
+                    <EditableText
+                      value={option.description}
+                      field={["options", String(index), "description"]}
+                      className="block"
+                    />
+                  ) : (
+                    <EditableText
+                      value={option.description}
+                      field="body"
+                      className="block"
+                      onValueChange={(value) =>
+                        updateLegacyOption(index, "description", value)
+                      }
+                    />
+                  )}
+                </p>
               )}
-              {option.cost && (
-                <span>
-                  ·{" "}
+              <div className="mt-4 flex flex-wrap gap-2 text-xs text-neutral-500">
+                {option.duration && (
                   <EditableText
-                    value={option.cost}
-                    field={["options", String(index), "cost"]}
+                    value={option.duration}
+                    field={["options", String(index), "duration"]}
                     className="inline"
                   />
-                </span>
-              )}
-            </div>
-            <div className="mt-5 grid gap-2">
-              {option.url && (
-                <a href={option.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-white/10 text-sm font-semibold text-white">
-                  เปิดดู <ExternalLink className="h-4 w-4" />
-                </a>
-              )}
-              <button
-                type="button"
-                disabled={recorded.has(index)}
-                onClick={() => {
-                  onIntent?.(`start-option-${index + 1}`);
-                  setRecorded((current) => new Set(current).add(index));
-                }}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-neutral-950 disabled:bg-white/10 disabled:text-white/60"
-                style={recorded.has(index) ? undefined : { background: accent }}
-              >
-                {recorded.has(index) ? (
-                  <><Check className="h-4 w-4" /> สนใจแล้ว</>
-                ) : c.options && option.cta ? (
-                  <EditableText
-                    value={option.cta}
-                    field={["options", String(index), "cta"]}
-                    className="inline"
-                  />
-                ) : (
-                  option.cta ?? "สนใจวิธีนี้"
                 )}
-              </button>
-            </div>
-          </article>
-        ))}
+                {option.cost && (
+                  <span>
+                    ·{" "}
+                    <EditableText
+                      value={option.cost}
+                      field={["options", String(index), "cost"]}
+                      className="inline"
+                    />
+                  </span>
+                )}
+              </div>
+              <div className="mt-5 grid gap-2">
+                {option.url && (
+                  <a href={option.url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-white/10 text-sm font-semibold text-white">
+                    เปิดดู <ExternalLink className="h-4 w-4" />
+                  </a>
+                )}
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    disabled={anyRecorded}
+                    onClick={() => recordInterested(index)}
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-neutral-950 disabled:bg-white/10 disabled:text-white/60"
+                    style={isInterested ? undefined : { background: accent }}
+                  >
+                    {isInterested ? (
+                      <><Check className="h-4 w-4" /> สนใจแล้ว</>
+                    ) : c.options && option.cta ? (
+                      <EditableText
+                        value={option.cta}
+                        field={["options", String(index), "cta"]}
+                        className="inline"
+                      />
+                    ) : (
+                      option.cta ?? "สนใจวิธีนี้"
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={anyRecorded}
+                    onClick={() => recordNotInterested(index)}
+                    className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-white/10 px-3 text-xs font-medium text-neutral-400 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isNotInterested ? "บันทึกแล้ว" : "ไม่สนใจลอง"}
+                  </button>
+                </div>
+              </div>
+            </article>
+          );
+        })}
       </div>
       <div className="flex justify-center gap-1.5" aria-hidden="true">
         {options.map((_, index) => (
@@ -567,7 +590,7 @@ function TextCard({
 }: {
   c: TextContent;
   accent: string;
-  onIntent?: (pathSlug: string) => void;
+  onIntent?: (pathSlug: string, buttonLabel?: string) => void;
 }) {
   if (isSkillsText(c)) return <SkillsTextCard c={c} accent={accent} />;
   if (isStartText(c)) return <StartCarouselTextCard c={c} accent={accent} onIntent={onIntent} />;
@@ -1346,25 +1369,31 @@ function CtaCard({
   c: CtaContent;
   accent: string;
   squadUrl?: string | null;
-  onIntent?: (pathSlug: string) => void;
+  onIntent?: (pathSlug: string, buttonLabel?: string) => void;
 }) {
-  const [recorded, setRecorded] = useState(false);
+  const [interestedRecorded, setInterestedRecorded] = useState(false);
+  const [notInterestedRecorded, setNotInterestedRecorded] = useState(false);
+  const anyRecorded = interestedRecorded || notInterestedRecorded;
 
-  const handleClick = () => {
+  const recordInterested = () => {
     if (!onIntent) return;
     if (squadUrl) {
       try {
         const url = new URL(squadUrl, window.location.origin);
         const pathSlug = url.pathname.split("/").filter(Boolean).pop();
-        if (pathSlug) onIntent(pathSlug);
+        if (pathSlug) onIntent(pathSlug, "interested");
       } catch {
-        // Fallback: record with "interested" as pathSlug
-        onIntent("interested");
+        onIntent("interested", "interested");
       }
     } else {
-      onIntent("interested");
+      onIntent("interested", "interested");
     }
-    setRecorded(true);
+    setInterestedRecorded(true);
+  };
+
+  const recordNotInterested = () => {
+    onIntent?.("interested", "not-interested");
+    setNotInterestedRecorded(true);
   };
 
   return (
@@ -1375,33 +1404,43 @@ function CtaCard({
         </p>
       )}
       {c.button && (
-        <Button
-          asChild={!!squadUrl && !recorded}
-          className="mt-2 w-full font-semibold text-white transition-all"
-          style={{ background: recorded ? undefined : accent }}
-          variant={recorded ? "outline" : "default"}
-          onClick={squadUrl ? undefined : handleClick}
-          disabled={recorded}
-        >
-          {squadUrl && !recorded ? (
-            <a
-              href={squadUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={handleClick}
-            >
-              <EditableText value={c.button} field="button" className="inline" /> <ArrowRight className="h-4 w-4 ml-1" />
-            </a>
-          ) : (
-            <span className="inline-flex items-center gap-2">
-              {recorded ? (
-                <><Check className="h-4 w-4" /> บันทึกแล้ว!</>
-              ) : (
-                <EditableText value={c.button} field="button" className="inline" />
-              )}
-            </span>
-          )}
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Button
+            asChild={!!squadUrl && !anyRecorded}
+            className="mt-2 w-full font-semibold text-white transition-all"
+            style={{ background: interestedRecorded ? undefined : accent }}
+            variant={interestedRecorded ? "outline" : "default"}
+            onClick={squadUrl ? undefined : recordInterested}
+            disabled={anyRecorded}
+          >
+            {squadUrl && !anyRecorded ? (
+              <a
+                href={squadUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={recordInterested}
+              >
+                <EditableText value={c.button} field="button" className="inline" /> <ArrowRight className="h-4 w-4 ml-1" />
+              </a>
+            ) : (
+              <span className="inline-flex items-center gap-2">
+                {interestedRecorded ? (
+                  <><Check className="h-4 w-4" /> บันทึกแล้ว!</>
+                ) : (
+                  <EditableText value={c.button} field="button" className="inline" />
+                )}
+              </span>
+            )}
+          </Button>
+          <button
+            type="button"
+            disabled={anyRecorded}
+            onClick={recordNotInterested}
+            className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-white/10 px-3 text-xs font-medium text-neutral-400 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {notInterestedRecorded ? "บันทึกแล้ว" : "ไม่สนใจลอง"}
+          </button>
+        </div>
       )}
     </CardFrame>
   );
@@ -1740,7 +1779,7 @@ export interface RadarCardViewProps {
   showSignupPrompt?: boolean;
   signupHref?: string;
   onReflect?: (payload: { rating?: number; tags?: string[]; text?: string }) => Promise<void> | void;
-  onIntent?: (pathSlug: string) => void;
+  onIntent?: (pathSlug: string, buttonLabel?: string) => void;
 }
 
 export function SourceRefs({ refs, sources }: { refs: number[]; sources: FieldSource[] }) {
