@@ -2517,10 +2517,6 @@
   transition: opacity 900ms cubic-bezier(0.05, 0.7, 0.35, 0.99);
 }
 
-.radar-field-page--ai .radar-detail-blackout {
-  opacity: 1;
-}
-
 .radar-field-page--ai .radar-glow-a,
 .radar-field-page--ai .radar-glow-b,
 .radar-field-page--ai .radar-glow-c,
@@ -4096,14 +4092,12 @@
 }
 
 .ai-pixel-page {
-  width: min(100%, 86rem);
+  width: 100%;
   min-height: min(72svh, 46rem);
-  margin-inline: auto;
   display: grid;
   align-content: center;
   gap: clamp(1.6rem, 4vw, 3.4rem);
-  padding-block: clamp(1.3rem, 4.8vw, 4.2rem);
-  padding-inline: 0;
+  padding: clamp(1.3rem, 4.8vw, 4.2rem) clamp(1rem, 4.8vw, 4.2rem);
   color: #f8f7f2;
   background: #141414;
 }
@@ -4111,6 +4105,8 @@
 .ai-pixel-heading {
   display: grid;
   gap: 0.2rem;
+  max-width: 72rem;
+  margin-inline: auto;
 }
 
 .ai-pixel-title {
@@ -4473,7 +4469,7 @@
   .ai-pixel-page {
     min-height: min(76svh, 44rem);
     gap: 1.45rem;
-    padding: 1.2rem 0 1.4rem;
+    padding: 1.2rem 1rem 1.4rem;
   }
 
   .ai-pixel-meter {

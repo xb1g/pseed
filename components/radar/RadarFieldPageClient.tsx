@@ -375,7 +375,10 @@ export function RadarFieldPageClient({
       ref={rootRef}
       onMouseMove={handlePointer}
       className={`radar-field-page ${isAiImpactSlide ? "radar-field-page--ai" : ""} fixed inset-0 isolate z-[100] h-[100dvh] overflow-hidden bg-neutral-950`}
-      style={{ background: visual.background, ...visual.dotStyle }}
+      style={{
+        background: isAiImpactSlide ? "#141414" : visual.background,
+        ...visual.dotStyle,
+      }}
     >
       <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <span
