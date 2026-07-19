@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { PathAIChatStudent } from "./PathAIChatStudent";
 import { NPCConversation } from "./NPCConversation";
+import { aiChatObjective, normalizeContentBlock } from "@/lib/pathlab/content-block";
 
 /** Fires while an activity is open so partial time survives an abandoned tab */
 const HEARTBEAT_INTERVAL_MS = 60_000;
@@ -49,18 +50,67 @@ type ActivityViewPanelProps = {
 };
 
 function ContentBlock({ block }: { block: ContentRow }) {
-  const title = block.content_title?.trim();
+  // Authored bodies are sometimes JSON descriptors; never render them raw
+  const normalized = normalizeContentBlock(block);
+  const title = normalized.title;
+  const prompts: string[] = Array.isArray(block.metadata?.prompts)
+    ? block.metadata.prompts
+    : [];
 
   const body = (() => {
     switch (block.content_type) {
       case "text":
       case "daily_prompt":
-      case "reflection_card":
+      case "reflection_card": {
+        // A text row with only a link is a resource pointer, not prose
+        if (!normalized.body && normalized.link) {
+          return (
+            <div className="space-y-1">
+              {normalized.description && (
+                <p className="text-sm text-neutral-300">
+                  {normalized.description}
+                </p>
+              )}
+              <a
+                href={normalized.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-blue-400 underline underline-offset-4 hover:text-blue-300"
+              >
+                {normalized.link}
+              </a>
+            </div>
+          );
+        }
+
+        if (!normalized.body && !normalized.description && !prompts.length) {
+          return null;
+        }
+
         return (
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-neutral-300">
-            {block.content_body}
-          </p>
+          <div className="space-y-2">
+            {normalized.description && (
+              <p className="text-sm text-neutral-400">
+                {normalized.description}
+              </p>
+            )}
+            {normalized.body && (
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-neutral-300">
+                {normalized.body}
+              </p>
+            )}
+            {prompts.length > 0 && (
+              <ul className="list-disc space-y-1 pl-5">
+                {prompts.map((prompt, index) => (
+                  <li key={index} className="text-sm text-neutral-300">
+                    {prompt}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         );
+      }
 
       case "video":
       case "short_video":
@@ -93,21 +143,28 @@ function ContentBlock({ block }: { block: ContentRow }) {
         ) : null;
 
       case "resource_link":
-        return block.content_url ? (
-          <a
-            href={block.content_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-blue-400 underline underline-offset-4 hover:text-blue-300"
-          >
-            {title || block.content_url}
-          </a>
+        return normalized.link ? (
+          <div className="space-y-1">
+            {normalized.description && (
+              <p className="text-sm text-neutral-400">
+                {normalized.description}
+              </p>
+            )}
+            <a
+              href={normalized.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-blue-400 underline underline-offset-4 hover:text-blue-300"
+            >
+              {title || normalized.link}
+            </a>
+          </div>
         ) : null;
 
       default:
-        return block.content_body ? (
+        return normalized.body || normalized.description ? (
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-neutral-300">
-            {block.content_body}
+            {normalized.body || normalized.description}
           </p>
         ) : null;
     }
@@ -156,7 +213,7 @@ export function ActivityViewPanel({
 
   async function postProgress(action: string, elapsedSeconds?: number) {
     try {
-      await fetch("/api/pathlab/progress", {
+      const response = await fetch("/api/pathlab/progress", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -166,8 +223,11 @@ export function ActivityViewPanel({
           elapsedSeconds,
         }),
       });
+
+      return response.ok ? await response.json() : null;
     } catch {
       // Time tracking must never block the student
+      return null;
     }
   }
 
@@ -182,7 +242,15 @@ export function ActivityViewPanel({
   useEffect(() => {
     openedAt.current = Date.now();
     flushedUpTo.current = Date.now();
-    postProgress("start");
+
+    // The row may not have existed when the server rendered this page. Refresh
+    // the parent's map once it does, otherwise chat activities mount with a
+    // null progressId and every subsequent write fails.
+    postProgress("start").then((payload) => {
+      if (payload?.progress?.id && payload.progress.id !== progressId) {
+        onProgressUpdate();
+      }
+    });
 
     const interval = setInterval(() => {
       const seconds = elapsedSinceFlush();
@@ -272,7 +340,7 @@ export function ActivityViewPanel({
         <PathAIChatStudent
           activityId={activity.id}
           progressId={progressId}
-          objective={aiChatContent.content_body || activity.instructions || ""}
+          objective={aiChatObjective(aiChatContent, activity.instructions)}
           onComplete={onProgressUpdate}
         />
       </div>
