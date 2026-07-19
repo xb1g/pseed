@@ -39,12 +39,15 @@ pnpm test
 # Run tests in watch mode
 pnpm test:watch
 
-# Start Supabase locally
-npx supabase start
-
-# Push database changes
-supabase db push --local
+# Push database changes (applies to production — see note below)
+supabase db push
 ```
+
+**The local Supabase database is no longer used.** Migrations are applied
+directly to production. Since production is the first Postgres to parse a new
+migration, keep migrations additive and idempotent — `ADD COLUMN IF NOT
+EXISTS`, nullable columns, `CREATE INDEX IF NOT EXISTS` — so a prod-first
+apply cannot break existing rows.
 
 ## Architecture Overview
 
