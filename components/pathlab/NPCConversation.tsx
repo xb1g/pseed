@@ -371,6 +371,21 @@ export function NPCConversation({
     );
   }
 
+  // Reaching the end clears currentNode. That is success, not an error, so it
+  // must not fall through to the "not available" warning below.
+  if (conversation && !currentNode && progress?.is_completed) {
+    return (
+      <div className="p-6 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
+        <p className="font-medium text-emerald-800 dark:text-emerald-300">
+          Conversation complete
+        </p>
+        <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-400">
+          You finished your conversation with {conversation.title}.
+        </p>
+      </div>
+    );
+  }
+
   if (!conversation || !currentNode) {
     return (
       <div className="p-6 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">

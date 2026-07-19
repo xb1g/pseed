@@ -1,4 +1,8 @@
-import { aiChatObjective, normalizeContentBlock } from "../content-block";
+import {
+  aiChatObjective,
+  normalizeContentBlock,
+  resolveAIChatConfig,
+} from "../content-block";
 
 describe("normalizeContentBlock", () => {
   it("unwraps a JSON body so raw JSON never reaches the student", () => {
@@ -128,5 +132,80 @@ describe("aiChatObjective", () => {
 
   it("returns an empty string when there is nothing to say", () => {
     expect(aiChatObjective({})).toBe("");
+  });
+});
+
+describe("resolveAIChatConfig", () => {
+  // The five metadata shapes actually present in production
+  it.each([
+    ["suggested_prompt", { suggested_prompt: "Create a landing page" }],
+    ["suggested_prompts", { context: "Refine", suggested_prompts: ["A", "B"] }],
+    ["prompt_suggestions", { context: "Debug", prompt_suggestions: ["A"] }],
+    ["prompt", { prompt: "Analyse career fit" }],
+    ["context only", { context: "Polish your project" }],
+  ])("always produces a usable config for %s", (_label, metadata) => {
+    const config = resolveAIChatConfig({ metadata });
+
+    expect(config.systemPrompt.length).toBeGreaterThan(0);
+    expect(config.objective.length).toBeGreaterThan(0);
+  });
+
+  it("prefers an explicit system_prompt when authored", () => {
+    const config = resolveAIChatConfig({
+      metadata: { system_prompt: "You are a strict reviewer.", objective: "Ship" },
+    });
+
+    expect(config.systemPrompt).toBe("You are a strict reviewer.");
+    expect(config.objective).toBe("Ship");
+  });
+
+  it("folds context and objective into a derived system prompt", () => {
+    const config = resolveAIChatConfig({
+      metadata: { context: "Building a portfolio site" },
+    });
+
+    expect(config.systemPrompt).toContain("Building a portfolio site");
+    expect(config.systemPrompt).toContain("Goal:");
+  });
+
+  it("derives the objective from a JSON body description", () => {
+    const config = resolveAIChatConfig({
+      content_body:
+        '{"title": "AI UI Generation", "description": "Use AI to generate UI components"}',
+      metadata: { suggested_prompt: "Create a landing page" },
+    });
+
+    expect(config.objective).toBe("Use AI to generate UI components");
+    expect(config.objective).not.toContain("{");
+  });
+
+  it("collects suggestions from every known key shape", () => {
+    const config = resolveAIChatConfig({
+      metadata: {
+        suggested_prompt: "one",
+        suggested_prompts: ["two", "three"],
+        prompt_suggestions: ["four"],
+        prompt: "five",
+      },
+    });
+
+    expect(config.suggestions).toEqual(["one", "two", "three", "four", "five"]);
+  });
+
+  it("falls back to activity instructions, then title", () => {
+    expect(
+      resolveAIChatConfig({}, { instructions: "Build a prototype" }).objective,
+    ).toBe("Build a prototype");
+
+    expect(resolveAIChatConfig({}, { title: "First Prototype" }).objective).toBe(
+      "First Prototype",
+    );
+  });
+
+  it("never returns an empty objective, even with nothing to work from", () => {
+    const config = resolveAIChatConfig({});
+
+    expect(config.objective.length).toBeGreaterThan(0);
+    expect(config.suggestions).toEqual([]);
   });
 });

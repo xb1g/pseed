@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { resolveAIChatConfig } from '@/lib/pathlab/content-block';
 import type { AIChatMetadata } from '@/types/pathlab-content';
 
 const AI_API_URL = 'https://ai.passionseed.org/v1/chat/completions';
@@ -68,14 +69,14 @@ export async function POST(
       );
     }
 
-    const metadata = aiChatContent.metadata as AIChatMetadata;
-
-    if (!metadata.system_prompt || !metadata.objective) {
-      return NextResponse.json(
-        { error: 'AI chat configuration is incomplete' },
-        { status: 400 }
-      );
-    }
+    // Authored metadata rarely carries system_prompt/objective directly, so
+    // derive them rather than rejecting the activity outright.
+    const chatConfig = resolveAIChatConfig(aiChatContent, activity);
+    const metadata = {
+      ...(aiChatContent.metadata as AIChatMetadata),
+      system_prompt: chatConfig.systemPrompt,
+      objective: chatConfig.objective,
+    } as AIChatMetadata;
 
     // Get or create chat session
     let { data: session } = await supabase
