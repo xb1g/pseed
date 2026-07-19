@@ -705,6 +705,7 @@
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 12px;
   color: white;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -1017,8 +1018,7 @@
   }
 
   code,
-  pre,
-  a {
+  pre {
     @apply font-mono;
   }
 
