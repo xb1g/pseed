@@ -142,6 +142,13 @@ export function NPCConversation({
   const handleChoiceSelect = async (choice: NPCConversationChoice, isAutoSelected = false) => {
     if (!currentNode || isSubmitting) return;
 
+    // The choice endpoint keys off the conversation-progress row's own id.
+    // `progressId` is the activity-progress id, which that lookup will miss.
+    if (!progress?.id) {
+      setError('Conversation is still loading. Try again in a moment.');
+      return;
+    }
+
     // Clear timer if manually selected
     if (!isAutoSelected && timerRef.current) {
       clearInterval(timerRef.current);
@@ -168,13 +175,14 @@ export function NPCConversation({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          progress_id: progressId,
+          progress_id: progress.id,
           choice_id: choice.id,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit choice');
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error || 'Failed to submit choice');
       }
 
       const data: MakeChoiceResponse = await response.json();
