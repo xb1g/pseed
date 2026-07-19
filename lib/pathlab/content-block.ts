@@ -84,6 +84,68 @@ export function normalizeContentBlock(row: RawContentRow): NormalizedContent {
 }
 
 /**
+ * Resolved configuration for an AI chat activity.
+ *
+ * Authored ai_chat metadata is not standardised — observed shapes include
+ * `suggested_prompt`, `suggested_prompts`, `prompt_suggestions`, `prompt`, and
+ * `context`, and none of the authored rows carry the `system_prompt` /
+ * `objective` pair the chat route originally demanded. Hard-requiring those
+ * meant AI chat failed for every activity, so derive them instead.
+ */
+export interface AIChatConfig {
+  systemPrompt: string;
+  objective: string;
+  suggestions: string[];
+}
+
+const DEFAULT_SYSTEM_PROMPT =
+  "You are a supportive mentor guiding a student through a hands-on career " +
+  "exploration activity. Keep responses concise and practical. Ask a " +
+  "clarifying question when the student seems stuck, and encourage them to " +
+  "try things themselves rather than doing the work for them.";
+
+function toStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map(asText).filter((entry): entry is string => entry !== null);
+  }
+  const single = asText(value);
+  return single ? [single] : [];
+}
+
+export function resolveAIChatConfig(
+  row: RawContentRow,
+  activity?: { title?: string | null; instructions?: string | null },
+): AIChatConfig {
+  const metadata = row.metadata || {};
+  const normalized = normalizeContentBlock(row);
+
+  const suggestions = [
+    ...toStringArray(metadata.suggested_prompt),
+    ...toStringArray(metadata.suggested_prompts),
+    ...toStringArray(metadata.prompt_suggestions),
+    ...toStringArray(metadata.prompt),
+  ];
+
+  const objective =
+    asText(metadata.objective) ||
+    normalized.body ||
+    normalized.description ||
+    asText(metadata.context) ||
+    asText(activity?.instructions) ||
+    asText(activity?.title) ||
+    "Explore this activity with your AI mentor.";
+
+  const context = asText(metadata.context);
+  const systemPrompt =
+    asText(metadata.system_prompt) ||
+    [DEFAULT_SYSTEM_PROMPT, context && `Context: ${context}`, `Goal: ${objective}`]
+      .filter(Boolean)
+      .join("\n\n");
+
+  return { systemPrompt, objective, suggestions };
+}
+
+/**
  * Best available objective text for an AI chat activity. The stored body is
  * usually a JSON descriptor, and the actual student-facing prompt lives in
  * metadata.
