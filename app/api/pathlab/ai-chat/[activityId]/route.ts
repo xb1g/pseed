@@ -1,10 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { generateObject, generateText } from 'ai';
+import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
+import { getModel } from '@/lib/ai/modelRegistry';
 import { resolveAIChatConfig } from '@/lib/pathlab/content-block';
 import type { AIChatMetadata } from '@/types/pathlab-content';
 
-const AI_API_URL = 'https://ai.passionseed.org/v1/chat/completions';
-const AI_API_KEY = 'AIAngpao';
+/**
+ * Student-facing chat runs on DeepSeek through the shared model registry, so
+ * the provider credential comes from DEEPSEEK_API_KEY rather than being
+ * hardcoded here. Authored content may still pin a model via metadata.model.
+ */
+const DEFAULT_CHAT_MODEL = 'deepseek-chat';
+
+/**
+ * Content authored against the old gateway pins models like "passion-6", which
+ * no provider recognises — getModel would silently fall back to Google. Ignore
+ * those and use the default instead.
+ */
+function resolveChatModel(requested?: string): string {
+  if (!requested || /^passion-/i.test(requested.trim())) {
+    return DEFAULT_CHAT_MODEL;
+  }
+  return requested;
+}
 
 /**
  * POST /api/pathlab/ai-chat/[activityId]
@@ -139,28 +158,28 @@ export async function POST(
       },
     ];
 
-    // Call AI API
-    const aiResponse = await fetch(AI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${AI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: metadata.model || 'passion-6',
-        messages: aiMessages,
-      }),
-    });
+    // Call AI via the shared registry (DeepSeek by default)
+    let assistantMessage: string;
+    try {
+      const { text } = await generateText({
+        model: getModel(resolveChatModel(metadata.model)),
+        system: buildSystemPrompt(metadata),
+        messages: aiMessages
+          .filter((msg) => msg.role !== 'system')
+          .map((msg) => ({
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content,
+          })),
+      });
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI API error:', errorText);
-      throw new Error('AI API request failed');
+      assistantMessage = text?.trim() || 'No response from AI';
+    } catch (error) {
+      console.error('AI API error:', error);
+      return NextResponse.json(
+        { error: 'The AI mentor is unavailable right now. Please try again.' },
+        { status: 502 }
+      );
     }
-
-    const aiData = await aiResponse.json();
-    const assistantMessage =
-      aiData.choices?.[0]?.message?.content || 'No response from AI';
 
     // Save assistant message
     await supabase.from('path_ai_chat_messages').insert({
@@ -260,40 +279,22 @@ Based on the conversation, provide:
 Respond ONLY with valid JSON in this exact format:
 {"percentage": 0, "isComplete": false}`;
 
-    const response = await fetch(AI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${AI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'passion-6',
-        messages: [
-          {
-            role: 'user',
-            content: analysisPrompt,
-          },
-        ],
+    // A schema removes the markdown-fenced-JSON parsing this used to need
+    const { object: analysis } = await generateObject({
+      model: getModel(DEFAULT_CHAT_MODEL),
+      schema: z.object({
+        percentage: z
+          .number()
+          .min(0)
+          .max(100)
+          .describe('Completion percentage towards the objective'),
+        isComplete: z.boolean().describe('Whether the objective is fully met'),
       }),
+      prompt: analysisPrompt,
     });
 
-    if (!response.ok) {
-      throw new Error('Progress analysis failed');
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '{}';
-
-    // Extract JSON from response (handle markdown code blocks)
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('No JSON found in response');
-    }
-
-    const analysis = JSON.parse(jsonMatch[0]);
-
     return {
-      percentage: Math.min(100, Math.max(0, parseInt(analysis.percentage) || 0)),
+      percentage: Math.min(100, Math.max(0, Math.round(analysis.percentage))),
       isComplete: analysis.isComplete === true,
     };
   } catch (error) {
