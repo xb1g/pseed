@@ -103,6 +103,27 @@ export interface PathTrendPoint {
   time_spent_minutes: number | null;
 }
 
+/**
+ * Measured effort and work quality — the aptitude axis.
+ *
+ * Reflections answer "did they enjoy it". This answers "were they any good at
+ * it", which no part of the report could previously express.
+ */
+export interface PathPerformanceSummary {
+  activities_total: number;
+  activities_completed: number;
+  /** Measured on-task time, distinct from the self-reported reflection figure */
+  measured_time_minutes: number;
+  /** Revisits beyond the first open — voluntary return is a fit signal */
+  revisit_count: number;
+  submissions_total: number;
+  submissions_scored: number;
+  /** Percentage across all scored submissions, or null when nothing is scored */
+  average_score_pct: number | null;
+  /** Resubmissions beyond the first attempt — revision effort */
+  total_attempts: number;
+}
+
 export interface PathReportData {
   seed_title: string;
   student_name: string | null;
@@ -113,6 +134,7 @@ export interface PathReportData {
   trend: PathTrendPoint[];
   exit_reflection: PathExitReflection | null;
   end_reflection: PathEndReflection | null;
+  performance: PathPerformanceSummary | null;
 }
 
 // =====================================================

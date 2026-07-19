@@ -138,6 +138,40 @@ export function buildPathReportTemplate(reportData: PathReportData): string {
     lines.push(interestDirection);
   }
 
+  const performance = reportData.performance;
+  if (performance && performance.activities_total > 0) {
+    lines.push("");
+    lines.push("Engagement & Work");
+    lines.push(
+      `Completed ${performance.activities_completed} of ${performance.activities_total} activity(ies), with ${performance.measured_time_minutes} measured minute(s) on task.`,
+    );
+
+    if (performance.revisit_count > 0) {
+      lines.push(
+        `Returned to activities ${performance.revisit_count} extra time(s) — voluntary revisiting is a genuine interest signal.`,
+      );
+    }
+
+    if (performance.average_score_pct !== null) {
+      lines.push(
+        `Averaged ${performance.average_score_pct}% across ${performance.submissions_scored} scored piece(s) of work.`,
+      );
+    } else if (performance.submissions_total > 0) {
+      lines.push(
+        `Submitted ${performance.submissions_total} piece(s) of work, not yet scored.`,
+      );
+    }
+
+    // Resubmission is effort, not failure — say so, so it is not misread
+    const extraAttempts =
+      performance.total_attempts - performance.submissions_total;
+    if (extraAttempts > 0) {
+      lines.push(
+        `Revised work ${extraAttempts} time(s) beyond the first attempt.`,
+      );
+    }
+  }
+
   if (reportData.exit_reflection) {
     lines.push("");
     lines.push("Exit Reflection");
