@@ -209,3 +209,29 @@ export function getSavedPossibilities(draft: MyPathDraft): PossibilitySignal[] {
     .filter((item) => item.state === "saved")
     .sort((a, b) => (a.savedAt ?? "").localeCompare(b.savedAt ?? ""));
 }
+
+export const LOCKED_GOAL_QUESTION_ID = "locked-goal";
+export const GOAL_TIMELINE_QUESTION_ID = "goal-timeline";
+
+export function getLockedGoal(draft: MyPathDraft): string | null {
+  return draft.answers[LOCKED_GOAL_QUESTION_ID] ?? null;
+}
+
+export function getGoalTimeline(draft: MyPathDraft): string | null {
+  return draft.answers[GOAL_TIMELINE_QUESTION_ID] ?? null;
+}
+
+export function getSelectedPathlabs(draft: MyPathDraft): string[] {
+  const selected = new Map<string, boolean>();
+  for (const event of draft.events) {
+    if (event.type !== "pathlab_selected" && event.type !== "pathlab_deselected") {
+      continue;
+    }
+    const seedId = event.metadata?.seedId;
+    if (typeof seedId !== "string" || !seedId) continue;
+    selected.set(seedId, event.type === "pathlab_selected");
+  }
+  return Array.from(selected.entries())
+    .filter(([, isSelected]) => isSelected)
+    .map(([seedId]) => seedId);
+}

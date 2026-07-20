@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import test from "node:test";
 
 import { hydratePersistedMyPath } from "../server-read";
 
@@ -65,4 +64,39 @@ test("a persisted My Path restores possibilities, questions, history, and Radar 
 test("an account without a My Path hydrates to null", () => {
   assert.equal(hydratePersistedMyPath(null), null);
   assert.equal(hydratePersistedMyPath({ path: null }), null);
+});
+
+test("hydrated events restore metadata from the event payload", () => {
+  const state = hydratePersistedMyPath({
+    path: {
+      entry_key: "generic",
+      direction_hypothesis: null,
+      last_import_key: null,
+      created_at: "2026-07-10T00:00:00.000Z",
+      updated_at: "2026-07-16T00:00:00.000Z",
+    },
+    events: [
+      {
+        client_event_id: "event-metadata-1",
+        event_type: "pathlab_selected",
+        career_slug: null,
+        payload: { metadata: { seedId: "seed-ai", title: "AI Engineer PathLab" } },
+        occurred_at: "2026-07-12T00:00:00.000Z",
+      },
+      {
+        client_event_id: "event-metadata-2",
+        event_type: "pathlab_deselected",
+        career_slug: null,
+        payload: null,
+        occurred_at: "2026-07-13T00:00:00.000Z",
+      },
+    ],
+  });
+
+  const [selected, deselected] = state?.draft.events ?? [];
+  assert.deepEqual(selected.metadata, {
+    seedId: "seed-ai",
+    title: "AI Engineer PathLab",
+  });
+  assert.equal(deselected.metadata, undefined);
 });

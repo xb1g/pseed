@@ -21,6 +21,8 @@ export const journeyEventTypeSchema = z.enum([
   "step_started",
   "step_completed",
   "step_not_useful",
+  "pathlab_selected",
+  "pathlab_deselected",
 ]);
 
 const metadataValueSchema = z.union([
@@ -116,6 +118,11 @@ const anonymousEventTypes = z.enum([
   "next_step_started",
   "next_step_completed",
   "pathlab_handoff_clicked",
+  "wizard_step_viewed",
+  "pathlab_selected",
+  "pathlab_deselected",
+  "goal_locked",
+  "mission_plan_viewed",
 ]);
 
 export const anonymousEventSchema = z

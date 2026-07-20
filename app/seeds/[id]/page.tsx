@@ -8,6 +8,11 @@ import { CreateRoomButton } from "@/components/seeds/CreateRoomButton";
 import { SeedSettingsButton } from "@/components/seeds/SeedSettingsButton";
 import { markdownToSafeHtml } from "@/lib/security/sanitize-html";
 import { BeginPathButton } from "@/components/pathlab/BeginPathButton";
+import { TrialGate } from "@/components/trials/TrialGate";
+import {
+  hasTrialAccess,
+  resolveTrialStatus,
+} from "@/lib/trials/status";
 
 interface SeedDetailPageProps {
   params: Promise<{
@@ -146,6 +151,44 @@ export default async function SeedDetailPage({ params }: SeedDetailPageProps) {
   const isCreator = user && seed.created_by === user.id;
   const canEdit = isAdmin || isCreator;
 
+  // PathLab trial gate ("ทำก่อน จ่ายทีหลัง"): นักเรียนที่ล็อกอินแล้วต้องมี
+  // trial ที่ยังใช้ได้ (active/pending/paid) ถึงจะเห็นเนื้อหา pathlab
+  // null = ยังไม่มี trial, object = มี trial แต่หมดอายุ, undefined = ไม่ถูก gate
+  // signed-out users และ admin/creator เห็นเนื้อหาปกติ
+  let lockedTrial:
+    | { payToken: string; payUrl: string; paymentDeadline: string }
+    | null
+    | undefined = undefined;
+  if (user && isPathLab && pathData?.id && !canEdit) {
+    const { data: trialRow, error: trialError } = await supabase
+      .from("trial_accesses")
+      .select("id, status, pay_token, payment_deadline, paid_at")
+      .eq("user_id", user.id)
+      .eq("seed_id", id)
+      .maybeSingle();
+
+    if (trialError)
+      console.error("[SeedPage] trial_accesses error:", trialError.message, trialError.code);
+
+    console.log(
+      "[SeedPage] Trial:",
+      trialRow?.id ?? "none",
+      "| status:",
+      trialRow ? resolveTrialStatus(trialRow) : "none"
+    );
+
+    if (!trialRow) {
+      lockedTrial = null;
+    } else if (!hasTrialAccess(trialRow)) {
+      lockedTrial = {
+        payToken: trialRow.pay_token,
+        payUrl: `/pay/${trialRow.pay_token}`,
+        paymentDeadline: trialRow.payment_deadline,
+      };
+    }
+  }
+  const trialLocked = lockedTrial !== undefined;
+
   console.log("[SeedPage] Seed created by:", seed.created_by, "| is creator:", isCreator, "| can edit:", canEdit);
   console.log("[SeedPage] Rendering page ✓");
 
@@ -277,10 +320,19 @@ export default async function SeedDetailPage({ params }: SeedDetailPageProps) {
                   {user ? (
                     <div className="transform transition-all hover:scale-[1.02] active:scale-[0.98]">
                       {isPathLab ? (
-                        <BeginPathButton
-                          seedId={seed.id}
-                          existingEnrollmentId={pathEnrollmentId}
-                        />
+                        trialLocked ? (
+                          <Button
+                            asChild
+                            className="w-full bg-white text-black hover:bg-neutral-200 text-lg py-6 font-bold"
+                          >
+                            <a href="#trial-gate">ดูวิธีเริ่มทดลอง</a>
+                          </Button>
+                        ) : (
+                          <BeginPathButton
+                            seedId={seed.id}
+                            existingEnrollmentId={pathEnrollmentId}
+                          />
+                        )
                       ) : (
                         <CreateRoomButton
                           seedId={seed.id}
@@ -328,6 +380,15 @@ export default async function SeedDetailPage({ params }: SeedDetailPageProps) {
 
       {/* Main Content Layout */}
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-12 space-y-12">
+        {trialLocked ? (
+          <div id="trial-gate">
+            <TrialGate
+              seedId={seed.id}
+              seedTitle={seed.title}
+              trial={lockedTrial ?? null}
+            />
+          </div>
+        ) : (
         <section className="bg-neutral-900/40 backdrop-blur-2xl border border-white/10 hover:border-white/20 transition-all duration-500 rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden group">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
 
@@ -363,6 +424,7 @@ export default async function SeedDetailPage({ params }: SeedDetailPageProps) {
             )}
           </div>
         </section>
+        )}
       </div>
     </div>
   );

@@ -32,7 +32,9 @@ export type JourneyEventType =
   | "question_saved"
   | "step_started"
   | "step_completed"
-  | "step_not_useful";
+  | "step_not_useful"
+  | "pathlab_selected"
+  | "pathlab_deselected";
 
 export interface JourneyEvent {
   id: string;
