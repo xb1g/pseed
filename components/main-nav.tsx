@@ -13,13 +13,15 @@ import {
   VisuallyHidden,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, Globe, X, Compass, Sprout, User, Wrench } from "lucide-react";
+import { Menu, Globe, X, Compass, Sprout, User, Wrench, Target, Map } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 
 const navItems = [
   { href: "/about", label: { en: "About", th: "เกี่ยวกับ" }, icon: Compass },
   { href: "/seeds", label: { en: "Seeds", th: "Seeds" }, icon: Sprout },
   { href: "/me", label: { en: "My Journey", th: "เส้นทางของฉัน" }, icon: User },
+  { href: "/radar", label: { en: "Radar", th: "เรดาร์" }, icon: Target },
+  { href: "/plan", label: { en: "Plan", th: "แผน" }, icon: Map },
 ];
 
 // Easing curves from design system
@@ -291,6 +293,18 @@ export function MainNav({ isAuthenticated = false }: { isAuthenticated?: boolean
               className="text-sm font-medium transition-colors hover:text-white whitespace-nowrap px-3 py-2 text-gray-400"
             >
               My Journey
+            </Link>
+            <Link
+              href="/radar"
+              className="text-sm font-medium transition-colors hover:text-white whitespace-nowrap px-3 py-2 text-gray-400"
+            >
+              Radar
+            </Link>
+            <Link
+              href="/plan"
+              className="text-sm font-medium transition-colors hover:text-white whitespace-nowrap px-3 py-2 text-gray-400"
+            >
+              Plan
             </Link>
             {hasBuildAccess && (
               <Link

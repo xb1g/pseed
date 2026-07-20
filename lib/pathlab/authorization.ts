@@ -22,6 +22,51 @@ export class NotFoundError extends Error {
 }
 
 /**
+ * Verify a student may record progress against an activity.
+ *
+ * Authorization chain: enrollment → user_id, and activity → day → path, which
+ * must be the same path the enrollment is for. Checking only the enrollment
+ * would let a student post progress for activities on someone else's path.
+ */
+export async function verifyEnrollmentActivity(
+  enrollmentId: string,
+  activityId: string,
+  userId: string
+): Promise<void> {
+  const supabase = await createClient();
+
+  const { data: enrollment } = await supabase
+    .from('path_enrollments')
+    .select('id, user_id, path_id')
+    .eq('id', enrollmentId)
+    .maybeSingle();
+
+  if (!enrollment) {
+    throw new NotFoundError('Enrollment not found');
+  }
+
+  if (enrollment.user_id !== userId) {
+    throw new UnauthorizedError('You do not own this enrollment');
+  }
+
+  const { data: activity } = await supabase
+    .from('path_activities')
+    .select('id, path_day_id, day:path_days!inner(path_id)')
+    .eq('id', activityId)
+    .maybeSingle();
+
+  if (!activity) {
+    throw new NotFoundError('Activity not found');
+  }
+
+  const activityPathId = (activity as { day?: { path_id?: string } }).day?.path_id;
+
+  if (activityPathId !== enrollment.path_id) {
+    throw new UnauthorizedError('Activity does not belong to this enrollment');
+  }
+}
+
+/**
  * Verify user owns the seed that contains this page
  *
  * Authorization chain: page → path → seed → created_by

@@ -6,8 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Node } from "@xyflow/react";
 import { toast } from "sonner";
-import { NodeViewPanel } from "@/components/map/NodeViewPanel";
-import type { MapNode } from "@/types/map";
+import { ActivityViewPanel, type ActivityRow } from "./ActivityViewPanel";
 import { ContextPhase } from "./ContextPhase";
 import { ReflectionForm, type DailyReflectionDraft } from "./ReflectionForm";
 import { DecisionGate, type PathDecision } from "./DecisionGate";
@@ -21,8 +20,8 @@ type PathDaySummary = {
   title: string | null;
   context_text: string;
   reflection_prompts: string[];
-  node_ids: string[];
-  nodes: Array<{
+  activity_ids: string[];
+  activities: Array<{
     id: string;
     title: string;
   }>;
@@ -33,7 +32,8 @@ type PathLabExperienceProps = {
   seed: any;
   path: any;
   day: any;
-  dayNodes: MapNode[];
+  dayActivities: ActivityRow[];
+  initialProgressMap: Record<string, any>;
   pathDaySummaries: PathDaySummary[];
   availableDayNumbers: number[];
   currentDayNumber: number;
@@ -147,23 +147,18 @@ function PhaseStepper({
   );
 }
 
-const COMPLETE_STATUSES = new Set(["submitted", "passed", "failed"]);
+// path_activity_progress statuses. "skipped" counts as resolved: the student
+// made a deliberate choice and should not be blocked from the day's reflection.
+const COMPLETE_STATUSES = new Set(["completed", "skipped"]);
 
-function toSelectedNode(node: MapNode): Node<any> {
-  return {
-    id: node.id,
-    type: "default",
-    data: node as any,
-    position: { x: 0, y: 0 },
-  } as Node<any>;
-}
 
 export function PathLabExperience({
   enrollment,
   seed,
   path,
   day,
-  dayNodes,
+  dayActivities,
+  initialProgressMap,
   pathDaySummaries,
   availableDayNumbers,
   currentDayNumber,
@@ -193,13 +188,15 @@ export function PathLabExperience({
     }
     return "context";
   });
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(
-    dayNodes[0]?.id || null,
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(
+    dayActivities[0]?.id || null,
   );
 
   // Map View State
   const [isMapOpen, setIsMapOpen] = useState(false);
-  const [progressMap, setProgressMap] = useState<Record<string, any>>({});
+  const [progressMap, setProgressMap] = useState<Record<string, any>>(
+    initialProgressMap || {},
+  );
   const [submitting, setSubmitting] = useState(false);
   const [restarting, setRestarting] = useState(false);
   const [actionStartTime, setActionStartTime] = useState<number | null>(null);
@@ -225,11 +222,11 @@ export function PathLabExperience({
       ? availableDayNumbers[currentDayIndex + 1]
       : null;
 
-  const selectedNode = useMemo(() => {
-    if (!selectedNodeId) return null;
-    const node = dayNodes.find((item) => item.id === selectedNodeId);
-    return node ? toSelectedNode(node) : null;
-  }, [dayNodes, selectedNodeId]);
+  const selectedActivity = useMemo(
+    () =>
+      dayActivities.find((item) => item.id === selectedActivityId) || null,
+    [dayActivities, selectedActivityId],
+  );
 
   const mapViewerDays = useMemo(() => {
     if (pathDaySummaries.length > 0) {
@@ -248,8 +245,8 @@ export function PathLabExperience({
       title: null,
       context_text: "",
       reflection_prompts: [],
-      node_ids: [],
-      nodes: [],
+      activity_ids: [],
+      activities: [],
     }));
   }, [path?.total_days, pathDaySummaries]);
 
@@ -261,52 +258,45 @@ export function PathLabExperience({
   const dayProgressMap = useMemo(() => {
     return mapViewerDays.reduce<Record<number, { completed: number; total: number }>>(
       (acc, entry) => {
-        const nodeIds = Array.isArray(entry.node_ids) ? entry.node_ids : [];
-        const completed = nodeIds.filter((nodeId) =>
-          COMPLETE_STATUSES.has(progressMap[nodeId]?.status),
+        const activityIds = Array.isArray(entry.activity_ids)
+          ? entry.activity_ids
+          : [];
+        const completed = activityIds.filter((activityId) =>
+          COMPLETE_STATUSES.has(progressMap[activityId]?.status),
         ).length;
-        acc[entry.day_number] = { completed, total: nodeIds.length };
+        acc[entry.day_number] = { completed, total: activityIds.length };
         return acc;
       },
       {},
     );
   }, [mapViewerDays, progressMap]);
 
-  const allNodesComplete = useMemo(() => {
-    if (dayNodes.length === 0) return true;
-    const result = dayNodes.every((node) => {
-      const nodeProgress = progressMap[node.id];
-      const status = nodeProgress?.status;
-      const isComplete = COMPLETE_STATUSES.has(status);
-      console.log(
-        `[PathLab] Node ${node.title}: status="${status}", isComplete=${isComplete}`,
-      );
-      return isComplete;
-    });
-    console.log(`[PathLab] All nodes complete: ${result}`, {
-      progressMap,
-      dayNodes: dayNodes.map((n) => n.id),
-    });
-    return result;
-  }, [dayNodes, progressMap]);
+  const allActivitiesComplete = useMemo(() => {
+    // Only required activities gate the day; optional ones are a fit signal,
+    // not an obligation
+    const required = dayActivities.filter(
+      (activity: any) => activity.is_required !== false,
+    );
+    if (required.length === 0) return true;
+    return required.every((activity) =>
+      COMPLETE_STATUSES.has(progressMap[activity.id]?.status),
+    );
+  }, [dayActivities, progressMap]);
 
   async function refreshProgress() {
-    if (!seed?.map_id) return;
     try {
-      const response = await fetch(`/api/maps/${seed.map_id}/progress`);
+      const response = await fetch(
+        `/api/pathlab/progress?enrollmentId=${enrollment.id}`,
+      );
       const payload = await response.json();
       if (!response.ok || !payload?.success) {
         return;
       }
-      setProgressMap(payload.data?.progress_map || {});
+      setProgressMap(payload.progressMap || {});
     } catch {
       // no-op
     }
   }
-
-  useEffect(() => {
-    refreshProgress();
-  }, [seed?.map_id]);
 
   useEffect(() => {
     const activeDayNumber = day?.day_number ?? null;
@@ -332,10 +322,10 @@ export function PathLabExperience({
   }, [isCurrentDayView, phase]);
 
   useEffect(() => {
-    if (!dayNodes.some((item) => item.id === selectedNodeId)) {
-      setSelectedNodeId(dayNodes[0]?.id || null);
+    if (!dayActivities.some((item) => item.id === selectedActivityId)) {
+      setSelectedActivityId(dayActivities[0]?.id || null);
     }
-  }, [dayNodes, selectedNodeId]);
+  }, [dayActivities, selectedActivityId]);
 
   // Auto time tracking - start when entering action phase
   useEffect(() => {
@@ -618,12 +608,12 @@ export function PathLabExperience({
                   completed: 0,
                   total: 0,
                 };
-                const nodeLabel =
+                const activityLabel =
                   progress.total === 1 ? "1 activity" : `${progress.total} activities`;
                 const contextPreview = entry.context_text
                   ? entry.context_text.replace(/\s+/g, " ").trim()
                   : "";
-                const activityPreview = entry.nodes.slice(0, 4);
+                const activityPreview = entry.activities.slice(0, 4);
                 const promptPreview = entry.reflection_prompts.slice(0, 2);
 
                 return (
@@ -649,7 +639,7 @@ export function PathLabExperience({
                       {entry.title?.trim() || "Planned day"}
                     </p>
                     <p className="mt-1 text-xs text-neutral-400">
-                      {nodeLabel}
+                      {activityLabel}
                       {progress.total > 0 &&
                         ` · ${progress.completed}/${progress.total} complete`}
                     </p>
@@ -677,9 +667,9 @@ export function PathLabExperience({
                             </li>
                           ))}
                         </ul>
-                        {entry.nodes.length > activityPreview.length && (
+                        {entry.activities.length > activityPreview.length && (
                           <p className="mt-1 text-xs text-neutral-500">
-                            +{entry.nodes.length - activityPreview.length} more
+                            +{entry.activities.length - activityPreview.length} more
                           </p>
                         )}
                       </div>
@@ -805,33 +795,46 @@ export function PathLabExperience({
             <CardTitle className="text-white">Action</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {dayNodes.length > 0 ? (
+            {dayActivities.length > 0 ? (
               <>
                 <div className="flex flex-wrap gap-2">
-                  {dayNodes.map((node) => (
-                    <Button
-                      key={node.id}
-                      variant={
-                        selectedNodeId === node.id ? "default" : "outline"
-                      }
-                      onClick={() => setSelectedNodeId(node.id)}
-                      className={
-                        selectedNodeId === node.id
-                          ? "bg-white text-black hover:bg-neutral-200"
-                          : "border-neutral-700 bg-neutral-950/70 text-neutral-200 hover:bg-neutral-800"
-                      }
-                    >
-                      {node.title}
-                    </Button>
-                  ))}
+                  {dayActivities.map((activity) => {
+                    const isDone = COMPLETE_STATUSES.has(
+                      progressMap[activity.id]?.status,
+                    );
+
+                    return (
+                      <Button
+                        key={activity.id}
+                        variant={
+                          selectedActivityId === activity.id
+                            ? "default"
+                            : "outline"
+                        }
+                        onClick={() => setSelectedActivityId(activity.id)}
+                        className={
+                          selectedActivityId === activity.id
+                            ? "bg-white text-black hover:bg-neutral-200"
+                            : "border-neutral-700 bg-neutral-950/70 text-neutral-200 hover:bg-neutral-800"
+                        }
+                      >
+                        {isDone && <span className="mr-1.5 text-emerald-400">✓</span>}
+                        {activity.title}
+                      </Button>
+                    );
+                  })}
                 </div>
 
                 <div className="min-h-[80vh] overflow-hidden rounded-xl border border-neutral-800 bg-neutral-950/50">
-                  {selectedNode && (
-                    <NodeViewPanel
-                      selectedNode={selectedNode}
-                      mapId={seed.map_id}
-                      isNodeUnlocked
+                  {selectedActivity && (
+                    <ActivityViewPanel
+                      key={selectedActivity.id}
+                      activity={selectedActivity}
+                      enrollmentId={enrollment.id}
+                      progressId={progressMap[selectedActivity.id]?.id || null}
+                      isComplete={COMPLETE_STATUSES.has(
+                        progressMap[selectedActivity.id]?.status,
+                      )}
                       onProgressUpdate={refreshProgress}
                     />
                   )}
@@ -840,9 +843,9 @@ export function PathLabExperience({
                 {isCurrentDayView ? (
                   <div className="flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-950/70 p-3">
                     <p className="text-sm text-neutral-300">
-                      {allNodesComplete
-                        ? "All day nodes are submitted/completed."
-                        : "Finish each node in this day before reflection."}
+                      {allActivitiesComplete
+                        ? "All activities for this day are complete."
+                        : "Finish each activity in this day before reflection."}
                     </p>
                     <div className="flex items-center gap-3">
                       <Button
@@ -854,7 +857,7 @@ export function PathLabExperience({
                       </Button>
                       <Button
                         onClick={() => setPhase("reflection")}
-                        disabled={!allNodesComplete}
+                        disabled={!allActivitiesComplete}
                         className="bg-white text-black hover:bg-neutral-200"
                       >
                         Next: Reflection

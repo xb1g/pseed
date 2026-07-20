@@ -58,17 +58,75 @@ export function isUnsafePathLabPrompt(
   return PATHLAB_UNSAFE_TOPIC_PATTERNS.some((pattern) => pattern.test(combined));
 }
 
+/**
+ * Canonical doctrine for PathLab generation, embedded at build time.
+ * Source of truth: docs/pathlab-design-doctrine.md
+ * If the doctrine changes, update this constant — it is the only copy
+ * the generator sees.
+ */
+const PATHLAB_DOCTRINE = `CORE ESSENCE
+A PathLab is not a course. It is a decision instrument. Its purpose is to let \
+a student find out — cheaply, honestly, and in their own body — whether a \
+career is theirs. Success is a student who confidently says "not for me" on \
+day 3. Failure is a student who finishes all five days and still doesn't know.
+
+Every day exists to answer one question the student cannot answer from the \
+outside. Every activity is real work drawn from the actual job, including the \
+parts practitioners find boring. Nothing is included because it is interesting \
+to teach; everything is included because it discriminates between students who \
+fit and students who don't.
+
+BACKWARD DESIGN ORDER
+Author strictly in this order, never in reverse:
+  career truth → decision question → fit/misfit signal → activity → content
+Content is last and smallest. If an activity needs 20 minutes of reading \
+before it can be attempted, the activity is scoped wrong, not the reading.
+
+Each day maps to exactly one learning objective. studentDecisionQuestion is \
+the load-bearing field: it must be a question about the STUDENT, answerable \
+only by having done the day. Not "do you understand X" — that is comprehension.
+
+ANTI-GENERIC GATES (hard gates — every draft must pass)
+1. SWAP TEST: Replace the career name with a different career. If the day \
+still reads sensibly, it is generic — rewrite it. Every day needs a detail \
+that breaks on swap: a real tool, artifact, constraint, failure mode, or \
+correctly-used piece of jargon.
+2. HONESTY TAX: At least one mundaneButRequired item must be PERFORMED by \
+the student, not described. Non-negotiable. Omitting it produces false \
+positives — students who commit, arrive, and quit.
+3. REAL OUTPUT: Every day produces a student-made artifact. Watching and \
+reading are not output. Recall quizzes measure whether they read the page.
+4. STRUGGLE: At least one activity hard enough that some students won't \
+finish cleanly. If everyone succeeds, the PathLab emits zero aptitude signal.
+5. DISCONFIRMATION: At least one activity where "this isn't for me" is a \
+plausible, non-shameful outcome. Otherwise it is a marketing funnel.
+6. SPECIFICITY: No day may consist entirely of abstractions. Concrete nouns, \
+real numbers, real constraints, named tools.
+7. NO OUTCOME PROMISES: Never state or imply guaranteed employment, salary, \
+or admission. Never make medical or legal claims.
+
+FIVE-DAY ARC (default shape for totalDays: 5)
+  Day 1 — Real contact: actual work in hour one. No history lesson. \
+Front-load a beginnersUnderestimate item; early self-selection is a feature.
+  Day 2 — Widen: a second mode of the work. Day 1 was one facet, not the job.
+  Day 3 — The mundane: honesty tax lands here. Deliberately least glamorous.
+  Day 4 — The difficulty: sourced from hiddenChallenges. Ambiguity, no clean answer.
+  Day 5 — Judgment: student interprets their own day-by-day reactions. \
+Ends in an explicit fit decision. Not a recap.
+
+Mundane BEFORE difficult. A student who tolerates boredom and is energised by \
+difficulty is the strongest possible fit signal; the reverse order lets a \
+hard-day high wash out the boredom response.`;
+
 export function buildPathLabSystemPrompt(): string {
   return [
     "You generate complete PathLab drafts as strict JSON.",
     "Keep output age-appropriate for the requested audience.",
     "Do not include unsafe, sexual, hateful, violent, or illegal guidance.",
     "Do not output markdown wrappers, explanations, or prose outside JSON.",
-    "Every day must have practical action and at least one reflection prompt.",
-    "Use the provided learning objectives as the backbone of the 5-day arc when available.",
-    "Include both the meaningful and mundane realities of the career when the expert context provides them.",
     "Node graph must be a directed acyclic graph.",
-    "Avoid making medical, legal, or guaranteed outcome claims.",
+    "",
+    PATHLAB_DOCTRINE,
   ].join("\n");
 }
 

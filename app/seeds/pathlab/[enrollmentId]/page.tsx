@@ -13,16 +13,19 @@ interface PathLabExperiencePageProps {
 }
 
 type PathDayRow = {
+  id: string;
   day_number: number | string | null;
   title: string | null;
   context_text: string | null;
   reflection_prompts: string[] | null;
-  node_ids: string[] | null;
 };
 
-type PathDayNodeRow = {
+type ActivitySummaryRow = {
   id: string;
   title: string | null;
+  path_day_id: string;
+  display_order: number | null;
+  is_required: boolean | null;
 };
 
 export default async function PathLabExperiencePage({ params, searchParams }: PathLabExperiencePageProps) {
@@ -64,56 +67,54 @@ export default async function PathLabExperiencePage({ params, searchParams }: Pa
 
   const { data: days } = await supabase
     .from("path_days")
-    .select("day_number, title, context_text, reflection_prompts, node_ids")
+    .select("id, day_number, title, context_text, reflection_prompts")
     .eq("path_id", enrollment.path.id)
     .order("day_number", { ascending: true });
 
   const dayRows = (days || []) as PathDayRow[];
-  const allPathDayNodeIds = Array.from(
-    new Set(
-      dayRows.flatMap((entry) =>
-        Array.isArray(entry.node_ids) ? entry.node_ids : [],
-      ),
-    ),
-  );
-  const nodeTitleById = new Map<string, string>();
 
-  if (allPathDayNodeIds.length > 0) {
-    const { data: pathDayNodes } = await supabase
-      .from("map_nodes")
-      .select("id, title")
-      .in("id", allPathDayNodeIds);
+  // Activity titles across every day power the path overview / map panel
+  const { data: allActivities } = await supabase
+    .from("path_activities")
+    .select("id, title, path_day_id, display_order, is_required")
+    .in(
+      "path_day_id",
+      dayRows.map((entry) => entry.id)
+    )
+    .order("display_order", { ascending: true });
 
-    ((pathDayNodes || []) as PathDayNodeRow[]).forEach((node) => {
-      nodeTitleById.set(node.id, node.title?.trim() || "Untitled activity");
-    });
-  }
-
-  const allDayNumbers = dayRows
-    .map((entry) => Number(entry.day_number))
-    .filter((entry: number) => Number.isFinite(entry));
+  const activitiesByDayId = ((allActivities || []) as ActivitySummaryRow[]).reduce<
+    Record<string, ActivitySummaryRow[]>
+  >((acc, activity) => {
+    (acc[activity.path_day_id] ||= []).push(activity);
+    return acc;
+  }, {});
 
   const pathDaySummaries = dayRows
     .filter((entry) => Number.isFinite(Number(entry.day_number)))
-    .map((entry) => ({
-      day_number: Number(entry.day_number),
-      title: typeof entry.title === "string" ? entry.title : null,
-      context_text:
-        typeof entry.context_text === "string" ? entry.context_text : "",
-      reflection_prompts: Array.isArray(entry.reflection_prompts)
-        ? entry.reflection_prompts.filter(
-            (prompt): prompt is string =>
-              typeof prompt === "string" && prompt.trim().length > 0,
-          )
-        : [],
-      node_ids: Array.isArray(entry.node_ids) ? entry.node_ids : [],
-      nodes: (Array.isArray(entry.node_ids) ? entry.node_ids : []).map(
-        (nodeId) => ({
-          id: nodeId,
-          title: nodeTitleById.get(nodeId) || "Untitled activity",
-        }),
-      ),
-    }));
+    .map((entry) => {
+      const dayActivities = activitiesByDayId[entry.id] || [];
+
+      return {
+        day_number: Number(entry.day_number),
+        title: typeof entry.title === "string" ? entry.title : null,
+        context_text:
+          typeof entry.context_text === "string" ? entry.context_text : "",
+        reflection_prompts: Array.isArray(entry.reflection_prompts)
+          ? entry.reflection_prompts.filter(
+              (prompt): prompt is string =>
+                typeof prompt === "string" && prompt.trim().length > 0,
+            )
+          : [],
+        activity_ids: dayActivities.map((activity) => activity.id),
+        activities: dayActivities.map((activity) => ({
+          id: activity.id,
+          title: activity.title?.trim() || "Untitled activity",
+        })),
+      };
+    });
+
+  const allDayNumbers = pathDaySummaries.map((entry) => entry.day_number);
 
   const maxAccessibleDay =
     enrollment.status === "explored"
@@ -130,34 +131,51 @@ export default async function PathLabExperiencePage({ params, searchParams }: Pa
       ? requestedDayNumber
       : fallbackDayNumber;
 
-  const { data: day } = await supabase
-    .from("path_days")
-    .select("*")
-    .eq("path_id", enrollment.path.id)
-    .eq("day_number", selectedDayNumber)
-    .maybeSingle();
+  const day = dayRows.find(
+    (entry) => Number(entry.day_number) === selectedDayNumber
+  );
 
-  let dayNodes: any[] = [];
-  if (day?.node_ids?.length) {
-    const { data: fetchedNodes } = await supabase
-      .from("map_nodes")
+  // Full content for the selected day only — the overview needs titles, the
+  // active day needs everything required to actually do the work
+  let dayActivities: any[] = [];
+  if (day) {
+    const { data: fetchedActivities } = await supabase
+      .from("path_activities")
       .select(
         `
         *,
-        node_paths_source:node_paths!source_node_id(*),
-        node_paths_destination:node_paths!destination_node_id(*),
-        node_content(*),
-        node_assessments(
+        path_content(*),
+        path_assessments(
           *,
-          quiz_questions(*)
+          path_quiz_questions(*)
         )
       `
       )
-      .in("id", day.node_ids);
+      .eq("path_day_id", day.id)
+      .order("display_order", { ascending: true });
 
-    const byId = new Map((fetchedNodes || []).map((node: any) => [node.id, node]));
-    dayNodes = day.node_ids.map((id: string) => byId.get(id)).filter(Boolean);
+    dayActivities = (fetchedActivities || []).map((activity: any) => ({
+      ...activity,
+      content: [...(activity.path_content || [])].sort(
+        (a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0)
+      ),
+      // path_assessments is UNIQUE(activity_id), so at most one row
+      assessment: activity.path_assessments?.[0] || null,
+    }));
   }
+
+  const { data: progressRows } = await supabase
+    .from("path_activity_progress")
+    .select("*")
+    .eq("enrollment_id", enrollmentId);
+
+  const progressMap = (progressRows || []).reduce<Record<string, any>>(
+    (acc, row: any) => {
+      acc[row.activity_id] = row;
+      return acc;
+    },
+    {}
+  );
 
   const [reflections, exitReflection, endReflection] = await Promise.all([
     getPathReflections(enrollmentId),
@@ -172,7 +190,8 @@ export default async function PathLabExperiencePage({ params, searchParams }: Pa
         seed={enrollment.path.seed}
         path={enrollment.path}
         day={day}
-        dayNodes={dayNodes}
+        dayActivities={dayActivities}
+        initialProgressMap={progressMap}
         pathDaySummaries={pathDaySummaries}
         availableDayNumbers={navigableDayNumbers}
         currentDayNumber={Number(enrollment.current_day)}

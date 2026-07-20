@@ -142,6 +142,13 @@ export function NPCConversation({
   const handleChoiceSelect = async (choice: NPCConversationChoice, isAutoSelected = false) => {
     if (!currentNode || isSubmitting) return;
 
+    // The choice endpoint keys off the conversation-progress row's own id.
+    // `progressId` is the activity-progress id, which that lookup will miss.
+    if (!progress?.id) {
+      setError('Conversation is still loading. Try again in a moment.');
+      return;
+    }
+
     // Clear timer if manually selected
     if (!isAutoSelected && timerRef.current) {
       clearInterval(timerRef.current);
@@ -168,13 +175,14 @@ export function NPCConversation({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          progress_id: progressId,
+          progress_id: progress.id,
           choice_id: choice.id,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit choice');
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error || 'Failed to submit choice');
       }
 
       const data: MakeChoiceResponse = await response.json();
@@ -359,6 +367,21 @@ export function NPCConversation({
         <Button onClick={loadConversation} className="mt-4" variant="outline">
           Try Again
         </Button>
+      </div>
+    );
+  }
+
+  // Reaching the end clears currentNode. That is success, not an error, so it
+  // must not fall through to the "not available" warning below.
+  if (conversation && !currentNode && progress?.is_completed) {
+    return (
+      <div className="p-6 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
+        <p className="font-medium text-emerald-800 dark:text-emerald-300">
+          Conversation complete
+        </p>
+        <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-400">
+          You finished your conversation with {conversation.title}.
+        </p>
       </div>
     );
   }

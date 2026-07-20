@@ -1,12 +1,86 @@
 import { randomBytes } from "crypto";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
-import type { PathReportData } from "@/types/pathlab";
+import type { PathPerformanceSummary, PathReportData } from "@/types/pathlab";
 import { getPathEndReflection, getPathExitReflection, getPathReflections } from "./pathlab-reflections";
 import { buildPathReportTemplate } from "@/lib/pathlab/report-template";
 
 function createShareToken() {
   return randomBytes(16).toString("hex");
+}
+
+/**
+ * Aggregate the measured-performance side of a report.
+ *
+ * Returns null when the enrollment has no activity progress at all, so callers
+ * can distinguish "no aptitude data" from "scored zero".
+ */
+export async function buildPathPerformanceSummary(
+  enrollmentId: string
+): Promise<PathPerformanceSummary | null> {
+  const supabase = await createClient();
+
+  const { data: progressRows } = await supabase
+    .from("path_activity_progress")
+    .select("id, status, time_spent_seconds, visit_count")
+    .eq("enrollment_id", enrollmentId);
+
+  const progress = progressRows || [];
+  if (progress.length === 0) {
+    return null;
+  }
+
+  const progressIds = progress.map((row: any) => row.id);
+
+  const { data: submissionRows } = await supabase
+    .from("path_assessment_submissions")
+    .select("score, max_score, attempt_count")
+    .in("progress_id", progressIds);
+
+  const submissions = submissionRows || [];
+  const scored = submissions.filter(
+    (row: any) =>
+      typeof row.score === "number" &&
+      typeof row.max_score === "number" &&
+      row.max_score > 0
+  );
+
+  // Average of per-submission percentages: a 40-point assessment should not
+  // outweigh a 5-point one when judging consistency
+  const averageScorePct = scored.length
+    ? Math.round(
+        (scored.reduce(
+          (sum: number, row: any) => sum + row.score / row.max_score,
+          0
+        ) /
+          scored.length) *
+          100
+      )
+    : null;
+
+  const totalSeconds = progress.reduce(
+    (sum: number, row: any) => sum + (row.time_spent_seconds || 0),
+    0
+  );
+
+  return {
+    activities_total: progress.length,
+    activities_completed: progress.filter(
+      (row: any) => row.status === "completed"
+    ).length,
+    measured_time_minutes: Math.round(totalSeconds / 60),
+    revisit_count: progress.reduce(
+      (sum: number, row: any) => sum + Math.max((row.visit_count || 0) - 1, 0),
+      0
+    ),
+    submissions_total: submissions.length,
+    submissions_scored: scored.length,
+    average_score_pct: averageScorePct,
+    total_attempts: submissions.reduce(
+      (sum: number, row: any) => sum + (row.attempt_count || 1),
+      0
+    ),
+  };
 }
 
 export async function getSeedPathEnrollments(seedId: string) {
@@ -99,6 +173,7 @@ export async function getSeedEnrollmentDetail(seedId: string, enrollmentId: stri
   const reflections = await getPathReflections(enrollmentId);
   const exitReflection = await getPathExitReflection(enrollmentId);
   const endReflection = await getPathEndReflection(enrollmentId);
+  const performance = await buildPathPerformanceSummary(enrollmentId);
 
   const totalTimeMinutes = reflections.reduce((sum, reflection) => {
     return sum + (reflection.time_spent_minutes || 0);
@@ -120,6 +195,7 @@ export async function getSeedEnrollmentDetail(seedId: string, enrollmentId: stri
     })),
     exit_reflection: exitReflection,
     end_reflection: endReflection,
+    performance,
   };
 
   return {
@@ -128,6 +204,7 @@ export async function getSeedEnrollmentDetail(seedId: string, enrollmentId: stri
     reflections,
     exitReflection,
     endReflection,
+    performance,
     reportData,
   };
 }
@@ -162,6 +239,7 @@ export async function buildPathReportData(enrollmentId: string): Promise<PathRep
   const reflections = await getPathReflections(enrollmentId);
   const exitReflection = await getPathExitReflection(enrollmentId);
   const endReflection = await getPathEndReflection(enrollmentId);
+  const performance = await buildPathPerformanceSummary(enrollmentId);
 
   const totalTimeMinutes = reflections.reduce((sum, reflection) => {
     return sum + (reflection.time_spent_minutes || 0);
@@ -183,6 +261,7 @@ export async function buildPathReportData(enrollmentId: string): Promise<PathRep
     })),
     exit_reflection: exitReflection,
     end_reflection: endReflection,
+    performance,
   };
 }
 
