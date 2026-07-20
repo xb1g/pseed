@@ -100,7 +100,7 @@ export async function generatePathLabDraft(
   }
 
   const { object } = await generateObject({
-    model: getModel("google/gemini-2.5-flash"),
+    model: getModel(process.env.PATHLAB_GENERATOR_MODEL || "google/gemini-2.5-flash"),
     system: buildPathLabSystemPrompt(),
     schema: pathLabGeneratorDraftSchema,
     prompt: buildPathLabDraftPrompt(input),
@@ -118,7 +118,7 @@ export async function regeneratePathLabDay(
   },
 ): Promise<PathLabDayRegenerateInput> {
   const { object } = await generateObject({
-    model: getModel("google/gemini-2.5-flash"),
+    model: getModel(process.env.PATHLAB_GENERATOR_MODEL || "google/gemini-2.5-flash"),
     system: buildPathLabSystemPrompt(),
     schema: pathLabDayRegenerateSchema,
     prompt: buildDayRegeneratePrompt({

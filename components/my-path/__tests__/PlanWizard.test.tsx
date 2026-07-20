@@ -1,0 +1,176 @@
+import { act, fireEvent, render, screen } from "@testing-library/react";
+
+import { PlanWizard } from "../wizard/PlanWizard";
+import type { SeedPathlab } from "@/lib/my-path/pathlab-match";
+import type { CareerPreview } from "@/lib/my-path/radar-content";
+
+function preview(slug: string, title: string): CareerPreview {
+  return {
+    slug,
+    titleTh: title,
+    titleEn: title,
+    tagline: `สิ่งที่น่าสนใจใน ${title}`,
+    emoji: "✦",
+    color: "#6366f1",
+    dailyWork: "คุยกับคน ทำงานกับทีม และสร้างคำตอบจากข้อมูลจริง",
+    enjoySignal: "เหมาะกับคนที่อยากเรียนรู้จากการลงมือทำ",
+    tradeoff: "ต้องรับมือกับความไม่แน่นอนและปรับงานจาก feedback",
+    aiSignal: "AI ช่วยงานซ้ำ แต่การตัดสินใจยังต้องใช้บริบทมนุษย์",
+    entryRoute: "เริ่มจากโปรเจกต์เล็กและ case study ได้",
+    marketSignal: "ตลาดต้องการคนที่เชื่อมความเข้าใจกับการลงมือทำ",
+    radarHref: `/radar/${slug}`,
+  };
+}
+
+function seed(id: string, title: string, description: string | null = null): SeedPathlab {
+  return {
+    id,
+    title,
+    description,
+    coverImageUrl: null,
+    categoryName: null,
+    totalDays: null,
+  };
+}
+
+const careers = [
+  preview("ai-engineer", "AI Engineer"),
+  preview("data-scientist", "Data Scientist"),
+  preview("software-engineer", "Software Engineer"),
+];
+
+const seeds = [
+  seed("seed-ai", "AI Engineer PathLab", "Build a small neural project"),
+  seed("seed-fashion", "Fashion Design Studio"),
+];
+
+function renderWizard(isSignedIn = false) {
+  return render(
+    <PlanWizard
+      careers={careers}
+      seeds={seeds}
+      isSignedIn={isSignedIn}
+      initialDraft={null}
+    />
+  );
+}
+
+beforeEach(() => {
+  window.localStorage.clear();
+  global.fetch = jest.fn().mockResolvedValue({ ok: true });
+  global.IntersectionObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof IntersectionObserver;
+  Object.defineProperty(window, "scrollTo", { value: jest.fn(), writable: true });
+});
+
+test("opens on the hook step and gates the interests step behind a saved career", async () => {
+  renderWizard();
+
+  expect(
+    await screen.findByRole("heading", { name: /เข้ามหาวิทยาลัย/ })
+  ).toBeVisible();
+
+  fireEvent.click(screen.getByRole("button", { name: "เริ่มออกแบบชีวิต" }));
+  expect(
+    screen.getByRole("heading", { name: "อะไรที่จุดไฟให้คุณ?" })
+  ).toBeVisible();
+  expect(
+    screen.getByRole("button", { name: "เลือกอย่างน้อย 1 อันเพื่อไปต่อ" })
+  ).toBeDisabled();
+
+  fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
+
+  expect(screen.getByRole("button", { name: "ถัดไป" })).toBeEnabled();
+  expect(global.fetch).toHaveBeenCalledWith(
+    "/api/my-path/events",
+    expect.objectContaining({
+      method: "POST",
+      body: expect.stringContaining('"eventType":"career_saved"'),
+    })
+  );
+});
+
+test("walks through pathlabs and the goal lock to a sign-in-gated mission plan", async () => {
+  renderWizard();
+
+  fireEvent.click(await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" }));
+  fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
+  fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
+
+  expect(
+    screen.getByRole("heading", { name: "ลองทำจริงใน PathLab" })
+  ).toBeVisible();
+  // The saved interest sorts its matching PathLab to the top.
+  expect(screen.getAllByRole("heading", { level: 3 })[0]).toHaveTextContent(
+    "AI Engineer PathLab"
+  );
+
+  fireEvent.click(screen.getAllByRole("button", { name: "เลือกอันนี้" })[0]);
+  expect(screen.getByRole("button", { name: "เลือกแล้ว" })).toBeVisible();
+  expect(global.fetch).toHaveBeenCalledWith(
+    "/api/my-path/events",
+    expect.objectContaining({
+      body: expect.stringContaining('"eventType":"pathlab_selected"'),
+    })
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
+  expect(
+    screen.getByRole("heading", { name: "ล็อกเป้าหมายของคุณ" })
+  ).toBeVisible();
+  expect(
+    screen.getByRole("button", { name: "เลือกเป้าหมายเพื่อดูแผน" })
+  ).toBeDisabled();
+
+  fireEvent.click(screen.getByRole("radio", { name: /เข้ามหาวิทยาลัย/ }));
+  expect(global.fetch).toHaveBeenCalledWith(
+    "/api/my-path/events",
+    expect.objectContaining({
+      body: expect.stringContaining('"eventType":"goal_locked"'),
+    })
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "ดูแผนของฉัน" }));
+  expect(
+    screen.getByRole("heading", {
+      name: "แผน 4 เดือนสู่มหาวิทยาลัยในไทม์ไลน์ของคุณ",
+    })
+  ).toBeVisible();
+  expect(
+    screen.getByRole("link", { name: /เข้าสู่ระบบเพื่อบันทึกแผนนี้/ })
+  ).toHaveAttribute("href", "/login?next=%2Fplan%3Fresume%3D1");
+});
+
+test("keeps every step in history so a swipe-back only moves one step", async () => {
+  renderWizard();
+
+  fireEvent.click(await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" }));
+  fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
+  fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
+  expect(
+    screen.getByRole("heading", { name: "ลองทำจริงใน PathLab" })
+  ).toBeVisible();
+
+  // A mobile swipe-back gesture fires popstate — it must land on the
+  // previous wizard step, not leave the page.
+  act(() => {
+    window.dispatchEvent(
+      new PopStateEvent("popstate", { state: { wizardStep: 1 } })
+    );
+  });
+  expect(
+    screen.getByRole("heading", { name: "อะไรที่จุดไฟให้คุณ?" })
+  ).toBeVisible();
+});
+
+test("resumes the furthest step reached after an accidental exit", async () => {
+  window.localStorage.setItem("passionseed_my_path_wizard_step_v1", "3");
+  renderWizard();
+
+  expect(
+    await screen.findByRole("heading", { name: "ล็อกเป้าหมายของคุณ" })
+  ).toBeVisible();
+});

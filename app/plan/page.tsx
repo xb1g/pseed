@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 
-import { PlanExperience } from "@/components/my-path/PlanExperience";
+import { PlanWizard } from "@/components/my-path/wizard/PlanWizard";
 import { isAnonymousUser } from "@/lib/supabase/auth";
 import { resolvePlanEntry } from "@/lib/my-path/entries";
+import type { SeedPathlab } from "@/lib/my-path/pathlab-match";
 import {
   buildCareerPreview,
   type RadarPreviewCard,
@@ -20,8 +21,17 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "My Path | PassionSeed",
   description:
-    "สำรวจเส้นทางอาชีพจากหลักฐานจริง เปรียบเทียบสิ่งที่ต้องเลือกแลก และเลือกก้าวเล็กๆ เพื่อรู้จักตัวเองมากขึ้น",
+    "ออกแบบชีวิตของคุณใน 2–4 เดือน — โปรเจคชูโรงใส่พอร์ต งานแข่งใส่พอร์ต งานเพื่อสังคม และเรื่องเล่าที่เทคนิคสอบสัมภาษณ์ เพื่อมหาวิทยาลัยในไทม์ไลน์ของคุณ",
 };
+
+interface SeedRow {
+  id: string;
+  title: string;
+  description: string | null;
+  cover_image_url: string | null;
+  category: { name: string | null } | Array<{ name: string | null }> | null;
+  path: { total_days: number | null } | Array<{ total_days: number | null }> | null;
+}
 
 export default async function PlanPage({
   searchParams,
@@ -33,7 +43,7 @@ export default async function PlanPage({
   const supabase = await createClient();
   const registrySlugs = Object.keys(planningRegistry);
 
-  const [fieldsResult, authResult] = await Promise.all([
+  const [fieldsResult, seedsResult, authResult] = await Promise.all([
     supabase
       .from("radar_fields")
       .select(
@@ -41,11 +51,21 @@ export default async function PlanPage({
       )
       .eq("is_published", true)
       .in("slug", registrySlugs),
+    supabase
+      .from("seeds")
+      .select(
+        "id, title, description, cover_image_url, category:seed_categories(name), path:paths(total_days)"
+      )
+      .order("created_at", { ascending: false }),
     supabase.auth.getUser(),
   ]);
 
   if (fieldsResult.error) {
     console.error("My Path could not load published Radar fields:", fieldsResult.error);
+  }
+
+  if (seedsResult.error) {
+    console.error("My Path could not load PathLab seeds:", seedsResult.error);
   }
 
   const fields = (fieldsResult.data ?? []) as Array<RadarPreviewField & { id: string }>;
@@ -89,6 +109,20 @@ export default async function PlanPage({
       return entryA - entryB || a.titleTh.localeCompare(b.titleTh, "th");
     });
 
+  // Supabase joins can return a single object or an array depending on the relation.
+  const seeds = ((seedsResult.data ?? []) as SeedRow[]).map((row): SeedPathlab => {
+    const category = Array.isArray(row.category) ? row.category[0] : row.category;
+    const path = Array.isArray(row.path) ? row.path[0] : row.path;
+    return {
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      coverImageUrl: row.cover_image_url,
+      categoryName: category?.name ?? null,
+      totalDays: path?.total_days ?? null,
+    };
+  });
+
   const user = authResult.data.user;
   const isSignedIn = Boolean(user && !isAnonymousUser(user));
   const persistedState = isSignedIn
@@ -96,14 +130,12 @@ export default async function PlanPage({
     : null;
 
   return (
-    <PlanExperience
-      entry={entry}
+    <PlanWizard
       careers={careers}
+      seeds={seeds}
       isSignedIn={isSignedIn}
       initialDraft={persistedState?.draft ?? null}
-      initialEvidence={persistedState?.evidence ?? []}
       hasPersistedPath={persistedState?.hasPersistedPath ?? false}
-      resumeRequested={params.resume === "1"}
     />
   );
 }

@@ -29,6 +29,9 @@ const customJestConfig = {
   collectCoverage: true,
   coverageDirectory: "coverage",
   coverageProvider: "v8",
+  // Git worktrees are independent checkouts — running their suites from this
+  // root resolves `@/` imports against the wrong tree, so they always fail.
+  testPathIgnorePatterns: ["/node_modules/", "<rootDir>/.worktrees/"],
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

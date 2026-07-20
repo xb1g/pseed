@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
-import test from "node:test";
 
-import { createAnonymousDraft } from "../journey";
+import { applyJourneyEvent, createAnonymousDraft } from "../journey";
 import {
   loadMyPathDraft,
   MY_PATH_DRAFT_STORAGE_KEY,
@@ -10,6 +9,7 @@ import {
 } from "../storage";
 import {
   anonymousEventSchema,
+  myPathDraftSchema,
   myPathMutationSchema,
 } from "../validation";
 
@@ -101,4 +101,62 @@ test("anonymous analytics accepts only reviewed events and bounded metadata", ()
     }).success,
     false
   );
+});
+
+test("drafts containing wizard pathlab and goal events pass validation", () => {
+  let draft = createAnonymousDraft("generic", "draft-wizard");
+  draft = applyJourneyEvent(draft, {
+    id: "event-wizard-1",
+    type: "entry_viewed",
+    occurredAt: "2026-07-16T08:00:00.000Z",
+    metadata: { entry: "mission-wizard" },
+  });
+  draft = applyJourneyEvent(draft, {
+    id: "event-wizard-2",
+    type: "pathlab_selected",
+    occurredAt: "2026-07-16T08:01:00.000Z",
+    metadata: { seedId: "seed-ai", title: "AI Engineer PathLab" },
+  });
+  draft = applyJourneyEvent(draft, {
+    id: "event-wizard-3",
+    type: "pathlab_deselected",
+    occurredAt: "2026-07-16T08:02:00.000Z",
+    metadata: { seedId: "seed-ai" },
+  });
+  draft = applyJourneyEvent(draft, {
+    id: "event-wizard-4",
+    type: "question_answered",
+    questionId: "locked-goal",
+    answerId: "university",
+    occurredAt: "2026-07-16T08:03:00.000Z",
+  });
+  draft = applyJourneyEvent(draft, {
+    id: "event-wizard-5",
+    type: "question_answered",
+    questionId: "goal-timeline",
+    answerId: "3",
+    occurredAt: "2026-07-16T08:04:00.000Z",
+  });
+
+  assert.equal(myPathDraftSchema.safeParse(draft).success, true);
+});
+
+test("anonymous analytics accepts the wizard event types", () => {
+  for (const eventType of [
+    "wizard_step_viewed",
+    "pathlab_selected",
+    "pathlab_deselected",
+    "goal_locked",
+    "mission_plan_viewed",
+  ]) {
+    assert.equal(
+      anonymousEventSchema.safeParse({
+        sessionId: "session_12345678",
+        eventType,
+        metadata: { entry: "generic", seedId: "seed-ai", step: 2 },
+      }).success,
+      true,
+      `expected ${eventType} to be accepted`
+    );
+  }
 });

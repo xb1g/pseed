@@ -1,6 +1,7 @@
 import type {
   PathLabGeneratorAssessmentDraft,
   PathLabGeneratorDraft,
+  PathLabGeneratorRequest,
   PathLabQualityIssue,
   PathLabQualityResult,
 } from "@/types/pathlab-generator";
@@ -117,7 +118,132 @@ function hasCycle(adjacency: Map<string, string[]>): boolean {
   return false;
 }
 
-export function validatePathLabDraft(draft: PathLabGeneratorDraft): PathLabQualityResult {
+/**
+ * Returns `true` when `text` contains at least one career-specific indicator:
+ * proper nouns (capitalized mid-sentence words), tool / technology names
+ * (PascalCase, camelCase, kebab-case, or dotted like `Node.js`), or domain
+ * jargon (ALL_CAPS abbreviations, slash-separated terms like `CI/CD`).
+ *
+ * This is intentionally a loose heuristic — it should catch blatantly generic
+ * days without false-flagging normal prose.
+ */
+function hasCareerSpecificIndicators(text: string): boolean {
+  // PascalCase / camelCase identifiers (at least one internal uppercase)
+  // e.g. PostgreSQL, camelCase, GraphQL
+  if (/[a-z][A-Z]|[A-Z][a-z]+[A-Z]/.test(text)) return true;
+
+  // Dotted tool names like Node.js, D3.js, ASP.NET
+  if (/[A-Za-z]+\.[a-z]{1,4}\b/.test(text)) return true;
+
+  // kebab-case multi-word identifiers (tool/framework names)
+  // e.g. vue-router, react-dom, scikit-learn
+  if (/[a-z]+-[a-z]+-?[a-z]*/.test(text)) return true;
+
+  // ALL_CAPS abbreviations (3+ letters), e.g. SQL, API, HTML, CI/CD
+  if (/\b[A-Z]{3,}\b/.test(text)) return true;
+
+  // Slash-separated domain terms like CI/CD, B2B/B2C
+  if (/\b[A-Za-z0-9]+\/[A-Za-z0-9]+\b/.test(text)) return true;
+
+  // Proper nouns: capitalized words that are NOT sentence-initial.
+  // We split into sentences and check for mid-sentence capitalized words.
+  const sentences = text.split(/[.!?]\s+/);
+  for (const sentence of sentences) {
+    const words = sentence.trim().split(/\s+/);
+    // Skip the first word of each sentence, check the rest
+    for (let i = 1; i < words.length; i++) {
+      const word = words[i].replace(/[^A-Za-z]/g, "");
+      if (word.length >= 2 && /^[A-Z][a-z]/.test(word)) return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * §4.1 Swap test: for each day, collect all its text and check for at least one
+ * career-specific indicator. A day with zero indicators is blatantly generic.
+ */
+function checkEditorialSwapTest(
+  draft: PathLabGeneratorDraft,
+  issues: PathLabQualityIssue[],
+): void {
+  const nodesByKey = new Map(draft.nodes.map((n) => [n.key, n]));
+
+  for (const day of draft.days) {
+    const textParts: string[] = [];
+
+    // Day-level text
+    if (day.context_text) textParts.push(day.context_text);
+    for (const prompt of day.reflection_prompts) {
+      textParts.push(prompt);
+    }
+
+    // Node-level text for this day's assigned nodes
+    for (const nodeKey of day.node_keys) {
+      const node = nodesByKey.get(nodeKey);
+      if (!node) continue;
+
+      if (node.instructions) textParts.push(node.instructions);
+      for (const content of node.content) {
+        if (content.body) textParts.push(content.body);
+      }
+    }
+
+    const combinedText = textParts.join(" ");
+    if (combinedText.trim().length > 0 && !hasCareerSpecificIndicators(combinedText)) {
+      pushIssue(
+        issues,
+        "warning",
+        "EDITORIAL_SWAP_TEST",
+        `Day ${day.day_number} contains no career-specific indicators and may be too generic (§4.1 swap test)`,
+        `days.${day.day_number}`,
+      );
+    }
+  }
+}
+
+/**
+ * §4.2 Honesty tax: when mundane-but-required items are provided, at least one
+ * must appear somewhere in the node content. If none do, the PathLab is hiding
+ * the boring parts of the career.
+ */
+function checkEditorialHonestyTax(
+  draft: PathLabGeneratorDraft,
+  request: Pick<PathLabGeneratorRequest, "expertContext"> | undefined,
+  issues: PathLabQualityIssue[],
+): void {
+  const mundaneItems = request?.expertContext?.careerTruths?.mundaneButRequired;
+  if (!mundaneItems || mundaneItems.length === 0) return;
+
+  // Build a single corpus from all node text
+  const allNodeText = draft.nodes
+    .flatMap((node) => [
+      node.instructions,
+      ...node.content.map((c) => c.body ?? ""),
+    ])
+    .join(" ")
+    .toLowerCase();
+
+  const anyMundaneReferenced = mundaneItems.some((item) =>
+    allNodeText.includes(item.toLowerCase()),
+  );
+
+  if (!anyMundaneReferenced) {
+    pushIssue(
+      issues,
+      "warning",
+      "EDITORIAL_HONESTY_TAX",
+      "No mundane-but-required items from the expert context appear in any node — the PathLab may hide the boring parts of the career (§4.2 honesty tax)",
+      "nodes",
+    );
+  }
+}
+
+export function validatePathLabDraft(
+  draft: PathLabGeneratorDraft,
+  request?: Pick<PathLabGeneratorRequest, "expertContext">,
+): PathLabQualityResult {
   const issues: PathLabQualityIssue[] = [];
 
   const expectedTotalDays = draft.path.total_days;
@@ -258,6 +384,10 @@ export function validatePathLabDraft(draft: PathLabGeneratorDraft): PathLabQuali
       "nodes",
     );
   }
+
+  // Editorial checks (§4 anti-generic rules)
+  checkEditorialSwapTest(draft, issues);
+  checkEditorialHonestyTax(draft, request, issues);
 
   const errors = issues.filter((issue) => issue.level === "error");
   const warnings = issues.filter((issue) => issue.level === "warning");
