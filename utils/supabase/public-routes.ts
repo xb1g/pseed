@@ -15,6 +15,8 @@ const PUBLIC_ROUTE_PREFIXES = [
   "/business-model-canvas",
   "/radar",
   "/plan",
+  "/pay",
+  "/api/trials",
   "/fireball",
 ] as const;
 

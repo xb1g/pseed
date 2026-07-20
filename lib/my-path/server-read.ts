@@ -1,5 +1,3 @@
-import type { MyPathEvidence } from "@/components/my-path/PathHome";
-
 import { getRegistryItem } from "./registry";
 import type {
   JourneyEvent,
@@ -7,6 +5,14 @@ import type {
   MyPathDraft,
   PossibilityState,
 } from "./types";
+
+export interface MyPathEvidence {
+  id: string;
+  careerSlug: string;
+  label: string;
+  detail: string;
+  createdAt: string;
+}
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -88,6 +94,10 @@ function eventFromRow(row: NonNullable<PersistedSnapshot["events"]>[number]): Jo
     answerId: typeof payload.answerId === "string" ? payload.answerId : undefined,
     reason: typeof payload.reason === "string" ? payload.reason : undefined,
     stepId: typeof payload.stepId === "string" ? payload.stepId : undefined,
+    metadata:
+      payload.metadata && typeof payload.metadata === "object" && !Array.isArray(payload.metadata)
+        ? (payload.metadata as JourneyEvent["metadata"])
+        : undefined,
   };
 }
 

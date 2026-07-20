@@ -5,6 +5,7 @@
 // =====================================================
 
 import { createClient } from "@/utils/supabase/server";
+import { applyPointsPossible, scoreQuizSubmission } from "@/lib/pathlab/scoring";
 import type {
   PathActivity,
   PathContent,
@@ -440,6 +441,8 @@ export async function upsertPathActivityProgress(
     started_at?: string;
     completed_at?: string;
     time_spent_seconds?: number;
+    visit_count?: number;
+    last_visited_at?: string;
   }
 ): Promise<PathActivityProgress> {
   const supabase = await createClient();
@@ -464,12 +467,127 @@ export async function upsertPathActivityProgress(
 }
 
 /**
- * Submit an assessment response
+ * Open an activity: ensure a progress row exists, accumulate the visit, and
+ * stamp the first start.
+ *
+ * Nothing previously created progress rows, which is why time_spent_seconds
+ * and every submission column downstream of it stayed empty. This is the entry
+ * point that makes the whole progress layer live.
+ */
+export async function startPathActivity(
+  enrollmentId: string,
+  activityId: string
+): Promise<PathActivityProgress> {
+  const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("path_activity_progress")
+    .select("*")
+    .eq("enrollment_id", enrollmentId)
+    .eq("activity_id", activityId)
+    .maybeSingle();
+
+  const now = new Date().toISOString();
+
+  return upsertPathActivityProgress(enrollmentId, activityId, {
+    // Never demote a completed activity back to in_progress on revisit
+    status:
+      existing?.status === "completed" ? "completed" : "in_progress",
+    started_at: existing?.started_at || now,
+    visit_count: (existing?.visit_count ?? 0) + 1,
+    last_visited_at: now,
+  });
+}
+
+/**
+ * Accumulate time on an activity. Deliberately additive: a student who leaves
+ * and returns has spent the sum of both sittings, not the last one.
+ */
+export async function addPathActivityTime(
+  enrollmentId: string,
+  activityId: string,
+  seconds: number
+): Promise<PathActivityProgress | null> {
+  if (!Number.isFinite(seconds) || seconds <= 0) return null;
+
+  // Guard against a wall-clock timer left running overnight in a background tab
+  const capped = Math.min(Math.round(seconds), 4 * 60 * 60);
+
+  const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("path_activity_progress")
+    .select("time_spent_seconds")
+    .eq("enrollment_id", enrollmentId)
+    .eq("activity_id", activityId)
+    .maybeSingle();
+
+  return upsertPathActivityProgress(enrollmentId, activityId, {
+    time_spent_seconds: (existing?.time_spent_seconds ?? 0) + capped,
+  });
+}
+
+/**
+ * Submit an assessment response.
+ *
+ * Quiz submissions are scored server-side against the stored correct options —
+ * never trust a client-supplied score. Non-quiz types are stored unscored and
+ * await rubric grading.
  */
 export async function submitPathAssessment(
   input: SubmitPathAssessmentInput
 ): Promise<PathAssessmentSubmission> {
   const supabase = await createClient();
+
+  const { data: assessment, error: assessmentError } = await supabase
+    .from("path_assessments")
+    .select("id, assessment_type, points_possible")
+    .eq("id", input.assessment_id)
+    .single();
+
+  if (assessmentError) throw assessmentError;
+
+  let scoring: {
+    score: number | null;
+    max_score: number | null;
+    scoring_method: string | null;
+    rubric_scores: unknown | null;
+    scored_at: string | null;
+  } = {
+    score: null,
+    max_score: null,
+    scoring_method: null,
+    rubric_scores: null,
+    scored_at: null,
+  };
+
+  if (assessment.assessment_type === "quiz") {
+    const { data: questions, error: questionsError } = await supabase
+      .from("path_quiz_questions")
+      .select("id, correct_option")
+      .eq("assessment_id", input.assessment_id);
+
+    if (questionsError) throw questionsError;
+
+    const result = scoreQuizSubmission(questions || [], input.quiz_answers);
+    const { score, max } = applyPointsPossible(result, assessment.points_possible);
+
+    scoring = {
+      score,
+      max_score: max,
+      scoring_method: "auto_quiz",
+      rubric_scores: { breakdown: result.breakdown },
+      scored_at: new Date().toISOString(),
+    };
+  }
+
+  // Revision count is itself a fit signal, so preserve it across resubmissions
+  const { data: existing } = await supabase
+    .from("path_assessment_submissions")
+    .select("attempt_count")
+    .eq("progress_id", input.progress_id)
+    .eq("assessment_id", input.assessment_id)
+    .maybeSingle();
 
   const { data, error } = await supabase
     .from("path_assessment_submissions")
@@ -483,6 +601,8 @@ export async function submitPathAssessment(
         quiz_answers: input.quiz_answers || null,
         metadata: input.metadata || {},
         submitted_at: new Date().toISOString(),
+        attempt_count: (existing?.attempt_count ?? 0) + 1,
+        ...scoring,
       },
       {
         onConflict: "progress_id,assessment_id",
