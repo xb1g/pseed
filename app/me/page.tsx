@@ -31,7 +31,7 @@ export default async function PortalPage() {
       <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-orange-950/5 blur-[120px] animate-cloud-slow z-0" style={{ animationDuration: '18s' }} />
       <div className="absolute bottom-1/4 right-1/4 w-[350px] h-[350px] rounded-full bg-amber-950/4 blur-[110px] animate-cloud-slow z-0" style={{ animationDuration: '22s', animationDelay: '-5s' }} />
 
-      <main className="relative z-10 flex-1">
+      <main id="my-path" className="relative z-10 flex-1">
         <div className="container mx-auto px-4 md:px-6 py-6 md:py-10 max-w-7xl">
           {/* User Portal Content */}
           <UserPortal dashboardData={dashboardData} />
