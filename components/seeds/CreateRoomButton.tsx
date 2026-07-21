@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Play, Loader2, ArrowRight } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
@@ -95,36 +94,33 @@ export function CreateRoomButton({ seedId, userId, existingRoom, isCompleted = f
     };
 
     return (
-        <Button
+        <button
+            type="button"
             onClick={handleClick}
             disabled={loading}
-            className={`w-full text-lg py-6 text-white ${
-                isCompleted
-                    ? "bg-green-600 hover:bg-green-700"
-                    : "bg-blue-600 hover:bg-blue-700"
-            }`}
+            className="ei-button-dusk min-h-12 w-full justify-center text-base"
         >
             {loading ? (
                 <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Creating Room...
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Creating Room...</span>
                 </>
             ) : isCompleted ? (
                 <>
-                    <Play className="w-5 h-5 mr-2" />
-                    Continue Completed Seed
+                    <Play className="w-5 h-5" />
+                    <span>Continue Completed Seed</span>
                 </>
             ) : existingRoom ? (
                 <>
-                    <ArrowRight className="w-5 h-5 mr-2" />
-                    Go to Lobby
+                    <ArrowRight className="w-5 h-5" />
+                    <span>Go to Lobby</span>
                 </>
             ) : (
                 <>
-                    <Play className="w-5 h-5 mr-2" />
-                    Create Room
+                    <Play className="w-5 h-5" />
+                    <span>Create Room</span>
                 </>
             )}
-        </Button>
+        </button>
     );
 }

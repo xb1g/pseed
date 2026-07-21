@@ -126,7 +126,7 @@ export function TrialGate({ seedId, seedTitle, trial }: TrialGateProps) {
             type="button"
             onClick={startTrial}
             disabled={starting}
-            className="ei-button-dawn min-h-12 w-full justify-center disabled:cursor-not-allowed disabled:opacity-40"
+            className="ei-button-dusk min-h-12 w-full justify-center disabled:cursor-not-allowed disabled:opacity-40"
           >
             <span>
               {starting ? "กำลังเปิดการทดลอง…" : "เริ่มทดลองเลย (จ่ายทีหลัง)"}
