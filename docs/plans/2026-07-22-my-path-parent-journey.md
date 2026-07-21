@@ -123,7 +123,10 @@ Define tests for a pure `buildMyPathDashboard` function covering:
 - saved plan without a selected PathLab → `choose-pathlab`;
 - selected PathLab without enrollment → `start-pathlab`;
 - active enrollment → `resume-pathlab` with `/seeds/pathlab/:enrollmentId`;
+- paused enrollment → resumable saved experiment;
+- quit enrollment → choose a different experiment;
 - completed/explored enrollment → evidence and a next recommendation;
+- multiple eligible enrollments → most recent activity progress, then `enrolled_at`, then stable ID;
 - active, pending, paid, and expired trial labels;
 - saved Radar directions are limited to three and retain stable order.
 
@@ -276,7 +279,7 @@ Expected: FAIL before the migration is implemented.
 
 **Step 5: Implement the additive schema and trigger/outbox behavior**
 
-- Queue `pathlab_started` on enrollment insert, `milestone_completed` on the first progress transition to completed, `pathlab_completed` on the first enrollment transition to explored, and `payment_status_changed` on trial status changes.
+- Queue `pathlab_started` on enrollment insert, `milestone_completed` on the first progress transition to completed, `pathlab_completed` on the first enrollment transition to explored, and `payment_status_changed` on stored trial status changes. Do not emit lazy deadline-expiry email in v1.
 - Never copy reflection text, chat content, answers, or notes into the outbox.
 - Use `subscription:event:source-table:source-id:source-state` idempotency keys to prevent duplicate notifications.
 - Keep outbox and subscription tables inaccessible to anonymous clients.
