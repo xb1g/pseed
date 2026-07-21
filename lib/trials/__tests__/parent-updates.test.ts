@@ -3,6 +3,7 @@ import {
   parentUpdateSubscribeSchema,
   backoffMinutesForAttempt,
   hashBearerToken,
+  deriveParentSubscriptionId,
   maskEmail,
   normalizeParentEmail,
   processClaimedParentUpdates,
@@ -182,6 +183,17 @@ test("hashes bearer tokens and masks verified addresses", () => {
   expect(hashBearerToken("secret-token")).toMatch(/^[0-9a-f]{64}$/);
   expect(hashBearerToken("secret-token")).not.toBe("secret-token");
   expect(maskEmail("parent@example.com")).toBe("p*****@example.com");
+});
+
+test("derives one stable opaque subscription id for concurrent first contact saves", () => {
+  const first = deriveParentSubscriptionId(TRIAL_ID, SECRET);
+  expect(first).toBe(deriveParentSubscriptionId(TRIAL_ID, SECRET));
+  expect(first).not.toBe(
+    deriveParentSubscriptionId("33333333-3333-4333-8333-333333333333", SECRET)
+  );
+  expect(first).toMatch(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+  );
 });
 
 test("creates one subscription per trial and sends a 30-minute verification", async () => {

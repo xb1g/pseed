@@ -127,6 +127,17 @@ test("outbox finalization is lease-token CAS guarded", () => {
   assert.match(server, /releaseLease/);
 });
 
+test("contact replacement uses the atomic recipient-generation RPC", () => {
+  const server = source("lib/trials/parent-updates-server.ts");
+  const save = server.slice(
+    server.indexOf("async saveSubscription"),
+    server.indexOf("async findByVerificationHash")
+  );
+
+  assert.match(save, /replace_parent_pathlab_subscription_contact/);
+  assert.doesNotMatch(save, /\.upsert\(/);
+});
+
 test("delivery leases can only be acquired and renewed with active consent", () => {
   const server = source("lib/trials/parent-updates-server.ts");
   const acquisition = source(

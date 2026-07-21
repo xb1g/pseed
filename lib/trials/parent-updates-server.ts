@@ -177,10 +177,24 @@ export function createParentUpdateRepository(
       return data ? mapSubscription(data as SubscriptionRow) : null;
     },
     async saveSubscription(input) {
+      const row = dbSubscription(input);
       const { data, error } = await serviceClient
-        .from("parent_pathlab_subscriptions")
-        .upsert(dbSubscription(input), { onConflict: "trial_access_id" })
-        .select(SUBSCRIPTION_COLUMNS)
+        .rpc("replace_parent_pathlab_subscription_contact", {
+          p_id: row.id,
+          p_trial_access_id: row.trial_access_id,
+          p_normalized_email: row.normalized_email,
+          p_consented_at: row.consented_at,
+          p_attested_at: row.attested_at,
+          p_verification_token_hash: row.verification_token_hash,
+          p_verification_version: row.verification_version,
+          p_verification_expires_at: row.verification_expires_at,
+          p_verification_requested_at: row.verification_requested_at,
+          p_verified_at: row.verified_at,
+          p_unsubscribe_token_hash: row.unsubscribe_token_hash,
+          p_unsubscribe_version: row.unsubscribe_version,
+          p_unsubscribed_at: row.unsubscribed_at,
+          p_revoked_at: row.revoked_at,
+        })
         .single();
       if (error) throw error;
       return mapSubscription(data as SubscriptionRow);
