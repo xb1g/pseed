@@ -11,7 +11,21 @@ test("public subscribe route validates consent and resolves the pay bearer token
   assert.match(route, /parentUpdateSubscribeSchema\.safeParse/);
   assert.match(route, /subscribeParentUpdates/);
   assert.match(route, /createServiceRoleClient/);
-  assert.match(server, /get_trial_by_token/);
+  assert.match(server, /resolveTrialAccessByToken/);
+  assert.doesNotMatch(server, /\.rpc\("get_trial_by_token"/);
+});
+
+test("slip upload resolves internal trial identity only through the service client", () => {
+  const slip = source("app/api/trials/[token]/slip/route.ts");
+  assert.match(slip, /resolveTrialAccessByToken/);
+  assert.doesNotMatch(slip, /\.rpc\(\s*"get_trial_by_token"/);
+});
+
+test("public trial response stays within the parent token whitelist", () => {
+  const route = source("app/api/trials/[token]/route.ts");
+  const payPage = source("app/pay/[token]/page.tsx");
+  assert.doesNotMatch(route, /paidAt: trial\.paidAt/);
+  assert.doesNotMatch(payPage, /row\?\.paidAt/);
 });
 
 test("student owner route exposes only masked verified contact and supports revoke", () => {
@@ -41,4 +55,12 @@ test("cron requires a bearer secret and is registered in Vercel", () => {
   assert.match(route, /claimDueParentUpdates/);
   assert.match(vercel, /\/api\/cron\/parent-pathlab-updates/);
   assert.match(publicRoutes, /\/api\/cron\/parent-pathlab-updates/);
+});
+
+test("outbox finalization is lease-token CAS guarded", () => {
+  const server = source("lib/trials/parent-updates-server.ts");
+  assert.match(server, /delivery_lease_token/);
+  assert.match(server, /mutate_parent_pathlab_update_lease/);
+  assert.match(server, /p_lease_token/);
+  assert.match(server, /releaseLease/);
 });

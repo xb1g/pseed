@@ -4,6 +4,7 @@ import { z } from "zod";
 const VERIFY_WINDOW_MS = 30 * 60 * 1000;
 const RESEND_THROTTLE_MS = 60 * 1000;
 const PROGRESS_WINDOW_MS = 24 * 60 * 60 * 1000;
+const DELIVERY_LEASE_MS = 15 * 60 * 1000;
 const RETRY_MINUTES = [5, 10, 20, 40, 80] as const;
 
 export const parentUpdateSubscribeSchema = z.object({
@@ -48,6 +49,8 @@ export interface ClaimedParentUpdate {
   normalizedEmail: string;
   lastProgressDeliveredAt: string | null;
   unsubscribeVersion: number;
+  leaseToken: string;
+  leasedUntil: string;
 }
 
 export interface ParentUpdateRepository {
@@ -58,9 +61,33 @@ export interface ParentUpdateRepository {
   findByUnsubscribeHash(hash: string): Promise<ParentUpdateSubscription | null>;
   markVerified(id: string, verifiedAt: string): Promise<ParentUpdateSubscription>;
   markUnsubscribed(id: string, unsubscribedAt: string): Promise<ParentUpdateSubscription>;
-  markDelivered(ids: string[], deliveredAt: string, isProgress: boolean): Promise<void>;
-  reschedule(ids: string[], scheduledAt: string, errorCode: string): Promise<void>;
-  markFailed(ids: string[], errorCode: string): Promise<void>;
+  renewLease(
+    subscriptionId: string,
+    leaseToken: string,
+    leasedUntil: string
+  ): Promise<boolean>;
+  markDelivered(
+    ids: string[],
+    subscriptionId: string,
+    leaseToken: string,
+    deliveredAt: string,
+    isProgress: boolean
+  ): Promise<boolean>;
+  reschedule(
+    ids: string[],
+    subscriptionId: string,
+    leaseToken: string,
+    scheduledAt: string,
+    errorCode: string,
+    incrementAttempt: boolean
+  ): Promise<boolean>;
+  markFailed(
+    ids: string[],
+    subscriptionId: string,
+    leaseToken: string,
+    errorCode: string
+  ): Promise<boolean>;
+  releaseLease(subscriptionId: string, leaseToken: string): Promise<boolean>;
 }
 
 export type ParentUpdateSubscriptionWrite =
@@ -281,6 +308,105 @@ function groupClaimedRows(rows: ClaimedParentUpdate[]): ClaimedParentUpdate[][] 
   return [...groups.values()];
 }
 
+function groupByLease(rows: ClaimedParentUpdate[]): ClaimedParentUpdate[][] {
+  const groups = new Map<string, ClaimedParentUpdate[]>();
+  for (const row of rows) {
+    const key = `${row.subscriptionId}:${row.leaseToken}`;
+    const group = groups.get(key) ?? [];
+    group.push(row);
+    groups.set(key, group);
+  }
+  return [...groups.values()];
+}
+
+async function processDeliveryGroup(input: {
+  group: ClaimedParentUpdate[];
+  repository: ParentUpdateRepository;
+  send: ParentUpdateEmailSender;
+  now: Date;
+  origin: string;
+  tokenSecret: string;
+}): Promise<void> {
+  const first = input.group[0];
+  const ids = input.group.map((row) => row.id);
+  const progress = isProgress(first.eventKind);
+  if (progress && first.lastProgressDeliveredAt) {
+    const nextAllowed =
+      new Date(first.lastProgressDeliveredAt).getTime() + PROGRESS_WINDOW_MS;
+    if (nextAllowed > input.now.getTime()) {
+      await input.repository.reschedule(
+        ids,
+        first.subscriptionId,
+        first.leaseToken,
+        new Date(nextAllowed).toISOString(),
+        "progress_frequency_limit",
+        false
+      );
+      return;
+    }
+  }
+
+  const renewed = await input.repository.renewLease(
+    first.subscriptionId,
+    first.leaseToken,
+    new Date(input.now.getTime() + DELIVERY_LEASE_MS).toISOString()
+  );
+  if (!renewed) return;
+
+  const unsubscribeToken = deriveBearerToken(
+    "unsubscribe",
+    first.subscriptionId,
+    first.unsubscribeVersion,
+    input.tokenSecret
+  );
+  const result = await input.send({
+    to: first.normalizedEmail,
+    eventKinds: input.group.map((row) => row.eventKind),
+    payloads: input.group.map((row) => row.safePayload),
+    unsubscribeUrl: tokenUrl(input.origin, "unsubscribe", unsubscribeToken),
+  });
+  if (result.ok) {
+    await input.repository.markDelivered(
+      ids,
+      first.subscriptionId,
+      first.leaseToken,
+      input.now.toISOString(),
+      progress
+    );
+    return;
+  }
+
+  if (!result.transient) {
+    await input.repository.markFailed(
+      ids,
+      first.subscriptionId,
+      first.leaseToken,
+      safeDeliveryCode(result.code)
+    );
+    return;
+  }
+
+  const nextAttempt = Math.max(...input.group.map((row) => row.attemptCount)) + 1;
+  if (nextAttempt > 5) {
+    await input.repository.markFailed(
+      ids,
+      first.subscriptionId,
+      first.leaseToken,
+      "delivery_exhausted"
+    );
+    return;
+  }
+  const delay = backoffMinutesForAttempt(nextAttempt);
+  await input.repository.reschedule(
+    ids,
+    first.subscriptionId,
+    first.leaseToken,
+    new Date(input.now.getTime() + delay * 60_000).toISOString(),
+    safeDeliveryCode(result.code),
+    true
+  );
+}
+
 export async function processClaimedParentUpdates(input: {
   rows: ClaimedParentUpdate[];
   repository: ParentUpdateRepository;
@@ -289,54 +415,20 @@ export async function processClaimedParentUpdates(input: {
   origin: string;
   tokenSecret: string;
 }): Promise<void> {
-  for (const group of groupClaimedRows(input.rows)) {
-    const first = group[0];
-    const ids = group.map((row) => row.id);
-    const progress = isProgress(first.eventKind);
-    if (progress && first.lastProgressDeliveredAt) {
-      const nextAllowed = new Date(first.lastProgressDeliveredAt).getTime() + PROGRESS_WINDOW_MS;
-      if (nextAllowed > input.now.getTime()) {
-        await input.repository.reschedule(
-          ids,
-          new Date(nextAllowed).toISOString(),
-          "progress_frequency_limit"
-        );
-        continue;
-      }
-    }
-
-    const unsubscribeToken = deriveBearerToken(
-      "unsubscribe",
+  for (const leaseRows of groupByLease(input.rows)) {
+    const first = leaseRows[0];
+    const renewed = await input.repository.renewLease(
       first.subscriptionId,
-      first.unsubscribeVersion,
-      input.tokenSecret
+      first.leaseToken,
+      new Date(input.now.getTime() + DELIVERY_LEASE_MS).toISOString()
     );
-    const result = await input.send({
-      to: first.normalizedEmail,
-      eventKinds: group.map((row) => row.eventKind),
-      payloads: group.map((row) => row.safePayload),
-      unsubscribeUrl: tokenUrl(input.origin, "unsubscribe", unsubscribeToken),
-    });
-    if (result.ok) {
-      await input.repository.markDelivered(ids, input.now.toISOString(), progress);
-      continue;
+    if (!renewed) continue;
+    try {
+      for (const group of groupClaimedRows(leaseRows)) {
+        await processDeliveryGroup({ ...input, group });
+      }
+    } finally {
+      await input.repository.releaseLease(first.subscriptionId, first.leaseToken);
     }
-
-    if (!result.transient) {
-      await input.repository.markFailed(ids, safeDeliveryCode(result.code));
-      continue;
-    }
-
-    const nextAttempt = Math.max(...group.map((row) => row.attemptCount)) + 1;
-    if (nextAttempt > 5) {
-      await input.repository.markFailed(ids, "delivery_exhausted");
-      continue;
-    }
-    const delay = backoffMinutesForAttempt(nextAttempt);
-    await input.repository.reschedule(
-      ids,
-      new Date(input.now.getTime() + delay * 60_000).toISOString(),
-      safeDeliveryCode(result.code)
-    );
   }
 }

@@ -6,6 +6,7 @@ import type {
   ParentUpdateSubscription,
   ParentUpdateSubscriptionWrite,
 } from "./parent-updates";
+import { resolveTrialAccessByToken } from "./trial-token-server";
 
 interface SubscriptionRow {
   id: string;
@@ -68,18 +69,45 @@ const SUBSCRIPTION_COLUMNS = `
   last_progress_delivered_at
 `;
 
+async function mutateLease(
+  serviceClient: SupabaseClient,
+  input: {
+    subscriptionId: string;
+    leaseToken: string;
+    ids: string[];
+    action: "delivered" | "rescheduled" | "failed";
+    at: string;
+    errorCode: string | null;
+    scheduledAt: string | null;
+    incrementAttempt: boolean;
+    isProgress: boolean;
+  }
+): Promise<boolean> {
+  const { data, error } = await serviceClient.rpc(
+    "mutate_parent_pathlab_update_lease",
+    {
+      p_subscription_id: input.subscriptionId,
+      p_lease_token: input.leaseToken,
+      p_ids: input.ids,
+      p_action: input.action,
+      p_at: input.at,
+      p_error_code: input.errorCode,
+      p_scheduled_at: input.scheduledAt,
+      p_increment_attempt: input.incrementAttempt,
+      p_is_progress: input.isProgress,
+    }
+  );
+  if (error) throw error;
+  return data === true;
+}
+
 export function createParentUpdateRepository(
-  publicClient: SupabaseClient,
   serviceClient: SupabaseClient
 ): ParentUpdateRepository {
   return {
     async resolveTrialByPayToken(token) {
-      const { data, error } = await publicClient.rpc("get_trial_by_token", {
-        p_token: token,
-      });
-      if (error) throw error;
-      const trial = data as { id?: unknown; seedTitle?: unknown } | null;
-      return trial && typeof trial.id === "string" && typeof trial.seedTitle === "string"
+      const trial = await resolveTrialAccessByToken(serviceClient, token);
+      return trial
         ? { id: trial.id, seedTitle: trial.seedTitle }
         : null;
     },
@@ -139,71 +167,114 @@ export function createParentUpdateRepository(
       if (error) throw error;
       return mapSubscription(data as SubscriptionRow);
     },
-    async markDelivered(ids, deliveredAt, isProgress) {
-      const { data: rows, error: readError } = await serviceClient
-        .from("parent_pathlab_update_outbox")
-        .select("subscription_id")
-        .in("id", ids);
-      if (readError) throw readError;
-      const { error } = await serviceClient
-        .from("parent_pathlab_update_outbox")
-        .update({
-          status: "delivered",
-          delivered_at: deliveredAt,
-          leased_until: null,
-          lease_token: null,
-          last_error_code: null,
-        })
-        .in("id", ids);
+    async renewLease(subscriptionId, leaseToken, leasedUntil) {
+      const { data, error } = await serviceClient
+        .from("parent_pathlab_subscriptions")
+        .update({ delivery_leased_until: leasedUntil })
+        .eq("id", subscriptionId)
+        .eq("delivery_lease_token", leaseToken)
+        .gt("delivery_leased_until", new Date().toISOString())
+        .select("id")
+        .maybeSingle();
       if (error) throw error;
-      const subscriptionIds = [
-        ...new Set((rows ?? []).map((row) => row.subscription_id as string)),
-      ];
-      if (subscriptionIds.length) {
-        const timestampColumn = isProgress
-          ? "last_progress_delivered_at"
-          : "last_transactional_delivered_at";
-        const { error: subscriptionError } = await serviceClient
+      if (!data) return false;
+      const { data: renewedRows, error: rowError } = await serviceClient
+        .from("parent_pathlab_update_outbox")
+        .update({ leased_until: leasedUntil })
+        .eq("subscription_id", subscriptionId)
+        .eq("status", "leased")
+        .eq("lease_token", leaseToken)
+        .gt("leased_until", new Date().toISOString())
+        .select("id");
+      if (rowError) throw rowError;
+      if (!renewedRows?.length) {
+        await serviceClient
           .from("parent_pathlab_subscriptions")
-          .update({ [timestampColumn]: deliveredAt })
-          .in("id", subscriptionIds);
-        if (subscriptionError) throw subscriptionError;
+          .update({ delivery_lease_token: null, delivery_leased_until: null })
+          .eq("id", subscriptionId)
+          .eq("delivery_lease_token", leaseToken);
+        return false;
       }
+      return true;
     },
-    async reschedule(ids, scheduledAt, errorCode) {
-      const { data: rows, error: readError } = await serviceClient
-        .from("parent_pathlab_update_outbox")
-        .select("id, attempt_count")
-        .in("id", ids);
-      if (readError) throw readError;
-      for (const row of rows ?? []) {
-        const { error } = await serviceClient
-          .from("parent_pathlab_update_outbox")
-          .update({
-            status: "pending",
-            attempt_count: Number(row.attempt_count) + 1,
-            scheduled_at: scheduledAt,
-            leased_until: null,
-            lease_token: null,
-            last_error_code: errorCode,
-          })
-          .eq("id", row.id);
-        if (error) throw error;
-      }
+    async markDelivered(ids, subscriptionId, leaseToken, deliveredAt, isProgress) {
+      return mutateLease(serviceClient, {
+        subscriptionId,
+        leaseToken,
+        ids,
+        action: "delivered",
+        at: deliveredAt,
+        errorCode: null,
+        scheduledAt: null,
+        incrementAttempt: false,
+        isProgress,
+      });
     },
-    async markFailed(ids, errorCode) {
-      const { error } = await serviceClient
+    async reschedule(
+      ids,
+      subscriptionId,
+      leaseToken,
+      scheduledAt,
+      errorCode,
+      incrementAttempt
+    ) {
+      return mutateLease(serviceClient, {
+        subscriptionId,
+        leaseToken,
+        ids,
+        action: "rescheduled",
+        at: new Date().toISOString(),
+        errorCode,
+        scheduledAt,
+        incrementAttempt,
+        isProgress: false,
+      });
+    },
+    async markFailed(ids, subscriptionId, leaseToken, errorCode) {
+      return mutateLease(serviceClient, {
+        subscriptionId,
+        leaseToken,
+        ids,
+        action: "failed",
+        at: new Date().toISOString(),
+        errorCode,
+        scheduledAt: null,
+        incrementAttempt: false,
+        isProgress: false,
+      });
+    },
+    async releaseLease(subscriptionId, leaseToken) {
+      const { data, error } = await serviceClient
         .from("parent_pathlab_update_outbox")
-        .update({
-          status: "failed",
-          leased_until: null,
-          lease_token: null,
-          last_error_code: errorCode,
-        })
-        .in("id", ids);
+        .select("id")
+        .eq("subscription_id", subscriptionId)
+        .eq("status", "leased")
+        .eq("lease_token", leaseToken)
+        .limit(1);
       if (error) throw error;
+      if ((data ?? []).length > 0) return true;
+      const { data: released, error: releaseError } = await serviceClient
+        .from("parent_pathlab_subscriptions")
+        .update({ delivery_lease_token: null, delivery_leased_until: null })
+        .eq("id", subscriptionId)
+        .eq("delivery_lease_token", leaseToken)
+        .select("id")
+        .maybeSingle();
+      if (releaseError) throw releaseError;
+      return Boolean(released);
     },
   };
+}
+
+interface DeliverySubscriptionRow {
+  normalized_email: string;
+  verified_at: string | null;
+  unsubscribed_at: string | null;
+  revoked_at: string | null;
+  last_progress_delivered_at: string | null;
+  unsubscribe_version: number;
+  delivery_lease_token: string | null;
+  delivery_leased_until: string | null;
 }
 
 interface OutboxClaimRow {
@@ -212,23 +283,13 @@ interface OutboxClaimRow {
   event_kind: ClaimedParentUpdate["eventKind"];
   safe_payload: Record<string, unknown>;
   attempt_count: number;
-  subscription:
-    | {
-        normalized_email: string;
-        verified_at: string | null;
-        unsubscribed_at: string | null;
-        revoked_at: string | null;
-        last_progress_delivered_at: string | null;
-        unsubscribe_version: number;
-      }
-    | Array<{
-        normalized_email: string;
-        verified_at: string | null;
-        unsubscribed_at: string | null;
-        revoked_at: string | null;
-        last_progress_delivered_at: string | null;
-        unsubscribe_version: number;
-      }>;
+  subscription: DeliverySubscriptionRow | DeliverySubscriptionRow[];
+}
+
+function embeddedSubscription(
+  value: OutboxClaimRow["subscription"]
+): DeliverySubscriptionRow | null {
+  return (Array.isArray(value) ? value[0] : value) ?? null;
 }
 
 export async function claimDueParentUpdates(
@@ -243,21 +304,24 @@ export async function claimDueParentUpdates(
       id, subscription_id, event_kind, safe_payload, attempt_count,
       subscription:parent_pathlab_subscriptions!inner(
         normalized_email, verified_at, unsubscribed_at, revoked_at,
-        last_progress_delivered_at, unsubscribe_version
+        last_progress_delivered_at, unsubscribe_version,
+        delivery_lease_token, delivery_leased_until
       )
     `)
     .lte("scheduled_at", nowIso)
     .or(`status.eq.pending,and(status.eq.leased,leased_until.lt.${nowIso})`)
     .order("scheduled_at", { ascending: true })
-    .limit(limit);
+    .limit(Math.max(limit * 10, limit));
   if (error) throw error;
 
   const claimed: ClaimedParentUpdate[] = [];
+  const seenSubscriptions = new Set<string>();
+  let acquiredCount = 0;
   for (const raw of candidates ?? []) {
     const candidate = raw as unknown as OutboxClaimRow;
-    const subscription = Array.isArray(candidate.subscription)
-      ? candidate.subscription[0]
-      : candidate.subscription;
+    if (seenSubscriptions.has(candidate.subscription_id)) continue;
+    seenSubscriptions.add(candidate.subscription_id);
+    const subscription = embeddedSubscription(candidate.subscription);
     if (
       !subscription?.verified_at ||
       subscription.unsubscribed_at ||
@@ -266,32 +330,64 @@ export async function claimDueParentUpdates(
       await serviceClient
         .from("parent_pathlab_update_outbox")
         .update({ status: "failed", last_error_code: "subscription_inactive" })
-        .eq("id", candidate.id);
+        .eq("subscription_id", candidate.subscription_id)
+        .in("status", ["pending", "leased"]);
       continue;
     }
 
     const leaseToken = randomUUID();
-    const leasedUntil = new Date(now.getTime() + 5 * 60_000).toISOString();
-    const { data: lease, error: leaseError } = await serviceClient
+    const leasedUntil = new Date(now.getTime() + 15 * 60_000).toISOString();
+    const { data: acquired, error: acquireError } = await serviceClient
+      .from("parent_pathlab_subscriptions")
+      .update({
+        delivery_lease_token: leaseToken,
+        delivery_leased_until: leasedUntil,
+      })
+      .eq("id", candidate.subscription_id)
+      .or(`delivery_leased_until.is.null,delivery_leased_until.lt.${nowIso}`)
+      .select(`
+        normalized_email, verified_at, unsubscribed_at, revoked_at,
+        last_progress_delivered_at, unsubscribe_version,
+        delivery_lease_token, delivery_leased_until
+      `)
+      .maybeSingle();
+    if (acquireError) throw acquireError;
+    if (!acquired) continue;
+
+    const { data: rows, error: claimError } = await serviceClient
       .from("parent_pathlab_update_outbox")
       .update({ status: "leased", lease_token: leaseToken, leased_until: leasedUntil })
-      .eq("id", candidate.id)
+      .eq("subscription_id", candidate.subscription_id)
+      .lte("scheduled_at", nowIso)
       .or(`status.eq.pending,and(status.eq.leased,leased_until.lt.${nowIso})`)
-      .select("id")
-      .maybeSingle();
-    if (leaseError) throw leaseError;
-    if (!lease) continue;
+      .select("id, subscription_id, event_kind, safe_payload, attempt_count");
+    if (claimError) throw claimError;
+    if (!rows?.length) {
+      await serviceClient
+        .from("parent_pathlab_subscriptions")
+        .update({ delivery_lease_token: null, delivery_leased_until: null })
+        .eq("id", candidate.subscription_id)
+        .eq("delivery_lease_token", leaseToken);
+      continue;
+    }
 
-    claimed.push({
-      id: candidate.id,
-      subscriptionId: candidate.subscription_id,
-      eventKind: candidate.event_kind,
-      safePayload: candidate.safe_payload,
-      attemptCount: candidate.attempt_count,
-      normalizedEmail: subscription.normalized_email,
-      lastProgressDeliveredAt: subscription.last_progress_delivered_at,
-      unsubscribeVersion: subscription.unsubscribe_version,
-    });
+    const owned = acquired as DeliverySubscriptionRow;
+    acquiredCount += 1;
+    for (const row of rows) {
+      claimed.push({
+        id: row.id,
+        subscriptionId: row.subscription_id,
+        eventKind: row.event_kind as ClaimedParentUpdate["eventKind"],
+        safePayload: row.safe_payload as Record<string, unknown>,
+        attemptCount: row.attempt_count,
+        normalizedEmail: owned.normalized_email,
+        lastProgressDeliveredAt: owned.last_progress_delivered_at,
+        unsubscribeVersion: owned.unsubscribe_version,
+        leaseToken,
+        leasedUntil,
+      });
+    }
+    if (acquiredCount >= limit) break;
   }
   return claimed;
 }

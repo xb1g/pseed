@@ -9,7 +9,7 @@ alter table public.paths
     'สรุปความคืบหน้าสำหรับครอบครัว'
   ]::text[];
 
-create table public.parent_pathlab_subscriptions (
+create table if not exists public.parent_pathlab_subscriptions (
   id uuid primary key default gen_random_uuid(),
   trial_access_id uuid not null unique
     references public.trial_accesses(id) on delete cascade,
@@ -33,16 +33,22 @@ create table public.parent_pathlab_subscriptions (
   revoked_at timestamptz,
   last_progress_delivered_at timestamptz,
   last_transactional_delivered_at timestamptz,
+  delivery_lease_token uuid,
+  delivery_leased_until timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
-create unique index parent_pathlab_subscriptions_verification_hash_idx
+alter table public.parent_pathlab_subscriptions
+  add column if not exists delivery_lease_token uuid,
+  add column if not exists delivery_leased_until timestamptz;
+
+create unique index if not exists parent_pathlab_subscriptions_verification_hash_idx
   on public.parent_pathlab_subscriptions (verification_token_hash);
-create unique index parent_pathlab_subscriptions_unsubscribe_hash_idx
+create unique index if not exists parent_pathlab_subscriptions_unsubscribe_hash_idx
   on public.parent_pathlab_subscriptions (unsubscribe_token_hash);
 
-create table public.parent_pathlab_update_outbox (
+create table if not exists public.parent_pathlab_update_outbox (
   id uuid primary key default gen_random_uuid(),
   subscription_id uuid not null
     references public.parent_pathlab_subscriptions(id) on delete cascade,
@@ -82,10 +88,10 @@ create table public.parent_pathlab_update_outbox (
   updated_at timestamptz not null default now()
 );
 
-create index parent_pathlab_update_outbox_due_idx
+create index if not exists parent_pathlab_update_outbox_due_idx
   on public.parent_pathlab_update_outbox (scheduled_at, created_at)
   where status in ('pending', 'leased');
-create index parent_pathlab_update_outbox_subscription_idx
+create index if not exists parent_pathlab_update_outbox_subscription_idx
   on public.parent_pathlab_update_outbox (subscription_id, created_at);
 
 alter table public.parent_pathlab_subscriptions enable row level security;
@@ -93,6 +99,109 @@ alter table public.parent_pathlab_update_outbox enable row level security;
 
 revoke all on table public.parent_pathlab_subscriptions from anon, authenticated;
 revoke all on table public.parent_pathlab_update_outbox from anon, authenticated;
+
+-- All delivery mutations are one transaction and compare both the
+-- subscription-level lease and every row-level lease. A stale worker therefore
+-- cannot finalize, reschedule, or fail work reclaimed by another worker.
+create or replace function public.mutate_parent_pathlab_update_lease(
+  p_subscription_id uuid,
+  p_lease_token uuid,
+  p_ids uuid[],
+  p_action text,
+  p_at timestamptz,
+  p_error_code text,
+  p_scheduled_at timestamptz,
+  p_increment_attempt boolean,
+  p_is_progress boolean
+)
+returns boolean
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_locked_count integer;
+begin
+  if p_action not in ('delivered', 'rescheduled', 'failed')
+    or cardinality(p_ids) = 0 then
+    return false;
+  end if;
+
+  perform 1
+  from public.parent_pathlab_subscriptions s
+  where s.id = p_subscription_id
+    and s.delivery_lease_token = p_lease_token
+    and s.delivery_leased_until > now()
+  for update;
+  if not found then
+    return false;
+  end if;
+
+  select count(*) into v_locked_count
+  from (
+    select o.id
+    from public.parent_pathlab_update_outbox o
+    where o.id = any(p_ids)
+      and o.subscription_id = p_subscription_id
+      and o.status = 'leased'
+      and o.lease_token = p_lease_token
+      and o.leased_until > now()
+    for update
+  ) locked_rows;
+  if v_locked_count <> cardinality(p_ids) then
+    return false;
+  end if;
+
+  if p_action = 'delivered' then
+    update public.parent_pathlab_update_outbox
+    set status = 'delivered',
+        delivered_at = p_at,
+        leased_until = null,
+        lease_token = null,
+        last_error_code = null
+    where id = any(p_ids)
+      and subscription_id = p_subscription_id
+      and lease_token = p_lease_token;
+
+    update public.parent_pathlab_subscriptions
+    set last_progress_delivered_at = case
+          when p_is_progress then p_at else last_progress_delivered_at end,
+        last_transactional_delivered_at = case
+          when p_is_progress then last_transactional_delivered_at else p_at end
+    where id = p_subscription_id
+      and delivery_lease_token = p_lease_token;
+  elsif p_action = 'rescheduled' then
+    update public.parent_pathlab_update_outbox
+    set status = 'pending',
+        attempt_count = attempt_count + case when p_increment_attempt then 1 else 0 end,
+        scheduled_at = p_scheduled_at,
+        leased_until = null,
+        lease_token = null,
+        last_error_code = p_error_code
+    where id = any(p_ids)
+      and subscription_id = p_subscription_id
+      and lease_token = p_lease_token;
+  else
+    update public.parent_pathlab_update_outbox
+    set status = 'failed',
+        leased_until = null,
+        lease_token = null,
+        last_error_code = p_error_code
+    where id = any(p_ids)
+      and subscription_id = p_subscription_id
+      and lease_token = p_lease_token;
+  end if;
+
+  return true;
+end;
+$$;
+
+revoke all on function public.mutate_parent_pathlab_update_lease(
+  uuid, uuid, uuid[], text, timestamptz, text, timestamptz, boolean, boolean
+) from public, anon, authenticated;
+grant execute on function public.mutate_parent_pathlab_update_lease(
+  uuid, uuid, uuid[], text, timestamptz, text, timestamptz, boolean, boolean
+) to service_role;
 
 create or replace function private.touch_parent_pathlab_updated_at()
 returns trigger
@@ -106,10 +215,14 @@ begin
 end;
 $$;
 
+drop trigger if exists parent_pathlab_subscriptions_updated_at
+  on public.parent_pathlab_subscriptions;
 create trigger parent_pathlab_subscriptions_updated_at
   before update on public.parent_pathlab_subscriptions
   for each row execute function private.touch_parent_pathlab_updated_at();
 
+drop trigger if exists parent_pathlab_update_outbox_updated_at
+  on public.parent_pathlab_update_outbox;
 create trigger parent_pathlab_update_outbox_updated_at
   before update on public.parent_pathlab_update_outbox
   for each row execute function private.touch_parent_pathlab_updated_at();
@@ -202,6 +315,8 @@ begin
 end;
 $$;
 
+drop trigger if exists parent_pathlab_started_outbox
+  on public.path_enrollments;
 create trigger parent_pathlab_started_outbox
   after insert on public.path_enrollments
   for each row execute function private.emit_parent_pathlab_started();
@@ -254,6 +369,8 @@ begin
 end;
 $$;
 
+drop trigger if exists parent_verified_started_outbox
+  on public.parent_pathlab_subscriptions;
 create trigger parent_verified_started_outbox
   after update of verified_at on public.parent_pathlab_subscriptions
   for each row execute function private.emit_parent_verified_current_state();
@@ -305,6 +422,8 @@ begin
 end;
 $$;
 
+drop trigger if exists parent_milestone_completed_outbox
+  on public.path_activity_progress;
 create trigger parent_milestone_completed_outbox
   after update of status on public.path_activity_progress
   for each row execute function private.emit_parent_milestone_completed();
@@ -353,6 +472,8 @@ begin
 end;
 $$;
 
+drop trigger if exists parent_pathlab_completed_outbox
+  on public.path_enrollments;
 create trigger parent_pathlab_completed_outbox
   after update of status on public.path_enrollments
   for each row execute function private.emit_parent_pathlab_completed();
@@ -397,6 +518,8 @@ begin
 end;
 $$;
 
+drop trigger if exists parent_payment_status_changed_outbox
+  on public.trial_accesses;
 create trigger parent_payment_status_changed_outbox
   after update of status on public.trial_accesses
   for each row execute function private.emit_parent_payment_status_changed();
@@ -415,13 +538,9 @@ as $$
     when p_token is null or p_token !~ '^[0-9a-f]{32}$' then null
     else (
       select json_build_object(
-        'id', t.id,
         'status', t.status,
         'priceAmount', t.price_amount,
-        'startedAt', t.started_at,
         'paymentDeadline', t.payment_deadline,
-        'paidAt', t.paid_at,
-        'seedId', t.seed_id,
         'seedTitle', s.title,
         'seedDescription', s.description,
         'totalDays', p.total_days,

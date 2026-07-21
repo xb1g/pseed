@@ -7,7 +7,7 @@ import {
   createParentUpdateRepository,
   parentUpdateTokenSecret,
 } from "@/lib/trials/parent-updates-server";
-import { createClient, createServiceRoleClient } from "@/utils/supabase/server";
+import { createServiceRoleClient } from "@/utils/supabase/server";
 
 export async function GET(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   try {
     const now = new Date();
     const serviceClient = createServiceRoleClient();
-    const repository = createParentUpdateRepository(await createClient(), serviceClient);
+    const repository = createParentUpdateRepository(serviceClient);
     const rows = await claimDueParentUpdates(serviceClient, now);
     const transport = configuredParentEmailTransport();
     await processClaimedParentUpdates({

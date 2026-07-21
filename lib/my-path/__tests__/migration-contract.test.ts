@@ -219,7 +219,10 @@ test("parent PathLab updates are consented, private, and delivered through a saf
     "parent_pathlab_subscriptions",
     "parent_pathlab_update_outbox",
   ]) {
-    assert.match(parentMigration, new RegExp(`create table public\\.${table}`));
+    assert.match(
+      parentMigration,
+      new RegExp(`create table if not exists public\\.${table}`)
+    );
     assert.match(
       parentMigration,
       new RegExp(`alter table public\\.${table} enable row level security`)
@@ -251,6 +254,8 @@ test("parent PathLab updates are consented, private, and delivered through a saf
   assert.match(parentMigration, /scheduled_at timestamptz not null/);
   assert.match(parentMigration, /delivered_at timestamptz/);
   assert.match(parentMigration, /leased_until timestamptz/);
+  assert.match(parentMigration, /delivery_lease_token uuid/);
+  assert.match(parentMigration, /delivery_leased_until timestamptz/);
   assert.match(parentMigration, /where status in \('pending', 'leased'\)/);
   assert.match(parentMigration, /verification_token_hash/);
   assert.match(parentMigration, /unsubscribe_token_hash/);
@@ -274,6 +279,14 @@ test("parent PathLab updates are consented, private, and delivered through a saf
   assert.match(parentMigration, /pathlab_completed/);
   assert.match(parentMigration, /payment_status_changed/);
   assert.match(parentMigration, /parent_verified_started_outbox/);
+  assert.match(
+    parentMigration,
+    /function public\.mutate_parent_pathlab_update_lease[\s\S]*security invoker[\s\S]*p_lease_token[\s\S]*for update[\s\S]*lease_token = p_lease_token/
+  );
+  assert.match(
+    parentMigration,
+    /grant execute on function public\.mutate_parent_pathlab_update_lease[\s\S]*to service_role/
+  );
   assert.match(parentMigration, /subscription_id \|\| ':' \|\| p_event_kind/);
   assert.match(parentMigration, /new\.status = 'completed'/);
   assert.match(parentMigration, /old\.status is distinct from 'completed'/);
@@ -300,4 +313,52 @@ test("parent PathLab updates are consented, private, and delivered through a saf
     projection,
     /'userEmail'|'studentName'|'reflectionText'|'answerText'|'chat'|'notes'/
   );
+  const privateProjectionStart = parentMigration.indexOf(
+    "create or replace function private.get_trial_by_token"
+  );
+  const privateProjectionEnd = parentMigration.indexOf(
+    "create or replace function public.get_trial_by_token"
+  );
+  const privateProjection = parentMigration.slice(
+    privateProjectionStart,
+    privateProjectionEnd
+  );
+  for (const forbiddenKey of ["id", "startedAt", "paidAt", "seedId"]) {
+    assert.doesNotMatch(
+      privateProjection,
+      new RegExp(`'${forbiddenKey}'`),
+      `${forbiddenKey} must not be exposed by the public pay-token projection`
+    );
+  }
+});
+
+test("parent update migration safely converges when retried after a partial apply", () => {
+  const migrationsDirectory = new URL("../../../supabase/migrations/", import.meta.url);
+  const migrationName = readdirSync(migrationsDirectory).find((name) =>
+    name.endsWith("_parent_pathlab_updates.sql")
+  );
+  assert.ok(migrationName);
+  const sql = readFileSync(new URL(migrationName, migrationsDirectory), "utf8");
+
+  assert.match(sql, /create table if not exists public\.parent_pathlab_subscriptions/);
+  assert.match(sql, /create table if not exists public\.parent_pathlab_update_outbox/);
+  for (const indexName of [
+    "parent_pathlab_subscriptions_verification_hash_idx",
+    "parent_pathlab_subscriptions_unsubscribe_hash_idx",
+    "parent_pathlab_update_outbox_due_idx",
+    "parent_pathlab_update_outbox_subscription_idx",
+  ]) {
+    assert.match(sql, new RegExp(`create (unique )?index if not exists ${indexName}`));
+  }
+
+  const triggerNames = [...sql.matchAll(/create trigger ([a-z0-9_]+)/g)].map(
+    (match) => match[1]
+  );
+  assert.ok(triggerNames.length >= 7);
+  for (const triggerName of triggerNames) {
+    assert.match(
+      sql,
+      new RegExp(`drop trigger if exists ${triggerName}\\s+on public\\.[a-z0-9_]+;[\\s\\S]*create trigger ${triggerName}`)
+    );
+  }
 });

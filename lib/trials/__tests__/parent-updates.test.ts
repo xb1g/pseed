@@ -40,6 +40,7 @@ function subscription(overrides: Partial<ParentUpdateSubscription> = {}): Parent
 
 function memoryRepository(existing: ParentUpdateSubscription | null = null) {
   let value = existing;
+  let activeLeaseToken: string | null = null;
   const delivered: string[][] = [];
   const rescheduled: Array<{ ids: string[]; scheduledAt: string; errorCode: string }> = [];
   const failed: Array<{ ids: string[]; errorCode: string }> = [];
@@ -48,6 +49,7 @@ function memoryRepository(existing: ParentUpdateSubscription | null = null) {
     delivered: string[][];
     rescheduled: typeof rescheduled;
     failed: typeof failed;
+    forceLease(token: string | null): void;
   } = {
     async resolveTrialByPayToken(token) {
       return token === "a".repeat(32)
@@ -75,19 +77,38 @@ function memoryRepository(existing: ParentUpdateSubscription | null = null) {
       if (value?.id === id) value = { ...value, unsubscribedAt };
       return value!;
     },
-    async markDelivered(ids) {
+    async renewLease(_subscriptionId, leaseToken) {
+      if (activeLeaseToken && activeLeaseToken !== leaseToken) return false;
+      activeLeaseToken = leaseToken;
+      return true;
+    },
+    async markDelivered(ids, _subscriptionId, leaseToken) {
+      if (activeLeaseToken !== leaseToken) return false;
       delivered.push(ids);
+      return true;
     },
-    async reschedule(ids, scheduledAt, errorCode) {
+    async reschedule(ids, _subscriptionId, leaseToken, scheduledAt, errorCode) {
+      if (activeLeaseToken !== leaseToken) return false;
       rescheduled.push({ ids, scheduledAt, errorCode });
+      return true;
     },
-    async markFailed(ids, errorCode) {
+    async markFailed(ids, _subscriptionId, leaseToken, errorCode) {
+      if (activeLeaseToken !== leaseToken) return false;
       failed.push({ ids, errorCode });
+      return true;
+    },
+    async releaseLease(_subscriptionId, leaseToken) {
+      if (activeLeaseToken !== leaseToken) return false;
+      activeLeaseToken = null;
+      return true;
     },
     current: () => value,
     delivered,
     rescheduled,
     failed,
+    forceLease(token) {
+      activeLeaseToken = token;
+    },
   };
   return repository;
 }
@@ -254,6 +275,8 @@ test("aggregates progress rows and enforces the 24-hour progress limit", async (
     normalizedEmail: "parent@example.com",
     lastProgressDeliveredAt: "2026-07-22T00:00:00.000Z",
     unsubscribeVersion: 1,
+    leaseToken: "lease-progress",
+    leasedUntil: "2026-07-22T10:15:00.000Z",
   }));
   const send = jest.fn();
   await processClaimedParentUpdates({
@@ -283,6 +306,8 @@ test("leases are processed as one progress email and transient failures back off
     normalizedEmail: "parent@example.com",
     lastProgressDeliveredAt: null,
     unsubscribeVersion: 1,
+    leaseToken: "lease-progress",
+    leasedUntil: "2026-07-22T10:15:00.000Z",
   }));
   const send = jest.fn().mockResolvedValue({ ok: false, transient: true, code: "provider_unavailable" });
   await processClaimedParentUpdates({
@@ -330,6 +355,7 @@ test("uses non-sensitive terminal codes for permanent provider rejection", async
       eventKind: "payment_status_changed", safePayload: { status: "paid" },
       attemptCount: 0, normalizedEmail: "parent@example.com",
       lastProgressDeliveredAt: null, unsubscribeVersion: 1,
+      leaseToken: "lease-payment", leasedUntil: "2026-07-22T10:15:00.000Z",
     }],
     repository,
     send: jest.fn().mockResolvedValue({ ok: false, transient: false, code: "provider_rejected" }),
@@ -338,6 +364,64 @@ test("uses non-sensitive terminal codes for permanent provider rejection", async
     tokenSecret: SECRET,
   });
   expect(repository.failed).toEqual([{ ids: ["event-payment"], errorCode: "provider_rejected" }]);
+});
+
+test("two concurrent workers cannot send progress for the same subscription", async () => {
+  const repository = memoryRepository();
+  const send = jest.fn().mockResolvedValue({ ok: true });
+  const base: ClaimedParentUpdate = {
+    id: "event-concurrent",
+    subscriptionId: SUBSCRIPTION_ID,
+    eventKind: "milestone_completed",
+    safePayload: { seedTitle: "AI Builder", currentDay: 3 },
+    attemptCount: 0,
+    normalizedEmail: "parent@example.com",
+    lastProgressDeliveredAt: null,
+    unsubscribeVersion: 1,
+    leaseToken: "worker-a",
+    leasedUntil: "2026-07-22T10:15:00.000Z",
+  };
+
+  await Promise.all([
+    processClaimedParentUpdates({
+      rows: [base], repository, send, now: NOW,
+      origin: "https://passionseed.org", tokenSecret: SECRET,
+    }),
+    processClaimedParentUpdates({
+      rows: [{ ...base, leaseToken: "worker-b" }], repository, send, now: NOW,
+      origin: "https://passionseed.org", tokenSecret: SECRET,
+    }),
+  ]);
+
+  expect(send).toHaveBeenCalledTimes(1);
+  expect(repository.delivered).toHaveLength(1);
+});
+
+test("a worker that loses its lease cannot send or finalize stale rows", async () => {
+  const repository = memoryRepository();
+  repository.forceLease("new-owner");
+  const send = jest.fn().mockResolvedValue({ ok: true });
+  await processClaimedParentUpdates({
+    rows: [{
+      id: "event-stale",
+      subscriptionId: SUBSCRIPTION_ID,
+      eventKind: "milestone_completed",
+      safePayload: { seedTitle: "AI Builder" },
+      attemptCount: 0,
+      normalizedEmail: "parent@example.com",
+      lastProgressDeliveredAt: null,
+      unsubscribeVersion: 1,
+      leaseToken: "old-owner",
+      leasedUntil: "2026-07-22T09:59:00.000Z",
+    }],
+    repository,
+    send,
+    now: NOW,
+    origin: "https://passionseed.org",
+    tokenSecret: SECRET,
+  });
+  expect(send).not.toHaveBeenCalled();
+  expect(repository.delivered).toHaveLength(0);
 });
 
 test("ParentUpdateError never needs private trial data", () => {

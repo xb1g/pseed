@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient, createServiceRoleClient } from "@/utils/supabase/server";
+import { createServiceRoleClient } from "@/utils/supabase/server";
 import { safeServerError } from "@/lib/security/route-guards";
+import { resolveTrialAccessByToken } from "@/lib/trials/trial-token-server";
 
 const tokenSchema = z.string().regex(/^[0-9a-f]{32}$/);
 const MAX_SLIP_BYTES = 5 * 1024 * 1024; // 5MB
@@ -37,18 +38,8 @@ export async function POST(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    // Public endpoint: look the trial up via the anon-callable RPC
-    const supabase = await createClient();
-    const { data, error: rpcError } = await supabase.rpc(
-      "get_trial_by_token",
-      { p_token: parsed.data }
-    );
-
-    if (rpcError) {
-      return safeServerError("Failed to fetch trial", rpcError);
-    }
-
-    const trial = (data ?? null) as { id: string; status: string } | null;
+    const service = createServiceRoleClient();
+    const trial = await resolveTrialAccessByToken(service, parsed.data);
     if (!trial) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
@@ -70,7 +61,6 @@ export async function POST(
     }
 
     // Storage uploads and trial updates are service-role only (RLS)
-    const service = createServiceRoleClient();
     const slipPath = `${trial.id}/${sanitizeFilename(file.name, file.type)}`;
 
     const { error: uploadError } = await service.storage
