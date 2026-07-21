@@ -25,7 +25,11 @@ export function Layout({ children }: LayoutProps) {
   // Only compute after mount to avoid hydration mismatch (pathname is null on server)
   const isPublicHackathonRoute =
     pathname?.startsWith("/hackathon") && !pathname?.startsWith("/admin");
-  const isRadarRoute = pathname === "/radar" || pathname?.startsWith("/radar/");
+  const isRadarRoute =
+    pathname === "/radar" ||
+    pathname?.startsWith("/radar/") ||
+    pathname === "/faculty-radar" ||
+    pathname?.startsWith("/faculty-radar/");
 
   const hideNavbar =
     pathname === "/" ||
