@@ -75,3 +75,43 @@ test("Radar events use a narrow authenticated idempotent mutation", () => {
   assert.match(radarMigration, /grant execute on function public\.apply_my_path_radar_event[\s\S]*to authenticated/);
   assert.doesNotMatch(radarMigration, /grant execute on function public\.apply_my_path_radar_event[\s\S]*to anon/);
 });
+
+test("a stale plan sync cannot regress a newer Radar possibility state", () => {
+  const migrationsDirectory = new URL("../../../supabase/migrations/", import.meta.url);
+  const freshnessMigrationName = readdirSync(migrationsDirectory).find((name) =>
+    name.endsWith("_prevent_stale_radar_state_regressions.sql")
+  );
+  assert.ok(
+    freshnessMigrationName,
+    "Radar freshness migration must be created via the Supabase CLI"
+  );
+  const freshnessMigration = readFileSync(
+    new URL(freshnessMigrationName, migrationsDirectory),
+    "utf8"
+  );
+
+  assert.match(
+    freshnessMigration,
+    /create or replace function private\.sync_my_path_journey/
+  );
+  assert.match(
+    freshnessMigration,
+    /excluded\.last_interaction_at > public\.my_path_possibilities\.last_interaction_at[\s\S]*then excluded\.state[\s\S]*else public\.my_path_possibilities\.state/
+  );
+  assert.match(
+    freshnessMigration,
+    /last_interaction_at = greatest\([\s\S]*public\.my_path_possibilities\.last_interaction_at[\s\S]*excluded\.last_interaction_at/
+  );
+  assert.match(
+    freshnessMigration,
+    /update public\.my_paths[\s\S]*direction_hypothesis =/
+  );
+  assert.match(
+    freshnessMigration,
+    /insert into public\.my_path_events/
+  );
+  assert.match(
+    freshnessMigration,
+    /insert into public\.my_path_steps/
+  );
+});
