@@ -86,12 +86,14 @@ The dashboard applies the first matching rule in this order:
 | No persisted plan | Create My Path | `/plan` |
 | Expired trial for a selected PathLab | Ask parent to restore access | existing `/pay/:token` sharing flow |
 | Active enrollment with incomplete activities | Resume the current activity/day | `/seeds/pathlab/:enrollmentId?day=:currentDay` |
+| Paused enrollment | Choose whether to resume the saved experiment | `/seeds/pathlab/:enrollmentId?day=:currentDay` |
+| Quit enrollment | Use the recorded negative signal to choose a different experiment | `/plan?resume=1` |
 | Selected PathLab without enrollment | Start the first day | combined trial/enrollment launch |
 | Plan without a selected PathLab | Choose a matching PathLab | `/plan?resume=1` at the PathLab step when available, otherwise `/plan?resume=1` |
 | Completed PathLab with another selected experiment | Start the next experiment | that seed's launch flow |
 | Completed PathLab with no next experiment | Review evidence and refine the plan | `/plan?resume=1` |
 
-Trial states `active`, `pending`, and `paid` never replace an available learning action. They appear as secondary status. Completion is `path_enrollments.status = 'explored'` or a non-null end reflection. Current day and activity come from `path_enrollments.current_day`, `path_days`, `path_activities`, and `path_activity_progress`. Evidence v1 includes a completed PathLab report/artifact when present and a privacy-safe fit signal derived from completion/performance metadata; it never includes raw reflections on the dashboard.
+Trial states `active`, `pending`, and `paid` never replace an available learning action. They appear as secondary status. Completion is `path_enrollments.status = 'explored'` or a non-null end reflection. Current day and activity come from `path_enrollments.current_day`, `path_days`, `path_activities`, and `path_activity_progress`. When more than one enrollment can produce the same priority action, the enrollment with the most recent activity-progress timestamp wins, then the latest `enrolled_at`, then enrollment ID for a stable final tie-break. Evidence v1 includes a completed PathLab report/artifact when present and a privacy-safe fit signal derived from completion/performance metadata; it never includes raw reflections on the dashboard.
 
 ## Student Launch Experience
 
@@ -167,7 +169,9 @@ Database triggers create safe outbox events for these transitions:
 - `path_enrollments` insert → `pathlab_started`;
 - `path_activity_progress` first transition to `completed` → `milestone_completed`;
 - `path_enrollments` first transition to `explored` → `pathlab_completed`;
-- `trial_accesses.status` change → `payment_status_changed`.
+- stored `trial_accesses.status` change → `payment_status_changed`.
+
+Lazy deadline expiry is deliberately excluded from email in v1 because `expired` is derived at read time rather than persisted. Parents see expiry on the pay page; pending and paid stored transitions may generate transactional messages.
 
 Each event uses `subscription_id:event_kind:source_table:source_id:source_state` as its unique idempotency key. Milestone events due within the same 24-hour window are aggregated into one progress email. Transactional verification, unsubscribe, and payment-state messages are delivered separately.
 
@@ -178,7 +182,7 @@ An authenticated Vercel Cron route claims due rows, sends through Resend, and ma
 1. `/plan` continues saving the journey through `sync_my_path_journey`.
 2. `/me` loads the persisted My Path snapshot on the server and separately loads PathLab/trial progress required for the dashboard.
 3. A small presentation model converts those sources into stable dashboard states and a single next action.
-4. Starting the first PathLab creates or resumes the existing idempotent trial.
+4. Starting the first PathLab idempotently creates or resumes both the trial and PathLab enrollment, then returns the enrollment URL.
 5. A parent contact submission validates the pay token, stores consent, and sends verification.
 6. Verified milestone events enter a protected outbox. Delivery is idempotent and frequency-limited.
 
