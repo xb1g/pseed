@@ -1,6 +1,6 @@
 # PassionSeed UI Design System
 
-> **Version 2.1** — Last updated: 2026-06-14
+> **Version 2.2** — Last updated: 2026-07-22
 >
 > This is a living document. If you add a new pattern, update this doc. If you can't explain it here, it doesn't belong in the codebase.
 
@@ -544,6 +544,29 @@ Dark glass card for the dusk theme.
   <p className="text-slate-400">Card content goes here.</p>
 </div>
 ```
+
+#### Dawn modifier for `.ei-card`
+
+Student and parent surfaces keep the shared `.ei-card` structure, then scope its
+material palette through `.dawn-theme .ei-card` in `app/globals.css`. The modifier
+changes the Dusk amber border, shadow, and layered glow to Dawn blue, indigo, and
+pale gold. It does not redefine the card inside a component.
+
+```tsx
+<main className="dawn-theme">
+  <section className="ei-card p-6">
+    <h2 className="font-kodchasan text-white">ก้าวถัดไปของวันนี้</h2>
+  </section>
+</main>
+```
+
+The Dawn glow follows the same motion contract as the base card:
+
+- hover-in uses a keyframe animation with `cubic-bezier(0.05, 0.7, 0.35, 0.99)`;
+- hover-out uses the short base transition;
+- `clip-path`, `opacity`, and `filter` animate together;
+- touch applies the same state with `.in-view` from `IntersectionObserver`;
+- reduced motion removes the animation without hiding content or focus states.
 
 ---
 
