@@ -48,3 +48,25 @@ test("provider details are reduced to non-sensitive delivery codes", async () =>
     to: "parent@example.com", subject: "Hello", html: "<p>Hello</p>",
   })).resolves.toEqual({ ok: false, transient: false, code: "provider_rejected" });
 });
+
+test("transport forwards the delivery idempotency key to Resend request options", async () => {
+  const providerSend = jest.fn().mockResolvedValue({ error: null });
+  const transport = createParentEmailTransport({
+    apiKey: "test-only",
+    fromEmail: "hi@example.com",
+    providerSend,
+  });
+
+  await transport.send({
+    to: "parent@example.com",
+    subject: "Hello",
+    html: "<p>Hello</p>",
+    idempotencyKey: "parent-update/abc123",
+  });
+
+  expect(providerSend).toHaveBeenCalledWith(
+    expect.objectContaining({ to: "parent@example.com" }),
+    { idempotencyKey: "parent-update/abc123" }
+  );
+  expect(providerSend.mock.calls[0][0]).not.toHaveProperty("idempotencyKey");
+});

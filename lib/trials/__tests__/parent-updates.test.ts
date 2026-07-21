@@ -43,7 +43,12 @@ function memoryRepository(existing: ParentUpdateSubscription | null = null) {
   let value = existing;
   let activeLeaseToken: string | null = null;
   const delivered: string[][] = [];
-  const rescheduled: Array<{ ids: string[]; scheduledAt: string; errorCode: string }> = [];
+  const rescheduled: Array<{
+    ids: string[];
+    scheduledAt: string;
+    errorCode: string;
+    incrementAttempt: boolean;
+  }> = [];
   const failed: Array<{ ids: string[]; errorCode: string }> = [];
   const repository: ParentUpdateRepository & {
     current(): ParentUpdateSubscription | null;
@@ -108,14 +113,24 @@ function memoryRepository(existing: ParentUpdateSubscription | null = null) {
       activeLeaseToken = leaseToken;
       return true;
     },
+    async freezeDeliveryGroup(_ids, _subscriptionId, leaseToken) {
+      return activeLeaseToken === leaseToken;
+    },
     async markDelivered(ids, _subscriptionId, leaseToken) {
       if (activeLeaseToken !== leaseToken) return false;
       delivered.push(ids);
       return true;
     },
-    async reschedule(ids, _subscriptionId, leaseToken, scheduledAt, errorCode) {
+    async reschedule(
+      ids,
+      _subscriptionId,
+      leaseToken,
+      scheduledAt,
+      errorCode,
+      incrementAttempt
+    ) {
       if (activeLeaseToken !== leaseToken) return false;
-      rescheduled.push({ ids, scheduledAt, errorCode });
+      rescheduled.push({ ids, scheduledAt, errorCode, incrementAttempt });
       return true;
     },
     async markFailed(ids, _subscriptionId, leaseToken, errorCode) {
@@ -435,6 +450,188 @@ test("leases are processed as one progress email and transient failures back off
     tokenSecret: SECRET,
   });
   expect(terminalRepository.failed[0]).toEqual({ ids: ["event-1"], errorCode: "delivery_exhausted" });
+});
+
+test("delivery retries preserve an order-independent idempotency key", async () => {
+  const rows: ClaimedParentUpdate[] = ["event-b", "event-a"].map((id) => ({
+    id,
+    subscriptionId: SUBSCRIPTION_ID,
+    eventKind: "milestone_completed",
+    safePayload: { seedTitle: "AI Builder", eventId: id },
+    attemptCount: 0,
+    normalizedEmail: "parent@example.com",
+    lastProgressDeliveredAt: null,
+    unsubscribeVersion: 1,
+    leaseToken: "lease-first-attempt",
+    leasedUntil: "2026-07-22T10:15:00.000Z",
+  }));
+  const send = jest.fn().mockResolvedValue({
+    ok: false,
+    transient: true,
+    code: "provider_unavailable",
+  });
+
+  await processClaimedParentUpdates({
+    rows,
+    repository: memoryRepository(),
+    send,
+    now: NOW,
+    origin: "https://passionseed.org",
+    tokenSecret: SECRET,
+  });
+  await processClaimedParentUpdates({
+    rows: rows.toReversed().map((row) => ({
+      ...row,
+      attemptCount: 1,
+      leaseToken: "lease-retry",
+    })),
+    repository: memoryRepository(),
+    send,
+    now: new Date("2026-07-22T10:05:00.000Z"),
+    origin: "https://passionseed.org",
+    tokenSecret: SECRET,
+  });
+
+  const keys = send.mock.calls.map(([email]) => email.idempotencyKey);
+  expect(keys[0]).toMatch(/^parent-update\/[0-9a-f]{64}$/);
+  expect(keys[1]).toBe(keys[0]);
+  expect(send.mock.calls[1][0].eventKinds).toEqual(send.mock.calls[0][0].eventKinds);
+  expect(send.mock.calls[1][0].payloads).toEqual(send.mock.calls[0][0].payloads);
+});
+
+test("a frozen retry cohort does not absorb a newly due progress event", async () => {
+  const firstRows: ClaimedParentUpdate[] = ["event-b", "event-a"].map((id) => ({
+    id,
+    subscriptionId: SUBSCRIPTION_ID,
+    eventKind: "milestone_completed",
+    safePayload: { eventId: id },
+    attemptCount: 0,
+    normalizedEmail: "parent@example.com",
+    lastProgressDeliveredAt: null,
+    unsubscribeVersion: 1,
+    leaseToken: "lease-first",
+    leasedUntil: "2026-07-22T10:15:00.000Z",
+  }));
+  const firstSend = jest.fn().mockResolvedValue({
+    ok: false,
+    transient: true,
+    code: "provider_unavailable",
+  });
+  await processClaimedParentUpdates({
+    rows: firstRows,
+    repository: memoryRepository(),
+    send: firstSend,
+    now: NOW,
+    origin: "https://passionseed.org",
+    tokenSecret: SECRET,
+  });
+  const frozenKey = firstSend.mock.calls[0][0].idempotencyKey as string;
+
+  const retryRows = [
+    ...firstRows.toReversed().map((row) => ({
+      ...row,
+      attemptCount: 1,
+      leaseToken: "lease-retry",
+      deliveryGroupKey: frozenKey,
+    })),
+    {
+      ...firstRows[0],
+      id: "event-new",
+      safePayload: { eventId: "event-new" },
+      leaseToken: "lease-retry",
+      deliveryGroupKey: null,
+    },
+  ] as ClaimedParentUpdate[];
+  const retrySend = jest.fn().mockResolvedValue({ ok: true });
+  await processClaimedParentUpdates({
+    rows: retryRows,
+    repository: memoryRepository(),
+    send: retrySend,
+    now: new Date("2026-07-22T10:05:00.000Z"),
+    origin: "https://passionseed.org",
+    tokenSecret: SECRET,
+  });
+
+  expect(retrySend).toHaveBeenCalledTimes(2);
+  expect(retrySend.mock.calls[0][0]).toMatchObject({
+    idempotencyKey: frozenKey,
+    payloads: [{ eventId: "event-a" }, { eventId: "event-b" }],
+  });
+  expect(retrySend.mock.calls[1][0].idempotencyKey).not.toBe(frozenKey);
+  expect(retrySend.mock.calls[1][0].payloads).toEqual([{ eventId: "event-new" }]);
+});
+
+test("deadline stop releases unsent work without consuming a retry attempt", async () => {
+  const repository = memoryRepository();
+  const send = jest.fn();
+  const input = {
+    rows: [{
+      id: "event-deadline",
+      subscriptionId: SUBSCRIPTION_ID,
+      eventKind: "payment_status_changed" as const,
+      safePayload: { status: "paid" },
+      attemptCount: 2,
+      normalizedEmail: "parent@example.com",
+      lastProgressDeliveredAt: null,
+      unsubscribeVersion: 1,
+      leaseToken: "lease-deadline",
+      leasedUntil: "2026-07-22T10:15:00.000Z",
+    }],
+    repository,
+    send,
+    now: NOW,
+    origin: "https://passionseed.org",
+    tokenSecret: SECRET,
+    shouldContinue: () => false,
+  } as Parameters<typeof processClaimedParentUpdates>[0];
+
+  await processClaimedParentUpdates(input);
+
+  expect(send).not.toHaveBeenCalled();
+  expect(repository.rescheduled).toEqual([expect.objectContaining({
+    ids: ["event-deadline"],
+    errorCode: "delivery_deadline",
+    incrementAttempt: false,
+  })]);
+});
+
+test("distinct delivery groups receive distinct idempotency keys", async () => {
+  const send = jest.fn().mockResolvedValue({ ok: true });
+  const common = {
+    subscriptionId: SUBSCRIPTION_ID,
+    attemptCount: 0,
+    normalizedEmail: "parent@example.com",
+    lastProgressDeliveredAt: null,
+    unsubscribeVersion: 1,
+    leaseToken: "lease-mixed-groups",
+    leasedUntil: "2026-07-22T10:15:00.000Z",
+  };
+
+  await processClaimedParentUpdates({
+    rows: [
+      {
+        ...common,
+        id: "event-payment-a",
+        eventKind: "payment_status_changed",
+        safePayload: { status: "pending" },
+      },
+      {
+        ...common,
+        id: "event-payment-b",
+        eventKind: "payment_status_changed",
+        safePayload: { status: "paid" },
+      },
+    ],
+    repository: memoryRepository(),
+    send,
+    now: NOW,
+    origin: "https://passionseed.org",
+    tokenSecret: SECRET,
+  });
+
+  const keys = send.mock.calls.map(([email]) => email.idempotencyKey);
+  expect(keys).toHaveLength(2);
+  expect(new Set(keys).size).toBe(2);
 });
 
 test("uses non-sensitive terminal codes for permanent provider rejection", async () => {

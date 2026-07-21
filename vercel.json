@@ -11,6 +11,9 @@
     }
   ],
   "functions": {
+    "app/api/cron/parent-pathlab-updates/route.ts": {
+      "maxDuration": 60
+    },
     "app/api/**/*.ts": {
       "maxDuration": 10
     }
