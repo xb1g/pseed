@@ -132,6 +132,9 @@ begin
   where s.id = p_subscription_id
     and s.delivery_lease_token = p_lease_token
     and s.delivery_leased_until > now()
+    and s.verified_at is not null
+    and s.unsubscribed_at is null
+    and s.revoked_at is null
   for update;
   if not found then
     return false;
@@ -201,6 +204,75 @@ revoke all on function public.mutate_parent_pathlab_update_lease(
 ) from public, anon, authenticated;
 grant execute on function public.mutate_parent_pathlab_update_lease(
   uuid, uuid, uuid[], text, timestamptz, text, timestamptz, boolean, boolean
+) to service_role;
+
+-- Consent removal and queue cancellation share one transaction. The row lock
+-- serializes resubscribe/deactivation so a stale inactive snapshot cannot cancel
+-- work created after consent becomes active again.
+create or replace function public.deactivate_parent_pathlab_subscription(
+  p_subscription_id uuid,
+  p_at timestamptz,
+  p_action text
+)
+returns boolean
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  if p_action not in ('unsubscribe', 'revoke', 'inactive_cleanup') then
+    return false;
+  end if;
+
+  perform 1
+  from public.parent_pathlab_subscriptions s
+  where s.id = p_subscription_id
+    and (
+      p_action <> 'inactive_cleanup'
+      or s.verified_at is null
+      or s.unsubscribed_at is not null
+      or s.revoked_at is not null
+    )
+  for update;
+  if not found then
+    return false;
+  end if;
+
+  update public.parent_pathlab_subscriptions
+  set unsubscribed_at = case
+        when p_action in ('unsubscribe', 'revoke')
+          then coalesce(unsubscribed_at, p_at)
+        else unsubscribed_at
+      end,
+      revoked_at = case
+        when p_action = 'revoke' then coalesce(revoked_at, p_at)
+        else revoked_at
+      end,
+      delivery_lease_token = null,
+      delivery_leased_until = null
+  where id = p_subscription_id;
+
+  update public.parent_pathlab_update_outbox
+  set status = 'failed',
+      lease_token = null,
+      leased_until = null,
+      last_error_code = case p_action
+        when 'unsubscribe' then 'subscription_unsubscribed'
+        when 'revoke' then 'subscription_revoked'
+        else 'subscription_inactive'
+      end
+  where subscription_id = p_subscription_id
+    and status in ('pending', 'leased');
+
+  return true;
+end;
+$$;
+
+revoke all on function public.deactivate_parent_pathlab_subscription(
+  uuid, timestamptz, text
+) from public, anon, authenticated;
+grant execute on function public.deactivate_parent_pathlab_subscription(
+  uuid, timestamptz, text
 ) to service_role;
 
 create or replace function private.touch_parent_pathlab_updated_at()

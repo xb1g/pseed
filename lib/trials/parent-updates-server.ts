@@ -101,6 +101,49 @@ async function mutateLease(
   return data === true;
 }
 
+export async function cancelParentUpdateDeliveries(
+  serviceClient: SupabaseClient,
+  subscriptionId: string,
+  errorCode: "subscription_unsubscribed" | "subscription_revoked" | "subscription_inactive",
+  at = new Date().toISOString()
+): Promise<void> {
+  const action = {
+    subscription_unsubscribed: "unsubscribe",
+    subscription_revoked: "revoke",
+    subscription_inactive: "inactive_cleanup",
+  }[errorCode];
+  const { error } = await serviceClient.rpc(
+    "deactivate_parent_pathlab_subscription",
+    {
+      p_subscription_id: subscriptionId,
+      p_at: at,
+      p_action: action,
+    }
+  );
+  if (error) throw error;
+}
+
+export async function revokeParentUpdatesForTrial(
+  serviceClient: SupabaseClient,
+  trialAccessId: string,
+  revokedAt: string
+): Promise<void> {
+  const { data, error } = await serviceClient
+    .from("parent_pathlab_subscriptions")
+    .select("id")
+    .eq("trial_access_id", trialAccessId)
+    .maybeSingle();
+  if (error) throw error;
+  if (data?.id) {
+    await cancelParentUpdateDeliveries(
+      serviceClient,
+      data.id,
+      "subscription_revoked",
+      revokedAt
+    );
+  }
+}
+
 export function createParentUpdateRepository(
   serviceClient: SupabaseClient
 ): ParentUpdateRepository {
@@ -158,11 +201,16 @@ export function createParentUpdateRepository(
       return mapSubscription(data as SubscriptionRow);
     },
     async markUnsubscribed(id, unsubscribedAt) {
+      await cancelParentUpdateDeliveries(
+        serviceClient,
+        id,
+        "subscription_unsubscribed",
+        unsubscribedAt
+      );
       const { data, error } = await serviceClient
         .from("parent_pathlab_subscriptions")
-        .update({ unsubscribed_at: unsubscribedAt })
-        .eq("id", id)
         .select(SUBSCRIPTION_COLUMNS)
+        .eq("id", id)
         .single();
       if (error) throw error;
       return mapSubscription(data as SubscriptionRow);
@@ -174,6 +222,9 @@ export function createParentUpdateRepository(
         .eq("id", subscriptionId)
         .eq("delivery_lease_token", leaseToken)
         .gt("delivery_leased_until", new Date().toISOString())
+        .not("verified_at", "is", null)
+        .is("unsubscribed_at", null)
+        .is("revoked_at", null)
         .select("id")
         .maybeSingle();
       if (error) throw error;
@@ -327,11 +378,11 @@ export async function claimDueParentUpdates(
       subscription.unsubscribed_at ||
       subscription.revoked_at
     ) {
-      await serviceClient
-        .from("parent_pathlab_update_outbox")
-        .update({ status: "failed", last_error_code: "subscription_inactive" })
-        .eq("subscription_id", candidate.subscription_id)
-        .in("status", ["pending", "leased"]);
+      await cancelParentUpdateDeliveries(
+        serviceClient,
+        candidate.subscription_id,
+        "subscription_inactive"
+      );
       continue;
     }
 
@@ -345,6 +396,9 @@ export async function claimDueParentUpdates(
       })
       .eq("id", candidate.subscription_id)
       .or(`delivery_leased_until.is.null,delivery_leased_until.lt.${nowIso}`)
+      .not("verified_at", "is", null)
+      .is("unsubscribed_at", null)
+      .is("revoked_at", null)
       .select(`
         normalized_email, verified_at, unsubscribed_at, revoked_at,
         last_progress_delivered_at, unsubscribe_version,
@@ -353,6 +407,22 @@ export async function claimDueParentUpdates(
       .maybeSingle();
     if (acquireError) throw acquireError;
     if (!acquired) continue;
+
+    const { data: activeOwnership, error: ownershipError } = await serviceClient
+      .from("parent_pathlab_subscriptions")
+      .select(`
+        normalized_email, verified_at, unsubscribed_at, revoked_at,
+        last_progress_delivered_at, unsubscribe_version,
+        delivery_lease_token, delivery_leased_until
+      `)
+      .eq("id", candidate.subscription_id)
+      .eq("delivery_lease_token", leaseToken)
+      .not("verified_at", "is", null)
+      .is("unsubscribed_at", null)
+      .is("revoked_at", null)
+      .maybeSingle();
+    if (ownershipError) throw ownershipError;
+    if (!activeOwnership) continue;
 
     const { data: rows, error: claimError } = await serviceClient
       .from("parent_pathlab_update_outbox")
@@ -371,7 +441,7 @@ export async function claimDueParentUpdates(
       continue;
     }
 
-    const owned = acquired as DeliverySubscriptionRow;
+    const owned = activeOwnership as DeliverySubscriptionRow;
     acquiredCount += 1;
     for (const row of rows) {
       claimed.push({
