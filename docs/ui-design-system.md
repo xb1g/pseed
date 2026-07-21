@@ -1638,6 +1638,32 @@ useEffect(() => {
 }
 ```
 
+### Mobile Detail-Page Pattern
+
+Used by `app/seeds/[id]/page.tsx`. Applies to any content page a student lands
+on from a gallery.
+
+1. **Image-led hero when artwork exists.** Full-bleed cover image, a
+   `to-top` scrim into the page background, title pulled up over the scrim with
+   `-mt-16`. Without artwork, collapse the image band to a `h-16` control bar —
+   never render an empty gradient block that eats the first screen.
+2. **Facts, not cards.** Three short values in one divided row
+   (`grid-cols-3 divide-x`). Values must fit without truncating on a 390px
+   viewport — "Solo", not "Solo, self-paced".
+3. **Sticky CTA.** The primary action is `sticky bottom-0` on mobile with a
+   gradient fade behind it, and `md:static` from tablet up. One instance, so
+   client dialogs are not duplicated.
+4. **Collapse long prose.** Authored descriptions clamp to ~168px behind a mask
+   gradient with a Read more toggle (`components/seeds/SeedAbout.tsx`). Long
+   markdown dumped at full height is what makes a page read as a wall of text.
+5. **Scannable structure over paragraphs.** Lead with the numbered rail
+   (`components/seeds/SeedDayArc.tsx`), then the callout, then the prose. The
+   detail section goes last because it is the least scannable thing on the page.
+
+Section headers use an amber eyebrow (`text-[11px] uppercase tracking-[0.18em]
+text-amber-300/70`) above the `h2`, which carries the hierarchy without adding
+a border or a card.
+
 ### Touch Targets
 
 Minimum touch target size: **44x44px** (iOS HIG) or **48x48px** (Material Design).

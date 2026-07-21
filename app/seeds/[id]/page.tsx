@@ -1,18 +1,17 @@
 import { createClient } from "@/utils/supabase/server";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ArrowLeft, Users, Calendar } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { CreateRoomButton } from "@/components/seeds/CreateRoomButton";
 import { SeedSettingsButton } from "@/components/seeds/SeedSettingsButton";
+import { SeedAbout } from "@/components/seeds/SeedAbout";
+import { SeedDayArc, type SeedDayArcItem } from "@/components/seeds/SeedDayArc";
+import { InViewAnimator } from "@/components/ui/in-view-animator";
 import { markdownToSafeHtml } from "@/lib/security/sanitize-html";
 import { BeginPathButton } from "@/components/pathlab/BeginPathButton";
 import { TrialGate } from "@/components/trials/TrialGate";
-import {
-  hasTrialAccess,
-  resolveTrialStatus,
-} from "@/lib/trials/status";
+import { hasTrialAccess, resolveTrialStatus } from "@/lib/trials/status";
 
 interface SeedDetailPageProps {
   params: Promise<{
@@ -49,9 +48,9 @@ export default async function SeedDetailPage({ params }: SeedDetailPageProps) {
   console.log("[SeedPage] Fetching seed…");
   const { data: seed, error: seedError } = await supabase
     .from("seeds")
-    .select(
-      "*, learning_maps!map_id(title, description), category:seed_categories(id, name, logo_url)",
-    )
+    // No learning_maps join here — this page never reads it, and anon users
+    // lack select permission on that table, which 404'd the whole page.
+    .select("*, category:seed_categories(id, name, logo_url)")
     .eq("id", id)
     .single();
 
@@ -78,7 +77,21 @@ export default async function SeedDetailPage({ params }: SeedDetailPageProps) {
     pathData = pathResult;
   }
 
-  const pathTotalDays = pathData?.total_days;
+  const pathTotalDays = pathData?.total_days ?? 5;
+
+  // Day arc preview — shape of the week, not the activities themselves
+  let pathDays: SeedDayArcItem[] = [];
+  if (pathData?.id) {
+    const { data: dayRows, error: daysError } = await supabase
+      .from("path_days")
+      .select("day_number, title, context_text")
+      .eq("path_id", pathData.id)
+      .order("day_number", { ascending: true });
+
+    if (daysError) console.error("[SeedPage] path_days error:", daysError.message, daysError.code);
+    pathDays = (dayRows as SeedDayArcItem[] | null) ?? [];
+    console.log("[SeedPage] Authored days:", pathDays.length);
+  }
 
   // Check if user is already in a room for this seed
   let userRoom = null;
@@ -197,191 +210,187 @@ export default async function SeedDetailPage({ params }: SeedDetailPageProps) {
     ? markdownToSafeHtml(seed.description.replace(/\n/g, "  \n"))
     : null;
 
+  const primaryAction = user ? (
+    isPathLab ? (
+      trialLocked ? (
+        <a
+          href="#trial-gate"
+          className="ei-button-dusk min-h-12 w-full justify-center text-base"
+        >
+          <span>ดูวิธีเริ่มทดลอง</span>
+        </a>
+      ) : (
+        <BeginPathButton
+          seedId={seed.id}
+          existingEnrollmentId={pathEnrollmentId}
+        />
+      )
+    ) : (
+      <CreateRoomButton
+        seedId={seed.id}
+        userId={user.id}
+        existingRoom={userRoom}
+        isCompleted={userHasCompletedRoom}
+      />
+    )
+  ) : (
+    <Link
+      href="/login"
+      className="ei-button-dusk min-h-12 w-full justify-center text-base"
+    >
+      <span>Sign in to start</span>
+    </Link>
+  );
+
+  const hasCover = Boolean(seed.cover_image_url);
+
+  // Facts stay short enough to read as one line on a phone
+  const facts = isPathLab
+    ? [
+        { label: "Length", value: `${pathTotalDays} days` },
+        { label: "Per day", value: "~30 min" },
+        { label: "Format", value: "Solo" },
+      ]
+    : [
+        {
+          label: "Group",
+          value: `${seed.min_students || 1}–${seed.max_students || 50}`,
+        },
+        { label: "Format", value: "Live room" },
+        { label: "Series", value: seed.category?.name || "Uncategorized" },
+      ];
+
   return (
-    <div className="min-h-screen relative overflow-hidden font-sans">
-      {/* Background Image - Heavily Blurred for Atmosphere - Extended to Full Page */}
-      <div className="fixed inset-0 z-0">
-        {seed.cover_image_url ? (
-          <>
+    <div className="relative min-h-screen bg-[#0a0a0b] font-sans">
+      <InViewAnimator />
+
+      {/* ── Hero ───────────────────────────────────────────────────────── */}
+      {/* With artwork: a full-bleed image the title sits on. Without: a slim
+          control bar, so an empty gradient block never eats the first screen. */}
+      <header className="relative isolate">
+        <div
+          className={`relative w-full overflow-hidden ${
+            hasCover
+              ? "h-[52vw] max-h-[380px] min-h-[240px] sm:h-[38vw] md:max-h-[440px]"
+              : "h-16"
+          }`}
+        >
+          {hasCover && (
+            <>
+              <img
+                src={seed.cover_image_url}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              {/* Scrim — title stays legible on any artwork, hero lands on the page bg */}
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 bg-gradient-to-t from-[#0a0a0b] via-[#0a0a0b]/75 to-[#0a0a0b]/25"
+              />
+              <div
+                aria-hidden="true"
+                className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#0a0a0b] to-transparent"
+              />
+            </>
+          )}
+
+          {/* Controls — edge-anchored over artwork, aligned to the text column without it */}
+          <div className="absolute inset-x-0 top-0 px-3 py-3 sm:px-4 sm:py-4">
             <div
-              className="absolute inset-0 bg-cover bg-center transform scale-125 blur-3xl opacity-60"
-              style={{ backgroundImage: `url(${seed.cover_image_url})` }}
-            />
-            {/* Gradient Overlay - Lighter and more transparent */}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-neutral-950/60 to-neutral-950/80" />
-          </>
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 via-neutral-950 to-neutral-900" />
-        )}
-      </div>
-
-      {/* Ambient Background */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-blue-600/20 rounded-full blur-[120px] mix-blend-screen animate-pulse-slow" />
-        <div className="absolute bottom-[-20%] left-[-10%] w-[800px] h-[800px] bg-purple-600/20 rounded-full blur-[120px] mix-blend-screen animate-pulse-slow" style={{ animationDelay: "2s" }} />
-        <div className="absolute top-[40%] left-[20%] w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-[100px] mix-blend-screen animate-pulse-slow" style={{ animationDelay: "4s" }} />
-      </div>
-
-      {/* Settings Button - Positioned below navbar */}
-      {canEdit && (
-        <div className="fixed top-24 right-6 z-40">
-          <SeedSettingsButton seed={seed} />
-        </div>
-      )}
-
-      {/* Hero Section with Atmospheric Color Background */}
-      <div className="relative w-full min-h-[50vh] flex flex-col pt-24 pb-12 overflow-visible">
-        {/* Hero Content */}
-        <div className="relative z-10 flex-1 flex flex-col justify-end px-6">
-          <div className="max-w-7xl mx-auto w-full">
-            {/* Back Button - Aligned with Title */}
-            <div className="mb-6">
-              <Link href="/seeds">
-                <Button
-                  variant="ghost"
-                  className="bg-black/20 hover:bg-black/40 text-white/80 hover:text-white backdrop-blur-md border border-white/10 rounded-full px-4 group"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-                  Back to Seeds
-                </Button>
+              className={`flex items-center justify-between ${
+                hasCover ? "" : "mx-auto max-w-2xl"
+              }`}
+            >
+              <Link
+                href="/seeds"
+                aria-label="Back to Seeds"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-black/50 text-white backdrop-blur-md transition-colors hover:bg-black/70"
+              >
+                <ArrowLeft className="h-5 w-5" />
               </Link>
-            </div>
-
-            <div className="flex flex-col gap-8">
-              <div className="max-w-4xl">
-                <h1 className="text-5xl md:text-7xl font-extrabold mb-4 tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-white drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-                  {seed.title}
-                </h1>
-                {seed.slogan && (
-                  <p className="text-xl md:text-2xl text-white/90 font-medium mb-8 drop-shadow-md border-l-4 border-blue-500 pl-4 py-1">
-                    {seed.slogan}
-                  </p>
-                )}
-
-                {/* Quick Stats Row (Glassmorphism) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mb-8">
-                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/30 hover:bg-white/10 rounded-2xl p-5 flex flex-col gap-2 transition-all hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] duration-300 group">
-                    <div className="flex items-center gap-2 text-white/50 group-hover:text-white/70 transition-colors text-xs uppercase tracking-widest font-bold">
-                      <span>Series</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      {seed.category?.logo_url && (
-                        <div className="p-1.5 bg-white/10 rounded-lg backdrop-blur-md">
-                          <img
-                            src={seed.category.logo_url}
-                            alt={seed.category.name}
-                            className="w-8 h-8 object-contain"
-                          />
-                        </div>
-                      )}
-                      <p className="text-2xl font-bold text-white tracking-tight">
-                        {seed.category?.name || "Uncategorized"}
-                      </p>
-                    </div>
-                  </div>
-
-                  {isPathLab ? (
-                    <div className="bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/30 hover:bg-white/10 rounded-2xl p-5 flex flex-col gap-2 transition-all hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] duration-300 group">
-                      <div className="flex items-center gap-2 text-white/50 group-hover:text-white/70 transition-colors text-xs uppercase tracking-widest font-bold">
-                        <Calendar className="w-4 h-4" />
-                        <span>Duration</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-3xl font-bold text-white tracking-tight">
-                          {pathTotalDays || 5}
-                        </span>
-                        <span className="text-white/50 text-sm font-medium">
-                          days <br />(~30 min each)
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/30 hover:bg-white/10 rounded-2xl p-5 flex flex-col gap-2 transition-all hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] duration-300 group">
-                      <div className="flex items-center gap-2 text-white/50 group-hover:text-white/70 transition-colors text-xs uppercase tracking-widest font-bold">
-                        <Users className="w-4 h-4" />
-                        <span>Group Size</span>
-                      </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-white tracking-tight">
-                          {seed.min_students || 1}
-                        </span>
-                        <span className="text-white/40 font-light text-2xl">-</span>
-                        <span className="text-3xl font-bold text-white tracking-tight">
-                          {seed.max_students || 50}
-                        </span>
-                        <span className="text-white/50 text-sm font-medium ml-1">students</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Hero CTA */}
-                <div className="max-w-sm pt-4">
-                  {user ? (
-                    <div className="transform transition-all hover:scale-[1.02] active:scale-[0.98]">
-                      {isPathLab ? (
-                        trialLocked ? (
-                          <Button
-                            asChild
-                            className="w-full bg-white text-black hover:bg-neutral-200 text-lg py-6 font-bold"
-                          >
-                            <a href="#trial-gate">ดูวิธีเริ่มทดลอง</a>
-                          </Button>
-                        ) : (
-                          <BeginPathButton
-                            seedId={seed.id}
-                            existingEnrollmentId={pathEnrollmentId}
-                          />
-                        )
-                      ) : (
-                        <CreateRoomButton
-                          seedId={seed.id}
-                          userId={user.id}
-                          existingRoom={userRoom}
-                          isCompleted={userHasCompletedRoom}
-                        />
-                      )}
-                    </div>
-                  ) : (
-                    <Link href="/login">
-                      <Button className="w-full bg-white/90 text-black hover:bg-white text-lg py-7 font-bold shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:shadow-[0_0_60px_rgba(255,255,255,0.5)] transition-all duration-300 rounded-xl hover:-translate-y-1">
-                        Sign in to Start
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-                {canEdit && isPathLab && (
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="bg-black/20 hover:bg-black/40 text-white/80 hover:text-white backdrop-blur-md border border-white/10"
-                    >
-                      <Link href={`/seeds/${seed.id}/pathlab-builder`}>
-                        Path Builder
-                      </Link>
-                    </Button>
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="bg-black/20 hover:bg-black/40 text-white/80 hover:text-white backdrop-blur-md border border-white/10"
-                    >
-                      <Link href={`/seeds/${seed.id}/reports`}>
-                        Student Reports
-                      </Link>
-                    </Button>
-                  </div>
-                )}
-              </div>
+              {canEdit && <SeedSettingsButton seed={seed} />}
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Main Content Layout */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-12 space-y-12">
+        {/* Title block — pulled up over the scrim when there is artwork */}
+        <div className={`relative px-4 sm:px-6 ${hasCover ? "-mt-16" : "mt-2"}`}>
+          <div className="mx-auto max-w-2xl">
+            <div className="flex items-center gap-2.5">
+              {seed.category?.logo_url && (
+                <img
+                  src={seed.category.logo_url}
+                  alt=""
+                  className="h-6 w-6 shrink-0 rounded object-contain"
+                />
+              )}
+              <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-300/80">
+                {isPathLab ? "PathLab" : "Group journey"}
+                {seed.category?.name ? ` · ${seed.category.name}` : ""}
+              </span>
+            </div>
+
+            <h1 className="mt-2.5 text-[28px] font-extrabold leading-[1.14] tracking-tight text-white sm:text-4xl md:text-5xl">
+              {seed.title}
+            </h1>
+
+            {seed.slogan && (
+              <p className="mt-3 max-w-prose text-[15px] leading-7 text-neutral-400 sm:text-lg">
+                {seed.slogan}
+              </p>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <div className="mx-auto max-w-2xl px-4 pb-16 sm:px-6 md:pb-24">
+        {/* ── Facts ────────────────────────────────────────────────────── */}
+        <dl className="mt-7 grid grid-cols-3 divide-x divide-white/10 rounded-xl border border-white/10 bg-white/[0.03]">
+          {facts.map((fact) => (
+            <div key={fact.label} className="px-3 py-3.5 text-center">
+              <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-neutral-500">
+                {fact.label}
+              </dt>
+              <dd className="mt-1 truncate text-[13px] font-semibold text-white sm:text-sm">
+                {fact.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+
+        {/* ── Primary action ───────────────────────────────────────────── */}
+        {/* Sticks to the viewport bottom on mobile so the CTA is always in
+            reach; settles back into the flow from md up. */}
+        <div className="sticky bottom-0 z-30 -mx-4 mt-6 bg-gradient-to-t from-[#0a0a0b] via-[#0a0a0b]/95 to-transparent px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-5 sm:-mx-6 sm:px-6 md:static md:mx-0 md:max-w-xs md:bg-none md:p-0">
+          {primaryAction}
+        </div>
+
+        {canEdit && isPathLab && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="min-h-11 border-white/10 bg-white/[0.04] text-neutral-300 hover:bg-white/10 hover:text-white"
+            >
+              <Link href={`/seeds/${seed.id}/pathlab-builder`}>
+                Path Builder
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="min-h-11 border-white/10 bg-white/[0.04] text-neutral-300 hover:bg-white/10 hover:text-white"
+            >
+              <Link href={`/seeds/${seed.id}/reports`}>Student Reports</Link>
+            </Button>
+          </div>
+        )}
+
+        {/* ── Body ─────────────────────────────────────────────────────── */}
         {trialLocked ? (
-          <div id="trial-gate">
+          <div id="trial-gate" className="mt-10 scroll-mt-20">
             <TrialGate
               seedId={seed.id}
               seedTitle={seed.title}
@@ -389,41 +398,46 @@ export default async function SeedDetailPage({ params }: SeedDetailPageProps) {
             />
           </div>
         ) : (
-        <section className="bg-neutral-900/40 backdrop-blur-2xl border border-white/10 hover:border-white/20 transition-all duration-500 rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden group">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-500 opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-          <h2 className="text-3xl font-bold text-white mb-8 flex items-center gap-4">
-            <span className="w-1.5 h-8 bg-gradient-to-b from-blue-400 to-purple-600 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
-            {isPathLab ? "About this Exploration" : "About this Journey"}
-          </h2>
-
-          <div className="prose prose-invert prose-lg max-w-none text-neutral-300 leading-relaxed prose-headings:text-white prose-a:text-blue-400 hover:prose-a:text-blue-300 prose-strong:text-white prose-strong:font-semibold">
-            {descriptionHtml ? (
-              <div className="space-y-6" dangerouslySetInnerHTML={{ __html: descriptionHtml }} />
-            ) : (
-              <p className="text-neutral-400 italic">
-                No description provided for this journey seed. It's ready to be
-                explored!
-              </p>
-            )}
-
+          <div className="mt-12 space-y-12 md:mt-16 md:space-y-16">
             {isPathLab && (
-              <div className="mt-10 rounded-2xl border border-blue-500/30 bg-blue-500/10 p-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center backdrop-blur-md">
-                <div className="p-3 bg-blue-500/20 rounded-full text-blue-300">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
-                </div>
-                <div>
-                  <h4 className="text-white font-semibold m-0 text-lg">Self-Paced Journey</h4>
-                  <p className="text-sm text-blue-200/80 m-0 mt-1">
-                    PathLab is solo and self-paced. You will complete each day,
-                    reflect, then intentionally decide whether to continue, pause,
-                    or quit.
+              <>
+                <SeedDayArc days={pathDays} totalDays={pathTotalDays} />
+
+                <section className="rounded-xl border border-amber-400/20 bg-amber-400/[0.05] p-4 sm:p-5">
+                  <h2 className="text-[15px] font-semibold text-white">
+                    A decision instrument, not a course
+                  </h2>
+                  <p className="mt-1.5 text-sm leading-6 text-amber-100/70">
+                    Each day you do the work, then decide whether to continue,
+                    pause, or stop. Deciding &ldquo;this isn&apos;t for me&rdquo;
+                    on day 3 is a good outcome.
                   </p>
-                </div>
-              </div>
+                </section>
+              </>
             )}
+
+            <section aria-labelledby="about-heading">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-300/70">
+                Detail
+              </p>
+              <h2
+                id="about-heading"
+                className="mt-2 text-2xl font-bold tracking-tight text-white"
+              >
+                {isPathLab ? "About this exploration" : "About this journey"}
+              </h2>
+
+              <div className="mt-5">
+                {descriptionHtml ? (
+                  <SeedAbout html={descriptionHtml} />
+                ) : (
+                  <p className="text-sm italic text-neutral-500">
+                    No description yet.
+                  </p>
+                )}
+              </div>
+            </section>
           </div>
-        </section>
         )}
       </div>
     </div>
