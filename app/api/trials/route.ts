@@ -3,6 +3,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser, safeServerError } from "@/lib/security/route-guards";
 import { resolveTrialStatus } from "@/lib/trials/status";
+import {
+  startTrialAndEnrollment,
+  TrialLaunchError,
+  type TrialLaunchEnrollment,
+  type TrialLaunchRepository,
+  type TrialLaunchTrial,
+} from "@/lib/trials/start-trial";
 
 const seedIdSchema = z.object({
   seedId: z.string().uuid(),
@@ -26,59 +33,116 @@ export async function POST(request: NextRequest) {
     }
     const { seedId } = parsed.data;
 
-    // Verify the seed exists before starting a trial for it
-    const { data: seed, error: seedError } = await supabase
-      .from("seeds")
-      .select("id")
-      .eq("id", seedId)
-      .single();
-
-    if (seedError || !seed) {
-      return NextResponse.json({ error: "Seed not found" }, { status: 404 });
-    }
-
-    // Insert a fresh trial. On unique (user_id, seed_id) conflict, fall back
-    // to the existing row so the endpoint is idempotent for the student.
-    const { data: inserted, error: insertError } = await supabase
-      .from("trial_accesses")
-      .insert({
-        user_id: userId,
-        seed_id: seedId,
-        pay_token: randomBytes(16).toString("hex"),
-      })
-      .select("id, pay_token, status, payment_deadline, paid_at")
-      .single();
-
-    let trial = inserted;
-    if (insertError) {
-      if (insertError.code !== "23505") {
-        return safeServerError("Failed to start trial", insertError);
-      }
-      const { data: existing, error: existingError } = await supabase
-        .from("trial_accesses")
-        .select("id, pay_token, status, payment_deadline, paid_at")
-        .eq("user_id", userId)
-        .eq("seed_id", seedId)
-        .single();
-
-      if (existingError || !existing) {
-        return safeServerError("Failed to load existing trial", existingError);
-      }
-      trial = existing;
-    }
-
-    if (!trial) {
-      return safeServerError("Failed to start trial");
-    }
-
-    return NextResponse.json({
-      trialId: trial.id,
-      payToken: trial.pay_token,
-      payUrl: payUrlFor(trial.pay_token),
-      status: resolveTrialStatus(trial),
-      paymentDeadline: trial.payment_deadline,
+    const mapTrial = (row: {
+      id: string;
+      pay_token: string;
+      status: string;
+      payment_deadline: string;
+      paid_at: string | null;
+    }): TrialLaunchTrial => ({
+      id: row.id,
+      payToken: row.pay_token,
+      status: resolveTrialStatus({
+        status: row.status as TrialLaunchTrial["status"],
+        payment_deadline: row.payment_deadline,
+        paid_at: row.paid_at,
+      }),
+      paymentDeadline: row.payment_deadline,
+      paidAt: row.paid_at,
     });
+    const mapEnrollment = (row: {
+      id: string;
+      current_day: number;
+      status: TrialLaunchEnrollment["status"];
+    }): TrialLaunchEnrollment => ({
+      id: row.id,
+      currentDay: row.current_day,
+      status: row.status,
+    });
+
+    const repository: TrialLaunchRepository = {
+      async findPathLabSeed(candidateSeedId) {
+        const { data: seed, error: seedError } = await supabase
+          .from("seeds")
+          .select("id, seed_type")
+          .eq("id", candidateSeedId)
+          .maybeSingle();
+        if (seedError) throw seedError;
+        if (!seed || seed.seed_type !== "pathlab") return null;
+        const { data: path, error: pathError } = await supabase
+          .from("paths")
+          .select("id")
+          .eq("seed_id", candidateSeedId)
+          .maybeSingle();
+        if (pathError) throw pathError;
+        return path ? { id: seed.id, pathId: path.id } : null;
+      },
+      async createTrial(candidateUserId, candidateSeedId) {
+        const { data, error } = await supabase
+          .from("trial_accesses")
+          .insert({
+            user_id: candidateUserId,
+            seed_id: candidateSeedId,
+            pay_token: randomBytes(16).toString("hex"),
+          })
+          .select("id, pay_token, status, payment_deadline, paid_at")
+          .single();
+        if (error) throw error;
+        return mapTrial(data);
+      },
+      async findTrial(candidateUserId, candidateSeedId) {
+        const { data, error } = await supabase
+          .from("trial_accesses")
+          .select("id, pay_token, status, payment_deadline, paid_at")
+          .eq("user_id", candidateUserId)
+          .eq("seed_id", candidateSeedId)
+          .maybeSingle();
+        if (error) throw error;
+        return data ? mapTrial(data) : null;
+      },
+      async findEnrollment(candidateUserId, pathId) {
+        const { data, error } = await supabase
+          .from("path_enrollments")
+          .select("id, current_day, status")
+          .eq("user_id", candidateUserId)
+          .eq("path_id", pathId)
+          .maybeSingle();
+        if (error) throw error;
+        if (!data) return null;
+        if (data.status === "paused" || data.status === "quit") {
+          const { data: resumed, error: resumeError } = await supabase
+            .from("path_enrollments")
+            .update({ status: "active", completed_at: null })
+            .eq("id", data.id)
+            .select("id, current_day, status")
+            .single();
+          if (resumeError) throw resumeError;
+          return mapEnrollment(resumed);
+        }
+        return mapEnrollment(data);
+      },
+      async createEnrollment(candidateUserId, pathId) {
+        const { data, error } = await supabase
+          .from("path_enrollments")
+          .insert({
+            user_id: candidateUserId,
+            path_id: pathId,
+            current_day: 1,
+            status: "active",
+          })
+          .select("id, current_day, status")
+          .single();
+        if (error) throw error;
+        return mapEnrollment(data);
+      },
+    };
+
+    const launch = await startTrialAndEnrollment({ userId, seedId }, repository);
+    return NextResponse.json(launch);
   } catch (error) {
+    if (error instanceof TrialLaunchError) {
+      return NextResponse.json({ error: error.code }, { status: error.status });
+    }
     return safeServerError("Failed to start trial", error);
   }
 }

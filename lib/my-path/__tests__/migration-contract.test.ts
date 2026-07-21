@@ -203,3 +203,101 @@ test("PathLab report evidence uses an owner-only body-free projection", () => {
     /create policy[\s\S]*on public\.path_reports/
   );
 });
+
+test("parent PathLab updates are consented, private, and delivered through a safe outbox", () => {
+  const migrationsDirectory = new URL("../../../supabase/migrations/", import.meta.url);
+  const migrationName = readdirSync(migrationsDirectory).find((name) =>
+    name.endsWith("_parent_pathlab_updates.sql")
+  );
+  assert.ok(migrationName, "parent updates migration must be created through the Supabase CLI");
+  const parentMigration = readFileSync(
+    new URL(migrationName, migrationsDirectory),
+    "utf8"
+  );
+
+  for (const table of [
+    "parent_pathlab_subscriptions",
+    "parent_pathlab_update_outbox",
+  ]) {
+    assert.match(parentMigration, new RegExp(`create table public\\.${table}`));
+    assert.match(
+      parentMigration,
+      new RegExp(`alter table public\\.${table} enable row level security`)
+    );
+    assert.match(
+      parentMigration,
+      new RegExp(`revoke all on table public\\.${table} from anon, authenticated`)
+    );
+    assert.doesNotMatch(
+      parentMigration,
+      new RegExp(`grant (select|insert|update|delete|all)[\\s\\S]*public\\.${table}[\\s\\S]*to (anon|authenticated)`)
+    );
+  }
+
+  assert.match(parentMigration, /trial_access_id uuid not null unique/);
+  assert.match(parentMigration, /normalized_email text not null/);
+  assert.match(parentMigration, /consented_at timestamptz not null/);
+  assert.match(parentMigration, /attested_at timestamptz not null/);
+  assert.match(parentMigration, /verification_token_hash text not null/);
+  assert.match(parentMigration, /unsubscribe_token_hash text not null/);
+  assert.match(parentMigration, /verification_expires_at timestamptz not null/);
+  assert.match(parentMigration, /verified_at timestamptz/);
+  assert.match(parentMigration, /unsubscribed_at timestamptz/);
+  assert.match(parentMigration, /last_progress_delivered_at timestamptz/);
+
+  assert.match(parentMigration, /idempotency_key text not null unique/);
+  assert.match(parentMigration, /safe_payload jsonb not null/);
+  assert.match(parentMigration, /attempt_count integer not null default 0/);
+  assert.match(parentMigration, /scheduled_at timestamptz not null/);
+  assert.match(parentMigration, /delivered_at timestamptz/);
+  assert.match(parentMigration, /leased_until timestamptz/);
+  assert.match(parentMigration, /where status in \('pending', 'leased'\)/);
+  assert.match(parentMigration, /verification_token_hash/);
+  assert.match(parentMigration, /unsubscribe_token_hash/);
+
+  for (const fn of [
+    "queue_parent_pathlab_update",
+    "emit_parent_pathlab_started",
+    "emit_parent_milestone_completed",
+    "emit_parent_pathlab_completed",
+    "emit_parent_payment_status_changed",
+    "emit_parent_verified_current_state",
+  ]) {
+    assert.match(
+      parentMigration,
+      new RegExp(`function private\\.${fn}[\\s\\S]*security definer\\s+set search_path = ''`)
+    );
+  }
+
+  assert.match(parentMigration, /pathlab_started/);
+  assert.match(parentMigration, /milestone_completed/);
+  assert.match(parentMigration, /pathlab_completed/);
+  assert.match(parentMigration, /payment_status_changed/);
+  assert.match(parentMigration, /parent_verified_started_outbox/);
+  assert.match(parentMigration, /subscription_id \|\| ':' \|\| p_event_kind/);
+  assert.match(parentMigration, /new\.status = 'completed'/);
+  assert.match(parentMigration, /old\.status is distinct from 'completed'/);
+  assert.match(parentMigration, /new\.status = 'explored'/);
+  assert.match(parentMigration, /old\.status is distinct from 'explored'/);
+
+  // The public parent projection is intentionally body-free and identity-free.
+  assert.match(parentMigration, /'seedDescription', s\.description/);
+  assert.match(parentMigration, /'totalDays', p\.total_days/);
+  assert.match(parentMigration, /'radarDirectionTitle'/);
+  assert.match(parentMigration, /'outcomes', p\.parent_outcomes/);
+  const projection = parentMigration.slice(
+    parentMigration.indexOf("create or replace function public.get_trial_by_token")
+  );
+  assert.match(
+    parentMigration,
+    /function private\.get_trial_by_token\(p_token text\)[\s\S]*security definer\s+set search_path = ''/
+  );
+  assert.match(
+    parentMigration,
+    /function public\.get_trial_by_token\(p_token text\)[\s\S]*security invoker\s+set search_path = ''/
+  );
+  assert.doesNotMatch(
+    projection,
+    /'userEmail'|'studentName'|'reflectionText'|'answerText'|'chat'|'notes'/
+  );
+});
