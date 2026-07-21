@@ -16,6 +16,7 @@ interface DashboardFilterBuilder {
 
 export interface MyPathDashboardReadClient {
   from(table: string): unknown;
+  rpc(name: string): unknown;
 }
 
 export interface MyPathDashboardReadSource {
@@ -36,8 +37,7 @@ const ENROLLMENTS_SELECT = `
     seed_id,
     seed:seeds!inner(id, title)
   ),
-  path_end_reflections(id, fit_level, would_explore_deeper, created_at),
-  path_reports(id, created_at)
+  path_end_reflections(id, fit_level, would_explore_deeper, created_at)
 `;
 
 const TRIALS_SELECT = `
@@ -55,6 +55,12 @@ const PROGRESS_SELECT = `
   updated_at,
   completed_at
 `;
+
+interface ReportEvidenceRow {
+  id: string;
+  enrollmentId: string;
+  createdAt: string;
+}
 
 function record(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -98,11 +104,8 @@ function mapEnrollment(value: unknown): MyPathDashboardEnrollment | null {
   }
 
   const end = firstRecord(row?.path_end_reflections);
-  const report = firstRecord(row?.path_reports);
   const endId = requiredString(end?.id);
   const endCreatedAt = requiredString(end?.created_at);
-  const reportId = requiredString(report?.id);
-  const reportCreatedAt = requiredString(report?.created_at);
 
   return {
     id,
@@ -126,11 +129,18 @@ function mapEnrollment(value: unknown): MyPathDashboardEnrollment | null {
             createdAt: endCreatedAt,
           }
         : null,
-    report:
-      reportId && reportCreatedAt
-        ? { id: reportId, createdAt: reportCreatedAt }
-        : null,
+    report: null,
   };
+}
+
+function mapReportEvidence(value: unknown): ReportEvidenceRow | null {
+  const row = record(value);
+  const id = requiredString(row?.id);
+  const enrollmentId = requiredString(row?.enrollment_id);
+  const createdAt = requiredString(row?.created_at);
+  return id && enrollmentId && createdAt
+    ? { id, enrollmentId, createdAt }
+    : null;
 }
 
 function mapTrial(value: unknown): MyPathDashboardTrial | null {
@@ -204,24 +214,51 @@ function selectFrom(
   }).select(columns);
 }
 
+function callRpc(
+  client: MyPathDashboardReadClient,
+  name: "get_my_path_report_evidence"
+): PromiseLike<DashboardQueryResult> {
+  return client.rpc(name) as PromiseLike<DashboardQueryResult>;
+}
+
 export async function loadMyPathDashboardSource(
   client: MyPathDashboardReadClient,
   userId: string
 ): Promise<MyPathDashboardReadSource> {
-  const [enrollmentResult, trialResult] = await Promise.all([
+  const [enrollmentResult, trialResult, reportResult] = await Promise.all([
     selectFrom(client, "path_enrollments", ENROLLMENTS_SELECT).eq(
       "user_id",
       userId
     ),
     selectFrom(client, "trial_accesses", TRIALS_SELECT).eq("user_id", userId),
+    callRpc(client, "get_my_path_report_evidence"),
   ]);
 
   logReadError("PathLab enrollment", enrollmentResult.error);
   logReadError("trial access", trialResult.error);
+  logReadError("report evidence", reportResult.error);
 
-  const enrollments = mapped(enrollmentResult.data, mapEnrollment).sort((a, b) =>
-    a.id.localeCompare(b.id)
+  const reports = mapped(reportResult.data, mapReportEvidence).sort(
+    (a, b) =>
+      b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id)
   );
+  const reportByEnrollment = new Map<string, ReportEvidenceRow>();
+  for (const report of reports) {
+    if (!reportByEnrollment.has(report.enrollmentId)) {
+      reportByEnrollment.set(report.enrollmentId, report);
+    }
+  }
+  const enrollments = mapped(enrollmentResult.data, mapEnrollment)
+    .map((enrollment) => {
+      const report = reportByEnrollment.get(enrollment.id);
+      return {
+        ...enrollment,
+        report: report
+          ? { id: report.id, createdAt: report.createdAt }
+          : null,
+      };
+    })
+    .sort((a, b) => a.id.localeCompare(b.id));
   const trials = mapped(trialResult.data, mapTrial).sort(
     (a, b) => a.seedId.localeCompare(b.seedId) || a.id.localeCompare(b.id)
   );

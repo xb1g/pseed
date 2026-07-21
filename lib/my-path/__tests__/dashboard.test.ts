@@ -204,6 +204,33 @@ test("a quit enrollment uses the negative signal to choose a different experimen
   assert.equal(model.nextAction.href, "/plan?resume=1");
 });
 
+test("an end reflection completes an enrollment even if its stored status is quit", () => {
+  const model = buildMyPathDashboard(
+    source({
+      persistedPath: planState({ selectedSeedIds: ["seed-a"] }),
+      enrollments: [
+        enrollment({
+          status: "quit",
+          endReflection: {
+            id: "end-a",
+            fitLevel: 3,
+            wouldExploreDeeper: "maybe",
+            createdAt: "2026-07-21T00:00:00.000Z",
+          },
+        }),
+      ],
+    }),
+    { now: NOW }
+  );
+
+  assert.equal(model.state, "completed");
+  assert.equal(model.nextAction.kind, "review-evidence");
+  assert.deepEqual(
+    model.evidence.map((item) => item.id),
+    ["pathlab-fit-enrollment-a"]
+  );
+});
+
 test("a completed enrollment produces safe evidence and starts the next selected experiment", () => {
   const model = buildMyPathDashboard(
     source({

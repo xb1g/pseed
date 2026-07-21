@@ -143,3 +143,63 @@ test("stale saved candidates merge before the saved-limit insert trigger", () =>
     /v_possibility_updated_at >\s*public\.my_path_possibilities\.last_interaction_at[\s\S]*then v_state[\s\S]*else public\.my_path_possibilities\.state/
   );
 });
+
+test("PathLab report evidence uses an owner-only body-free projection", () => {
+  const migrationsDirectory = new URL("../../../supabase/migrations/", import.meta.url);
+  const reportProjectionMigrationName = readdirSync(migrationsDirectory).find((name) =>
+    name.endsWith("_my_path_report_evidence_projection.sql")
+  );
+  assert.ok(
+    reportProjectionMigrationName,
+    "report evidence migration must be created via the Supabase CLI"
+  );
+  const reportProjectionMigration = readFileSync(
+    new URL(reportProjectionMigrationName, migrationsDirectory),
+    "utf8"
+  );
+
+  assert.match(
+    reportProjectionMigration,
+    /function private\.get_my_path_report_evidence\(\)/
+  );
+  assert.match(
+    reportProjectionMigration,
+    /security definer\s+set search_path = ''/
+  );
+  assert.match(
+    reportProjectionMigration,
+    /join public\.path_enrollments[\s\S]*pe\.user_id = v_user_id/
+  );
+  assert.match(
+    reportProjectionMigration,
+    /returns table\s*\(\s*id uuid,\s*enrollment_id uuid,\s*created_at timestamptz\s*\)/
+  );
+  assert.doesNotMatch(
+    reportProjectionMigration,
+    /returns table[\s\S]*report_data|returns table[\s\S]*report_text|returns table[\s\S]*share_token/
+  );
+  assert.match(
+    reportProjectionMigration,
+    /function public\.get_my_path_report_evidence\(\)[\s\S]*security invoker/
+  );
+  assert.match(
+    reportProjectionMigration,
+    /revoke all on function public\.get_my_path_report_evidence\(\)\s+from public/
+  );
+  assert.match(
+    reportProjectionMigration,
+    /grant execute on function public\.get_my_path_report_evidence\(\)\s+to authenticated/
+  );
+  assert.doesNotMatch(
+    reportProjectionMigration,
+    /grant execute on function public\.get_my_path_report_evidence\(\)\s+to\s+anon/
+  );
+  assert.doesNotMatch(
+    reportProjectionMigration,
+    /grant select[\s\S]*on (table )?public\.path_reports/
+  );
+  assert.doesNotMatch(
+    reportProjectionMigration,
+    /create policy[\s\S]*on public\.path_reports/
+  );
+});
