@@ -376,7 +376,9 @@ export function buildMyPathDashboard(
     source.progress
   )[0];
   const quit = sortEligibleEnrollments(
-    source.enrollments.filter((item) => item.status === "quit"),
+    source.enrollments.filter(
+      (item) => item.status === "quit" && !enrollmentIsComplete(item)
+    ),
     source.progress
   )[0];
   const enrollmentBySeed = new Map(

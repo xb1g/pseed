@@ -12,9 +12,17 @@ interface QueryCall {
 
 function mockReadClient(results: Record<string, QueryResult>) {
   const calls: QueryCall[] = [];
+  const rpcCalls: string[] = [];
   return {
     calls,
+    rpcCalls,
     client: {
+      rpc(name: string) {
+        rpcCalls.push(name);
+        return Promise.resolve(
+          results[name] ?? { data: [], error: null }
+        );
+      },
       from(table: string) {
         const call: QueryCall = { table, filters: [] };
         calls.push(call);
@@ -39,7 +47,7 @@ function mockReadClient(results: Record<string, QueryResult>) {
 }
 
 test("the dashboard reader loads only the signed-in student's PathLab and trial sources", async () => {
-  const { client, calls } = mockReadClient({
+  const { client, calls, rpcCalls } = mockReadClient({
     path_enrollments: {
       data: [
         {
@@ -55,9 +63,16 @@ test("the dashboard reader loads only the signed-in student's PathLab and trial 
             seed: { id: "seed-a", title: "AI Builder" },
           },
           path_end_reflections: [],
-          path_reports: [
-            { id: "report-a", created_at: "2026-07-20T00:00:00.000Z" },
-          ],
+        },
+      ],
+      error: null,
+    },
+    get_my_path_report_evidence: {
+      data: [
+        {
+          id: "report-a",
+          enrollment_id: "enrollment-a",
+          created_at: "2026-07-20T00:00:00.000Z",
         },
       ],
       error: null,
@@ -111,6 +126,10 @@ test("the dashboard reader loads only the signed-in student's PathLab and trial 
   const enrollmentCall = calls.find((call) => call.table === "path_enrollments");
   assert.ok(enrollmentCall?.select?.includes("path:paths!inner"));
   assert.ok(enrollmentCall?.select?.includes("seed:seeds!inner"));
+  assert.doesNotMatch(
+    enrollmentCall?.select ?? "",
+    /path_reports|report_data|report_text|share_token/i
+  );
   assert.deepEqual(enrollmentCall?.filters, [
     { method: "eq", column: "user_id", value: "user-a" },
   ]);
@@ -135,6 +154,7 @@ test("the dashboard reader loads only the signed-in student's PathLab and trial 
     progressCall?.select ?? "",
     /response|answer|reflection|content|metadata/i
   );
+  assert.deepEqual(rpcCalls, ["get_my_path_report_evidence"]);
 });
 
 test("non-critical enrollment and trial errors degrade independently to empty arrays", async () => {
@@ -183,7 +203,6 @@ test("a progress query failure preserves enrollments without inventing activity 
               created_at: "2026-07-21T00:00:00.000Z",
             },
           ],
-          path_reports: [],
         },
       ],
       error: null,
@@ -200,6 +219,44 @@ test("a progress query failure preserves enrollments without inventing activity 
 
   assert.equal(source.enrollments[0].endReflection?.fitLevel, 4);
   assert.deepEqual(source.progress, []);
+  assert.equal(errorSpy.mock.calls.length, 1);
+  errorSpy.mockRestore();
+});
+
+test("a safe report projection failure preserves the rest of the dashboard", async () => {
+  const { client } = mockReadClient({
+    path_enrollments: {
+      data: [
+        {
+          id: "enrollment-a",
+          path_id: "path-a",
+          current_day: 1,
+          status: "explored",
+          enrolled_at: "2026-07-10T00:00:00.000Z",
+          completed_at: "2026-07-21T00:00:00.000Z",
+          path: {
+            id: "path-a",
+            seed_id: "seed-a",
+            seed: { id: "seed-a", title: "AI Builder" },
+          },
+          path_end_reflections: [],
+        },
+      ],
+      error: null,
+    },
+    trial_accesses: { data: [], error: null },
+    path_activity_progress: { data: [], error: null },
+    get_my_path_report_evidence: {
+      data: null,
+      error: { message: "report projection unavailable" },
+    },
+  });
+  const errorSpy = jest.spyOn(console, "error").mockImplementation(() => undefined);
+
+  const source = await loadMyPathDashboardSource(client, "user-a");
+
+  assert.equal(source.enrollments.length, 1);
+  assert.equal(source.enrollments[0].report, null);
   assert.equal(errorSpy.mock.calls.length, 1);
   errorSpy.mockRestore();
 });
