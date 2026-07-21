@@ -2691,6 +2691,20 @@
   }
 }
 
+.dawn-theme .ei-card--static:hover,
+.dawn-theme .ei-card--static.in-view {
+  animation: none;
+  transform: none;
+}
+
+.dawn-theme .ei-card--static:hover::before,
+.dawn-theme .ei-card--static.in-view::before {
+  animation: none;
+  clip-path: inset(100% 0 0 0 round var(--space-glow-radius, 13px));
+  opacity: 0;
+  filter: blur(18px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .radar-career-card,
   .radar-career-card__figure {
@@ -4660,12 +4674,12 @@
 }
 
 @media (hover: hover) {
-  .dawn-theme .ei-card:hover {
+  .dawn-theme .ei-card:not(.ei-card--static):hover {
     animation: my-path-dawn-card-rise 9000ms
       cubic-bezier(0.05, 0.7, 0.35, 0.99) forwards;
   }
 
-  .dawn-theme .ei-card:hover::before {
+  .dawn-theme .ei-card:not(.ei-card--static):hover::before {
     animation: my-path-dawn-card-glow 9000ms
       cubic-bezier(0.05, 0.7, 0.35, 0.99) forwards;
   }
@@ -4800,12 +4814,12 @@
     animation: none;
   }
 
-  .dawn-theme .ei-card.in-view {
+  .dawn-theme .ei-card:not(.ei-card--static).in-view {
     animation: my-path-dawn-card-rise 9000ms
       cubic-bezier(0.05, 0.7, 0.35, 0.99) forwards;
   }
 
-  .dawn-theme .ei-card.in-view::before {
+  .dawn-theme .ei-card:not(.ei-card--static).in-view::before {
     animation: my-path-dawn-card-glow 9000ms
       cubic-bezier(0.05, 0.7, 0.35, 0.99) forwards;
   }
@@ -4817,7 +4831,16 @@
   .dawn-theme .ei-card:hover,
   .dawn-theme .ei-card:hover::before,
   .dawn-theme .ei-card.in-view,
-  .dawn-theme .ei-card.in-view::before {
+  .dawn-theme .ei-card.in-view::before,
+  .dawn-theme .ei-button-dawn,
+  .dawn-theme .ei-button-dawn::before,
+  .dawn-theme .ei-button-dawn::after,
+  .dawn-theme .ei-button-dawn:hover:not(:disabled),
+  .dawn-theme .ei-button-dawn:hover:not(:disabled)::before,
+  .dawn-theme .ei-button-dawn:hover:not(:disabled)::after,
+  .dawn-theme .ei-button-dawn.in-view,
+  .dawn-theme .ei-button-dawn.in-view::before,
+  .dawn-theme .ei-button-dawn.in-view::after {
     animation: none !important;
     transform: none !important;
     transition-duration: 0.01ms !important;

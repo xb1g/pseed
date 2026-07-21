@@ -228,3 +228,20 @@ test("the dashboard uses shared Dawn controls and the global Dawn card modifier"
     "var(--focus-ring-color-dawn, rgba(254, 217, 92, 0.75))"
   );
 });
+
+test("the Dawn motion contract keeps skeletons static and stops button motion when reduced", () => {
+  const css = fs.readFileSync(path.join(process.cwd(), "app/globals.css"), "utf8");
+
+  expect(css).toContain(
+    ".dawn-theme .ei-card:not(.ei-card--static):hover"
+  );
+  expect(css).toContain(
+    ".dawn-theme .ei-card:not(.ei-card--static).in-view"
+  );
+  expect(css).toMatch(
+    /\.dawn-theme \.ei-card--static:hover,[\s\S]*?\.dawn-theme \.ei-card--static\.in-view\s*\{[\s\S]*?animation: none;[\s\S]*?transform: none;/
+  );
+  expect(css).toMatch(
+    /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.dawn-theme \.ei-button-dawn::before,[\s\S]*?\.dawn-theme \.ei-button-dawn::after,[\s\S]*?animation: none !important;[\s\S]*?transform: none !important;/
+  );
+});
