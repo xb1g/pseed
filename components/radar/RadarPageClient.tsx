@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import { getRadarFields, getRadarCollections } from "@/lib/supabase/radar";
 import { normalizeRadarCollections } from "@/lib/radar/filters";
@@ -545,7 +545,6 @@ export function RadarPageClient({
   initialCollections: RadarCollection[];
   initialError?: string | null;
 }) {
-  const router = useRouter();
   const [fields, setFields] = useState<RadarField[]>(initialFields);
   const [collections, setCollections] =
     useState<RadarCollection[]>(initialCollections);
@@ -555,6 +554,7 @@ export function RadarPageClient({
   const [isInitialLoad] = useState(!initialFields.length);
   const [error, setError] = useState<string | null>(initialError);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const cardGridRef = useRef<HTMLDivElement>(null);
   const { allLabel } = useMemo(
     () => normalizeRadarCollections(collections),
     [collections]
@@ -588,10 +588,45 @@ export function RadarPageClient({
     [fields, activeCollection, searchQuery]
   );
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const grid = cardGridRef.current;
+    if (!grid) return;
+
+    const touchQuery = window.matchMedia("(hover: none)");
+    if (!touchQuery.matches) return;
+
+    const cards = Array.from(
+      grid.querySelectorAll<HTMLElement>(".radar-career-card")
+    );
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          entry.target.classList.toggle("in-view", entry.isIntersecting);
+        });
+      },
+      {
+        rootMargin: "-40% 0px -34% 0px",
+        threshold: 0,
+      }
+    );
+
+    cards.forEach((card) => observer.observe(card));
+    return () => observer.disconnect();
+  }, [filteredFields]);
+
   return (
     <div className="radar-index-page min-h-screen">
       <div className="radar-index-hero relative overflow-hidden">
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8 md:pt-20 md:pb-10">
+          <div className="mb-6 flex flex-wrap gap-2">
+            <Link href="/radar" className="faculty-radar-mode faculty-radar-mode--active">
+              Career Radar
+            </Link>
+            <Link href="/faculty-radar" className="faculty-radar-mode">
+              Faculty Gallery
+            </Link>
+          </div>
           <h1 className="mb-4 font-radar-title text-5xl font-normal leading-none tracking-normal text-white sm:text-6xl md:text-7xl lg:text-8xl">
             Career Radar
           </h1>
@@ -683,12 +718,14 @@ export function RadarPageClient({
               </p>
             </div>
           ) : (
-            <div className={`grid grid-cols-2 gap-4 transition-opacity duration-200 md:grid-cols-3 lg:grid-cols-4 ${isLoading ? "pointer-events-none opacity-60" : ""}`}>
+            <div
+              ref={cardGridRef}
+              className={`grid grid-cols-2 gap-4 transition-opacity duration-200 md:grid-cols-3 lg:grid-cols-4 ${isLoading ? "pointer-events-none opacity-60" : ""}`}
+            >
               {filteredFields.map((field) => (
                 <FieldTile
                   key={field.id}
                   field={field}
-                  onClick={() => router.push(`/radar/${field.slug}`)}
                 />
               ))}
             </div>
@@ -699,34 +736,7 @@ export function RadarPageClient({
   );
 }
 
-function FieldTile({
-  field,
-  onClick,
-}: {
-  field: RadarField;
-  onClick: () => void;
-}) {
-  const tileRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const el = tileRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        el.classList.toggle("in-view", entry.isIntersecting);
-      },
-      {
-        rootMargin: "-38% 0px -38% 0px",
-        threshold: 0,
-      }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
+const FieldTile = memo(function FieldTile({ field }: { field: RadarField }) {
   const visual = getCareerCardVisual(field);
   const labels = getCareerLabels(field);
   const primaryLabel = labels.primary;
@@ -748,10 +758,10 @@ function FieldTile({
   };
 
   return (
-    <button
-      ref={tileRef}
-      onClick={onClick}
-      className="radar-career-card group relative isolate aspect-[4/5] w-full cursor-pointer overflow-visible rounded-lg text-left shadow-[0_18px_50px_rgba(0,0,0,0.28)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/60 sm:aspect-[3/5]"
+    <Link
+      href={`/radar/${field.slug}`}
+      prefetch={false}
+      className="radar-career-card group relative isolate block aspect-[4/5] w-full cursor-pointer overflow-visible rounded-lg text-left shadow-[0_18px_50px_rgba(0,0,0,0.28)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/60 sm:aspect-[3/5]"
       style={cardStyle}
     >
       <span className="radar-career-card__grain" aria-hidden="true" />
@@ -762,6 +772,8 @@ function FieldTile({
           alt=""
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 34vw, 25vw"
+          loading="lazy"
+          quality={72}
           className="object-contain object-center"
           draggable={false}
         />
@@ -800,6 +812,6 @@ function FieldTile({
           ))}
         </span>
       </span>
-    </button>
+    </Link>
   );
-}
+});

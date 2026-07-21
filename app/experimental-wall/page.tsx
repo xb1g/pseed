@@ -37,13 +37,19 @@ export default function ExperimentalWallPage() {
       <div className={styles.scene}>
         <div className={styles.pieceRow}>
           {pieces.map((piece) => (
-            <img
+            <div
               key={piece.src}
-              className={`${styles.piece} ${piece.className}`}
-              src={piece.src}
-              alt={piece.alt}
-              draggable={false}
-            />
+              className={`${styles.pieceStage} ${piece.className}`}
+            >
+              <span className={styles.aura} aria-hidden="true" />
+              <span className={styles.pieceColor} aria-hidden="true" />
+              <img
+                className={styles.piece}
+                src={piece.src}
+                alt={piece.alt}
+                draggable={false}
+              />
+            </div>
           ))}
         </div>
       </div>
