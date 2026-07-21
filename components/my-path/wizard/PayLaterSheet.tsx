@@ -20,7 +20,7 @@ interface PayLaterSheetProps {
   /** สถานะการสร้าง trial — loading ขณะ POST, error ล้มเหลว (retry ได้), ready พร้อมแชร์ */
   state: "loading" | "error" | "ready";
   trial: TrialShareInfo | null;
-  seedHref: string;
+  enrollmentUrl: string | null;
   seedTitle: string;
   onRetry: () => void;
   onClose: () => void;
@@ -34,7 +34,7 @@ export function PayLaterSheet({
   open,
   state,
   trial,
-  seedHref,
+  enrollmentUrl,
   seedTitle,
   onRetry,
   onClose,
@@ -49,9 +49,7 @@ export function PayLaterSheet({
           <div className="py-10 text-center" role="status">
             <DialogTitle className="sr-only">กำลังเปิดการทดลอง</DialogTitle>
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-amber-200" />
-            <p className="mt-4 text-sm text-slate-400">
-              กำลังเปิดการทดลองให้…
-            </p>
+            <p className="mt-4 text-sm text-slate-400">กำลังเปิดการทดลองให้…</p>
           </div>
         )}
 
@@ -88,16 +86,15 @@ export function PayLaterSheet({
           </div>
         )}
 
-        {state === "ready" && trial && (
+        {state === "ready" && trial && enrollmentUrl && (
           <div>
             <DialogHeader className="text-center sm:text-center">
               <DialogTitle className="font-kodchasan text-xl leading-snug text-slate-50">
-                เริ่มได้เลยวันนี้ — ฝากผู้ปกครองชำระภายใน 24 ชม.
+                วันแรกพร้อมแล้ว คุณเป็นคนเลือกว่าจะเริ่มเมื่อไร
               </DialogTitle>
               <DialogDescription className="text-sm leading-6 text-slate-400">
-                {seedTitle} ปลดล็อกให้คุณแล้ว —
-                ส่งลิงก์นี้ให้ผู้ปกครองชำระค่าทดลอง ฿1,490
-                แล้วลุยวันแรกได้ทันที
+                {seedTitle} เปิดให้แล้ว ไม่มีบัตรและไม่มีการตัดเงินอัตโนมัติ
+                ผู้ปกครองจะเห็นรายละเอียดครบก่อนตัดสินใจชำระ ฿1,490 ภายใน 24 ชม.
               </DialogDescription>
             </DialogHeader>
 
@@ -109,8 +106,11 @@ export function PayLaterSheet({
             </div>
 
             <div className="mt-5 space-y-2.5">
+              <p className="text-center text-sm leading-6 text-slate-300">
+                แผน My Path ของคุณยังอยู่ครบ แม้จะหยุดไว้แล้วค่อยกลับมา
+              </p>
               <Link
-                href={seedHref}
+                href={enrollmentUrl}
                 className="ei-button-dawn min-h-12 w-full justify-center"
               >
                 <Play className="h-4 w-4" aria-hidden="true" />
