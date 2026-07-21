@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 
-import { hydratePersistedMyPath } from "../server-read";
+import {
+  hydratePersistedMyPath,
+  loadPersistedMyPathResult,
+} from "../server-read";
 
 test("a persisted My Path restores possibilities, questions, history, and Radar evidence", () => {
   const state = hydratePersistedMyPath({
@@ -99,4 +102,19 @@ test("hydrated events restore metadata from the event payload", () => {
     title: "AI Engineer PathLab",
   });
   assert.equal(deselected.metadata, undefined);
+});
+
+test("the persisted reader distinguishes a failed read from an account with no plan", async () => {
+  const errorSpy = jest.spyOn(console, "error").mockImplementation(() => undefined);
+  const failed = await loadPersistedMyPathResult({
+    rpc: async () => ({ data: null, error: { message: "database unavailable" } }),
+  });
+  const empty = await loadPersistedMyPathResult({
+    rpc: async () => ({ data: { path: null }, error: null }),
+  });
+
+  assert.deepEqual(failed, { status: "error", state: null });
+  assert.deepEqual(empty, { status: "ready", state: null });
+  assert.equal(errorSpy.mock.calls.length, 1);
+  errorSpy.mockRestore();
 });
