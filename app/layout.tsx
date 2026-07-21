@@ -10,9 +10,10 @@ import {
   Reenie_Beanie,
   Kodchasan,
   Noto_Sans_Thai,
+  Noto_Serif_Thai,
   Instrument_Serif,
   Athiti,
-  Pixelify_Sans,
+  Tiny5,
 } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -87,6 +88,13 @@ const notoSansThai = Noto_Sans_Thai({
   preload: false,
 });
 
+const notoSerifThai = Noto_Serif_Thai({
+  weight: ["400", "500", "600", "700"],
+  subsets: ["thai"],
+  variable: "--font-noto-serif-thai",
+  preload: false,
+});
+
 const instrumentSerif = Instrument_Serif({
   weight: "400",
   subsets: ["latin"],
@@ -101,9 +109,10 @@ const athiti = Athiti({
   preload: false,
 });
 
-const pixelifySans = Pixelify_Sans({
+const tiny5 = Tiny5({
+  weight: "400",
   subsets: ["latin"],
-  variable: "--font-pixelify-sans",
+  variable: "--font-tiny5",
   preload: false,
 });
 
@@ -170,7 +179,7 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${libreFranklin.variable} ${spaceMono.variable} ${krub.variable} ${baiJamjuree.variable} ${mitr.variable} ${poppins.variable} ${reenieBeanie.variable} ${kodchasan.variable} ${notoSansThai.variable} ${instrumentSerif.variable} ${athiti.variable} ${pixelifySans.variable}`}
+        className={`${libreFranklin.variable} ${spaceMono.variable} ${krub.variable} ${baiJamjuree.variable} ${mitr.variable} ${poppins.variable} ${reenieBeanie.variable} ${kodchasan.variable} ${notoSansThai.variable} ${notoSerifThai.variable} ${instrumentSerif.variable} ${athiti.variable} ${tiny5.variable}`}
         style={{ backgroundColor: "#111214" }}
       >
         <ThemeProvider

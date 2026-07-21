@@ -155,9 +155,9 @@ export function CareerResearchView({ research, accent }: { research: CareerResea
                     {isSalary ? " THB/mo" : unit === "%" ? "%" : "/10"}
                   </span>
                   {detail && (
-                    isExpanded
-                      ? <ChevronUp className="h-3.5 w-3.5 text-neutral-500" />
-                      : <ChevronDown className="h-3.5 w-3.5 text-neutral-500" />
+                    <span className="radar-expand-indicator radar-expand-indicator--compact" aria-hidden="true">
+                      {isExpanded ? <ChevronUp /> : <ChevronDown />}
+                    </span>
                   )}
                 </div>
                 {!isSalary && (

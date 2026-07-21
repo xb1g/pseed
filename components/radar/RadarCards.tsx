@@ -3,6 +3,7 @@
 import { createContext, useContext, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { Button } from "@/components/ui/button";
+import { OglTrendBackground } from "@/components/radar/OglTrendBackground";
 import {
   getAiImpactLabel,
   getEntryRouteLabel,
@@ -77,6 +78,16 @@ export type MarketThailandContent = CardBase & {
   body?: string;
   openings?: string;
   companies?: string[];
+  job_access?: {
+    score: number;
+    label?: string;
+    confidence?: "high" | "medium" | "low";
+    demand_score?: number;
+    competition_score?: number;
+    entry_barrier_score?: number;
+    applicant_data?: string;
+    methodology?: string;
+  };
 };
 export type DayInLifeContent = CardBase & { steps?: Array<{ time?: string; label: string; detail?: string }> };
 export type EntryRoutesContent = CardBase & {
@@ -205,14 +216,16 @@ function CardFrame({
   title,
   accent,
   children,
+  wide = false,
 }: {
   eyebrow?: string;
   title?: string;
   accent: string;
   children?: React.ReactNode;
+  wide?: boolean;
 }) {
   return (
-    <div className="w-full max-w-xl mx-auto flex flex-col gap-5">
+    <div className={`w-full ${wide ? "max-w-6xl" : "max-w-xl"} mx-auto flex flex-col gap-5`}>
       {eyebrow && (
         <EditableText
           value={eyebrow}
@@ -271,32 +284,45 @@ function HookCard({ c, accent }: { c: HookContent; accent: string }) {
 
 function FantasyRealityCard({ c, accent }: { c: FantasyRealityContent; accent: string }) {
   return (
-    <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
-      <div className="rc-panel-left">
-        <Panel className="border-amber-400/20 bg-amber-400/5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-amber-300/80 mb-1">
-            Fantasy
-          </p>
+    <section className="fantasy-reality-page" style={{ "--radar-accent": accent } as CSSProperties}>
+      <div className="fantasy-reality-sheet">
+        <article className="fantasy-reality-panel fantasy-reality-panel--fantasy rc-panel-left">
+          <div className="fantasy-reality-panel__head">
+            <div>
+              <p>Fantasy</p>
+              <small>ภาพจำก่อนลงมือจริง</small>
+            </div>
+          </div>
           {c.fantasy && (
-            <p>
-              <EditableText value={c.fantasy} field="fantasy" className="block text-neutral-200 text-base leading-relaxed" />
-            </p>
+            <EditableText
+              value={c.fantasy}
+              field="fantasy"
+              className="fantasy-reality-copy"
+            />
           )}
-        </Panel>
-      </div>
-      <div className="rc-panel-right">
-        <Panel className="border-emerald-400/20 bg-emerald-400/5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300/80 mb-1">
-            Reality
-          </p>
+        </article>
+
+        <div className="fantasy-reality-divider" aria-hidden="true">
+          <span>VS</span>
+        </div>
+
+        <article className="fantasy-reality-panel fantasy-reality-panel--reality rc-panel-right">
+          <div className="fantasy-reality-panel__head">
+            <div>
+              <p>Reality</p>
+              <small>สิ่งที่เจอในงานจริง</small>
+            </div>
+          </div>
           {c.reality && (
-            <p>
-              <EditableText value={c.reality} field="reality" className="block text-neutral-200 text-base leading-relaxed" />
-            </p>
+            <EditableText
+              value={c.reality}
+              field="reality"
+              className="fantasy-reality-copy"
+            />
           )}
-        </Panel>
+        </article>
       </div>
-    </CardFrame>
+    </section>
   );
 }
 
@@ -331,7 +357,7 @@ function SkillsTextCard({ c, accent }: { c: TextContent; accent: string }) {
   };
 
   return (
-    <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
+    <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent} wide>
       <p className="text-sm leading-relaxed text-neutral-400">
         แตะดูทีละทักษะ แทนการอ่านรายการยาวๆ
       </p>
@@ -363,7 +389,9 @@ function SkillsTextCard({ c, accent }: { c: TextContent; accent: string }) {
                   onValueChange={(value) => updateLegacyItem(index, "title", value)}
                 />
               )}
-              <ChevronDown className="h-4 w-4 shrink-0 text-neutral-500 transition-transform group-open:rotate-180" />
+              <span className="radar-expand-indicator group-open:rotate-180" aria-hidden="true">
+                <ChevronDown />
+              </span>
             </summary>
             {item.description && (
               <p className="px-4 pb-4 pl-16 text-sm leading-relaxed text-neutral-400">
@@ -715,7 +743,11 @@ function SalaryProgressionCard({ c, accent }: { c: SalaryProgressionContent; acc
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+    <div className="salary-progression mx-auto flex w-full max-w-6xl flex-col gap-4">
+      <header className="radar-standard-heading">
+        <h2>Salary</h2>
+        <p>ฐานเงินเดือน</p>
+      </header>
       {hasThb && (
         <div className="flex rounded-full border border-white/10 bg-white/5 overflow-hidden self-start">
           <button
@@ -791,14 +823,6 @@ function SalaryProgressionCard({ c, accent }: { c: SalaryProgressionContent; acc
               aria-label="Salary progression chess pieces"
               onAnimationEnd={handleBoardAnimationEnd}
             >
-              <div className="salary-chess-head" aria-label="Salary">
-                <div className="salary-chess-head-title">
-                  Salary
-                </div>
-                <div className="salary-chess-head-eyebrow">
-                  ฐานเงินเดือน
-                </div>
-              </div>
               {displayedLevels.map((lvl, i) => {
                 const piece = chessPieces[i] ?? SALARY_CHESS_PIECES[SALARY_CHESS_PIECES.length - 1];
                 return (
@@ -944,7 +968,7 @@ function aiRiskLabel(score: number): string {
 }
 
 function AiImpactCard({ c, accent }: { c: AiImpactContent; accent: string }) {
-  const [activePanel, setActivePanel] = useState<"augmented" | "automated" | null>(null);
+  const [activePanel, setActivePanel] = useState<"augmented" | "automated">("augmented");
   const score = c.ai_risk_score ?? null;
   const percent = score === null ? 0 : Math.round(Math.max(0, Math.min(score, 10)) * 10);
   const chartColor = aiRiskChartColor(percent);
@@ -956,12 +980,12 @@ function AiImpactCard({ c, accent }: { c: AiImpactContent; accent: string }) {
   } as CSSProperties;
   const augmented = c.augmented ?? [];
   const automated = c.automated ?? [];
-  const visibleItems = activePanel === "augmented" ? augmented : activePanel === "automated" ? automated : [];
+  const visibleItems = activePanel === "augmented" ? augmented : automated;
   const activeTitle = activePanel === "augmented" ? "AI ช่วยไรได้บ้าง?" : "AI แทนไรได้บ้าง?";
 
   return (
     <div className="ai-pixel-page" style={chartStyle}>
-      <header className="ai-pixel-heading">
+      <header className="ai-pixel-heading radar-standard-heading">
         <h2 className="ai-pixel-title" aria-label="AI Impact">
           <span className="ai-pixel-title-ai" data-text="AI">AI</span>
           <span> Impact</span>
@@ -992,41 +1016,47 @@ function AiImpactCard({ c, accent }: { c: AiImpactContent; accent: string }) {
         </p>
       )}
 
-      <div className="ai-pixel-actions">
+      <div className="ai-pixel-actions" role="tablist" aria-label="รายละเอียดผลกระทบจาก AI">
         <button
           type="button"
           className="ai-pixel-toggle"
-          aria-expanded={activePanel === "augmented"}
-          onClick={() => setActivePanel(activePanel === "augmented" ? null : "augmented")}
+          role="tab"
+          aria-selected={activePanel === "augmented"}
+          aria-controls="ai-impact-panel"
+          onClick={() => setActivePanel("augmented")}
         >
           AI ช่วยไรได้บ้าง?
         </button>
         <button
           type="button"
           className="ai-pixel-toggle"
-          aria-expanded={activePanel === "automated"}
-          onClick={() => setActivePanel(activePanel === "automated" ? null : "automated")}
+          role="tab"
+          aria-selected={activePanel === "automated"}
+          aria-controls="ai-impact-panel"
+          onClick={() => setActivePanel("automated")}
         >
           AI แทนไรได้บ้าง?
         </button>
       </div>
 
-      {activePanel && (
-        <section className="ai-pixel-panel" aria-label={activeTitle}>
-          <h3>{activeTitle}</h3>
-          <ul>
-            {visibleItems.map((t, i) => (
-              <li key={i}>
-                <EditableText
-                  value={t}
-                  field={[activePanel, String(i)]}
-                  className="inline"
-                />
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <section
+        id="ai-impact-panel"
+        className="ai-pixel-panel"
+        role="tabpanel"
+        aria-label={activeTitle}
+      >
+        <ul>
+          {visibleItems.map((t, i) => (
+            <li key={`${activePanel}-${i}`}>
+              <EditableText
+                value={t}
+                field={[activePanel, String(i)]}
+                className="inline"
+              />
+            </li>
+          ))}
+        </ul>
+      </section>
       </div>
   );
 }
@@ -1056,10 +1086,136 @@ function PixelMonsterIcon({ className }: { className: string }) {
   );
 }
 
+const COMPANY_DOMAINS: Record<string, string | null> = {
+  "AIS": "ais.th",
+  "True Corporation": "true.th",
+  "SCB": "scb.co.th",
+  "SCB (Siam Commercial Bank)": "scb.co.th",
+  "SCB DataX": "scbdatax.io",
+  "Bangkok Bank": null,
+  "PTT Global Chemical": "pttgcgroup.com",
+  "DECODE Thailand": null,
+  "Kasikornbank (KBank)": "kasikornbank.com",
+  "Digital Economy Promotion Agency (depa)": "depa.or.th",
+  "Government agencies (e.g., NCSA Thailand)": "ncsa.or.th",
+  "ttb": "ttbbank.com",
+  "ETDA": "etda.or.th",
+  "SCG": "scg.com",
+  "CP Axtra": "cpaxtra.com",
+  "Fujitsu Thailand": "fujitsu.com",
+  "MUI Robotics": "muirobotics.com",
+  "KBTG": "kbtg.tech",
+  "Agoda": "agoda.com",
+  "Shopee": "shopee.co.th",
+  "Central Group": "centralgroup.com",
+  "True Digital": "true-digital.com",
+  "LINE MAN Wongnai": "lmwn.com",
+  "Grab": "grab.com",
+};
+
+const COMPANY_MONOGRAMS: Record<string, string> = {
+  "Bangkok Bank": "BBL",
+  "DECODE Thailand": "DE",
+};
+
+function companyLogoUrl(company: string): string | null {
+  const domain = COMPANY_DOMAINS[company];
+  return domain
+    ? `https://www.google.com/s2/favicons?domain_url=https://${domain}&sz=128`
+    : null;
+}
+
+function jobDifficultyLabel(score: number): string {
+  if (score >= 75) return "Easy";
+  if (score >= 60) return "Average/easy";
+  if (score >= 45) return "Average";
+  return "Difficult";
+}
+
 function MarketThailandCard({ c, accent }: { c: MarketThailandContent; accent: string }) {
+  const access = c.job_access;
+  const accessScore = access
+    ? Math.max(0, Math.min(100, Math.round(access.score)))
+    : null;
+  const confidenceLabel = access?.confidence === "high"
+    ? "Confidence: High"
+    : access?.confidence === "medium"
+      ? "Confidence: Medium"
+      : "Confidence: Low";
+  const factors = access ? [
+    { key: "demand_score", label: "ความต้องการจ้าง", value: access.demand_score, positive: true },
+    { key: "competition_score", label: "การแข่งขัน", value: access.competition_score, positive: false },
+    { key: "entry_barrier_score", label: "ด่านทักษะแรกเข้า", value: access.entry_barrier_score, positive: false },
+  ].filter((factor) => factor.value != null) : [];
+
   return (
-    <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
-      {c.openings && (
+    <div className="market-section-frame">
+      <header className="market-section-heading">
+        <h2>Competition?</h2>
+        <p>จะหางานนี้ได้ไหม?</p>
+      </header>
+      <div className="rc-content flex flex-col gap-5">
+      {access && accessScore !== null ? (
+        <div className="market-ticket">
+          <div className="market-ticket__paper">
+            <div className="market-ticket__main">
+            <div className="market-ticket__score-row">
+              <div>
+                <p className="market-ticket__kicker">คะแนนโอกาสหางาน</p>
+                <div className="market-ticket__score">
+                  <EditableText value={String(accessScore)} field={["job_access", "score"]} className="inline" valueType="number" />
+                  <span>/100</span>
+                </div>
+              </div>
+              <div className="market-ticket__verdict">
+                <strong>Difficulty: {jobDifficultyLabel(accessScore)}</strong>
+                <span>{confidenceLabel}</span>
+              </div>
+            </div>
+
+            <div className="market-ticket__metrics">
+              {factors.map((factor) => {
+                const value = Math.max(0, Math.min(10, Number(factor.value)));
+                return (
+                  <div key={factor.key} className="market-ticket__metric">
+                    <span>{factor.label}</span>
+                    <strong>{value}/10</strong>
+                    {!factor.positive && <small>ยิ่งสูงยิ่งหางานยาก</small>}
+                  </div>
+                );
+              })}
+            </div>
+
+            {c.body && (
+              <p className="market-ticket__note">
+                <EditableText value={c.body} field="body" className="block" />
+              </p>
+            )}
+            </div>
+
+            <aside className="market-ticket__companies" aria-label="ตัวอย่างบริษัทที่จ้าง">
+              <p>ตัวอย่างบริษัทที่จ้าง</p>
+              <div className="market-ticket__logo-grid">
+                {(c.companies ?? []).slice(0, 9).map((company) => {
+                  const logoUrl = companyLogoUrl(company);
+                  return (
+                    <div className="market-ticket__logo" key={company} title={company}>
+                      {logoUrl ? (
+                        // Company marks are remote favicons; native img avoids coupling to Next image domains.
+                        // eslint-disable-next-line @next/next/no-img-element
+                      <img src={logoUrl} alt={`${company} logo`} loading="lazy" />
+                    ) : (
+                        <span aria-hidden="true">{COMPANY_MONOGRAMS[company] ?? company.slice(0, 2).toUpperCase()}</span>
+                      )}
+                      <span className="sr-only">{company}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </aside>
+          </div>
+        </div>
+      ) : c.openings ? (
         <div className="rounded-xl border border-white/10 bg-white/5 p-4">
           <p className="text-xs font-medium text-neutral-400">
             ประกาศงานที่พบในไทย
@@ -1079,13 +1235,13 @@ function MarketThailandCard({ c, accent }: { c: MarketThailandContent; accent: s
             ยังบอกไม่ได้ว่าสมัครง่ายหรือการแข่งขันสูงแค่ไหน
           </p>
         </div>
-      )}
-      {c.body && (
+      ) : null}
+      {c.body && !access && (
         <p>
           <EditableText value={c.body} field="body" className="block text-neutral-300 text-base leading-relaxed" />
         </p>
       )}
-      {c.companies && c.companies.length > 0 && (
+      {!access && c.companies && c.companies.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {c.companies.map((co, i) => (
             <span
@@ -1097,7 +1253,8 @@ function MarketThailandCard({ c, accent }: { c: MarketThailandContent; accent: s
           ))}
         </div>
       )}
-    </CardFrame>
+      </div>
+    </div>
   );
 }
 
@@ -1106,7 +1263,7 @@ function DayInLifeCard({ c, accent }: { c: DayInLifeContent; accent: string }) {
   const hasAnyTime = (c.steps ?? []).some((s) => s.time);
 
   return (
-    <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
+    <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent} wide>
       {hasAnyTime ? (
         /* Legacy time-based layout */
         <div className="flex flex-col">
@@ -1130,7 +1287,7 @@ function DayInLifeCard({ c, accent }: { c: DayInLifeContent; accent: string }) {
         </div>
       ) : (
         /* Activity cards layout */
-        <div className="flex flex-col gap-2.5">
+        <div className="grid gap-3 md:grid-cols-2">
           {(c.steps ?? []).map((s, i) => {
             const isOpen = expanded === i;
             return (
@@ -1160,11 +1317,14 @@ function DayInLifeCard({ c, accent }: { c: DayInLifeContent; accent: string }) {
                     )}
                   </div>
                   {s.detail && (
-                    <ChevronDown
-                      className={`h-4 w-4 shrink-0 text-neutral-500 mt-1 transition-transform duration-200 ${
+                    <span
+                      className={`radar-expand-indicator mt-0.5 ${
                         isOpen ? "rotate-180" : ""
                       }`}
-                    />
+                      aria-hidden="true"
+                    >
+                      <ChevronDown />
+                    </span>
                   )}
                 </div>
               </button>
@@ -1184,13 +1344,13 @@ const TIER_STYLES: Record<string, { label: string; bg: string; text: string }> =
 
 function EntryRoutesCard({ c, accent }: { c: EntryRoutesContent; accent: string }) {
   return (
-    <CardFrame eyebrow={c.eyebrow} title={c.title ?? "มีเส้นทางไหนเข้าสู่อาชีพนี้ได้บ้าง?"} accent={accent}>
+    <CardFrame eyebrow={c.eyebrow} title={c.title ?? "มีเส้นทางไหนเข้าสู่อาชีพนี้ได้บ้าง?"} accent={accent} wide>
       {c.description && (
         <p className="mb-4">
           <EditableText value={c.description} field="description" className="block text-neutral-400 text-sm leading-relaxed" />
         </p>
       )}
-      <div className="flex flex-col gap-3">
+      <div className="grid gap-3 md:grid-cols-2">
         {(c.faculties ?? []).map((f, i) => {
           const style = TIER_STYLES[f.tier] ?? TIER_STYLES.related;
           return (
@@ -1233,10 +1393,10 @@ function EntryRoutesCard({ c, accent }: { c: EntryRoutesContent; accent: string 
 
 function RisksCard({ c, accent }: { c: RisksContent; accent: string }) {
   return (
-    <CardFrame eyebrow={c.eyebrow} title={c.title ?? "Real talk"} accent={accent}>
-      <ul className="flex flex-col gap-3">
+    <CardFrame eyebrow={c.eyebrow} title={c.title ?? "Real talk"} accent={accent} wide>
+      <ul className="grid gap-3 md:grid-cols-2">
         {(c.risks ?? []).map((r, i) => (
-          <li key={i} className="flex items-start gap-3">
+          <li key={i} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
             <span className="text-rose-400 mt-0.5 shrink-0">⚠</span>
             <EditableText
               value={r}
@@ -1262,8 +1422,8 @@ function RealPeopleCard({ c, accent }: { c: RealPeopleContent; accent: string })
     });
 
   return (
-    <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
-      <div className="flex flex-col gap-3">
+    <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent} wide>
+      <div className="grid gap-3 md:grid-cols-2">
         {(c.people ?? []).map((p, i) => {
           const isExpanded = expanded.has(i);
           const hasMore =
@@ -1426,8 +1586,8 @@ function RealPeopleCard({ c, accent }: { c: RealPeopleContent; accent: string })
               {hasMore && (
                 <button
                   onClick={() => toggle(i)}
-                  className="mt-3 inline-flex items-center gap-1 text-xs font-medium transition-colors hover:text-white"
-                  style={{ color: accent }}
+                  className="radar-expand-action mt-3 inline-flex items-center gap-1.5 text-xs font-semibold"
+                  aria-expanded={isExpanded}
                 >
                   {isExpanded ? (
                     <>
@@ -1450,91 +1610,110 @@ function RealPeopleCard({ c, accent }: { c: RealPeopleContent; accent: string })
 
 function FutureOutlookCard({ c, accent }: { c: FutureOutlookContent; accent: string }) {
   return (
-    <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
-      {c.growthRate && (
-        <div className="mb-6">
-          <div className="text-5xl font-bold tracking-tight" style={{ color: accent }}>
-            <EditableText value={c.growthRate} field="growthRate" className="inline" />
+    <div className="future-outlook-scene" style={{ "--future-outlook-accent": accent } as CSSProperties}>
+      <OglTrendBackground accent={accent} />
+      <div className="future-outlook-vignette" aria-hidden="true" />
+      <div className="future-outlook-content">
+        {c.eyebrow && (
+          <EditableText
+            value={c.eyebrow}
+            field="eyebrow"
+            className="rc-eyebrow future-outlook-eyebrow"
+            style={{ color: accent }}
+          />
+        )}
+        {c.title && (
+          <h2>
+            <EditableText
+              value={c.title}
+              field="title"
+              className="rc-title future-outlook-title"
+            />
+          </h2>
+        )}
+
+        {c.growthRate && (
+          <div className="future-outlook-growth">
+            <div className="future-outlook-growth-rate" style={{ color: accent }}>
+              <EditableText value={c.growthRate} field="growthRate" className="inline" />
+            </div>
+            {c.growthLabel && (
+              <p>
+                <EditableText value={c.growthLabel} field="growthLabel" className="block" />
+              </p>
+            )}
           </div>
-          {c.growthLabel && (
-            <p className="mt-1">
-              <EditableText value={c.growthLabel} field="growthLabel" className="block text-sm text-neutral-400" />
-            </p>
+        )}
+
+        {c.timeline && c.timeline.length > 0 && (
+          <div className="future-outlook-timeline">
+            {c.timeline.map((t, i) => (
+              <div key={i} className="future-outlook-timeline-row">
+                <span className="future-outlook-year" style={{ color: accent }}>
+                  {t.year && (
+                    <EditableText
+                      value={t.year}
+                      field={["timeline", String(i), "year"]}
+                      className="inline"
+                    />
+                  )}
+                </span>
+                <p>
+                  <EditableText
+                    value={t.event}
+                    field={["timeline", String(i), "event"]}
+                    className="block"
+                  />
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="future-outlook-panels">
+          {c.demandSignal && (
+            <section className="future-outlook-panel">
+              <p className="future-outlook-panel-label">Demand Signal</p>
+              <p>
+                <EditableText value={c.demandSignal} field="demandSignal" className="block" />
+              </p>
+            </section>
+          )}
+
+          {c.risk && (
+            <section className="future-outlook-panel future-outlook-panel--risk">
+              <p className="future-outlook-panel-label">Risk</p>
+              <p>
+                <EditableText value={c.risk} field="risk" className="block" />
+              </p>
+            </section>
           )}
         </div>
-      )}
-
-      {c.timeline && c.timeline.length > 0 && (
-        <div className="space-y-3 mb-6">
-          {c.timeline.map((t, i) => (
-            <div key={i} className="flex gap-3">
-              <span className="shrink-0 w-14 text-sm font-semibold tabular-nums" style={{ color: accent }}>
-                {t.year && (
-                  <EditableText
-                    value={t.year}
-                    field={["timeline", String(i), "year"]}
-                    className="inline"
-                  />
-                )}
-              </span>
-              <p>
-                <EditableText
-                  value={t.event}
-                  field={["timeline", String(i), "event"]}
-                  className="block text-neutral-200 text-base leading-relaxed"
-                />
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {c.demandSignal && (
-        <Panel className="border-emerald-400/20 bg-emerald-400/5 mb-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300/80 mb-2">
-            Demand Signal
-          </p>
-          <p>
-            <EditableText value={c.demandSignal} field="demandSignal" className="block text-neutral-200 text-base leading-relaxed" />
-          </p>
-        </Panel>
-      )}
-
-      {c.risk && (
-        <Panel className="border-amber-400/20 bg-amber-400/5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-amber-300/80 mb-2">
-            Risk
-          </p>
-          <p>
-            <EditableText value={c.risk} field="risk" className="block text-neutral-200 text-base leading-relaxed" />
-          </p>
-        </Panel>
-      )}
-    </CardFrame>
+      </div>
+    </div>
   );
 }
 
 function SourcesCard({ c, accent }: { c: SourcesContent; accent: string }) {
   return (
-    <CardFrame eyebrow={c.eyebrow ?? "Sources"} title={c.title ?? "Where this comes from"} accent={accent}>
-      <ol className="flex flex-col gap-2">
+    <CardFrame eyebrow={c.eyebrow ?? "Sources"} title={c.title ?? "Where this comes from"} accent={accent} wide>
+      <ol className="sources-index-grid">
         {(c.items ?? []).map((s, index) => (
-          <li key={s.ref} className="flex gap-2 text-sm">
-            <span className="text-neutral-500 tabular-nums">[{s.ref}]</span>
+          <li key={s.ref} className="sources-index-card">
+            <span className="sources-index-number">[{s.ref}]</span>
             <a
               href={s.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-neutral-300 hover:text-white inline-flex items-center gap-1"
+              className="sources-index-link"
             >
               <EditableText
                 value={s.title}
                 field={["items", String(index), "title"]}
-                className="inline"
+                className="sources-index-title"
               />
               {s.publisher && (
-                <span className="text-neutral-600">
-                  ·{" "}
+                <span className="sources-index-publisher">
                   <EditableText
                     value={s.publisher}
                     field={["items", String(index), "publisher"]}
@@ -1542,7 +1721,7 @@ function SourcesCard({ c, accent }: { c: SourcesContent; accent: string }) {
                   />
                 </span>
               )}
-              <ExternalLink className="h-3 w-3 shrink-0" />
+              <ExternalLink className="sources-index-external" />
             </a>
           </li>
         ))}
@@ -1698,9 +1877,9 @@ function CareerSurvivalCard({ c, accent }: { c: CareerSurvivalContent; accent: s
 
   return (
     <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
-      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 flex flex-col gap-0">
+      <div className="career-survival-stack rounded-2xl border border-white/10 bg-white/[0.03] p-4 flex flex-col gap-0">
         {/* Header row: tier + score + toggle */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-2">
             {tier && (
               <span className="rc-tier-badge text-lg">{tier.emoji}</span>
@@ -1747,7 +1926,7 @@ function CareerSurvivalCard({ c, accent }: { c: CareerSurvivalContent; accent: s
             <button
               key={key}
               onClick={() => detail ? setExpandedKey(isExpanded ? null : key) : undefined}
-              className={`rc-stagger text-left py-2 border-b border-white/5 last:border-b-0 rounded-lg transition-colors ${
+              className={`career-survival-metric rc-stagger text-left py-1.5 border-b border-white/5 last:border-b-0 rounded-lg transition-colors ${
                 detail ? "cursor-pointer hover:bg-white/[0.04] active:bg-white/[0.06] -mx-2 px-2" : ""
               }`}
               style={{ transitionDelay: `${0.3 + idx * 0.07}s` }}
@@ -1761,15 +1940,12 @@ function CareerSurvivalCard({ c, accent }: { c: CareerSurvivalContent; accent: s
                       {formatSurvivalSalary(val)}฿/mo
                     </span>
                     {detail && (
-                      <span className={`text-[10px] text-neutral-500 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}>
-                        ▾
+                      <span className={`radar-expand-indicator radar-expand-indicator--compact ${isExpanded ? "rotate-180" : ""}`} aria-hidden="true">
+                        <ChevronDown />
                       </span>
                     )}
                   </div>
-                  {detail && !isExpanded && (
-                    <p className="text-[10px] text-neutral-500 ml-7 mt-0.5">แตะเพื่อดูรายละเอียด</p>
-                  )}
-                  <p className="ml-7 mt-1 text-[11px] text-neutral-400">{interpretation}</p>
+                  <p className="ml-7 mt-0.5 text-[11px] text-neutral-400">{interpretation}</p>
                 </div>
               ) : (
                 <>
@@ -1780,8 +1956,8 @@ function CareerSurvivalCard({ c, accent }: { c: CareerSurvivalContent; accent: s
                       {val}{key === "grad_employment_pct" ? "%" : "/10"}
                     </span>
                     {detail && (
-                      <span className={`text-[10px] text-neutral-500 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}>
-                        ▾
+                      <span className={`radar-expand-indicator radar-expand-indicator--compact ${isExpanded ? "rotate-180" : ""}`} aria-hidden="true">
+                        <ChevronDown />
                       </span>
                     )}
                   </div>
@@ -1797,7 +1973,7 @@ function CareerSurvivalCard({ c, accent }: { c: CareerSurvivalContent; accent: s
                       />
                     </div>
                   </div>
-                  <p className="ml-7 mt-1 text-[11px] text-neutral-400">{interpretation}</p>
+                  <p className="ml-7 mt-0.5 text-[11px] text-neutral-400">{interpretation}</p>
                 </>
               )}
 
@@ -1997,6 +2173,41 @@ export function SourceRefs({ refs, sources }: { refs: number[]; sources: FieldSo
   );
 }
 
+const SIMPLE_RADAR_TITLES: Record<string, string> = {
+  careerSurvival: "Outlook",
+  fantasyReality: "Reality",
+  list: "Essentials",
+  jobs: "Roles",
+  growthCompare: "Growth",
+  dayInLife: "Day-to-day",
+  entryRoutes: "Study Path",
+  risks: "Trade-offs",
+  realPeople: "Real Paths",
+  futureOutlook: "Future",
+  sources: "Sources",
+  cta: "Next Step",
+  reflection: "Reflect",
+};
+
+function getSimpleRadarTitle(kind: string, content: Record<string, unknown>) {
+  if (kind === "text") {
+    const presentation = String(content.presentation ?? "").toLowerCase();
+    if (presentation.includes("skill")) return "Skills";
+    if (presentation.includes("start")) return "Start";
+    return "Explore";
+  }
+
+  return SIMPLE_RADAR_TITLES[kind] ?? "Explore";
+}
+
+function getThaiRadarSubtitle(content: Record<string, unknown>) {
+  const candidates = [content.title, content.eyebrow];
+  const thai = candidates.find(
+    (value) => typeof value === "string" && /[\u0E00-\u0E7F]/.test(value),
+  );
+  return typeof thai === "string" ? thai : "";
+}
+
 export function RadarCardView({
   kind,
   content,
@@ -2077,5 +2288,19 @@ export function RadarCardView({
       cardNode = <TextCard c={c} accent={accent} />;
   }
 
-  return cardNode;
+  const hasEditorialHeading = ["hook", "fantasyReality", "salaryProgression", "aiImpact", "marketThailand"].includes(kind);
+  if (hasEditorialHeading) return cardNode;
+
+  const englishTitle = getSimpleRadarTitle(kind, content);
+  const thaiSubtitle = getThaiRadarSubtitle(content);
+
+  return (
+    <section className={`radar-standard-page radar-standard-page--${kind}`}>
+      <header className="radar-standard-heading">
+        <h2>{englishTitle}</h2>
+        {thaiSubtitle && <p>{thaiSubtitle}</p>}
+      </header>
+      <div className="radar-standard-body">{cardNode}</div>
+    </section>
+  );
 }
