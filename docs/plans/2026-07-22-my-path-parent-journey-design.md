@@ -84,16 +84,16 @@ The dashboard applies the first matching rule in this order:
 |---|---|---|
 | Persisted plan unavailable because the read failed | Retry My Path | `/me` refresh action |
 | No persisted plan | Create My Path | `/plan` |
-| Expired trial for a selected PathLab | Ask parent to restore access | existing `/pay/:token` sharing flow |
-| Active enrollment with incomplete activities | Resume the current activity/day | `/seeds/pathlab/:enrollmentId?day=:currentDay` |
-| Paused enrollment | Choose whether to resume the saved experiment | `/seeds/pathlab/:enrollmentId?day=:currentDay` |
+| Accessible active enrollment with incomplete activities | Resume the current activity/day | `/seeds/pathlab/:enrollmentId?day=:currentDay` |
+| Accessible paused enrollment | Choose whether to resume the saved experiment | `/seeds/pathlab/:enrollmentId?day=:currentDay` |
 | Quit enrollment | Use the recorded negative signal to choose a different experiment | `/plan?resume=1` |
-| Selected PathLab without enrollment | Start the first day | combined trial/enrollment launch |
-| Plan without a selected PathLab | Choose a matching PathLab | `/plan?resume=1` at the PathLab step when available, otherwise `/plan?resume=1` |
 | Completed PathLab with another selected experiment | Start the next experiment | that seed's launch flow |
 | Completed PathLab with no next experiment | Review evidence and refine the plan | `/plan?resume=1` |
+| Expired trial that blocks an otherwise incomplete selected experiment | Ask parent to restore access | existing `/pay/:token` sharing flow |
+| Selected PathLab without enrollment or expired trial | Start the first day | combined trial/enrollment launch |
+| Plan without a selected PathLab | Choose a matching PathLab | `/plan?resume=1` at the PathLab step when available, otherwise `/plan?resume=1` |
 
-Trial states `active`, `pending`, and `paid` never replace an available learning action. They appear as secondary status. Completion is `path_enrollments.status = 'explored'` or a non-null end reflection. Current day and activity come from `path_enrollments.current_day`, `path_days`, `path_activities`, and `path_activity_progress`. When more than one enrollment can produce the same priority action, the enrollment with the most recent activity-progress timestamp wins, then the latest `enrolled_at`, then enrollment ID for a stable final tie-break. Evidence v1 includes a completed PathLab report/artifact when present and a privacy-safe fit signal derived from completion/performance metadata; it never includes raw reflections on the dashboard.
+Trial states `active`, `pending`, and `paid` never replace an available learning action. They appear as secondary status. An enrollment is accessible when its trial is active, pending, or paid, or when that enrollment is exempt from trial gating. Completion is `path_enrollments.status = 'explored'` or a non-null end reflection. Quit/completed signals and any other accessible experiment outrank payment recovery for an unrelated expired trial. Current day and activity come from `path_enrollments.current_day`, `path_days`, `path_activities`, and `path_activity_progress`. When more than one enrollment can produce the same priority action, the enrollment with the most recent activity-progress timestamp wins, then the latest `enrolled_at`, then enrollment ID for a stable final tie-break. Evidence v1 includes a completed PathLab report/artifact when present and a privacy-safe fit signal derived from completion/performance metadata; it never includes raw reflections on the dashboard.
 
 ## Student Launch Experience
 

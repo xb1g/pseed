@@ -129,6 +129,7 @@ Define tests for a pure `buildMyPathDashboard` function covering:
 - multiple eligible enrollments → most recent activity progress, then `enrolled_at`, then stable ID;
 - active, pending, paid, and expired trial labels;
 - saved Radar directions are limited to three and retain stable order.
+- accessible enrollments and terminal quit/completed signals outrank an unrelated expired trial; expiry recovery applies only when it blocks the otherwise-next incomplete experiment.
 
 Use an explicit result shape:
 
