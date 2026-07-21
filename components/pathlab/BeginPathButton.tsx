@@ -61,26 +61,28 @@ export function BeginPathButton({
 
   if (existingEnrollmentId) {
     return (
-      <Button
+      <button
+        type="button"
         onClick={() => router.push(`/seeds/pathlab/${existingEnrollmentId}`)}
-        className="w-full bg-white text-black hover:bg-neutral-200 text-lg py-6 font-bold"
+        className="ei-button-dusk min-h-12 w-full justify-center text-base"
       >
-        Continue Path
-      </Button>
+        <span>Continue Path</span>
+      </button>
     );
   }
 
   return (
     <>
-      <Button
+      <button
+        type="button"
         onClick={() => setOpen(true)}
-        className="w-full bg-white text-black hover:bg-neutral-200 text-lg py-6 font-bold"
+        className="ei-button-dusk min-h-12 w-full justify-center text-base"
       >
-        Begin Path
-      </Button>
+        <span>Begin Path</span>
+      </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="border-neutral-800 bg-neutral-900 text-white">
+        <DialogContent className="max-w-[calc(100vw-2rem)] border-white/10 bg-[#141416] text-white sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Before you begin</DialogTitle>
             <DialogDescription className="text-neutral-400">
@@ -90,24 +92,26 @@ export function BeginPathButton({
           <Textarea
             value={whyJoined}
             onChange={(event) => setWhyJoined(event.target.value)}
-            className="min-h-24 border-neutral-700 bg-neutral-950 text-white"
+            className="ei-input min-h-24 text-white placeholder:text-neutral-500"
             placeholder="Write a sentence or two..."
           />
-          <DialogFooter>
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
             <Button
               variant="ghost"
               onClick={() => setOpen(false)}
               disabled={loading}
+              className="min-h-11 text-neutral-300 hover:text-white"
             >
               Cancel
             </Button>
-            <Button
+            <button
+              type="button"
               onClick={handleBegin}
               disabled={loading}
-              className="bg-white text-black hover:bg-neutral-200"
+              className="ei-button-dusk min-h-11 justify-center"
             >
-              {loading ? "Starting..." : "Start"}
-            </Button>
+              <span>{loading ? "Starting..." : "Start"}</span>
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
