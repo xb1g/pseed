@@ -1,0 +1,28 @@
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { safeServerError } from "@/lib/security/route-guards";
+import { ParentUpdateError, verifyParentUpdates } from "@/lib/trials/parent-updates";
+import { createParentUpdateRepository } from "@/lib/trials/parent-updates-server";
+import { createClient, createServiceRoleClient } from "@/utils/supabase/server";
+
+const bearerSchema = z.string().regex(/^[0-9a-f]{64}$/);
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ verificationToken: string }> }
+) {
+  try {
+    const parsed = bearerSchema.safeParse((await params).verificationToken);
+    if (!parsed.success) return NextResponse.json({ error: "not_found" }, { status: 404 });
+    const repository = createParentUpdateRepository(
+      await createClient(),
+      createServiceRoleClient()
+    );
+    return NextResponse.json(await verifyParentUpdates(repository, parsed.data, new Date()));
+  } catch (error) {
+    if (error instanceof ParentUpdateError) {
+      return NextResponse.json({ error: error.code }, { status: error.status });
+    }
+    return safeServerError("Verification is temporarily unavailable", error);
+  }
+}
