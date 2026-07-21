@@ -10,8 +10,8 @@ import {
   recordRadarFieldView,
   recordRadarMyPathIntent,
   recordRadarPathIntent,
+  routeRadarCardIntent,
   syncPendingRadarMyPathEvents,
-  type RadarFieldIntent,
 } from "@/lib/supabase/radar";
 import { RadarCardView, SourceRefs } from "@/components/radar/RadarCards";
 import { getCareerCardVisual } from "@/components/radar/RadarPageClient";
@@ -533,32 +533,29 @@ export function RadarFieldPageClient({
                     onReflect={(payload) =>
                       handleReflect(card, chapterKey, payload)
                     }
-                    onIntent={(pathSlug, buttonLabel) => {
+                    onIntent={(pathSlug, buttonLabel, scope) => {
                       if (!fieldSlug || !field.id) return;
-                      void recordRadarPathIntent({
-                        fieldSlug,
-                        fieldId: field.id,
-                        pathSlug,
-                        buttonLabel:
-                          buttonLabel ||
-                          (content.button as string | undefined) ||
-                          undefined,
+                      routeRadarCardIntent({
+                        scope,
+                        buttonLabel,
+                        recordAnalytics() {
+                          void recordRadarPathIntent({
+                            fieldSlug,
+                            fieldId: field.id,
+                            pathSlug,
+                            buttonLabel:
+                              buttonLabel ||
+                              (content.button as string | undefined) ||
+                              undefined,
+                          });
+                        },
+                        recordCanonical(intent) {
+                          recordRadarMyPathIntent({
+                            careerSlug: fieldSlug,
+                            intent,
+                          });
+                        },
                       });
-                      const fieldIntent = buttonLabel?.replace(
-                        "-",
-                        "_"
-                      ) as RadarFieldIntent | undefined;
-                      if (
-                        fieldIntent === "interested" ||
-                        fieldIntent === "saved" ||
-                        fieldIntent === "not_interested" ||
-                        fieldIntent === "dismissed"
-                      ) {
-                        recordRadarMyPathIntent({
-                          careerSlug: fieldSlug,
-                          intent: fieldIntent,
-                        });
-                      }
                     }}
                   />
                 </RadarCardSection>

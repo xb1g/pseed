@@ -13,6 +13,13 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import Image from "next/image";
 import { ExternalLink, ArrowRight, Check, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
+import type { RadarIntentScope } from "@/lib/my-path/radar-sync";
+
+type RadarIntentHandler = (
+  pathSlug: string,
+  buttonLabel: string | undefined,
+  scope: RadarIntentScope
+) => void;
 
 // ── content shapes (one per radar_cards.kind) ────────────────────────────────
 
@@ -399,7 +406,7 @@ function StartCarouselTextCard({
 }: {
   c: TextContent;
   accent: string;
-  onIntent?: (pathSlug: string, buttonLabel?: string) => void;
+  onIntent?: RadarIntentHandler;
 }) {
   const editor = useContext(RadarInlineEditorContext);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -440,12 +447,12 @@ function StartCarouselTextCard({
   };
 
   const recordInterested = (index: number) => {
-    onIntent?.(`start-option-${index + 1}`, "interested");
+    onIntent?.(`start-option-${index + 1}`, "interested", "start-option");
     setInterestedRecorded((current) => new Set(current).add(index));
   };
 
   const recordNotInterested = (index: number) => {
-    onIntent?.(`start-option-${index + 1}`, "not-interested");
+    onIntent?.(`start-option-${index + 1}`, "not-interested", "start-option");
     setNotInterestedRecorded((current) => new Set(current).add(index));
   };
 
@@ -591,7 +598,7 @@ function TextCard({
 }: {
   c: TextContent;
   accent: string;
-  onIntent?: (pathSlug: string, buttonLabel?: string) => void;
+  onIntent?: RadarIntentHandler;
 }) {
   if (isSkillsText(c)) return <SkillsTextCard c={c} accent={accent} />;
   if (isStartText(c)) return <StartCarouselTextCard c={c} accent={accent} onIntent={onIntent} />;
@@ -1560,7 +1567,7 @@ function CtaCard({
   c: CtaContent;
   accent: string;
   squadUrl?: string | null;
-  onIntent?: (pathSlug: string, buttonLabel?: string) => void;
+  onIntent?: RadarIntentHandler;
 }) {
   const [interestedRecorded, setInterestedRecorded] = useState(false);
   const [notInterestedRecorded, setNotInterestedRecorded] = useState(false);
@@ -1572,18 +1579,18 @@ function CtaCard({
       try {
         const url = new URL(squadUrl, window.location.origin);
         const pathSlug = url.pathname.split("/").filter(Boolean).pop();
-        if (pathSlug) onIntent(pathSlug, "interested");
+        if (pathSlug) onIntent(pathSlug, "interested", "field");
       } catch {
-        onIntent("interested", "interested");
+        onIntent("interested", "interested", "field");
       }
     } else {
-      onIntent("interested", "interested");
+      onIntent("interested", "interested", "field");
     }
     setInterestedRecorded(true);
   };
 
   const recordNotInterested = () => {
-    onIntent?.("interested", "not-interested");
+    onIntent?.("interested", "not-interested", "field");
     setNotInterestedRecorded(true);
   };
 
@@ -1970,7 +1977,7 @@ export interface RadarCardViewProps {
   showSignupPrompt?: boolean;
   signupHref?: string;
   onReflect?: (payload: { rating?: number; tags?: string[]; text?: string }) => Promise<void> | void;
-  onIntent?: (pathSlug: string, buttonLabel?: string) => void;
+  onIntent?: RadarIntentHandler;
 }
 
 export function SourceRefs({ refs, sources }: { refs: number[]; sources: FieldSource[] }) {

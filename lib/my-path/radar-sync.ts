@@ -14,6 +14,7 @@ export const radarFieldIntentSchema = z.enum([
 ]);
 
 export type RadarFieldIntent = z.infer<typeof radarFieldIntentSchema>;
+export type RadarIntentScope = "start-option" | "field";
 
 export const radarMyPathEventSchema = z.object({
   clientEventId: z
@@ -61,6 +62,26 @@ export function mapRadarFieldIntent(intent: RadarFieldIntent): JourneyEventType 
     case "dismissed":
       return "career_removed";
   }
+}
+
+export function routeRadarCardIntent({
+  scope,
+  buttonLabel,
+  recordAnalytics,
+  recordCanonical,
+}: {
+  scope?: RadarIntentScope;
+  buttonLabel?: string;
+  recordAnalytics: () => void;
+  recordCanonical: (intent: RadarFieldIntent) => void;
+}) {
+  recordAnalytics();
+  if (scope !== "field") return;
+
+  const intent = radarFieldIntentSchema.safeParse(
+    buttonLabel?.replace("-", "_")
+  );
+  if (intent.success) recordCanonical(intent.data);
 }
 
 function createClientEventId(): string {

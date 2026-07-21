@@ -3,8 +3,10 @@ import { isAnonymousUser } from "@/lib/supabase/auth";
 import { shouldSkipRadarAnalytics } from "@/lib/radar/analytics-host";
 export {
   recordRadarMyPathIntent,
+  routeRadarCardIntent,
   syncPendingRadarMyPathEvents,
   type RadarFieldIntent,
+  type RadarIntentScope,
 } from "@/lib/my-path/radar-sync";
 import type { Database } from "./database.types";
 
