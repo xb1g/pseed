@@ -204,10 +204,22 @@ export function StepMission({
 
       <div className="mt-8">
         {importStatus === "saved" ? (
-          <p className="flex items-center gap-2 text-sm font-semibold text-emerald-200" role="status">
-            <CheckCircle2 className="h-4.5 w-4.5" aria-hidden="true" />
-            บันทึกแผนนี้เข้า My Path แล้ว — กลับมาดูได้ทุกเมื่อ
-          </p>
+          <div>
+            <p
+              className="flex items-center gap-2 text-sm font-semibold text-emerald-200"
+              role="status"
+            >
+              <CheckCircle2 className="h-4.5 w-4.5" aria-hidden="true" />
+              บันทึกแผนนี้เข้า My Path แล้ว — กลับมาดูได้ทุกเมื่อ
+            </p>
+            <Link
+              href="/me#my-path"
+              className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-lg text-sm font-semibold text-amber-100 underline decoration-amber-200/40 underline-offset-4 hover:text-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
+            >
+              ไปดู My Path ของฉัน
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
         ) : isSignedIn ? (
           <button
             type="button"
