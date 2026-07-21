@@ -12,7 +12,7 @@ import {
   createParentUpdateRepository,
   parentUpdateTokenSecret,
 } from "@/lib/trials/parent-updates-server";
-import { createClient, createServiceRoleClient } from "@/utils/supabase/server";
+import { createServiceRoleClient } from "@/utils/supabase/server";
 
 const tokenSchema = z.string().regex(/^[0-9a-f]{32}$/);
 
@@ -36,9 +36,8 @@ export async function POST(
       return NextResponse.json({ error: "invalid_request" }, { status: 400 });
     }
 
-    const publicClient = await createClient();
     const serviceClient = createServiceRoleClient();
-    const repository = createParentUpdateRepository(publicClient, serviceClient);
+    const repository = createParentUpdateRepository(serviceClient);
     const transport = configuredParentEmailTransport();
     const result = await subscribeParentUpdates({
       payToken: parsedToken.data,

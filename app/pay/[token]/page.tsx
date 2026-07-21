@@ -35,7 +35,6 @@ interface TrialRpcRow {
   priceAmount?: unknown;
   paymentDeadline?: unknown;
   seedTitle?: unknown;
-  paidAt?: unknown;
 }
 
 function firstText(...values: unknown[]): string | null {
@@ -69,7 +68,6 @@ export default async function PayPage({ params }: PayPageProps) {
     typeof row?.priceAmount === "number" && Number.isFinite(row.priceAmount)
       ? row.priceAmount
       : 0;
-  const paidAt = firstText(row?.paidAt);
 
   // RPC คืน status ที่ store ไว้ — resolve ซ้ำฝั่งนี้เพื่อให้ trial ที่เกิน
   // deadline แสดงเป็น expired เหมือน GET /api/trials/[token]
@@ -78,13 +76,13 @@ export default async function PayPage({ params }: PayPageProps) {
       ? resolveTrialStatus({
           status: storedStatus,
           payment_deadline: paymentDeadline,
-          paid_at: paidAt,
+          paid_at: null,
         })
       : null;
 
   const trial =
     status && paymentDeadline && seedTitle
-      ? { status, paymentDeadline, seedTitle, priceAmount, paidAt }
+      ? { status, paymentDeadline, seedTitle, priceAmount }
       : null;
 
   return (
@@ -123,7 +121,7 @@ export default async function PayPage({ params }: PayPageProps) {
             priceAmount={trial.priceAmount}
             paymentDeadline={trial.paymentDeadline}
             seedTitle={trial.seedTitle}
-            paidAt={trial.paidAt}
+            paidAt={null}
           />
         ) : (
           <section className="rounded-3xl border border-white/10 bg-white/[0.05] p-8 text-center shadow-2xl backdrop-blur-xl">
