@@ -377,3 +377,33 @@ test("parent update migration safely converges when retried after a partial appl
     );
   }
 });
+
+test("parent update token mutations are transactional hash and version CAS operations", () => {
+  const migrationsDirectory = new URL("../../../supabase/migrations/", import.meta.url);
+  const migrationName = readdirSync(migrationsDirectory).find((name) =>
+    name.endsWith("_parent_update_token_cas.sql")
+  );
+  assert.ok(migrationName, "additive parent token CAS migration must exist");
+  const sql = readFileSync(new URL(migrationName, migrationsDirectory), "utf8");
+
+  for (const functionName of [
+    "verify_parent_pathlab_subscription_token",
+    "unsubscribe_parent_pathlab_subscription_token",
+  ]) {
+    const start = sql.indexOf(`create or replace function public.${functionName}`);
+    assert.ok(start >= 0, `${functionName} must be defined`);
+    const end = sql.indexOf(`revoke all on function public.${functionName}`, start);
+    const body = sql.slice(start, end);
+    assert.match(body, /for update/);
+    assert.match(body, /p_expected_hash/);
+    assert.match(body, /p_expected_version/);
+    assert.match(body, /verification_token_hash|unsubscribe_token_hash/);
+    assert.match(body, /verification_version|unsubscribe_version/);
+    assert.match(sql.slice(end), new RegExp(
+      `grant execute on function public\\.${functionName}[\\s\\S]*to service_role`
+    ));
+  }
+  assert.match(sql, /verification_expires_at > p_at/);
+  assert.match(sql, /status = 'failed'/);
+  assert.match(sql, /lease_token = null/);
+});

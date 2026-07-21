@@ -93,3 +93,13 @@ test("unsubscribe and owner revoke cancel queued and leased delivery work", () =
   assert.match(server, /delivery_lease_token: null/);
   assert.match(ownerRoute, /revokeParentUpdatesForTrial/);
 });
+
+test("verification and unsubscribe mutations compare the current token hash and version", () => {
+  const server = source("lib/trials/parent-updates-server.ts");
+
+  assert.match(server, /verify_parent_pathlab_subscription_token/);
+  assert.match(server, /unsubscribe_parent_pathlab_subscription_token/);
+  assert.match(server, /p_expected_hash/);
+  assert.match(server, /p_expected_version/);
+  assert.doesNotMatch(server, /update\(\{ verified_at: verifiedAt/);
+});

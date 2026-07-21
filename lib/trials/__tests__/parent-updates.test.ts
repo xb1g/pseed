@@ -11,6 +11,7 @@ import {
   verifyParentUpdates,
   type ParentUpdateRepository,
   type ParentUpdateSubscription,
+  type ParentTokenMutationResult,
   type ClaimedParentUpdate,
 } from "../parent-updates";
 
@@ -69,13 +70,38 @@ function memoryRepository(existing: ParentUpdateSubscription | null = null) {
     async findByUnsubscribeHash(hash) {
       return value?.unsubscribeTokenHash === hash ? value : null;
     },
-    async markVerified(id, verifiedAt) {
-      if (value?.id === id) value = { ...value, verifiedAt };
-      return value!;
+    async markVerified(
+      id,
+      expectedHash,
+      expectedVersion,
+      verifiedAt
+    ): Promise<ParentTokenMutationResult> {
+      if (value?.id !== id) return "miss";
+      if (
+        value.verificationTokenHash !== expectedHash ||
+        value.verificationVersion !== expectedVersion
+      ) return "miss";
+      if (value.verifiedAt) return "already_applied";
+      if (new Date(value.verificationExpiresAt).getTime() <= new Date(verifiedAt).getTime()) {
+        return "expired";
+      }
+      value = { ...value, verifiedAt };
+      return "applied";
     },
-    async markUnsubscribed(id, unsubscribedAt) {
-      if (value?.id === id) value = { ...value, unsubscribedAt };
-      return value!;
+    async markUnsubscribed(
+      id,
+      expectedHash,
+      expectedVersion,
+      unsubscribedAt
+    ): Promise<ParentTokenMutationResult> {
+      if (value?.id !== id) return "miss";
+      if (
+        value.unsubscribeTokenHash !== expectedHash ||
+        value.unsubscribeVersion !== expectedVersion
+      ) return "miss";
+      if (value.unsubscribedAt) return "already_applied";
+      value = { ...value, unsubscribedAt };
+      return "applied";
     },
     async renewLease(_subscriptionId, leaseToken) {
       if (activeLeaseToken && activeLeaseToken !== leaseToken) return false;
@@ -258,6 +284,70 @@ test("unsubscribe is replay safe", async () => {
   }));
   expect(await unsubscribeParentUpdates(repository, token, NOW)).toEqual({ status: "unsubscribed" });
   expect(await unsubscribeParentUpdates(repository, token, NOW)).toEqual({ status: "unsubscribed" });
+});
+
+test("a rotated verification token cannot verify the replacement contact", async () => {
+  const oldToken = (await import("../parent-updates")).deriveBearerToken(
+    "verification", SUBSCRIPTION_ID, 1, SECRET
+  );
+  const repository = memoryRepository(subscription({
+    normalizedEmail: "old-parent@example.com",
+    verificationTokenHash: hashBearerToken(oldToken),
+    verificationVersion: 1,
+  }));
+  const originalFind = repository.findByVerificationHash.bind(repository);
+  repository.findByVerificationHash = async (hash) => {
+    const found = await originalFind(hash);
+    const stale = found ? { ...found } : null;
+    const current = repository.current();
+    if (current) {
+      current.normalizedEmail = "new-parent@example.com";
+      current.verificationTokenHash = "a".repeat(64);
+      current.verificationVersion = 2;
+      current.verifiedAt = null;
+    }
+    return stale;
+  };
+
+  await expect(verifyParentUpdates(repository, oldToken, NOW))
+    .rejects.toMatchObject({ code: "not_found", status: 404 });
+  expect(repository.current()).toMatchObject({
+    normalizedEmail: "new-parent@example.com",
+    verificationVersion: 2,
+    verifiedAt: null,
+  });
+});
+
+test("a rotated unsubscribe token cannot cancel a reactivated contact", async () => {
+  const oldToken = (await import("../parent-updates")).deriveBearerToken(
+    "unsubscribe", SUBSCRIPTION_ID, 1, SECRET
+  );
+  const repository = memoryRepository(subscription({
+    verifiedAt: NOW.toISOString(),
+    unsubscribeTokenHash: hashBearerToken(oldToken),
+    unsubscribeVersion: 1,
+  }));
+  const originalFind = repository.findByUnsubscribeHash.bind(repository);
+  repository.findByUnsubscribeHash = async (hash) => {
+    const found = await originalFind(hash);
+    const stale = found ? { ...found } : null;
+    const current = repository.current();
+    if (current) {
+      current.unsubscribeTokenHash = "b".repeat(64);
+      current.unsubscribeVersion = 2;
+      current.unsubscribedAt = null;
+      current.revokedAt = null;
+    }
+    return stale;
+  };
+
+  await expect(unsubscribeParentUpdates(repository, oldToken, NOW))
+    .rejects.toMatchObject({ code: "not_found", status: 404 });
+  expect(repository.current()).toMatchObject({
+    unsubscribeVersion: 2,
+    unsubscribedAt: null,
+    revokedAt: null,
+  });
 });
 
 test("uses the specified retry schedule and fails safely after five attempts", () => {
