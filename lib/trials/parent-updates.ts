@@ -53,14 +53,30 @@ export interface ClaimedParentUpdate {
   leasedUntil: string;
 }
 
+export type ParentTokenMutationResult =
+  | "applied"
+  | "already_applied"
+  | "expired"
+  | "miss";
+
 export interface ParentUpdateRepository {
   resolveTrialByPayToken(token: string): Promise<ParentUpdateTrialProjection | null>;
   findByTrialAccessId(trialAccessId: string): Promise<ParentUpdateSubscription | null>;
   saveSubscription(input: ParentUpdateSubscriptionWrite): Promise<ParentUpdateSubscription>;
   findByVerificationHash(hash: string): Promise<ParentUpdateSubscription | null>;
   findByUnsubscribeHash(hash: string): Promise<ParentUpdateSubscription | null>;
-  markVerified(id: string, verifiedAt: string): Promise<ParentUpdateSubscription>;
-  markUnsubscribed(id: string, unsubscribedAt: string): Promise<ParentUpdateSubscription>;
+  markVerified(
+    id: string,
+    expectedHash: string,
+    expectedVersion: number,
+    verifiedAt: string
+  ): Promise<ParentTokenMutationResult>;
+  markUnsubscribed(
+    id: string,
+    expectedHash: string,
+    expectedVersion: number,
+    unsubscribedAt: string
+  ): Promise<ParentTokenMutationResult>;
   renewLease(
     subscriptionId: string,
     leaseToken: string,
@@ -257,13 +273,19 @@ export async function verifyParentUpdates(
   token: string,
   now: Date
 ): Promise<{ status: "verified" }> {
-  const row = await repository.findByVerificationHash(hashBearerToken(token));
+  const expectedHash = hashBearerToken(token);
+  const row = await repository.findByVerificationHash(expectedHash);
   if (!row) throw new ParentUpdateError("not_found", 404);
-  if (row.verifiedAt) return { status: "verified" };
-  if (new Date(row.verificationExpiresAt).getTime() < now.getTime()) {
+  const result = await repository.markVerified(
+    row.id,
+    expectedHash,
+    row.verificationVersion,
+    now.toISOString()
+  );
+  if (result === "expired") {
     throw new ParentUpdateError("verification_expired", 410);
   }
-  await repository.markVerified(row.id, now.toISOString());
+  if (result === "miss") throw new ParentUpdateError("not_found", 404);
   return { status: "verified" };
 }
 
@@ -272,11 +294,16 @@ export async function unsubscribeParentUpdates(
   token: string,
   now: Date
 ): Promise<{ status: "unsubscribed" }> {
-  const row = await repository.findByUnsubscribeHash(hashBearerToken(token));
+  const expectedHash = hashBearerToken(token);
+  const row = await repository.findByUnsubscribeHash(expectedHash);
   if (!row) throw new ParentUpdateError("not_found", 404);
-  if (!row.unsubscribedAt) {
-    await repository.markUnsubscribed(row.id, now.toISOString());
-  }
+  const result = await repository.markUnsubscribed(
+    row.id,
+    expectedHash,
+    row.unsubscribeVersion,
+    now.toISOString()
+  );
+  if (result === "miss") throw new ParentUpdateError("not_found", 404);
   return { status: "unsubscribed" };
 }
 

@@ -5,6 +5,7 @@ import type {
   ParentUpdateRepository,
   ParentUpdateSubscription,
   ParentUpdateSubscriptionWrite,
+  ParentTokenMutationResult,
 } from "./parent-updates";
 import { resolveTrialAccessByToken } from "./trial-token-server";
 
@@ -101,6 +102,18 @@ async function mutateLease(
   return data === true;
 }
 
+function parentTokenMutationResult(value: unknown): ParentTokenMutationResult {
+  if (
+    value === "applied" ||
+    value === "already_applied" ||
+    value === "expired" ||
+    value === "miss"
+  ) {
+    return value;
+  }
+  throw new Error("Unexpected parent token mutation result");
+}
+
 export async function cancelParentUpdateDeliveries(
   serviceClient: SupabaseClient,
   subscriptionId: string,
@@ -190,30 +203,31 @@ export function createParentUpdateRepository(
       if (error) throw error;
       return data ? mapSubscription(data as SubscriptionRow) : null;
     },
-    async markVerified(id, verifiedAt) {
-      const { data, error } = await serviceClient
-        .from("parent_pathlab_subscriptions")
-        .update({ verified_at: verifiedAt, unsubscribed_at: null, revoked_at: null })
-        .eq("id", id)
-        .select(SUBSCRIPTION_COLUMNS)
-        .single();
-      if (error) throw error;
-      return mapSubscription(data as SubscriptionRow);
-    },
-    async markUnsubscribed(id, unsubscribedAt) {
-      await cancelParentUpdateDeliveries(
-        serviceClient,
-        id,
-        "subscription_unsubscribed",
-        unsubscribedAt
+    async markVerified(id, expectedHash, expectedVersion, verifiedAt) {
+      const { data, error } = await serviceClient.rpc(
+        "verify_parent_pathlab_subscription_token",
+        {
+          p_subscription_id: id,
+          p_expected_hash: expectedHash,
+          p_expected_version: expectedVersion,
+          p_at: verifiedAt,
+        }
       );
-      const { data, error } = await serviceClient
-        .from("parent_pathlab_subscriptions")
-        .select(SUBSCRIPTION_COLUMNS)
-        .eq("id", id)
-        .single();
       if (error) throw error;
-      return mapSubscription(data as SubscriptionRow);
+      return parentTokenMutationResult(data);
+    },
+    async markUnsubscribed(id, expectedHash, expectedVersion, unsubscribedAt) {
+      const { data, error } = await serviceClient.rpc(
+        "unsubscribe_parent_pathlab_subscription_token",
+        {
+          p_subscription_id: id,
+          p_expected_hash: expectedHash,
+          p_expected_version: expectedVersion,
+          p_at: unsubscribedAt,
+        }
+      );
+      if (error) throw error;
+      return parentTokenMutationResult(data);
     },
     async renewLease(subscriptionId, leaseToken, leasedUntil) {
       const { data, error } = await serviceClient
