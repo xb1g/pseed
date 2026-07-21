@@ -1,6 +1,6 @@
 # My Path and Parent Journey Design
 
-**Status:** Approved  
+**Status:** Approved
 **Date:** 2026-07-22
 
 ## Problem
@@ -59,10 +59,39 @@ The primary navigation labels `/me` as “My Path / เส้นทางขอ�
 
 After a successful save, the wizard displays a real link:
 
-> บันทึกไว้ใน My Path แล้ว  
+> บันทึกไว้ใน My Path แล้ว
 > ไปดู My Path ของฉัน →
 
 The destination is `/me#my-path`.
+
+## Canonical Radar Loop
+
+The My Path shortlist is canonical in `my_path_possibilities`; raw Radar analytics remain measurement data and never become dashboard state by themselves.
+
+- An authenticated Radar “interested/save” action appends an idempotent `career_saved` My Path event and upserts the possibility to `saved`.
+- An authenticated “not interested/remove” action appends `career_removed` and updates the possibility without deleting history.
+- Opening a Radar field records `radar_profile_opened`; a submitted reflection remains in `radar_reflections` and is surfaced as evidence by the existing My Path reader.
+- Anonymous Radar intent is queued locally with a client event ID. On authentication, the client submits the queue to the same authenticated endpoint; duplicate client IDs are ignored by the existing My Path event uniqueness constraint.
+- The `/plan` wizard reads the same persisted possibilities, so changing the shortlist in Radar and then opening the editor shows the updated choices.
+
+This v1 syncs field-level interest. Start-option analytics inside a Radar story remain analytics unless they map to a known planning-registry career slug.
+
+## Deterministic Next-Action Rules
+
+The dashboard applies the first matching rule in this order:
+
+| State | Primary action | Destination |
+|---|---|---|
+| Persisted plan unavailable because the read failed | Retry My Path | `/me` refresh action |
+| No persisted plan | Create My Path | `/plan` |
+| Expired trial for a selected PathLab | Ask parent to restore access | existing `/pay/:token` sharing flow |
+| Active enrollment with incomplete activities | Resume the current activity/day | `/seeds/pathlab/:enrollmentId?day=:currentDay` |
+| Selected PathLab without enrollment | Start the first day | combined trial/enrollment launch |
+| Plan without a selected PathLab | Choose a matching PathLab | `/plan?resume=1` at the PathLab step when available, otherwise `/plan?resume=1` |
+| Completed PathLab with another selected experiment | Start the next experiment | that seed's launch flow |
+| Completed PathLab with no next experiment | Review evidence and refine the plan | `/plan?resume=1` |
+
+Trial states `active`, `pending`, and `paid` never replace an available learning action. They appear as secondary status. Completion is `path_enrollments.status = 'explored'` or a non-null end reflection. Current day and activity come from `path_enrollments.current_day`, `path_days`, `path_activities`, and `path_activity_progress`. Evidence v1 includes a completed PathLab report/artifact when present and a privacy-safe fit signal derived from completion/performance metadata; it never includes raw reflections on the dashboard.
 
 ## Student Launch Experience
 
@@ -83,6 +112,8 @@ The post-click sheet reassures the student that:
 
 Price and timing are never hidden. The language reduces fear by clarifying control, not by obscuring the obligation.
 
+The launch operation idempotently creates or resumes both the trial and the PathLab enrollment and returns the enrollment URL. If trial creation succeeds but enrollment creation fails, the retry reuses the existing trial and attempts only the missing enrollment. The UI never claims the first activity is ready until both records exist.
+
 ## Parent Conversion Page
 
 The parent payment page uses the Dawn theme, which the design system assigns to students and parents. Its hierarchy is:
@@ -102,6 +133,10 @@ The parent payment page uses the Dawn theme, which the design system assigns to 
 
 The 24-hour countdown explains access state. It is not the primary sales device. The page does not invent discounts, testimonials, refunds, or guarantees.
 
+On mobile, the first viewport contains the PathLab title, one tailored connection to the student's saved direction (or a generic “chosen as part of My Path” fallback), three concise outcomes, the full ฿1,490 price, and a “ดูวิธีชำระ” anchor CTA. PromptPay remains below the value story. Desktop keeps the same reading order in a two-column layout with the value story on the left and a sticky payment summary on the right.
+
+The public token projection may expose only: seed title and public description, total days, price, deadline/status, one saved Radar direction title, and pre-authored outcome labels. It never exposes the student's name, email, reflection text, answers, chat, scores, or notes. If no plan or matching Radar data exists, the page uses the generic connection copy.
+
 ## Parent Email Updates
 
 The public payment page accepts an optional parent email with explicit consent. Submission sends a verification email. No progress update is sent until the address is verified.
@@ -119,7 +154,24 @@ Private reflection text, assessment answers, chat content, notes, and sensitive 
 
 Updates are aggregated to at most one progress message per 24 hours. Transactional payment messages are not subject to that aggregation. Every non-transactional email includes an unsubscribe action.
 
-Parent contacts live in a dedicated protected table attached to a trial. Anonymous clients receive no direct table privileges. A validated and rate-limited server route performs token lookup and writes through a privileged server client. Verification and unsubscribe use random bearer tokens stored as hashes where practical.
+Parent contacts live in a dedicated protected table attached to a trial. Anonymous clients receive no direct table privileges. A validated and rate-limited server route performs token lookup and writes through a privileged server client. Verification and unsubscribe use random bearer tokens that are always stored as hashes.
+
+V1 supports one active parent contact per trial. The form requires the recipient to attest that they are a parent/guardian or have the family's permission to receive updates. Email verification proves address control, not legal guardianship; the product states that boundary honestly. The student sees the masked verified address and can revoke updates from `/me`.
+
+All new verification and unsubscribe tokens are random, stored only as SHA-256 hashes, and compared by hash. Verification tokens expire after 30 minutes; resend rotates the token and invalidates the previous one. Verification endpoints are idempotent after success. Unsubscribe tokens remain valid until the contact is removed or resubscribed, and unsubscribe is replay-safe.
+
+## Notification Delivery Contract
+
+Database triggers create safe outbox events for these transitions:
+
+- `path_enrollments` insert → `pathlab_started`;
+- `path_activity_progress` first transition to `completed` → `milestone_completed`;
+- `path_enrollments` first transition to `explored` → `pathlab_completed`;
+- `trial_accesses.status` change → `payment_status_changed`.
+
+Each event uses `subscription_id:event_kind:source_table:source_id:source_state` as its unique idempotency key. Milestone events due within the same 24-hour window are aggregated into one progress email. Transactional verification, unsubscribe, and payment-state messages are delivered separately.
+
+An authenticated Vercel Cron route claims due rows, sends through Resend, and marks them delivered. It retries transient failures up to five times with exponential backoff (5, 10, 20, 40, and 80 minutes). Permanent provider rejection or five failed attempts moves a row to `failed` with a non-sensitive error code for admin inspection. A lease timestamp prevents concurrent workers from double-sending.
 
 ## Data Flow
 
@@ -143,10 +195,23 @@ Parent contacts live in a dedicated protected table attached to a trial. Anonymo
 - Email provider failure: preserve consent and allow a rate-limited resend.
 - Unsubscribed contact: never enqueue new progress messages.
 
+| Feature | Loading | Success | Recoverable failure |
+|---|---|---|---|
+| `/me` shell | Dawn skeleton for the hero | Independent sections render | Failed section shows a compact retry while other sections remain usable |
+| Plan save | Disabled CTA + status | Link to `/me#my-path` | Local draft remains and retry is offered |
+| Trial/enrollment launch | Single progress state | Navigate to enrollment | Existing trial is reused on retry; no duplicate charge/access row |
+| Parent opt-in | Inline submit progress | “Check your email” with masked address | Preserve email, show error, and rate-limit resend |
+| Verification | Verifying state | Safe confirmed state | Expired token offers a resend path without exposing trial data |
+| Outbox delay | No blocking UI | Updates arrive asynchronously | Payment and learning access continue even if email delivery fails |
+| Slip upload | Existing preview/progress | Pending review | Existing retry behavior remains |
+
+On mobile, the next-action CTA remains in the first viewport and sections stack in decision order. Desktop may use two columns after the hero, but DOM and keyboard order remain Plan → Radar → PathLab → Evidence. Each server-read section degrades independently rather than turning the entire `/me` page into an error screen.
+
 ## Accessibility and Visual System
 
 - Student and parent surfaces use Dawn atmospheric tokens and Thai typography rules.
 - Existing `.ei-card`, `.ei-button-dawn`, `.ei-input`, and Shadcn primitives are reused rather than redefined inline.
+- A documented `.dawn-theme .ei-card` token override/modifier is added in `app/globals.css`; it preserves the shared card/glow structure while changing the Dusk amber material to Dawn blue/gold. Components do not redefine the card inline.
 - Any new glow animates clip-path, opacity, and filter together.
 - Hover-in uses tension keyframes; hover-out snaps back quickly.
 - Touch states use `IntersectionObserver` and `@media (hover: none)`.
@@ -176,3 +241,11 @@ Implementation follows red-green-refactor.
 - Parent email updates require verified consent and never expose private student content.
 - Existing saved plans, trials, and Journey Map data remain compatible.
 
+## V1 Non-Goals
+
+- Parent accounts or a parent portal.
+- More than one parent contact per trial.
+- SMS, LINE, or push progress updates.
+- Private reflection, assessment-answer, chat, or note excerpts in parent communication.
+- A new billing provider, subscription billing, discounts, or refund policy.
+- Replacing the existing Journey Map or embedding the plan wizard inside `/me`.
