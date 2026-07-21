@@ -11,6 +11,7 @@ import { configuredParentEmailTransport, buildVerificationEmail } from "@/lib/tr
 import {
   createParentUpdateRepository,
   parentUpdateTokenSecret,
+  revokeParentUpdatesForTrial,
 } from "@/lib/trials/parent-updates-server";
 import { createServiceRoleClient } from "@/utils/supabase/server";
 
@@ -108,11 +109,11 @@ export async function DELETE(
     if (!owner.ok) return owner.response;
     if (!owner.trial) return NextResponse.json({ error: "not_found" }, { status: 404 });
     const revokedAt = new Date().toISOString();
-    const { error } = await owner.serviceClient
-      .from("parent_pathlab_subscriptions")
-      .update({ revoked_at: revokedAt, unsubscribed_at: revokedAt })
-      .eq("trial_access_id", owner.trial.id);
-    if (error) throw error;
+    await revokeParentUpdatesForTrial(
+      owner.serviceClient,
+      owner.trial.id,
+      revokedAt
+    );
     return NextResponse.json({ status: "revoked" });
   } catch (error) {
     return parentError(error);

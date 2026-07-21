@@ -64,3 +64,32 @@ test("outbox finalization is lease-token CAS guarded", () => {
   assert.match(server, /p_lease_token/);
   assert.match(server, /releaseLease/);
 });
+
+test("delivery leases can only be acquired and renewed with active consent", () => {
+  const server = source("lib/trials/parent-updates-server.ts");
+  const acquisition = server.slice(
+    server.indexOf("delivery_lease_token: leaseToken"),
+    server.indexOf("const { data: rows")
+  );
+  const renewal = server.slice(
+    server.indexOf("async renewLease"),
+    server.indexOf("async markDelivered")
+  );
+
+  for (const section of [acquisition, renewal]) {
+    assert.match(section, /not\("verified_at", "is", null\)/);
+    assert.match(section, /is\("unsubscribed_at", null\)/);
+    assert.match(section, /is\("revoked_at", null\)/);
+  }
+  assert.match(acquisition, /activeOwnership/);
+});
+
+test("unsubscribe and owner revoke cancel queued and leased delivery work", () => {
+  const server = source("lib/trials/parent-updates-server.ts");
+  const ownerRoute = source("app/api/trials/[token]/parent-updates/route.ts");
+
+  assert.match(server, /cancelParentUpdateDeliveries/);
+  assert.match(server, /deactivate_parent_pathlab_subscription/);
+  assert.match(server, /delivery_lease_token: null/);
+  assert.match(ownerRoute, /revokeParentUpdatesForTrial/);
+});

@@ -424,6 +424,57 @@ test("a worker that loses its lease cannot send or finalize stale rows", async (
   expect(repository.delivered).toHaveLength(0);
 });
 
+test.each(["unsubscribed", "revoked"] as const)(
+  "%s consent after lease acquisition prevents the transport call",
+  async (state) => {
+    const repository = memoryRepository(
+      subscription({ verifiedAt: NOW.toISOString() })
+    );
+    const originalRenew = repository.renewLease.bind(repository);
+    let renewals = 0;
+    repository.renewLease = async (...args) => {
+      renewals += 1;
+      if (renewals === 1) {
+        const acquired = await originalRenew(...args);
+        const current = repository.current();
+        if (current) {
+          if (state === "unsubscribed") current.unsubscribedAt = NOW.toISOString();
+          else current.revokedAt = NOW.toISOString();
+        }
+        return acquired;
+      }
+      const current = repository.current();
+      if (current?.unsubscribedAt || current?.revokedAt) return false;
+      return originalRenew(...args);
+    };
+    const send = jest.fn().mockResolvedValue({ ok: true });
+
+    await processClaimedParentUpdates({
+      rows: [{
+        id: `event-${state}`,
+        subscriptionId: SUBSCRIPTION_ID,
+        eventKind: "milestone_completed",
+        safePayload: { seedTitle: "AI Builder" },
+        attemptCount: 0,
+        normalizedEmail: "parent@example.com",
+        lastProgressDeliveredAt: null,
+        unsubscribeVersion: 1,
+        leaseToken: `lease-${state}`,
+        leasedUntil: "2026-07-22T10:15:00.000Z",
+      }],
+      repository,
+      send,
+      now: NOW,
+      origin: "https://passionseed.org",
+      tokenSecret: SECRET,
+    });
+
+    expect(renewals).toBe(2);
+    expect(send).not.toHaveBeenCalled();
+    expect(repository.delivered).toHaveLength(0);
+  }
+);
+
 test("ParentUpdateError never needs private trial data", () => {
   expect(new ParentUpdateError("not_found", 404).message).toBe("not_found");
 });

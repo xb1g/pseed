@@ -283,9 +283,24 @@ test("parent PathLab updates are consented, private, and delivered through a saf
     parentMigration,
     /function public\.mutate_parent_pathlab_update_lease[\s\S]*security invoker[\s\S]*p_lease_token[\s\S]*for update[\s\S]*lease_token = p_lease_token/
   );
+  const leaseMutation = parentMigration.slice(
+    parentMigration.indexOf(
+      "create or replace function public.mutate_parent_pathlab_update_lease"
+    ),
+    parentMigration.indexOf(
+      "revoke all on function public.mutate_parent_pathlab_update_lease"
+    )
+  );
+  assert.match(leaseMutation, /verified_at is not null/);
+  assert.match(leaseMutation, /unsubscribed_at is null/);
+  assert.match(leaseMutation, /revoked_at is null/);
   assert.match(
     parentMigration,
     /grant execute on function public\.mutate_parent_pathlab_update_lease[\s\S]*to service_role/
+  );
+  assert.match(
+    parentMigration,
+    /function public\.deactivate_parent_pathlab_subscription[\s\S]*for update[\s\S]*status = 'failed'[\s\S]*grant execute[\s\S]*to service_role/
   );
   assert.match(parentMigration, /subscription_id \|\| ':' \|\| p_event_kind/);
   assert.match(parentMigration, /new\.status = 'completed'/);
