@@ -17,6 +17,7 @@ const PUBLIC_ROUTE_PREFIXES = [
   "/plan",
   "/pay",
   "/api/trials",
+  "/faculty-radar",
   "/fireball",
 ] as const;
 

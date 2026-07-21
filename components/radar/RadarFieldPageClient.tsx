@@ -545,9 +545,11 @@ export function RadarFieldPageClient({
                   sectionRefs.current[cards.length] = element;
                 }}
                 data-radar-index={cards.length}
-                className="radar-card-section in-view px-6 py-24"
+                className="radar-card-section in-view px-6 py-20"
               >
-                <RadarSkillExperience skills={initialSkills} accent={accent} />
+                <RadarViewportFit>
+                  <RadarSkillExperience skills={initialSkills} accent={accent} />
+                </RadarViewportFit>
               </section>
             )}
           </>
@@ -560,6 +562,16 @@ export function RadarFieldPageClient({
             </div>
           </section>
         )}
+      </div>
+    </div>
+  );
+}
+
+function RadarViewportFit({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="radar-viewport-fit">
+      <div className="radar-viewport-fit__content">
+        {children}
       </div>
     </div>
   );
@@ -653,15 +665,15 @@ function RadarCardSection({
           </div>
         </div>
       )}
-      <div className="relative z-10 min-h-[calc(100dvh-10rem)] flex flex-col">
-        <div className="my-auto">
+      <div className="radar-card-viewport relative z-10 h-[calc(100dvh-10rem)]">
+        <RadarViewportFit>
           {children}
-        </div>
-        {sourceRefs.length > 0 && fieldSources.length > 0 && (
-          <div className="shrink-0 pb-2 max-w-xl mx-auto w-full">
-            <SourceRefs refs={sourceRefs} sources={fieldSources} />
-          </div>
-        )}
+          {sourceRefs.length > 0 && fieldSources.length > 0 && (
+            <div className="radar-section-sources mt-2 max-w-xl mx-auto w-full">
+              <SourceRefs refs={sourceRefs} sources={fieldSources} />
+            </div>
+          )}
+        </RadarViewportFit>
         {isFirst && hasMore && !hasScrolled && (
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
             <span className="text-[11px] uppercase tracking-[0.2em] text-white/30 font-medium">
