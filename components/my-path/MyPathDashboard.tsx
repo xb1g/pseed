@@ -13,7 +13,7 @@ import {
   Radar,
   Route,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import type {
   MyPathDashboardModel,
@@ -141,7 +141,7 @@ function SectionHeading({
 function PlanSummary({ model }: MyPathDashboardProps) {
   if (!model.plan) return null;
   const goal = model.plan.goal
-    ? (GOAL_LABELS[model.plan.goal] ?? model.plan.goal)
+    ? GOAL_LABELS[model.plan.goal] ?? model.plan.goal
     : "กำหนดทิศทางของฉัน";
 
   return (
@@ -172,7 +172,10 @@ function PlanSummary({ model }: MyPathDashboardProps) {
 
 function RadarShortlist({ model }: MyPathDashboardProps) {
   return (
-    <section aria-labelledby="my-path-radar-heading" className="my-path-section">
+    <section
+      aria-labelledby="my-path-radar-heading"
+      className="my-path-section"
+    >
       <SectionHeading
         id="my-path-radar-heading"
         eyebrow="Radar"
@@ -192,7 +195,9 @@ function RadarShortlist({ model }: MyPathDashboardProps) {
                     <span className="font-space-mono text-xs text-slate-500">
                       0{index + 1}
                     </span>
-                    <span className="truncate font-semibold">{direction.title}</span>
+                    <span className="truncate font-semibold">
+                      {direction.title}
+                    </span>
                   </span>
                   <span className="flex items-center gap-2 text-sm text-slate-400 group-hover:text-blue-200">
                     เปิด Radar
@@ -220,7 +225,10 @@ function RadarShortlist({ model }: MyPathDashboardProps) {
 
 function PathlabExperiments({ model }: MyPathDashboardProps) {
   return (
-    <section aria-labelledby="my-path-pathlabs-heading" className="my-path-section">
+    <section
+      aria-labelledby="my-path-pathlabs-heading"
+      className="my-path-section"
+    >
       <SectionHeading
         id="my-path-pathlabs-heading"
         eyebrow="PathLab"
@@ -251,23 +259,32 @@ function PathlabExperiments({ model }: MyPathDashboardProps) {
                       : "พร้อมเปลี่ยนความสนใจให้เป็นหลักฐานจากงานจริง"}
                   </p>
                   {pathlab.trial ? (
-                    <p className="mt-2 font-bai-jamjuree text-xs text-slate-400">
-                      สถานะการเข้าถึง: <span className="text-slate-200">{pathlab.trial.label}</span>
-                      {pathlab.trial.status === "expired" ? (
-                        <>
-                          {" · "}
-                          <Link
-                            href={pathlab.trial.payHref}
-                            className="inline-flex min-h-12 items-center py-3 text-blue-200 underline decoration-blue-300/40 underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200/70"
-                          >
-                            เปิดการทดลองต่อ
-                          </Link>
-                        </>
-                      ) : null}
-                    </p>
+                    <>
+                      <p className="mt-2 font-bai-jamjuree text-xs text-slate-400">
+                        สถานะการเข้าถึง:{" "}
+                        <span className="text-slate-200">
+                          {pathlab.trial.label}
+                        </span>
+                        {pathlab.trial.status === "expired" ? (
+                          <>
+                            {" · "}
+                            <Link
+                              href={pathlab.trial.payHref}
+                              className="inline-flex min-h-12 items-center py-3 text-blue-200 underline decoration-blue-300/40 underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200/70"
+                            >
+                              เปิดการทดลองต่อ
+                            </Link>
+                          </>
+                        ) : null}
+                      </p>
+                      <ParentUpdateContact payHref={pathlab.trial.payHref} />
+                    </>
                   ) : null}
                 </div>
-                <Link href={pathlab.href} className="my-path-text-link shrink-0">
+                <Link
+                  href={pathlab.href}
+                  className="my-path-text-link shrink-0"
+                >
                   ดูการทดลอง
                   <ArrowRight aria-hidden="true" className="h-4 w-4" />
                 </Link>
@@ -276,7 +293,8 @@ function PathlabExperiments({ model }: MyPathDashboardProps) {
           </div>
         ) : (
           <p className="border-y border-white/10 py-5 font-bai-jamjuree text-sm leading-6 text-slate-400">
-            เมื่อเลือก PathLab การทดลองจะเรียงต่อจาก Radar และติดตามความคืบหน้าให้ที่นี่
+            เมื่อเลือก PathLab การทดลองจะเรียงต่อจาก Radar
+            และติดตามความคืบหน้าให้ที่นี่
           </p>
         )}
       </div>
@@ -284,9 +302,79 @@ function PathlabExperiments({ model }: MyPathDashboardProps) {
   );
 }
 
+function ParentUpdateContact({ payHref }: { payHref: string }) {
+  const token = payHref.match(/^\/pay\/([0-9a-f]{32})$/)?.[1] ?? null;
+  const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
+  const [revoking, setRevoking] = useState(false);
+  const [revoked, setRevoked] = useState(false);
+
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    void fetch(`/api/trials/${token}/parent-updates`)
+      .then(async (response) => (response.ok ? response.json() : null))
+      .then((payload) => {
+        if (
+          active &&
+          payload?.verified &&
+          typeof payload.maskedEmail === "string"
+        ) {
+          setMaskedEmail(payload.maskedEmail);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [token]);
+
+  async function revoke() {
+    if (!token || revoking) return;
+    setRevoking(true);
+    try {
+      const response = await fetch(`/api/trials/${token}/parent-updates`, {
+        method: "DELETE",
+      });
+      if (!response.ok) return;
+      setMaskedEmail(null);
+      setRevoked(true);
+    } finally {
+      setRevoking(false);
+    }
+  }
+
+  if (revoked) {
+    return (
+      <p className="mt-2 text-xs text-emerald-200" role="status">
+        หยุดส่งอัปเดตแล้ว
+      </p>
+    );
+  }
+  if (!maskedEmail) return null;
+
+  return (
+    <div className="mt-2 flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-3">
+      <p className="text-xs text-slate-400">
+        อัปเดตผู้ปกครอง: <span className="text-slate-200">{maskedEmail}</span>
+      </p>
+      <button
+        type="button"
+        onClick={revoke}
+        disabled={revoking}
+        className="inline-flex min-h-12 items-center rounded-lg px-2 text-xs font-semibold text-rose-200 underline decoration-rose-200/40 underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200/70 disabled:opacity-50"
+      >
+        {revoking ? "กำลังหยุดส่ง…" : "หยุดส่งอัปเดตให้ผู้ปกครอง"}
+      </button>
+    </div>
+  );
+}
+
 function EvidenceSection({ model }: MyPathDashboardProps) {
   return (
-    <section aria-labelledby="my-path-evidence-heading" className="my-path-section">
+    <section
+      aria-labelledby="my-path-evidence-heading"
+      className="my-path-section"
+    >
       <SectionHeading
         id="my-path-evidence-heading"
         eyebrow="Evidence"
@@ -303,10 +391,15 @@ function EvidenceSection({ model }: MyPathDashboardProps) {
                   className="group grid min-h-12 gap-1 font-bai-jamjuree outline-none focus-visible:rounded-lg focus-visible:ring-2 focus-visible:ring-yellow-200/70"
                 >
                   <span className="flex items-center gap-2 font-semibold text-slate-100 group-hover:text-blue-200">
-                    <CheckCircle2 aria-hidden="true" className="h-4 w-4 text-emerald-300" />
+                    <CheckCircle2
+                      aria-hidden="true"
+                      className="h-4 w-4 text-emerald-300"
+                    />
                     {item.label}
                   </span>
-                  <span className="pl-6 text-sm leading-6 text-slate-400">{item.detail}</span>
+                  <span className="pl-6 text-sm leading-6 text-slate-400">
+                    {item.detail}
+                  </span>
                 </Link>
               </li>
             ))}
@@ -365,7 +458,10 @@ export function MyPathDashboard({ model }: MyPathDashboardProps) {
     <div className="dawn-theme my-path-dashboard font-bai-jamjuree">
       <NextActionHero model={model} />
       <div className="my-path-core-loop" data-my-path-reveal>
-        <div className="my-path-journey-marker" aria-label="Plan ไป Radar ไป PathLab ไป Evidence">
+        <div
+          className="my-path-journey-marker"
+          aria-label="Plan ไป Radar ไป PathLab ไป Evidence"
+        >
           <ClipboardList aria-hidden="true" className="h-4 w-4" />
           <span>Plan</span>
           <span aria-hidden="true">→</span>

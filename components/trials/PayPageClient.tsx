@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   BadgeCheck,
+  CheckCircle2,
   CircleAlert,
   Clock3,
   CloudUpload,
@@ -10,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { TRIAL_PRICE_THB, type TrialStatus } from "@/lib/trials/status";
+import { ParentUpdateOptIn } from "./ParentUpdateOptIn";
 import { TrialCountdown } from "./TrialCountdown";
 
 interface PayPageClientProps {
@@ -18,33 +20,33 @@ interface PayPageClientProps {
   priceAmount: number;
   paymentDeadline: string;
   seedTitle: string;
-  paidAt: string | null;
+  seedDescription: string | null;
+  totalDays: number | null;
+  radarDirectionTitle: string | null;
+  outcomes: string[];
 }
 
 const MAX_SLIP_BYTES = 5 * 1024 * 1024;
+const DEFAULT_OUTCOMES = [
+  "ผลงานจริงที่ใช้เป็นหลักฐานได้",
+  "สัญญาณความเหมาะกับสายอาชีพที่ชัดขึ้น",
+  "สรุปความคืบหน้าสำหรับครอบครัว",
+];
 
 function formatThb(amount: number): string {
   return `฿${new Intl.NumberFormat("th-TH").format(amount)}`;
 }
 
-function formatThaiDateTime(iso: string): string {
-  return new Intl.DateTimeFormat("th-TH", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(iso));
-}
-
-/**
- * หน้าชำระเงินสำหรับผู้ปกครอง (ไม่ต้องมีบัญชี)
- * active/expired → แสดง QR + อัปโหลดสลิป, pending/paid → แสดงสถานะ
- */
 export function PayPageClient({
   token,
   initialStatus,
   priceAmount,
   paymentDeadline,
   seedTitle,
-  paidAt,
+  seedDescription,
+  totalDays,
+  radarDirectionTitle,
+  outcomes,
 }: PayPageClientProps) {
   const [status, setStatus] = useState<TrialStatus>(initialStatus);
   const [slipFile, setSlipFile] = useState<File | null>(null);
@@ -52,10 +54,10 @@ export function PayPageClient({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   const amount = priceAmount > 0 ? priceAmount : TRIAL_PRICE_THB;
+  const parentOutcomes =
+    outcomes.length >= 3 ? outcomes.slice(0, 3) : DEFAULT_OUTCOMES;
 
-  // คืน object URL ของ slip preview ตัวเก่าทุกครั้งที่เปลี่ยนรูปหรือ unmount
   useEffect(() => {
     return () => {
       if (slipPreview) URL.revokeObjectURL(slipPreview);
@@ -93,13 +95,10 @@ export function PayPageClient({
         body: formData,
       });
       if (response.status === 409) {
-        // ชำระไปแล้ว — แสดงหน้าขอบคุณแทน
         setStatus("paid");
         return;
       }
-      if (!response.ok) {
-        throw new Error("upload failed");
-      }
+      if (!response.ok) throw new Error("upload failed");
       setStatus("pending");
     } catch {
       setError("อัปโหลดสลิปไม่สำเร็จ กรุณาลองอีกครั้งครับ/ค่ะ");
@@ -111,9 +110,11 @@ export function PayPageClient({
   if (status === "pending") {
     return (
       <StatusCard
-        icon={<Hourglass className="h-10 w-10 text-amber-200" aria-hidden="true" />}
+        icon={
+          <Hourglass className="h-10 w-10 text-amber-200" aria-hidden="true" />
+        }
         title="ได้รับสลิปแล้ว กำลังตรวจสอบ"
-        description="ขอบคุณครับ/ค่ะ — ทีมงานจะตรวจสอบยอดและยืนยันให้เร็วที่สุด ระหว่างนี้บุตรหลานของท่านยังทดลองต่อได้ตามปกติ"
+        description="ทีมงานจะตรวจสอบยอดและยืนยันให้เร็วที่สุด ระหว่างนี้บุตรหลานยังทดลองต่อได้ตามปกติ"
       />
     );
   }
@@ -121,166 +122,231 @@ export function PayPageClient({
   if (status === "paid") {
     return (
       <StatusCard
-        icon={<BadgeCheck className="h-10 w-10 text-emerald-300" aria-hidden="true" />}
+        icon={
+          <BadgeCheck
+            className="h-10 w-10 text-emerald-300"
+            aria-hidden="true"
+          />
+        }
         title="ชำระเรียบร้อย ขอบคุณครับ/ค่ะ"
-        description="การทดลอง PathLab ของบุตรหลานของท่านถูกปลดล็อกเรียบร้อยแล้ว"
-      >
-        {paidAt && (
-          <p className="mt-3 text-sm text-slate-400">
-            ชำระเมื่อ {formatThaiDateTime(paidAt)}
-          </p>
-        )}
-      </StatusCard>
+        description="PathLab นี้ปลดล็อกเรียบร้อยแล้ว บุตรหลานทำต่อได้ตามแผน"
+      />
     );
   }
 
-  // active | expired → ยังชำระได้
   return (
-    <div className="space-y-5">
-      <section className="rounded-3xl border border-white/10 bg-white/[0.05] p-6 shadow-2xl backdrop-blur-xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-purple-200/70">
-          กำลังทดลอง
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,0.72fr)] lg:items-start">
+      <section
+        className="ei-card px-5 py-6 sm:px-7 sm:py-8"
+        aria-labelledby="parent-value-title"
+        data-parent-value-story
+      >
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-200/80">
+          PathLab ที่บุตรหลานเลือก
         </p>
-        <h2 className="mt-1.5 text-xl font-bold leading-snug text-white">
+        <h1
+          id="parent-value-title"
+          className="mt-2 font-kodchasan text-2xl font-bold leading-snug text-white sm:text-3xl"
+        >
           {seedTitle}
-        </h2>
-        <p className="mt-3 text-sm leading-6 text-slate-300">
-          บุตรหลานของคุณเริ่มทดลองงานจริงแล้ว —
-          การชำระนี้ปลดล็อกการทดลองทั้งหมด
-          และจะถูกนำไปเป็นเครดิตเต็มจำนวนเมื่ออัปเกรดเป็น
-          Admission Evidence Sprint
+        </h1>
+        <p className="mt-3 text-sm font-semibold leading-6 text-blue-100">
+          {radarDirectionTitle
+            ? `เชื่อมกับทิศ ${radarDirectionTitle} ที่บุตรหลานกำลังสนใจใน My Path`
+            : "บุตรหลานเลือกไว้เป็นส่วนหนึ่งของ My Path เพื่อทดลองก่อนตัดสินใจจริง"}
         </p>
 
-        <div className="mt-5 flex items-end justify-between gap-4 rounded-2xl border border-white/10 bg-black/25 px-5 py-4">
+        <div className="mt-6 border-y border-white/10 py-5">
+          <h2 className="font-kodchasan text-base font-bold text-white">
+            สิ่งที่จะได้ลงมือทำและมีในมือ
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-300">
+            ลงมือทำจริง {totalDays ? `${totalDays} วัน` : "ตามเส้นทาง PathLab"}
+            {seedDescription
+              ? `: ${seedDescription}`
+              : " จากโจทย์ที่ใกล้กับงานจริง"}
+          </p>
+          <ul className="mt-4 space-y-3">
+            {parentOutcomes.map((outcome) => (
+              <li
+                key={outcome}
+                className="flex items-start gap-3 text-sm leading-6 text-slate-100"
+              >
+                <CheckCircle2
+                  className="mt-0.5 h-5 w-5 shrink-0 text-emerald-300"
+                  aria-hidden="true"
+                />
+                <span>{outcome}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p className="mt-5 text-sm leading-6 text-slate-300">
+          ค่าทดลองนี้เป็นเครดิตเต็มจำนวนสำหรับ Admission Evidence Sprint
+          หากครอบครัวเลือกไปต่อ
+        </p>
+        <div className="mt-5 flex items-end justify-between gap-4">
           <div>
-            <p className="text-xs text-slate-400">ค่าทดลอง PathLab</p>
-            <p className="mt-0.5 text-4xl font-extrabold tracking-tight text-white">
+            <p className="text-xs text-slate-400">ค่าทดลอง PathLab ทั้งหมด</p>
+            <p className="mt-1 text-4xl font-extrabold tracking-tight text-white">
               {formatThb(amount)}
             </p>
           </div>
-          {status === "active" && (
-            <div className="text-right">
-              <p className="flex items-center justify-end gap-1 text-xs text-slate-400">
-                <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
-                ชำระภายใน
-              </p>
+          <div className="text-right">
+            <p className="flex items-center justify-end gap-1 text-xs text-slate-400">
+              <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
+              {status === "active" ? "ชำระภายใน 24 ชม." : "เลยกำหนดแล้ว"}
+            </p>
+            {status === "active" && (
               <TrialCountdown
                 deadline={paymentDeadline}
                 expiredLabel="เลยกำหนดแล้ว"
-                className="mt-0.5 block font-mono text-lg font-bold tabular-nums text-amber-200"
+                className="mt-1 block font-mono text-lg font-bold tabular-nums text-amber-100"
               />
-            </div>
-          )}
+            )}
+          </div>
         </div>
-
+        <a
+          href="#payment"
+          className="ei-button-dawn mt-5 min-h-12 w-full justify-center"
+        >
+          <span>ดูวิธีชำระ</span>
+        </a>
         {status === "expired" && (
-          <p className="mt-4 rounded-2xl border border-amber-200/25 bg-amber-200/[0.08] px-4 py-3 text-sm leading-6 text-amber-100/90">
-            เลยกำหนด 24 ชม. แล้ว แต่ยังชำระได้ —
-            การชำระจะปลดล็อกทันที
+          <p className="mt-4 rounded-xl border border-amber-200/25 bg-amber-200/[0.08] px-4 py-3 text-sm leading-6 text-amber-100">
+            เลยกำหนด 24 ชม. แล้ว แต่ยังชำระเพื่อปลดล็อก PathLab ได้
           </p>
         )}
       </section>
 
-      <section className="rounded-3xl border border-white/10 bg-white/[0.05] p-6 text-center shadow-2xl backdrop-blur-xl">
-        <h3 className="text-base font-bold text-white">
-          สแกนเพื่อชำระผ่าน PromptPay
-        </h3>
-        <div className="mx-auto mt-4 w-fit rounded-3xl bg-white p-3 shadow-[0_8px_40px_rgba(0,0,0,0.45)]">
-          {/* eslint-disable-next-line @next/next/no-img-element -- QR เป็น static asset ใน public/ ใช้ img ธรรมดา ไม่ต้องตั้งค่า next/image เพิ่ม */}
-          <img
-            src="/trial/promptpay-qr.jpeg"
-            alt="PromptPay QR สำหรับชำระเงิน"
-            className="h-56 w-56 rounded-xl object-contain"
-          />
-        </div>
-        <p className="mt-3 text-sm font-semibold text-slate-200">
-          สแกนแล้วกรอกยอด {formatThb(amount)}
-        </p>
-      </section>
+      <ParentUpdateOptIn token={token} />
 
-      <section className="rounded-3xl border border-white/10 bg-white/[0.05] p-6 shadow-2xl backdrop-blur-xl">
-        <h3 className="text-base font-bold text-white">แนบสลิปการโอน</h3>
-        <p className="mt-1 text-sm leading-6 text-slate-400">
-          อัปโหลดรูปสลิป (ไม่เกิน 5MB)
-          ทีมงานจะตรวจสอบและยืนยันการชำระให้ครับ/ค่ะ
+      <section
+        id="payment"
+        className="ei-card scroll-mt-4 px-5 py-6 sm:px-6 lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1 lg:row-span-2"
+        aria-labelledby="payment-heading"
+      >
+        <h2
+          id="payment-heading"
+          className="font-kodchasan text-xl font-bold text-white"
+        >
+          ชำระผ่าน PromptPay
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-slate-300">
+          ยอดเต็ม {formatThb(amount)} ไม่มีการตัดเงินอัตโนมัติ
         </p>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          className="sr-only"
-          aria-label="เลือกรูปสลิปการโอน"
-          onChange={(event) => selectSlip(event.target.files?.[0] ?? null)}
-        />
-
-        {slipPreview && slipFile ? (
-          <div className="mt-4 space-y-3">
-            {/* eslint-disable-next-line @next/next/no-img-element -- preview จาก object URL ฝั่ง client ใช้ next/image ไม่ได้ */}
+        <div className="mt-5 text-center">
+          <h3 className="text-base font-bold text-white">
+            สแกนเพื่อชำระผ่าน PromptPay
+          </h3>
+          <div className="mx-auto mt-4 w-fit rounded-2xl bg-white p-3 shadow-[0_8px_40px_rgba(0,0,0,0.45)]">
+            {/* eslint-disable-next-line @next/next/no-img-element -- QR is a static public asset */}
             <img
-              src={slipPreview}
-              alt={`ตัวอย่างสลิป ${slipFile.name}`}
-              className="mx-auto max-h-64 rounded-2xl border border-white/15 object-contain"
+              src="/trial/promptpay-qr.jpeg"
+              alt="PromptPay QR สำหรับชำระเงิน"
+              className="h-56 w-56 rounded-xl object-contain"
             />
+          </div>
+          <p className="mt-3 text-sm font-semibold text-slate-200">
+            สแกนแล้วกรอกยอด {formatThb(amount)}
+          </p>
+        </div>
+
+        <div className="mt-7 border-t border-white/10 pt-6">
+          <h3 className="text-base font-bold text-white">แนบสลิปการโอน</h3>
+          <p className="mt-1 text-sm leading-6 text-slate-400">
+            อัปโหลดรูปสลิปไม่เกิน 5MB ทีมงานจะตรวจสอบและยืนยันการชำระ
+          </p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            aria-label="เลือกรูปสลิปการโอน"
+            onChange={(event) => selectSlip(event.target.files?.[0] ?? null)}
+          />
+
+          {slipPreview && slipFile ? (
+            <div className="mt-4 space-y-3">
+              {/* eslint-disable-next-line @next/next/no-img-element -- client-side object URL */}
+              <img
+                src={slipPreview}
+                alt={`ตัวอย่างสลิป ${slipFile.name}`}
+                className="mx-auto max-h-64 rounded-2xl border border-white/15 object-contain"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="min-h-12 w-full rounded-xl text-sm font-semibold text-blue-100 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200"
+              >
+                เลือกรูปอื่น
+              </button>
+            </div>
+          ) : (
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="block w-full text-center text-sm font-medium text-purple-200 underline-offset-4 hover:underline"
+              className="mt-4 flex min-h-28 w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/20 bg-black/20 px-4 py-6 text-slate-300 hover:border-blue-300/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200"
             >
-              เลือกรูปอื่น
+              <CloudUpload
+                className="h-7 w-7 text-blue-200"
+                aria-hidden="true"
+              />
+              <span className="text-sm font-semibold">
+                แตะเพื่อเลือกรูปสลิป
+              </span>
+              <span className="text-xs text-slate-400">
+                ไฟล์รูปภาพ ไม่เกิน 5MB
+              </span>
             </button>
-          </div>
-        ) : (
+          )}
+
+          {error && (
+            <p
+              className="mt-3 flex items-start gap-2 text-sm text-rose-200"
+              role="alert"
+            >
+              <CircleAlert
+                className="mt-0.5 h-4 w-4 shrink-0"
+                aria-hidden="true"
+              />
+              {error}
+            </p>
+          )}
           <button
             type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="mt-4 flex min-h-28 w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/20 bg-black/20 px-4 py-6 text-slate-300 transition-colors hover:border-purple-300/40 hover:bg-black/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-300"
+            onClick={uploadSlip}
+            disabled={!slipFile || uploading}
+            className="ei-button-dawn mt-4 min-h-12 w-full justify-center disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <CloudUpload className="h-7 w-7 text-purple-200" aria-hidden="true" />
-            <span className="text-sm font-semibold">แตะเพื่อเลือกรูปสลิป</span>
-            <span className="text-xs text-slate-500">รองรับไฟล์รูปภาพ ไม่เกิน 5MB</span>
+            <span>{uploading ? "กำลังอัปโหลด…" : "ส่งสลิปยืนยันการชำระ"}</span>
           </button>
-        )}
-
-        {error && (
-          <p
-            className="mt-3 inline-flex items-center gap-2 text-sm text-rose-200"
-            role="alert"
-          >
-            <CircleAlert className="h-4 w-4 shrink-0" aria-hidden="true" />
-            {error}
-          </p>
-        )}
-
-        <button
-          type="button"
-          onClick={uploadSlip}
-          disabled={!slipFile || uploading}
-          className="ei-button-dusk mt-4 min-h-12 w-full justify-center disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <span>{uploading ? "กำลังอัปโหลด…" : "ส่งสลิปยืนยันการชำระ"}</span>
-        </button>
+        </div>
       </section>
     </div>
   );
 }
 
-interface StatusCardProps {
+function StatusCard({
+  icon,
+  title,
+  description,
+}: {
   icon: React.ReactNode;
   title: string;
   description: string;
-  children?: React.ReactNode;
-}
-
-function StatusCard({ icon, title, description, children }: StatusCardProps) {
+}) {
   return (
-    <section className="rounded-3xl border border-white/10 bg-white/[0.05] p-8 text-center shadow-2xl backdrop-blur-xl">
+    <section className="ei-card mx-auto max-w-xl p-8 text-center">
       <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-white/[0.06]">
         {icon}
       </div>
-      <h2 className="mt-5 text-xl font-bold leading-snug text-white">{title}</h2>
+      <h1 className="mt-5 font-kodchasan text-xl font-bold leading-snug text-white">
+        {title}
+      </h1>
       <p className="mt-2 text-sm leading-6 text-slate-300">{description}</p>
-      {children}
     </section>
   );
 }
