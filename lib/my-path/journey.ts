@@ -1,4 +1,4 @@
-import { resolvePlanEntry } from "./entries";
+import { isKnownPlanEntry } from "./entries";
 import type {
   ContextualQuestion,
   JourneyEvent,
@@ -7,6 +7,7 @@ import type {
 } from "./types";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+const DEFAULT_ENTRY_KEY = "generic";
 export const MAX_ACTIVE_SAVED_PATHS = 3;
 
 function timestampPlusDays(timestamp: string, milliseconds: number): string {
@@ -18,11 +19,14 @@ export function createAnonymousDraft(
   draftId = crypto.randomUUID(),
   now = new Date().toISOString()
 ): MyPathDraft {
-  const entry = resolvePlanEntry(entryKey);
   return {
     version: 1,
     draftId,
-    entryKey: entry.key,
+    // Only the key string is needed here. Resolve it without referencing the
+    // entry objects: cross-module constant references get mis-inlined by the
+    // Turbopack production build (GENERIC_ENTRY TDZ in the client chunk).
+    entryKey:
+      entryKey && isKnownPlanEntry(entryKey) ? entryKey : DEFAULT_ENTRY_KEY,
     createdAt: now,
     updatedAt: now,
     expiresAt: timestampPlusDays(now, THIRTY_DAYS_MS),
