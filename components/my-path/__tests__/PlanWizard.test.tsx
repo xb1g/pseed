@@ -44,13 +44,14 @@ const seeds = [
   seed("seed-fashion", "Fashion Design Studio"),
 ];
 
-function renderWizard(isSignedIn = false) {
+function renderWizard(isSignedIn = false, hasPersistedPath = false) {
   return render(
     <PlanWizard
       careers={careers}
       seeds={seeds}
       isSignedIn={isSignedIn}
       initialDraft={null}
+      hasPersistedPath={hasPersistedPath}
     />
   );
 }
@@ -173,4 +174,13 @@ test("resumes the furthest step reached after an accidental exit", async () => {
   expect(
     await screen.findByRole("heading", { name: "ล็อกเป้าหมายของคุณ" })
   ).toBeVisible();
+});
+
+test("links a persisted mission plan to the My Path dashboard", async () => {
+  window.localStorage.setItem("passionseed_my_path_wizard_step_v1", "4");
+  renderWizard(true, true);
+
+  expect(
+    await screen.findByRole("link", { name: "ไปดู My Path ของฉัน" })
+  ).toHaveAttribute("href", "/me#my-path");
 });
