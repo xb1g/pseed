@@ -1,4 +1,4 @@
-import { createHash, createHmac, randomUUID } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 import { z } from "zod";
 
 const VERIFY_WINDOW_MS = 30 * 60 * 1000;
@@ -165,6 +165,22 @@ export function hashBearerToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
+export function deriveParentSubscriptionId(
+  trialAccessId: string,
+  secret: string
+): string {
+  const hex = createHmac("sha256", secret)
+    .update(`parent-subscription:${trialAccessId}`)
+    .digest("hex")
+    .slice(0, 32)
+    .split("");
+  hex[12] = "4";
+  hex[16] = ((Number.parseInt(hex[16], 16) & 0x3) | 0x8).toString(16);
+  return `${hex.slice(0, 8).join("")}-${hex.slice(8, 12).join("")}-${hex
+    .slice(12, 16)
+    .join("")}-${hex.slice(16, 20).join("")}-${hex.slice(20).join("")}`;
+}
+
 /**
  * Produces a server-reproducible opaque bearer token. The subscription id is a
  * random UUID and the keyed digest is indistinguishable from random bytes. This
@@ -220,7 +236,7 @@ export async function subscribeParentUpdates(input: {
     throw new ParentUpdateError("rate_limited", 429);
   }
 
-  const id = existing?.id ?? randomUUID();
+  const id = existing?.id ?? deriveParentSubscriptionId(trial.id, input.tokenSecret);
   const verificationVersion = (existing?.verificationVersion ?? 0) + 1;
   const contactChanged = Boolean(existing && existing.normalizedEmail !== normalizedEmail);
   const reactivating = Boolean(existing?.unsubscribedAt || existing?.revokedAt);
