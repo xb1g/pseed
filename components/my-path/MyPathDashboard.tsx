@@ -108,10 +108,12 @@ function NextActionHero({ model }: MyPathDashboardProps) {
 }
 
 function SectionHeading({
+  id,
   eyebrow,
   title,
   icon: Icon,
 }: {
+  id: string;
   eyebrow: string;
   title: string;
   icon: typeof Route;
@@ -125,7 +127,10 @@ function SectionHeading({
         <p className="font-bai-jamjuree text-xs font-semibold uppercase tracking-[0.14em] text-blue-200/80">
           {eyebrow}
         </p>
-        <h2 className="mt-1 font-kodchasan text-xl font-bold text-white sm:text-2xl">
+        <h2
+          id={id}
+          className="mt-1 font-kodchasan text-xl font-bold text-white sm:text-2xl"
+        >
           {title}
         </h2>
       </div>
@@ -140,11 +145,16 @@ function PlanSummary({ model }: MyPathDashboardProps) {
     : "กำหนดทิศทางของฉัน";
 
   return (
-    <section aria-labelledby="my-path-plan" className="my-path-section">
-      <SectionHeading eyebrow="Plan" title="แผน 2–4 เดือนของฉัน" icon={Route} />
+    <section aria-labelledby="my-path-plan-heading" className="my-path-section">
+      <SectionHeading
+        id="my-path-plan-heading"
+        eyebrow="Plan"
+        title="แผน 2–4 เดือนของฉัน"
+        icon={Route}
+      />
       <div className="mt-5 grid gap-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
         <div>
-          <p id="my-path-plan" className="font-bai-jamjuree text-sm text-slate-400">
+          <p className="font-bai-jamjuree text-sm text-slate-400">
             เป้าหมาย · {goal} · {model.plan.timelineMonths} เดือน
           </p>
           <p className="mt-2 max-w-2xl font-kodchasan text-lg font-semibold leading-8 text-slate-100">
@@ -162,9 +172,14 @@ function PlanSummary({ model }: MyPathDashboardProps) {
 
 function RadarShortlist({ model }: MyPathDashboardProps) {
   return (
-    <section aria-labelledby="my-path-radar" className="my-path-section">
-      <SectionHeading eyebrow="Radar" title="ทิศที่กำลังอยากรู้จัก" icon={Radar} />
-      <div id="my-path-radar" className="mt-5">
+    <section aria-labelledby="my-path-radar-heading" className="my-path-section">
+      <SectionHeading
+        id="my-path-radar-heading"
+        eyebrow="Radar"
+        title="ทิศที่กำลังอยากรู้จัก"
+        icon={Radar}
+      />
+      <div className="mt-5">
         {model.radarDirections.length ? (
           <ul className="divide-y divide-white/10 border-y border-white/10">
             {model.radarDirections.map((direction, index) => (
@@ -205,13 +220,14 @@ function RadarShortlist({ model }: MyPathDashboardProps) {
 
 function PathlabExperiments({ model }: MyPathDashboardProps) {
   return (
-    <section aria-labelledby="my-path-pathlabs" className="my-path-section">
+    <section aria-labelledby="my-path-pathlabs-heading" className="my-path-section">
       <SectionHeading
+        id="my-path-pathlabs-heading"
         eyebrow="PathLab"
         title="การทดลองทำงานจริง"
         icon={BookOpenCheck}
       />
-      <div id="my-path-pathlabs" className="mt-5">
+      <div className="mt-5">
         {model.pathlabs.length ? (
           <div className="divide-y divide-white/10 border-y border-white/10">
             {model.pathlabs.map((pathlab) => (
@@ -270,9 +286,14 @@ function PathlabExperiments({ model }: MyPathDashboardProps) {
 
 function EvidenceSection({ model }: MyPathDashboardProps) {
   return (
-    <section aria-labelledby="my-path-evidence" className="my-path-section">
-      <SectionHeading eyebrow="Evidence" title="หลักฐานที่ได้จากการลงมือทำ" icon={FileCheck2} />
-      <div id="my-path-evidence" className="mt-5">
+    <section aria-labelledby="my-path-evidence-heading" className="my-path-section">
+      <SectionHeading
+        id="my-path-evidence-heading"
+        eyebrow="Evidence"
+        title="หลักฐานที่ได้จากการลงมือทำ"
+        icon={FileCheck2}
+      />
+      <div className="mt-5">
         {model.evidence.length ? (
           <ul className="divide-y divide-white/10 border-y border-white/10">
             {model.evidence.map((item) => (
@@ -302,12 +323,18 @@ function EvidenceSection({ model }: MyPathDashboardProps) {
 
 function SupportingJourneyLinks() {
   return (
-    <nav aria-label="เครื่องมือทบทวนเส้นทาง" className="my-path-supporting-links">
+    <nav
+      aria-labelledby="my-path-supporting-heading"
+      className="my-path-supporting-links"
+    >
       <div>
         <p className="font-bai-jamjuree text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
           เมื่ออยากมองภาพกว้าง
         </p>
-        <h2 className="mt-1 font-kodchasan text-lg font-semibold text-slate-100">
+        <h2
+          id="my-path-supporting-heading"
+          className="mt-1 font-kodchasan text-lg font-semibold text-slate-100"
+        >
           ทบทวนเส้นทางและความคิดของฉัน
         </h2>
       </div>

@@ -84,6 +84,32 @@ test("planned My Path shows the plan editor and canonical Radar links", () => {
   );
 });
 
+test("journey regions take stable accessible names from their visible headings", () => {
+  render(<MyPathDashboard model={model()} />);
+
+  for (const name of [
+    "แผน 2–4 เดือนของฉัน",
+    "ทิศที่กำลังอยากรู้จัก",
+    "การทดลองทำงานจริง",
+    "หลักฐานที่ได้จากการลงมือทำ",
+  ]) {
+    const region = screen.getByRole("region", { name });
+    const heading = screen.getByRole("heading", { name });
+    expect(heading).toHaveAttribute("id", region.getAttribute("aria-labelledby"));
+  }
+
+  const supporting = screen.getByRole("navigation", {
+    name: "ทบทวนเส้นทางและความคิดของฉัน",
+  });
+  const supportingHeading = screen.getByRole("heading", {
+    name: "ทบทวนเส้นทางและความคิดของฉัน",
+  });
+  expect(supportingHeading).toHaveAttribute(
+    "id",
+    supporting.getAttribute("aria-labelledby")
+  );
+});
+
 test("active PathLab keeps learning primary and payment status secondary", () => {
   render(
     <MyPathDashboard
@@ -233,15 +259,21 @@ test("the Dawn motion contract keeps skeletons static and stops button motion wh
   const css = fs.readFileSync(path.join(process.cwd(), "app/globals.css"), "utf8");
 
   expect(css).toContain(
-    ".dawn-theme .ei-card:not(.ei-card--static):hover"
+    ".dawn-theme .ei-card:not(.ei-card--static):not(.ei-card--lit):hover"
   );
   expect(css).toContain(
-    ".dawn-theme .ei-card:not(.ei-card--static).in-view"
+    ".dawn-theme .ei-card:not(.ei-card--static):not(.ei-card--lit).in-view"
   );
   expect(css).toMatch(
     /\.dawn-theme \.ei-card--static:hover,[\s\S]*?\.dawn-theme \.ei-card--static\.in-view\s*\{[\s\S]*?animation: none;[\s\S]*?transform: none;/
   );
   expect(css).toMatch(
     /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.dawn-theme \.ei-button-dawn::before,[\s\S]*?\.dawn-theme \.ei-button-dawn::after,[\s\S]*?animation: none !important;[\s\S]*?transform: none !important;/
+  );
+  expect(css).toMatch(
+    /\.dawn-theme \.ei-card--lit,[\s\S]*?\.dawn-theme \.ei-card--lit:hover,[\s\S]*?\.dawn-theme \.ei-card--lit\.in-view\s*\{[\s\S]*?border-color: rgba\(255, 214, 140, 0\.68\);[\s\S]*?animation: none;/
+  );
+  expect(css).toMatch(
+    /\.dawn-theme \.ei-card--lit::before,[\s\S]*?\.dawn-theme \.ei-card--lit:hover::before,[\s\S]*?\.dawn-theme \.ei-card--lit\.in-view::before\s*\{[\s\S]*?opacity: 1;[\s\S]*?filter: blur\(3px\);/
   );
 });
