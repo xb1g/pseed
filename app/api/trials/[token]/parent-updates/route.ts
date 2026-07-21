@@ -8,6 +8,7 @@ import {
   subscribeParentUpdates,
 } from "@/lib/trials/parent-updates";
 import { configuredParentEmailTransport, buildVerificationEmail } from "@/lib/trials/parent-email";
+import { configuredParentAppOrigin } from "@/lib/trials/app-origin";
 import {
   createParentUpdateRepository,
   parentUpdateTokenSecret,
@@ -50,7 +51,7 @@ export async function POST(
       },
       now: new Date(),
       tokenSecret: parentUpdateTokenSecret(),
-      origin: request.nextUrl.origin,
+      origin: configuredParentAppOrigin(),
     });
     return NextResponse.json(result, { status: result.status === "verification_sent" ? 202 : 200 });
   } catch (error) {

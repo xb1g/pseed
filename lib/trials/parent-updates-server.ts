@@ -262,6 +262,24 @@ export function createParentUpdateRepository(
       }
       return true;
     },
+    async freezeDeliveryGroup(
+      ids,
+      subscriptionId,
+      leaseToken,
+      deliveryGroupKey
+    ) {
+      const { data, error } = await serviceClient.rpc(
+        "freeze_parent_pathlab_delivery_group",
+        {
+          p_subscription_id: subscriptionId,
+          p_lease_token: leaseToken,
+          p_ids: ids,
+          p_delivery_group_key: deliveryGroupKey,
+        }
+      );
+      if (error) throw error;
+      return data === true;
+    },
     async markDelivered(ids, subscriptionId, leaseToken, deliveredAt, isProgress) {
       return mutateLease(serviceClient, {
         subscriptionId,
@@ -331,132 +349,45 @@ export function createParentUpdateRepository(
   };
 }
 
-interface DeliverySubscriptionRow {
-  normalized_email: string;
-  verified_at: string | null;
-  unsubscribed_at: string | null;
-  revoked_at: string | null;
-  last_progress_delivered_at: string | null;
-  unsubscribe_version: number;
-  delivery_lease_token: string | null;
-  delivery_leased_until: string | null;
-}
-
-interface OutboxClaimRow {
+interface ClaimedParentUpdateRow {
   id: string;
   subscription_id: string;
   event_kind: ClaimedParentUpdate["eventKind"];
   safe_payload: Record<string, unknown>;
   attempt_count: number;
-  subscription: DeliverySubscriptionRow | DeliverySubscriptionRow[];
-}
-
-function embeddedSubscription(
-  value: OutboxClaimRow["subscription"]
-): DeliverySubscriptionRow | null {
-  return (Array.isArray(value) ? value[0] : value) ?? null;
+  delivery_group_key: string | null;
+  normalized_email: string;
+  last_progress_delivered_at: string | null;
+  unsubscribe_version: number;
 }
 
 export async function claimDueParentUpdates(
   serviceClient: SupabaseClient,
   now: Date,
-  limit = 100
+  limit = 5
 ): Promise<ClaimedParentUpdate[]> {
   const nowIso = now.toISOString();
-  const { data: candidates, error } = await serviceClient
-    .from("parent_pathlab_update_outbox")
-    .select(`
-      id, subscription_id, event_kind, safe_payload, attempt_count,
-      subscription:parent_pathlab_subscriptions!inner(
-        normalized_email, verified_at, unsubscribed_at, revoked_at,
-        last_progress_delivered_at, unsubscribe_version,
-        delivery_lease_token, delivery_leased_until
-      )
-    `)
-    .lte("scheduled_at", nowIso)
-    .or(`status.eq.pending,and(status.eq.leased,leased_until.lt.${nowIso})`)
-    .order("scheduled_at", { ascending: true })
-    .limit(Math.max(limit * 10, limit));
-  if (error) throw error;
-
+  const boundedLimit = Math.max(0, Math.min(limit, 5));
   const claimed: ClaimedParentUpdate[] = [];
-  const seenSubscriptions = new Set<string>();
-  let acquiredCount = 0;
-  for (const raw of candidates ?? []) {
-    const candidate = raw as unknown as OutboxClaimRow;
-    if (seenSubscriptions.has(candidate.subscription_id)) continue;
-    seenSubscriptions.add(candidate.subscription_id);
-    const subscription = embeddedSubscription(candidate.subscription);
-    if (
-      !subscription?.verified_at ||
-      subscription.unsubscribed_at ||
-      subscription.revoked_at
-    ) {
-      await cancelParentUpdateDeliveries(
-        serviceClient,
-        candidate.subscription_id,
-        "subscription_inactive"
-      );
-      continue;
-    }
-
+  while (claimed.length < boundedLimit) {
+    const remainingCapacity = boundedLimit - claimed.length;
     const leaseToken = randomUUID();
     const leasedUntil = new Date(now.getTime() + 15 * 60_000).toISOString();
-    const { data: acquired, error: acquireError } = await serviceClient
-      .from("parent_pathlab_subscriptions")
-      .update({
-        delivery_lease_token: leaseToken,
-        delivery_leased_until: leasedUntil,
-      })
-      .eq("id", candidate.subscription_id)
-      .or(`delivery_leased_until.is.null,delivery_leased_until.lt.${nowIso}`)
-      .not("verified_at", "is", null)
-      .is("unsubscribed_at", null)
-      .is("revoked_at", null)
-      .select(`
-        normalized_email, verified_at, unsubscribed_at, revoked_at,
-        last_progress_delivered_at, unsubscribe_version,
-        delivery_lease_token, delivery_leased_until
-      `)
-      .maybeSingle();
-    if (acquireError) throw acquireError;
-    if (!acquired) continue;
-
-    const { data: activeOwnership, error: ownershipError } = await serviceClient
-      .from("parent_pathlab_subscriptions")
-      .select(`
-        normalized_email, verified_at, unsubscribed_at, revoked_at,
-        last_progress_delivered_at, unsubscribe_version,
-        delivery_lease_token, delivery_leased_until
-      `)
-      .eq("id", candidate.subscription_id)
-      .eq("delivery_lease_token", leaseToken)
-      .not("verified_at", "is", null)
-      .is("unsubscribed_at", null)
-      .is("revoked_at", null)
-      .maybeSingle();
-    if (ownershipError) throw ownershipError;
-    if (!activeOwnership) continue;
-
-    const { data: rows, error: claimError } = await serviceClient
-      .from("parent_pathlab_update_outbox")
-      .update({ status: "leased", lease_token: leaseToken, leased_until: leasedUntil })
-      .eq("subscription_id", candidate.subscription_id)
-      .lte("scheduled_at", nowIso)
-      .or(`status.eq.pending,and(status.eq.leased,leased_until.lt.${nowIso})`)
-      .select("id, subscription_id, event_kind, safe_payload, attempt_count");
-    if (claimError) throw claimError;
-    if (!rows?.length) {
-      await serviceClient
-        .from("parent_pathlab_subscriptions")
-        .update({ delivery_lease_token: null, delivery_leased_until: null })
-        .eq("id", candidate.subscription_id)
-        .eq("delivery_lease_token", leaseToken);
-      continue;
+    const { data, error } = await serviceClient.rpc(
+      "claim_parent_pathlab_update_cohort",
+      {
+        p_now: nowIso,
+        p_limit: remainingCapacity,
+        p_lease_token: leaseToken,
+        p_leased_until: leasedUntil,
+      }
+    );
+    if (error) throw error;
+    const rows = (data ?? []) as ClaimedParentUpdateRow[];
+    if (!rows.length) break;
+    if (rows.length > remainingCapacity) {
+      throw new Error("Parent update claim exceeded its requested limit");
     }
-
-    const owned = activeOwnership as DeliverySubscriptionRow;
-    acquiredCount += 1;
     for (const row of rows) {
       claimed.push({
         id: row.id,
@@ -464,14 +395,14 @@ export async function claimDueParentUpdates(
         eventKind: row.event_kind as ClaimedParentUpdate["eventKind"],
         safePayload: row.safe_payload as Record<string, unknown>,
         attemptCount: row.attempt_count,
-        normalizedEmail: owned.normalized_email,
-        lastProgressDeliveredAt: owned.last_progress_delivered_at,
-        unsubscribeVersion: owned.unsubscribe_version,
+        normalizedEmail: row.normalized_email,
+        lastProgressDeliveredAt: row.last_progress_delivered_at,
+        unsubscribeVersion: row.unsubscribe_version,
         leaseToken,
         leasedUntil,
+        deliveryGroupKey: row.delivery_group_key as string | null,
       });
     }
-    if (acquiredCount >= limit) break;
   }
   return claimed;
 }

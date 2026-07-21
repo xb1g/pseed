@@ -57,6 +57,68 @@ test("cron requires a bearer secret and is registered in Vercel", () => {
   assert.match(publicRoutes, /\/api\/cron\/parent-pathlab-updates/);
 });
 
+test("parent email links use configured canonical origin and never the request host", () => {
+  const subscribeRoute = source("app/api/trials/[token]/parent-updates/route.ts");
+  const cronRoute = source("app/api/cron/parent-pathlab-updates/route.ts");
+  const domain = source("lib/trials/parent-updates.ts");
+
+  assert.match(subscribeRoute, /configuredParentAppOrigin/);
+  assert.match(cronRoute, /configuredParentAppOrigin/);
+  assert.doesNotMatch(subscribeRoute, /request\.nextUrl\.origin/);
+  assert.doesNotMatch(cronRoute, /request\.nextUrl\.origin/);
+  assert.match(domain, /\/parent-updates\/\$\{kind\}/);
+});
+
+test("email token GET routes only show confirmation and explicit POST mutates", () => {
+  for (const [path, mutation] of [
+    [
+      "app/api/trials/parent-updates/verify/[verificationToken]/route.ts",
+      "verifyParentUpdates",
+    ],
+    [
+      "app/api/trials/parent-updates/unsubscribe/[unsubscribeToken]/route.ts",
+      "unsubscribeParentUpdates",
+    ],
+  ] as const) {
+    const route = source(path);
+    const getSection = route.slice(
+      route.indexOf("export async function GET"),
+      route.indexOf("export async function POST")
+    );
+    const postSection = route.slice(route.indexOf("export async function POST"));
+    assert.doesNotMatch(getSection, new RegExp(`${mutation}\\(`));
+    assert.match(getSection, /parent-updates/);
+    assert.match(postSection, new RegExp(`${mutation}\\(`));
+  }
+});
+
+test("cron has enough runtime and claims only a modest deadline-aware batch", () => {
+  const cronRoute = source("app/api/cron/parent-pathlab-updates/route.ts");
+  const server = source("lib/trials/parent-updates-server.ts");
+  const vercel = source("vercel.json");
+
+  assert.match(cronRoute, /export const maxDuration = 60/);
+  assert.match(cronRoute, /PARENT_UPDATE_CLAIM_LIMIT = 5/);
+  assert.match(cronRoute, /PARENT_UPDATE_DELIVERY_BUDGET_MS = 45_000/);
+  assert.match(
+    cronRoute,
+    /claimDueParentUpdates\(\s*serviceClient,\s*now,\s*PARENT_UPDATE_CLAIM_LIMIT\s*\)/
+  );
+  assert.match(cronRoute, /deliveryDeadline/);
+  assert.match(cronRoute, /shouldContinue/);
+  assert.match(server, /remainingCapacity/);
+  assert.match(server, /claim_parent_pathlab_update_cohort/);
+  assert.match(server, /p_limit: remainingCapacity/);
+  assert.match(server, /rows\.length > remainingCapacity/);
+  assert.match(server, /delivery_group_key/);
+  assert.match(vercel, /parent-pathlab-updates\/route\.ts[\s\S]*"maxDuration": 60/);
+});
+
+test("cron preserves delivery idempotency keys when calling the email transport", () => {
+  const route = source("app/api/cron/parent-pathlab-updates/route.ts");
+  assert.match(route, /idempotencyKey:\s*email\.idempotencyKey/);
+});
+
 test("outbox finalization is lease-token CAS guarded", () => {
   const server = source("lib/trials/parent-updates-server.ts");
   assert.match(server, /delivery_lease_token/);
@@ -67,21 +129,21 @@ test("outbox finalization is lease-token CAS guarded", () => {
 
 test("delivery leases can only be acquired and renewed with active consent", () => {
   const server = source("lib/trials/parent-updates-server.ts");
-  const acquisition = server.slice(
-    server.indexOf("delivery_lease_token: leaseToken"),
-    server.indexOf("const { data: rows")
+  const acquisition = source(
+    "supabase/migrations/20260722130003_parent_update_atomic_cohort_claim.sql"
   );
   const renewal = server.slice(
     server.indexOf("async renewLease"),
     server.indexOf("async markDelivered")
   );
 
-  for (const section of [acquisition, renewal]) {
-    assert.match(section, /not\("verified_at", "is", null\)/);
-    assert.match(section, /is\("unsubscribed_at", null\)/);
-    assert.match(section, /is\("revoked_at", null\)/);
-  }
-  assert.match(acquisition, /activeOwnership/);
+  assert.match(acquisition, /s\.verified_at is not null/);
+  assert.match(acquisition, /s\.unsubscribed_at is null/);
+  assert.match(acquisition, /s\.revoked_at is null/);
+  assert.match(acquisition, /for update of s skip locked/);
+  assert.match(renewal, /not\("verified_at", "is", null\)/);
+  assert.match(renewal, /is\("unsubscribed_at", null\)/);
+  assert.match(renewal, /is\("revoked_at", null\)/);
 });
 
 test("unsubscribe and owner revoke cancel queued and leased delivery work", () => {

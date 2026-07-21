@@ -12,6 +12,10 @@ interface ProviderResult {
   error?: { statusCode?: number | null } | null;
 }
 
+interface ProviderSendOptions {
+  idempotencyKey?: string;
+}
+
 interface ParentEmailTransportOptions {
   apiKey?: string;
   fromEmail?: string;
@@ -20,7 +24,7 @@ interface ParentEmailTransportOptions {
     to: string;
     subject: string;
     html: string;
-  }) => Promise<ProviderResult>;
+  }, options?: ProviderSendOptions) => Promise<ProviderResult>;
 }
 
 function escapeHtml(value: unknown): string {
@@ -100,10 +104,13 @@ export function buildParentUpdateEmail(input: {
 export function createParentEmailTransport(options: ParentEmailTransportOptions) {
   const providerSend = options.providerSend ?? (
     options.apiKey
-      ? async (message: { from: string; to: string; subject: string; html: string }) => {
+      ? async (
+          message: { from: string; to: string; subject: string; html: string },
+          sendOptions?: ProviderSendOptions
+        ) => {
           const { Resend } = await import("resend");
           const resend = new Resend(options.apiKey);
-          return resend.emails.send(message);
+          return resend.emails.send(message, sendOptions);
         }
       : null
   );
@@ -113,15 +120,17 @@ export function createParentEmailTransport(options: ParentEmailTransportOptions)
       to: string;
       subject: string;
       html: string;
+      idempotencyKey?: string;
     }): Promise<ParentEmailSendResult> {
       if (!providerSend || !options.fromEmail) {
         return { ok: false, transient: true, code: "email_unavailable" };
       }
       try {
+        const { idempotencyKey, ...message } = input;
         const response = await providerSend({
           from: `PassionSeed <${options.fromEmail}>`,
-          ...input,
-        });
+          ...message,
+        }, idempotencyKey ? { idempotencyKey } : undefined);
         if (!response.error) return { ok: true };
         const status = response.error.statusCode ?? 500;
         return status >= 500 || status === 429

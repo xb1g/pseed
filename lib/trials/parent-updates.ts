@@ -51,6 +51,7 @@ export interface ClaimedParentUpdate {
   unsubscribeVersion: number;
   leaseToken: string;
   leasedUntil: string;
+  deliveryGroupKey?: string | null;
 }
 
 export type ParentTokenMutationResult =
@@ -81,6 +82,12 @@ export interface ParentUpdateRepository {
     subscriptionId: string,
     leaseToken: string,
     leasedUntil: string
+  ): Promise<boolean>;
+  freezeDeliveryGroup(
+    ids: string[],
+    subscriptionId: string,
+    leaseToken: string,
+    deliveryGroupKey: string
   ): Promise<boolean>;
   markDelivered(
     ids: string[],
@@ -131,6 +138,7 @@ export type ParentUpdateEmailSender = (input: {
   eventKinds: ClaimedParentUpdate["eventKind"][];
   payloads: Record<string, unknown>[];
   unsubscribeUrl: string;
+  idempotencyKey: string;
 }) => Promise<ParentEmailSendResult>;
 
 export class ParentUpdateError extends Error {
@@ -176,7 +184,7 @@ export function deriveBearerToken(
 
 function tokenUrl(origin: string, kind: "verify" | "unsubscribe", token: string): string {
   const cleanOrigin = origin.replace(/\/$/, "");
-  return `${cleanOrigin}/api/trials/parent-updates/${kind}/${token}`;
+  return `${cleanOrigin}/parent-updates/${kind}/${token}`;
 }
 
 export async function subscribeParentUpdates(input: {
@@ -325,9 +333,11 @@ function isProgress(kind: ClaimedParentUpdate["eventKind"]): boolean {
 function groupClaimedRows(rows: ClaimedParentUpdate[]): ClaimedParentUpdate[][] {
   const groups = new Map<string, ClaimedParentUpdate[]>();
   for (const row of rows) {
-    const key = isProgress(row.eventKind)
-      ? `progress:${row.subscriptionId}`
-      : `transactional:${row.id}`;
+    const key = row.deliveryGroupKey
+      ? `frozen:${row.deliveryGroupKey}`
+      : isProgress(row.eventKind)
+        ? `progress:${row.subscriptionId}:unfrozen`
+        : `transactional:${row.id}`;
     const group = groups.get(key) ?? [];
     group.push(row);
     groups.set(key, group);
@@ -346,6 +356,19 @@ function groupByLease(rows: ClaimedParentUpdate[]): ClaimedParentUpdate[][] {
   return [...groups.values()];
 }
 
+function deliveryIdempotencyKey(group: ClaimedParentUpdate[]): string {
+  const groupDigest = createHash("sha256")
+    .update(group.map((row) => row.id).sort().join("\n"))
+    .digest("hex");
+  return `parent-update/${groupDigest}`;
+}
+
+function canonicalDeliveryGroup(
+  group: ClaimedParentUpdate[]
+): ClaimedParentUpdate[] {
+  return [...group].sort((left, right) => left.id.localeCompare(right.id));
+}
+
 async function processDeliveryGroup(input: {
   group: ClaimedParentUpdate[];
   repository: ParentUpdateRepository;
@@ -354,8 +377,9 @@ async function processDeliveryGroup(input: {
   origin: string;
   tokenSecret: string;
 }): Promise<void> {
-  const first = input.group[0];
-  const ids = input.group.map((row) => row.id);
+  const group = canonicalDeliveryGroup(input.group);
+  const first = group[0];
+  const ids = group.map((row) => row.id);
   const progress = isProgress(first.eventKind);
   if (progress && first.lastProgressDeliveredAt) {
     const nextAllowed =
@@ -380,6 +404,16 @@ async function processDeliveryGroup(input: {
   );
   if (!renewed) return;
 
+  const idempotencyKey =
+    first.deliveryGroupKey ?? deliveryIdempotencyKey(group);
+  const frozen = await input.repository.freezeDeliveryGroup(
+    ids,
+    first.subscriptionId,
+    first.leaseToken,
+    idempotencyKey
+  );
+  if (!frozen) return;
+
   const unsubscribeToken = deriveBearerToken(
     "unsubscribe",
     first.subscriptionId,
@@ -388,9 +422,10 @@ async function processDeliveryGroup(input: {
   );
   const result = await input.send({
     to: first.normalizedEmail,
-    eventKinds: input.group.map((row) => row.eventKind),
-    payloads: input.group.map((row) => row.safePayload),
+    eventKinds: group.map((row) => row.eventKind),
+    payloads: group.map((row) => row.safePayload),
     unsubscribeUrl: tokenUrl(input.origin, "unsubscribe", unsubscribeToken),
+    idempotencyKey,
   });
   if (result.ok) {
     await input.repository.markDelivered(
@@ -413,7 +448,7 @@ async function processDeliveryGroup(input: {
     return;
   }
 
-  const nextAttempt = Math.max(...input.group.map((row) => row.attemptCount)) + 1;
+  const nextAttempt = Math.max(...group.map((row) => row.attemptCount)) + 1;
   if (nextAttempt > 5) {
     await input.repository.markFailed(
       ids,
@@ -441,6 +476,7 @@ export async function processClaimedParentUpdates(input: {
   now: Date;
   origin: string;
   tokenSecret: string;
+  shouldContinue?: () => boolean;
 }): Promise<void> {
   for (const leaseRows of groupByLease(input.rows)) {
     const first = leaseRows[0];
@@ -452,6 +488,18 @@ export async function processClaimedParentUpdates(input: {
     if (!renewed) continue;
     try {
       for (const group of groupClaimedRows(leaseRows)) {
+        if (input.shouldContinue && !input.shouldContinue()) {
+          const pending = canonicalDeliveryGroup(group);
+          await input.repository.reschedule(
+            pending.map((row) => row.id),
+            first.subscriptionId,
+            first.leaseToken,
+            new Date(input.now.getTime() + 60_000).toISOString(),
+            "delivery_deadline",
+            false
+          );
+          continue;
+        }
         await processDeliveryGroup({ ...input, group });
       }
     } finally {
