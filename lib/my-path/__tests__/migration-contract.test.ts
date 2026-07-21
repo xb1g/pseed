@@ -115,3 +115,31 @@ test("a stale plan sync cannot regress a newer Radar possibility state", () => {
     /insert into public\.my_path_steps/
   );
 });
+
+test("stale saved candidates merge before the saved-limit insert trigger", () => {
+  const migrationsDirectory = new URL("../../../supabase/migrations/", import.meta.url);
+  const safeMergeMigrationName = readdirSync(migrationsDirectory).find((name) =>
+    name.endsWith("_make_stale_plan_sync_saved_limit_safe.sql")
+  );
+  assert.ok(
+    safeMergeMigrationName,
+    "saved-limit-safe sync migration must be created via the Supabase CLI"
+  );
+  const safeMergeMigration = readFileSync(
+    new URL(safeMergeMigrationName, migrationsDirectory),
+    "utf8"
+  );
+
+  assert.match(
+    safeMergeMigration,
+    /update public\.my_path_possibilities[\s\S]*where my_path_id = v_path_id[\s\S]*radar_slug = v_slug/
+  );
+  assert.match(
+    safeMergeMigration,
+    /if not found then[\s\S]*insert into public\.my_path_possibilities/
+  );
+  assert.match(
+    safeMergeMigration,
+    /v_possibility_updated_at >\s*public\.my_path_possibilities\.last_interaction_at[\s\S]*then v_state[\s\S]*else public\.my_path_possibilities\.state/
+  );
+});
