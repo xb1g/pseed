@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 
 const migration = readFileSync(
   new URL(
@@ -53,4 +53,25 @@ test("anonymous analytics is validated and rate-limited behind a private definer
   assert.match(migration, /anonymous My Path rate limit exceeded/);
   assert.match(migration, /jsonb_typeof\(p_metadata\) <> 'object'/);
   assert.match(migration, /function public\.record_anonymous_my_path_event/);
+});
+
+test("Radar events use a narrow authenticated idempotent mutation", () => {
+  const migrationsDirectory = new URL("../../../supabase/migrations/", import.meta.url);
+  const radarMigrationName = readdirSync(migrationsDirectory).find((name) =>
+    name.endsWith("_sync_radar_intent_into_my_path.sql")
+  );
+  assert.ok(radarMigrationName, "Radar My Path migration must be created via the Supabase CLI");
+  const radarMigration = readFileSync(
+    new URL(radarMigrationName, migrationsDirectory),
+    "utf8"
+  );
+
+  assert.match(radarMigration, /function private\.apply_my_path_radar_event/);
+  assert.match(radarMigration, /security definer\s+set search_path = ''/);
+  assert.match(radarMigration, /v_user_id uuid := auth\.uid\(\)/);
+  assert.match(radarMigration, /on conflict \(my_path_id, client_event_id\) do nothing/);
+  assert.match(radarMigration, /function public\.apply_my_path_radar_event/);
+  assert.match(radarMigration, /revoke all on function public\.apply_my_path_radar_event/);
+  assert.match(radarMigration, /grant execute on function public\.apply_my_path_radar_event[\s\S]*to authenticated/);
+  assert.doesNotMatch(radarMigration, /grant execute on function public\.apply_my_path_radar_event[\s\S]*to anon/);
 });
