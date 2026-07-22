@@ -6996,35 +6996,19 @@ summary:focus-visible .radar-expand-indicator {
   animation: none !important;
 }
 
-/* Tint on the wrapper, not the images: WebKit lets the intro keyframes'
-   grayscale filter beat the !important image tint while they run, so pieces
-   went colorless mid-animation. A parent filter composes after the child's
-   animated filter, keeping the color through the whole choreography. */
-.radar-field-page--safari .salary-chess-piece,
-.radar-field-page--safari .salary-chess-level--queen .salary-chess-piece,
-.radar-field-page--safari .salary-chess-detail-piece {
-  filter: sepia(0.9) saturate(3.2) hue-rotate(var(--salary-chess-image-hue, 60deg)) brightness(1.05)
-    contrast(1.05);
-}
-
-.radar-field-page--safari .salary-chess-piece-image,
-.radar-field-page--safari .salary-chess-intro-pawn {
-  will-change: transform, opacity;
-}
-
-.radar-field-page--safari .salary-chess-level--queen .salary-chess-piece::before,
-.radar-field-page--safari .salary-chess-detail-piece--queen::before,
-.radar-field-page--safari .salary-chess-detail-piece--queen::after {
-  display: none !important;
-  animation: none !important;
-}
-
+/* Safari: keep pseudo-element tint overlays visible for correct color,
+   but skip animations that cause WebKit mask-image repaint issues. */
 .radar-field-page--safari .salary-chess-piece::before,
 .radar-field-page--safari .salary-chess-piece::after,
 .radar-field-page--safari .salary-chess-detail-piece::before,
 .radar-field-page--safari .salary-chess-detail-piece::after,
 .radar-field-page--safari .salary-chess-intro-pawn::after {
-  display: none !important;
+  animation: none !important;
+}
+
+.radar-field-page--safari .salary-chess-piece-image,
+.radar-field-page--safari .salary-chess-intro-pawn {
+  will-change: transform, opacity;
 }
 
 .radar-field-page--safari .salary-chess-board--intro-complete .salary-chess-piece-image,
