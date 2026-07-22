@@ -242,6 +242,7 @@ export function RadarFieldPageClient({
   const sectionRefs = useRef<Array<HTMLElement | null>>([]);
   const rootRef = useRef<HTMLDivElement>(null);
   const followRef = useRef<HTMLDivElement>(null);
+  const blackoutRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const isSafariRef = useRef(false);
   const [isSafari, setIsSafari] = useState(false);
@@ -496,6 +497,39 @@ export function RadarFieldPageClient({
     return () => observer.disconnect();
   }, [cards.length, initialSkills.length]);
 
+  // Gradually fade in blackout overlay as AI impact section scrolls into view
+  useEffect(() => {
+    const deck = scrollRef.current;
+    const blackout = blackoutRef.current;
+    if (!deck || !blackout) return;
+    const aiIndex = cards.findIndex((c) => c.kind === "aiImpact");
+    if (aiIndex < 0) return;
+
+    let raf = 0;
+    const update = () => {
+      const section = sectionRefs.current[aiIndex];
+      if (!section) return;
+      const sectionTop = section.offsetTop;
+      const fadeStart = sectionTop - deck.clientHeight;
+      const fadeEnd = sectionTop;
+      const progress = Math.min(1, Math.max(0, (deck.scrollTop - fadeStart) / (fadeEnd - fadeStart)));
+      blackout.style.opacity = String(progress);
+    };
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        update();
+      });
+    };
+    deck.addEventListener("scroll", onScroll, { passive: true });
+    update();
+    return () => {
+      deck.removeEventListener("scroll", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [cards]);
+
   const accent = readableAccent(field.color || "#3b82f6");
   const visual = getCareerCardVisual(field);
   const progressItems = [
@@ -512,7 +546,6 @@ export function RadarFieldPageClient({
   const displayCurrent = Math.min(current + 1, totalSlides);
   const keepRadarHref = `/radar/keep?next=${encodeURIComponent(`/radar/${fieldSlug}`)}`;
   const isFinalSlide = current >= totalSlides - 1;
-  const isAiImpactSlide = current < cards.length && cards[current]?.kind === "aiImpact";
   // The plan decision bar owns the bottom of the screen in the wizard flow.
   const shouldShowSignupToast =
     !fromPlan &&
@@ -591,9 +624,9 @@ export function RadarFieldPageClient({
     <div
       ref={rootRef}
       onMouseMove={handlePointer}
-      className={`radar-field-page ${isSafari ? "radar-field-page--safari" : ""} ${isAiImpactSlide ? "radar-field-page--ai" : ""} fixed inset-0 isolate z-[100] h-[100dvh] overflow-hidden bg-neutral-950`}
+      className={`radar-field-page ${isSafari ? "radar-field-page--safari" : ""} fixed inset-0 isolate z-[100] h-[100dvh] overflow-hidden bg-neutral-950`}
       style={{
-        background: isAiImpactSlide ? "#141414" : visual.background,
+        background: visual.background,
         ...visual.dotStyle,
       }}
     >
@@ -626,7 +659,7 @@ export function RadarFieldPageClient({
           className="radar-glow-follow absolute top-1/2 left-1/2 -ml-[200px] -mt-[200px] w-[400px] h-[400px] rounded-full blur-[120px] opacity-[0.14]"
           style={{ background: accent }}
         />
-        <div className="radar-detail-blackout" aria-hidden="true" />
+        <div ref={blackoutRef} className="radar-detail-blackout" aria-hidden="true" />
       </div>
 
       <div className="absolute top-0 inset-x-0 z-30 px-4 pt-4">
