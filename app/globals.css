@@ -5032,6 +5032,24 @@ summary:focus-visible .radar-expand-indicator {
   height: min(40vh, 18.5rem);
 }
 
+/* Keep every upgraded piece out of the initial paint. The animation supplies
+   its own opacity once that piece enters; this also prevents WebKit from
+   briefly compositing the final image before delayed animations are applied. */
+.salary-chess-board:not(.salary-chess-board--intro-complete):not(.salary-chess-board--visited-detail)
+  .salary-chess-level--rook .salary-chess-piece-image,
+.salary-chess-board:not(.salary-chess-board--intro-complete):not(.salary-chess-board--visited-detail)
+  .salary-chess-level--knight .salary-chess-piece-image,
+.salary-chess-board:not(.salary-chess-board--intro-complete):not(.salary-chess-board--visited-detail)
+  .salary-chess-level--queen .salary-chess-piece-image,
+.salary-chess-board:not(.salary-chess-board--intro-complete):not(.salary-chess-board--visited-detail)
+  .salary-chess-level--rook .salary-chess-piece::after,
+.salary-chess-board:not(.salary-chess-board--intro-complete):not(.salary-chess-board--visited-detail)
+  .salary-chess-level--knight .salary-chess-piece::after,
+.salary-chess-board:not(.salary-chess-board--intro-complete):not(.salary-chess-board--visited-detail)
+  .salary-chess-level--queen .salary-chess-piece::after {
+  opacity: 0;
+}
+
 @media (max-height: 820px) and (min-width: 761px) {
   .salary-progression {
     gap: 0.5rem;
@@ -5313,13 +5331,9 @@ summary:focus-visible .radar-expand-indicator {
 }
 
 @keyframes salary-rook-crash-image {
-  0% {
-    opacity: 0.72;
-    transform: translateY(-140%) scale(0.92);
-    filter: grayscale(1) contrast(1.02) brightness(0.64) blur(2px);
-  }
+  0%,
   45% {
-    opacity: 0.72;
+    opacity: 0;
     transform: translateY(-140%) scale(0.92);
     filter: grayscale(1) contrast(1.02) brightness(0.64) blur(2px);
   }
@@ -6831,6 +6845,20 @@ summary:focus-visible .radar-expand-indicator {
   animation: none !important;
   -webkit-mask-image: url("/images/experimental-piece-129.svg");
   mask-image: url("/images/experimental-piece-129.svg");
+}
+
+/* Safari uses static tint masks instead of animating them. Do not reveal those
+   final silhouettes while the pawn-to-piece choreography is still running. */
+.radar-field-page--safari
+  .salary-chess-board:not(.salary-chess-board--intro-complete):not(.salary-chess-board--visited-detail)
+  .salary-chess-level--rook .salary-chess-piece::after,
+.radar-field-page--safari
+  .salary-chess-board:not(.salary-chess-board--intro-complete):not(.salary-chess-board--visited-detail)
+  .salary-chess-level--knight .salary-chess-piece::after,
+.radar-field-page--safari
+  .salary-chess-board:not(.salary-chess-board--intro-complete):not(.salary-chess-board--visited-detail)
+  .salary-chess-level--queen .salary-chess-piece::after {
+  opacity: 0 !important;
 }
 
 .radar-field-page--safari .salary-chess-board--intro-complete .salary-chess-piece-image,
