@@ -2,7 +2,7 @@
 
 import { Check } from "lucide-react";
 
-const STEP_LABELS = ["เริ่ม", "จุดไฟ", "ทดลอง", "เป้าหมาย", "แผน"];
+const STEP_LABELS = ["เริ่ม", "จุดไฟ", "เป้าหมาย", "แผน"];
 
 export function WizardProgress({
   step,

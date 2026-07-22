@@ -4,19 +4,26 @@ import { useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
+  CalendarCheck,
+  Check,
   CheckCircle2,
   ChevronDown,
   CircleAlert,
+  ExternalLink,
   FolderKanban,
   HandHeart,
+  Linkedin,
   LogIn,
   MessagesSquare,
   Play,
   Trophy,
+  UserRound,
   Users,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
+import { CONSULT_PRICE_THB, CONSULT_URL } from "@/lib/my-path/consult";
 import type { MissionOutcomeId, MissionPlan } from "@/lib/my-path/mission-plan";
 
 const OUTCOME_ICONS: Record<MissionOutcomeId, typeof FolderKanban> = {
@@ -25,6 +32,21 @@ const OUTCOME_ICONS: Record<MissionOutcomeId, typeof FolderKanban> = {
   volunteering: HandHeart,
   interview: MessagesSquare,
   community: Users,
+};
+
+const CONSULT_DELIVERABLES = [
+  "แผนรายเดือนที่เขียนจากเวลาจริงและเป้าของคุณ",
+  "โปรเจคชูโรงที่เลือกมาให้ตรงกับสายที่คุณสนใจ",
+  "คนที่ตอบได้ว่าอะไรควรทำ และอะไรเสียเวลาเปล่า",
+];
+
+const FOUNDER = {
+  name: "บุณยสิทธิ์ ฟาง (Bunyasit Fang)",
+  role: "Founder, PassionSeed",
+  photo: "/images/founder-bunyasit.jpg",
+  linkedIn: "https://www.linkedin.com/in/bigfang/",
+  credentials: ["จุฬาลงกรณ์มหาวิทยาลัย", "ทำงานสาย tech ที่ San Francisco"],
+  note: "คนที่นั่งคุยกับคุณคือผมเอง ไม่ใช่ทีมเซลส์",
 };
 
 export interface MissionFirstAction {
@@ -42,8 +64,10 @@ interface StepMissionProps {
   persisted: boolean;
   onSave: () => void;
   onLaunch: () => void;
-  /** มีเฉพาะตอน sign in แล้ว — เรียกแทนการ navigate เพื่อเปิด flow "ทำก่อน จ่ายทีหลัง" */
+  /** มีเฉพาะตอน sign in แล้ว — เปิด flow "ทำก่อน จ่ายทีหลัง" แทนการ navigate */
   onLaunchStart?: () => void;
+  /** ยิง analytics ตอนกดนัดคุย */
+  onBook: () => void;
 }
 
 export function StepMission({
@@ -56,6 +80,7 @@ export function StepMission({
   onSave,
   onLaunch,
   onLaunchStart,
+  onBook,
 }: StepMissionProps) {
   const [openMonth, setOpenMonth] = useState(1);
 
@@ -71,10 +96,48 @@ export function StepMission({
         {plan.headline}
       </h2>
 
+      <div className="mt-6 rounded-2xl border border-amber-200/40 bg-gradient-to-br from-amber-200/[0.12] to-indigo-500/[0.08] p-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-amber-200/80">
+          ก้าวแรก · นัดคุย 1 ชั่วโมง
+        </p>
+        <p className="mt-2 font-kodchasan text-lg font-semibold leading-snug text-slate-50">
+          ไม่มีแผนสำเร็จรูป — เราคุยกับคุณ แล้วเขียนแผนของคุณ
+        </p>
+        <ul className="mt-3 space-y-1.5">
+          {CONSULT_DELIVERABLES.map((item) => (
+            <li
+              key={item}
+              className="flex items-start gap-2 text-sm leading-6 text-slate-300"
+            >
+              <Check
+                className="mt-1 h-3.5 w-3.5 shrink-0 text-amber-200"
+                aria-hidden="true"
+              />
+              {item}
+            </li>
+          ))}
+        </ul>
+        <a
+          href={CONSULT_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onBook}
+          className="ei-button-dawn mt-4 min-h-12 w-full justify-center"
+        >
+          <CalendarCheck className="h-4 w-4" aria-hidden="true" />
+          <span>นัดคุยกับเรา · {CONSULT_PRICE_THB} บาท</span>
+        </a>
+        <p className="mt-2.5 text-xs leading-5 text-slate-500">
+          {CONSULT_PRICE_THB} บาท เพื่อกันคิวให้คนที่ตั้งใจจริง
+        </p>
+      </div>
+
+      <FounderCard />
+
       {firstAction && (
-        <div className="mt-6 rounded-2xl border border-amber-200/40 bg-gradient-to-br from-amber-200/[0.12] to-indigo-500/[0.08] p-5">
+        <div className="mt-6 rounded-2xl border border-amber-200/30 bg-gradient-to-br from-indigo-500/[0.1] to-amber-200/[0.06] p-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-amber-200/80">
-            ก้าวแรกของคุณ · เริ่มได้วันนี้
+            หรือเริ่มลงมือวันนี้
           </p>
           <p className="mt-2 font-kodchasan text-lg font-semibold text-slate-50">
             {firstAction.title}
@@ -142,8 +205,11 @@ export function StepMission({
 
       <div className="mt-8">
         <h3 className="font-kodchasan text-base font-semibold text-slate-50">
-          แผนรายเดือน
+          แผนรายเดือน — เราวางด้วยกันตอนนัดคุย
         </h3>
+        <p className="mt-1.5 text-sm leading-6 text-slate-400">
+          ด้านล่างคือโครงตั้งต้น ยังไม่ใช่แผนของคุณ
+        </p>
         <div className="mt-3 space-y-2">
           {plan.months.map((month) => {
             const open = openMonth === month.month;
@@ -233,9 +299,10 @@ export function StepMission({
             </p>
             <Link
               href="/me#my-path"
-              className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-lg text-sm font-semibold text-amber-100 underline decoration-amber-200/40 underline-offset-4 hover:text-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
+              className="ei-button-dawn mt-4 min-h-12 w-full justify-center sm:w-auto"
             >
-              ไปดู My Path ของฉัน
+              <UserRound className="h-4 w-4" aria-hidden="true" />
+              <span>ไปดู My Path ของฉัน</span>
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </div>
@@ -280,6 +347,48 @@ export function StepMission({
         )}
       </div>
     </section>
+  );
+}
+
+/** ใครเป็นคนคุย — ความน่าเชื่อถือมาจากคน ไม่ใช่ย่อหน้าโฆษณา */
+function FounderCard() {
+  return (
+    <div className="mt-3 flex items-start gap-3.5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+      <Image
+        src={FOUNDER.photo}
+        alt={`รูปของ ${FOUNDER.name}`}
+        width={56}
+        height={56}
+        className="h-14 w-14 shrink-0 rounded-full border border-white/10 object-cover"
+      />
+      <div className="min-w-0 flex-1">
+        <p className="font-kodchasan text-sm font-semibold text-slate-50">
+          {FOUNDER.name}
+        </p>
+        <p className="text-xs text-slate-500">{FOUNDER.role}</p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {FOUNDER.credentials.map((credential) => (
+            <span
+              key={credential}
+              className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-slate-300"
+            >
+              {credential}
+            </span>
+          ))}
+        </div>
+        <p className="mt-2 text-xs leading-5 text-slate-400">{FOUNDER.note}</p>
+        <a
+          href={FOUNDER.linkedIn}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-indigo-200 hover:text-indigo-100"
+        >
+          <Linkedin className="h-3.5 w-3.5" aria-hidden="true" />
+          ดูโปรไฟล์ LinkedIn
+          <ExternalLink className="h-3 w-3" aria-hidden="true" />
+        </a>
+      </div>
+    </div>
   );
 }
 

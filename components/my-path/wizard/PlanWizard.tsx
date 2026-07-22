@@ -7,7 +7,6 @@ import { StepGoal } from "./StepGoal";
 import { StepHook } from "./StepHook";
 import { StepInterests } from "./StepInterests";
 import { StepMission } from "./StepMission";
-import { StepPathlabs } from "./StepPathlabs";
 import { PayLaterSheet } from "./PayLaterSheet";
 import { WizardProgress } from "./WizardProgress";
 import type { TrialShareInfo } from "@/components/trials/TrialShareActions";
@@ -17,19 +16,21 @@ import {
   getGoalTimeline,
   getLockedGoal,
   getSavedPossibilities,
-  getSelectedPathlabs,
   GOAL_TIMELINE_QUESTION_ID,
   LOCKED_GOAL_QUESTION_ID,
   MAX_ACTIVE_SAVED_PATHS,
 } from "@/lib/my-path/journey";
 import { buildMissionPlan, type MissionGoal } from "@/lib/my-path/mission-plan";
 import {
-  isSeedMatched,
   matchSeedsToInterests,
   type SeedPathlab,
 } from "@/lib/my-path/pathlab-match";
 import type { CareerPreview } from "@/lib/my-path/radar-content";
 import { planningRegistry } from "@/lib/my-path/registry";
+import {
+  clearRadarInterests,
+  readRadarInterests,
+} from "@/lib/my-path/radar-interest";
 import {
   clearMyPathDraft,
   loadMyPathDraft,
@@ -39,14 +40,17 @@ import type { JourneyEvent, MyPathDraft } from "@/lib/my-path/types";
 
 interface PlanWizardProps {
   careers: CareerPreview[];
-  seeds: SeedPathlab[];
+  /** Unused while the PathLab pick step is hidden — kept for its return. */
+  seeds?: SeedPathlab[];
   isSignedIn: boolean;
   initialDraft: MyPathDraft | null;
   hasPersistedPath?: boolean;
 }
 
 const LOGIN_HREF = `/login?next=${encodeURIComponent("/plan?resume=1")}`;
-const TOTAL_STEPS = 5;
+// เริ่ม · จุดไฟ · เป้าหมาย · แผน — the PathLab pick step is hidden for now
+// because the path is customised in the consultation instead.
+const TOTAL_STEPS = 4;
 const WIZARD_STEP_STORAGE_KEY = "passionseed_my_path_wizard_step_v1";
 
 interface PayLaterSheetState {
@@ -54,7 +58,6 @@ interface PayLaterSheetState {
   trial: TrialShareInfo | null;
   enrollmentUrl: string | null;
 }
-
 function eventId(): string {
   if (typeof crypto !== "undefined" && crypto.randomUUID)
     return crypto.randomUUID();
@@ -63,7 +66,7 @@ function eventId(): string {
 
 export function PlanWizard({
   careers,
-  seeds,
+  seeds = [],
   isSignedIn,
   initialDraft,
   hasPersistedPath = false,
@@ -74,14 +77,14 @@ export function PlanWizard({
   const [importStatus, setImportStatus] = useState<
     "idle" | "saving" | "saved" | "error"
   >(hasPersistedPath ? "saved" : "idle");
-  const [payLaterSheet, setPayLaterSheet] = useState<PayLaterSheetState | null>(
-    null
-  );
+  const [payLaterSheet, setPayLaterSheet] =
+    useState<PayLaterSheetState | null>(null);
   const lastSyncedAt = useRef<string | null>(initialDraft?.updatedAt ?? null);
   const missionTracked = useRef(false);
   const stepRestored = useRef(false);
   const launchGeneration = useRef(0);
   const launchInFlight = useRef(false);
+  const radarInterestsDrained = useRef(false);
 
   // Restore the furthest step reached so an accidental exit (swipe-back,
   // app switch, tab close) resumes exactly where the student left off.
@@ -146,6 +149,28 @@ export function PlanWizard({
     }
   }, [initialDraft]);
 
+  // Interests flagged over on Radar arrive as bare slugs. Fold them into the
+  // draft as real saves so the wizard shows them pre-selected on return.
+  useEffect(() => {
+    if (!draft || radarInterestsDrained.current) return;
+    radarInterestsDrained.current = true;
+    const slugs = readRadarInterests(window.localStorage);
+    if (slugs.length === 0) return;
+    clearRadarInterests(window.localStorage);
+    const known = new Set(careers.map((career) => career.slug));
+    for (const slug of slugs) {
+      if (!known.has(slug) || draft.possibilities[slug]?.state === "saved") {
+        continue;
+      }
+      recordEvent(
+        { type: "career_saved", careerSlug: slug, metadata: { source: "radar" } },
+        "career_saved"
+      );
+    }
+    // recordEvent only closes over the current draft setter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, careers]);
+
   useEffect(() => {
     if (!draft) return;
     saveMyPathDraft(window.localStorage, draft);
@@ -173,39 +198,26 @@ export function PlanWizard({
     () => (draft ? getSavedPossibilities(draft).map((item) => item.slug) : []),
     [draft]
   );
-  const selectedPathlabIds = useMemo(
-    () => (draft ? getSelectedPathlabs(draft) : []),
-    [draft]
-  );
   const goal = (draft ? getLockedGoal(draft) : null) as MissionGoal | null;
   const timelineMonths = Number(draft ? getGoalTimeline(draft) : null) || 4;
-  const sortedSeeds = useMemo(
-    () => matchSeedsToInterests(savedSlugs, seeds, planningRegistry),
-    [savedSlugs, seeds]
-  );
-  const matchedSeedIds = useMemo(
+  const firstActionSeed = useMemo(
     () =>
-      sortedSeeds
-        .filter((seed) => isSeedMatched(seed, savedSlugs, planningRegistry))
-        .map((seed) => seed.id),
-    [sortedSeeds, savedSlugs]
+      matchSeedsToInterests(savedSlugs, seeds, planningRegistry)[0] ?? null,
+    [savedSlugs, seeds]
   );
   const plan = useMemo(() => {
     const savedTitles = savedSlugs
       .map((slug) => careers.find((career) => career.slug === slug)?.titleTh)
       .filter((title): title is string => Boolean(title));
-    const pathlabTitles = selectedPathlabIds
-      .map((id) => seeds.find((seed) => seed.id === id)?.title)
-      .filter((title): title is string => Boolean(title));
+    // PathLab selection is hidden for now — the plan is shaped in the
+    // consultation, so the mission plan is built from interests alone.
     return buildMissionPlan({
       goal,
       timelineMonths,
-      pathlabTitles,
+      pathlabTitles: [],
       careerTitles: savedTitles,
     });
-  }, [goal, timelineMonths, savedSlugs, selectedPathlabIds, careers, seeds]);
-  const firstActionSeed =
-    seeds.find((seed) => seed.id === selectedPathlabIds[0]) ?? null;
+  }, [goal, timelineMonths, savedSlugs, careers]);
 
   useEffect(() => {
     if (step === TOTAL_STEPS - 1 && !missionTracked.current && draft) {
@@ -213,7 +225,7 @@ export function PlanWizard({
       trackAnalytics("mission_plan_viewed", undefined, {
         goal: goal ?? "none",
         timeline: timelineMonths,
-        pathlabs: selectedPathlabIds.length,
+        interests: savedSlugs.length,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -266,17 +278,6 @@ export function PlanWizard({
     } else {
       recordEvent({ type: "career_saved", careerSlug: slug }, "career_saved");
     }
-  }
-
-  function togglePathlab(seed: SeedPathlab) {
-    const selected = selectedPathlabIds.includes(seed.id);
-    recordEvent(
-      {
-        type: selected ? "pathlab_deselected" : "pathlab_selected",
-        metadata: { seedId: seed.id, title: seed.title },
-      },
-      selected ? "pathlab_deselected" : "pathlab_selected"
-    );
   }
 
   function selectGoal(nextGoal: MissionGoal) {
@@ -411,7 +412,6 @@ export function PlanWizard({
     launchInFlight.current = false;
     setPayLaterSheet(null);
   }
-
   if (!draft) {
     return (
       <main className="dawn-theme flex min-h-[100dvh] items-center justify-center bg-slate-950 text-slate-100">
@@ -426,8 +426,7 @@ export function PlanWizard({
   const canProceed =
     step === 0 ||
     (step === 1 && savedSlugs.length > 0) ||
-    step === 2 ||
-    (step === 3 && goal !== null);
+    (step === 2 && goal !== null);
   const isLastStep = step === TOTAL_STEPS - 1;
 
   return (
@@ -448,20 +447,6 @@ export function PlanWizard({
             />
           )}
           {step === 2 && (
-            <StepPathlabs
-              seeds={sortedSeeds}
-              selectedIds={selectedPathlabIds}
-              matchedIds={matchedSeedIds}
-              onToggle={togglePathlab}
-              onOpenSeed={(seed) =>
-                trackAnalytics("pathlab_handoff_clicked", undefined, {
-                  seedId: seed.id,
-                  title: seed.title,
-                })
-              }
-            />
-          )}
-          {step === 3 && (
             <StepGoal
               goal={goal}
               timelineMonths={timelineMonths}
@@ -469,7 +454,7 @@ export function PlanWizard({
               onSelectTimeline={selectTimeline}
             />
           )}
-          {step === 4 && (
+          {step === 3 && (
             <StepMission
               plan={plan}
               firstAction={
@@ -495,6 +480,12 @@ export function PlanWizard({
               }
               onLaunchStart={
                 isSignedIn && firstActionSeed ? startTrialLaunch : undefined
+              }
+              onBook={() =>
+                trackAnalytics("consult_booking_clicked", undefined, {
+                  goal: goal ?? "none",
+                  timeline: timelineMonths,
+                })
               }
             />
           )}
@@ -528,12 +519,12 @@ export function PlanWizard({
                   {step === 0
                     ? "เริ่มออกแบบชีวิต"
                     : step === 1 && savedSlugs.length === 0
-                    ? "เลือกอย่างน้อย 1 อันเพื่อไปต่อ"
-                    : step === 3 && goal === null
-                    ? "เลือกเป้าหมายเพื่อดูแผน"
-                    : step === 3
-                    ? "ดูแผนของฉัน"
-                    : "ถัดไป"}
+                      ? "เลือกอย่างน้อย 1 อันเพื่อไปต่อ"
+                      : step === 2 && goal === null
+                        ? "เลือกเป้าหมายเพื่อดูแผน"
+                        : step === 2
+                          ? "ดูแผนของฉัน"
+                          : "ถัดไป"}
                 </span>
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </button>
@@ -545,7 +536,6 @@ export function PlanWizard({
             )}
           </div>
         </nav>
-
         <PayLaterSheet
           open={payLaterSheet !== null}
           state={payLaterSheet?.status ?? "loading"}

@@ -10,10 +10,12 @@ export const revalidate = 300;
 
 export default async function RadarFieldPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ from?: string }>;
 }) {
-  const { slug } = await params;
+  const [{ slug }, { from }] = await Promise.all([params, searchParams]);
   const fieldResult = await getCachedPublishedRadarField(slug);
 
   if (!fieldResult) {
@@ -67,6 +69,7 @@ export default async function RadarFieldPage({
       initialCards={allCards}
       fieldSources={sources ?? []}
       initialSkills={initialSkills as never}
+      fromPlan={from === "plan"}
     />
   );
 }
