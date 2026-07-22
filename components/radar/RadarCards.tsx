@@ -378,8 +378,10 @@ function isStartText(c: TextContent): boolean {
 
 function SkillsTextCard({ c, accent }: { c: TextContent; accent: string }) {
   const editor = useContext(RadarInlineEditorContext);
-  const items = c.skills?.map(({ title, description = "" }) => ({ title, description }))
-    ?? parseRadarListItems(c.body);
+  const items = (
+    c.skills?.map(({ title, description = "" }) => ({ title, description }))
+      ?? parseRadarListItems(c.body)
+  ).slice(0, 8);
   const updateLegacyItem = (
     index: number,
     key: "title" | "description",
@@ -400,19 +402,16 @@ function SkillsTextCard({ c, accent }: { c: TextContent; accent: string }) {
 
   return (
     <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent} wide>
-      <p className="text-sm leading-relaxed text-neutral-400">
-        แตะดูทีละทักษะ แทนการอ่านรายการยาวๆ
-      </p>
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="radar-skills-grid grid gap-2 sm:grid-cols-2">
         {items.map((item, index) => (
           <details
             key={`${item.title}-${index}`}
             open={editor ? true : undefined}
-            className="group rounded-xl border border-white/10 bg-white/[0.03]"
+            className="radar-skill-item group rounded-xl border border-white/10 bg-white/[0.03]"
           >
-            <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 py-3 focus-visible:outline-none focus-visible:ring-2">
+            <summary className="radar-skill-summary flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 py-3 focus-visible:outline-none focus-visible:ring-2">
               <span
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-neutral-950"
+                className="radar-skill-number flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-neutral-950"
                 style={{ background: accent }}
               >
                 {index + 1}
@@ -421,13 +420,13 @@ function SkillsTextCard({ c, accent }: { c: TextContent; accent: string }) {
                 <EditableText
                   value={item.title}
                   field={["skills", String(index), "title"]}
-                  className="min-w-0 flex-1 font-semibold text-white"
+                  className="radar-skill-title min-w-0 flex-1 font-semibold text-white"
                 />
               ) : (
                 <EditableText
                   value={item.title}
                   field="body"
-                  className="min-w-0 flex-1 font-semibold text-white"
+                  className="radar-skill-title min-w-0 flex-1 font-semibold text-white"
                   onValueChange={(value) => updateLegacyItem(index, "title", value)}
                 />
               )}
@@ -436,7 +435,7 @@ function SkillsTextCard({ c, accent }: { c: TextContent; accent: string }) {
               </span>
             </summary>
             {item.description && (
-              <p className="px-4 pb-4 pl-16 text-sm leading-relaxed text-neutral-400">
+              <p className="radar-skill-description px-4 pb-4 pl-16 text-sm leading-relaxed text-neutral-400">
                 {c.skills ? (
                   <EditableText
                     value={item.description}
@@ -1414,16 +1413,16 @@ function EntryRoutesCard({ c, accent }: { c: EntryRoutesContent; accent: string 
   return (
     <CardFrame eyebrow={c.eyebrow} title={c.title ?? "มีเส้นทางไหนเข้าสู่อาชีพนี้ได้บ้าง?"} accent={accent} wide>
       {c.description && (
-        <p className="mb-4">
+        <p className="entry-routes-description mb-2">
           <EditableText value={c.description} field="description" className="block text-neutral-400 text-sm leading-relaxed" />
         </p>
       )}
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="entry-routes-grid grid gap-3 md:grid-cols-2">
         {(c.faculties ?? []).map((f, i) => {
           const style = TIER_STYLES[f.tier] ?? TIER_STYLES.related;
           return (
-            <Panel key={i}>
-              <div className="flex items-center gap-2 mb-1">
+            <Panel key={i} className="entry-route-card">
+              <div className="entry-route-card__heading flex items-center gap-2">
                 <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}>
                   {style.label}
                 </span>
@@ -1433,21 +1432,12 @@ function EntryRoutesCard({ c, accent }: { c: EntryRoutesContent; accent: string 
                   className="text-white font-semibold text-base"
                 />
               </div>
-              {f.examples && (
-                <p className="mt-1">
-                  <EditableText
-                    value={f.examples}
-                    field={["faculties", String(i), "examples"]}
-                    className="block text-neutral-400 text-sm"
-                  />
-                </p>
-              )}
               {f.note && (
-                <p className="mt-1">
+                <p className="entry-route-card__note mt-1">
                   <EditableText
                     value={f.note}
                     field={["faculties", String(i), "note"]}
-                    className="block text-neutral-500 text-xs italic"
+                    className="block text-neutral-400 text-sm italic"
                   />
                 </p>
               )}
@@ -2409,8 +2399,14 @@ export function RadarCardView({
   const englishTitle = getSimpleRadarTitle(kind, content);
   const thaiSubtitle = kind === "cta" ? "สนใจสายนี้แล้วไงต่อ?" : getThaiRadarSubtitle(content);
 
+  const presentation = String(content.presentation ?? "").toLowerCase();
+  const presentationClass =
+    kind === "text" && presentation.includes("skill")
+      ? " radar-standard-page--skills"
+      : "";
+
   return (
-    <section className={`radar-standard-page radar-standard-page--${kind}`}>
+    <section className={`radar-standard-page radar-standard-page--${kind}${presentationClass}`}>
       <header className="radar-standard-heading">
         <h2>{englishTitle}</h2>
         {thaiSubtitle && <p>{thaiSubtitle}</p>}
