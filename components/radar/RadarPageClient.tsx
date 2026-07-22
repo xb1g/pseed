@@ -553,6 +553,7 @@ export function RadarPageClient({
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoad] = useState(!initialFields.length);
   const [error, setError] = useState<string | null>(initialError);
+  const pageRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const cardGridRef = useRef<HTMLDivElement>(null);
   const { allLabel } = useMemo(
@@ -589,6 +590,45 @@ export function RadarPageClient({
   );
 
   useEffect(() => {
+    const page = pageRef.current;
+    if (!page) return;
+
+    const isSafari =
+      navigator.vendor.includes("Apple") &&
+      !/(CriOS|FxiOS|EdgiOS|OPiOS)/.test(navigator.userAgent);
+    if (!isSafari) return;
+
+    page.classList.add("radar-index-page--safari");
+    let scrollEndTimer = 0;
+    let frame = 0;
+
+    const handleScroll = () => {
+      if (!frame) {
+        frame = window.requestAnimationFrame(() => {
+          page.classList.add("radar-index-page--safari-scrolling");
+          frame = 0;
+        });
+      }
+
+      window.clearTimeout(scrollEndTimer);
+      scrollEndTimer = window.setTimeout(() => {
+        page.classList.remove("radar-index-page--safari-scrolling");
+      }, 140);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.clearTimeout(scrollEndTimer);
+      if (frame) window.cancelAnimationFrame(frame);
+      page.classList.remove(
+        "radar-index-page--safari",
+        "radar-index-page--safari-scrolling"
+      );
+    };
+  }, []);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
     const grid = cardGridRef.current;
     if (!grid) return;
@@ -616,7 +656,7 @@ export function RadarPageClient({
   }, [filteredFields]);
 
   return (
-    <div className="radar-index-page min-h-screen">
+    <div ref={pageRef} className="radar-index-page min-h-screen">
       <div className="radar-index-hero relative overflow-hidden">
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8 md:pt-20 md:pb-10">
           <div className="mb-6 flex flex-wrap gap-2">
