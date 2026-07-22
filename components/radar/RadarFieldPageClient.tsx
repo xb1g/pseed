@@ -21,7 +21,18 @@ import {
 } from "@/components/radar/RadarSkillExperience";
 import type { Database } from "@/lib/supabase/database.types";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Compass,
+  Heart,
+  X,
+} from "lucide-react";
+import {
+  readRadarInterests,
+  toggleRadarInterest,
+} from "@/lib/my-path/radar-interest";
 import { createClient } from "@/utils/supabase/client";
 import { isAnonymousUser } from "@/lib/supabase/auth";
 
@@ -154,16 +165,35 @@ function readableAccent(hex: string, fallback = "#60a5fa"): string {
 
 export type FieldSource = { ref: number; title: string; publisher?: string | null; url: string };
 
+/**
+ * The "Start" and "Next Step" endings ship students into stock PathLabs. When
+ * the plan wizard sent them here, the plan decision bar replaces both.
+ */
+function isPlanReplacedCta(card: RadarCard): boolean {
+  if (card.kind === "cta") return true;
+  if (card.kind !== "text") return false;
+  const presentation = String(
+    (pickContent(card).presentation as string | undefined) ?? ""
+  ).toLowerCase();
+  return presentation.includes("start");
+}
+
 export function RadarFieldPageClient({
   initialField,
   initialCards,
   fieldSources = [],
   initialSkills = [],
+  fromPlan = false,
 }: {
   initialField: RadarField;
   initialCards: RadarCard[];
   fieldSources?: FieldSource[];
   initialSkills?: RadarSkillSummary[];
+  /**
+   * Arrived from the My Path wizard. The generic "Start / Next Step" CTAs are
+   * the wrong ending there — the student owes the plan a decision instead.
+   */
+  fromPlan?: boolean;
 }) {
   const router = useRouter();
   const field = initialField;
@@ -179,10 +209,11 @@ export function RadarFieldPageClient({
           ) {
             return false;
           }
+          if (fromPlan && isPlanReplacedCta(card)) return false;
           return true;
         })
       ),
-    [initialCards]
+    [initialCards, fromPlan]
   );
   const [current, setCurrent] = useState(0);
   const [submitted, setSubmitted] = useState<Set<string>>(new Set());
@@ -331,7 +362,9 @@ export function RadarFieldPageClient({
   const keepRadarHref = `/radar/keep?next=${encodeURIComponent(`/radar/${fieldSlug}`)}`;
   const isFinalSlide = current >= totalSlides - 1;
   const isAiImpactSlide = current < cards.length && cards[current]?.kind === "aiImpact";
+  // The plan decision bar owns the bottom of the screen in the wizard flow.
   const shouldShowSignupToast =
+    !fromPlan &&
     showSignupPrompt &&
     hasGuestReflection &&
     signupToastVisible &&
@@ -521,9 +554,18 @@ export function RadarFieldPageClient({
         </div>
       )}
 
+      {fromPlan && (
+        <PlanDecisionBar
+          fieldSlug={fieldSlug}
+          fieldTitle={field.name_th || field.name_en || "เส้นทางนี้"}
+          accent={accent}
+        />
+      )}
+
       <div
         ref={scrollRef}
         className="radar-deck relative z-10"
+        style={fromPlan ? { paddingBottom: "8.5rem" } : undefined}
       >
         {cards.length > 0 ? (
           <>
@@ -606,6 +648,82 @@ export function RadarFieldPageClient({
               </div>
             </div>
           </section>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Sticky decision bar shown only when the student came from the plan wizard.
+ * Marking interest is a toggle, not an exit — they can flag several fields and
+ * keep exploring before returning to the plan.
+ */
+function PlanDecisionBar({
+  fieldSlug,
+  fieldTitle,
+  accent,
+}: {
+  fieldSlug: string;
+  fieldTitle: string;
+  accent: string;
+}) {
+  const router = useRouter();
+  const [interests, setInterests] = useState<string[]>([]);
+
+  useEffect(() => {
+    setInterests(readRadarInterests(window.localStorage));
+  }, []);
+
+  const isInterested = interests.includes(fieldSlug);
+
+  return (
+    <div className="absolute bottom-0 inset-x-0 z-30 border-t border-white/10 bg-neutral-950/85 backdrop-blur-md">
+      <div className="mx-auto w-full max-w-xl px-4 py-3">
+        <p className="text-center text-[11px] text-white/45">
+          {isInterested
+            ? `เก็บ “${fieldTitle}” เข้าแผนของคุณแล้ว — สำรวจต่อได้อีก`
+            : "อ่านจบแล้วคิดว่าไง? เลือกได้หลายเส้นทาง"}
+        </p>
+        <div className="mt-2.5 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setInterests(toggleRadarInterest(window.localStorage, fieldSlug));
+            }}
+            aria-pressed={isInterested}
+            className={`inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold transition-colors ${
+              isInterested
+                ? "border-transparent text-neutral-950"
+                : "border-white/15 bg-white/5 text-white hover:bg-white/10"
+            }`}
+            style={isInterested ? { background: accent } : undefined}
+          >
+            {isInterested ? (
+              <Check className="h-4 w-4" />
+            ) : (
+              <Heart className="h-4 w-4" />
+            )}
+            {isInterested ? "สนใจแล้ว" : "สนใจเส้นทางนี้"}
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/radar?from=plan")}
+            className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+          >
+            <Compass className="h-4 w-4" />
+            สำรวจเส้นทางอื่น
+          </button>
+        </div>
+        {interests.length > 0 && (
+          <button
+            type="button"
+            onClick={() => router.push("/plan")}
+            className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white/70 transition-colors hover:bg-white/[0.06] hover:text-white"
+          >
+            กลับไปทำแผนต่อ ({interests.length} เส้นทาง)
+            <ArrowRight className="h-4 w-4" />
+          </button>
         )}
       </div>
     </div>

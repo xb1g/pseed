@@ -29,7 +29,7 @@ export function StepGoal({
   return (
     <section aria-labelledby="goal-heading">
       <p className="text-xs font-semibold uppercase tracking-[0.15em] text-indigo-200/70">
-        ขั้นที่ 3 · ล็อกเป้า
+        ขั้นที่ 2 · ล็อกเป้า
       </p>
       <h2
         id="goal-heading"

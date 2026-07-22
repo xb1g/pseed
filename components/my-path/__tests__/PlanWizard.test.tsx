@@ -101,7 +101,7 @@ test("opens on the hook step and gates the interests step behind a saved career"
   );
 });
 
-test("walks through pathlabs and the goal lock to a sign-in-gated mission plan", async () => {
+test("walks from interests through the goal lock to a sign-in-gated mission plan", async () => {
   renderWizard();
 
   fireEvent.click(
@@ -110,24 +110,7 @@ test("walks through pathlabs and the goal lock to a sign-in-gated mission plan",
   fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
   fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
 
-  expect(
-    screen.getByRole("heading", { name: "ลองทำจริงใน PathLab" })
-  ).toBeVisible();
-  // The saved interest sorts its matching PathLab to the top.
-  expect(screen.getAllByRole("heading", { level: 3 })[0]).toHaveTextContent(
-    "AI Engineer PathLab"
-  );
-
-  fireEvent.click(screen.getAllByRole("button", { name: "เลือกอันนี้" })[0]);
-  expect(screen.getByRole("button", { name: "เลือกแล้ว" })).toBeVisible();
-  expect(global.fetch).toHaveBeenCalledWith(
-    "/api/my-path/events",
-    expect.objectContaining({
-      body: expect.stringContaining('"eventType":"pathlab_selected"'),
-    })
-  );
-
-  fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
+  // The PathLab pick step is hidden — the goal lock follows interests directly.
   expect(
     screen.getByRole("heading", { name: "ล็อกเป้าหมายของคุณ" })
   ).toBeVisible();
@@ -149,9 +132,30 @@ test("walks through pathlabs and the goal lock to a sign-in-gated mission plan",
       name: "แผน 4 เดือนสู่มหาวิทยาลัยในไทม์ไลน์ของคุณ",
     })
   ).toBeVisible();
+  // The plan ends on a paid consultation, not a stock PathLab launch.
+  expect(
+    screen.getByRole("link", { name: /นัดคุยกับเรา · 100 บาท/ })
+  ).toBeVisible();
   expect(
     screen.getByRole("link", { name: /เข้าสู่ระบบเพื่อบันทึกแผนนี้/ })
   ).toHaveAttribute("href", "/login?next=%2Fplan%3Fresume%3D1");
+});
+
+test("folds interests flagged on Radar back into the plan", async () => {
+  window.localStorage.setItem(
+    "passionseed_plan_radar_interests_v1",
+    JSON.stringify(["data-scientist", "unknown-field"])
+  );
+  renderWizard();
+
+  fireEvent.click(await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" }));
+  expect(
+    screen.getByRole("button", { name: /Data Scientist/ })
+  ).toHaveAttribute("aria-pressed", "true");
+  // The inbox is drained so a later visit does not re-add the same slug.
+  expect(
+    window.localStorage.getItem("passionseed_plan_radar_interests_v1")
+  ).toBeNull();
 });
 
 test("keeps every step in history so a swipe-back only moves one step", async () => {
@@ -163,7 +167,7 @@ test("keeps every step in history so a swipe-back only moves one step", async ()
   fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
   fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
   expect(
-    screen.getByRole("heading", { name: "ลองทำจริงใน PathLab" })
+    screen.getByRole("heading", { name: "ล็อกเป้าหมายของคุณ" })
   ).toBeVisible();
 
   // A mobile swipe-back gesture fires popstate — it must land on the
@@ -179,7 +183,7 @@ test("keeps every step in history so a swipe-back only moves one step", async ()
 });
 
 test("resumes the furthest step reached after an accidental exit", async () => {
-  window.localStorage.setItem("passionseed_my_path_wizard_step_v1", "3");
+  window.localStorage.setItem("passionseed_my_path_wizard_step_v1", "2");
   renderWizard();
 
   expect(
@@ -188,7 +192,7 @@ test("resumes the furthest step reached after an accidental exit", async () => {
 });
 
 test("links a persisted mission plan to the My Path dashboard", async () => {
-  window.localStorage.setItem("passionseed_my_path_wizard_step_v1", "4");
+  window.localStorage.setItem("passionseed_my_path_wizard_step_v1", "3");
   renderWizard(true, true);
 
   expect(
@@ -221,8 +225,6 @@ test("discloses the trial terms before launch and only links to the confirmed en
     await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" })
   );
   fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
-  fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
-  fireEvent.click(screen.getAllByRole("button", { name: "เลือกอันนี้" })[0]);
   fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
   fireEvent.click(screen.getByRole("radio", { name: /เข้ามหาวิทยาลัย/ }));
   fireEvent.click(screen.getByRole("button", { name: "ดูแผนของฉัน" }));
@@ -281,8 +283,6 @@ test("persists My Path before creating a trial and enrollment", async () => {
   fireEvent.click(await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" }));
   fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
   fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
-  fireEvent.click(screen.getAllByRole("button", { name: "เลือกอันนี้" })[0]);
-  fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
   fireEvent.click(screen.getByRole("radio", { name: /เข้ามหาวิทยาลัย/ }));
   fireEvent.click(screen.getByRole("button", { name: "ดูแผนของฉัน" }));
   (global.fetch as jest.Mock).mockClear();
@@ -309,8 +309,6 @@ test("blocks trial launch when the durable My Path save fails", async () => {
   renderWizard(true);
   fireEvent.click(await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" }));
   fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
-  fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
-  fireEvent.click(screen.getAllByRole("button", { name: "เลือกอันนี้" })[0]);
   fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
   fireEvent.click(screen.getByRole("radio", { name: /เข้ามหาวิทยาลัย/ }));
   fireEvent.click(screen.getByRole("button", { name: "ดูแผนของฉัน" }));
@@ -348,8 +346,6 @@ test("dismissal invalidates an in-flight launch and rapid clicks do not duplicat
   renderWizard(true);
   fireEvent.click(await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" }));
   fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
-  fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
-  fireEvent.click(screen.getAllByRole("button", { name: "เลือกอันนี้" })[0]);
   fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
   fireEvent.click(screen.getByRole("radio", { name: /เข้ามหาวิทยาลัย/ }));
   fireEvent.click(screen.getByRole("button", { name: "ดูแผนของฉัน" }));
@@ -412,8 +408,6 @@ test("routes a reused expired trial to payment recovery instead of locked enroll
   fireEvent.click(await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" }));
   fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
   fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
-  fireEvent.click(screen.getAllByRole("button", { name: "เลือกอันนี้" })[0]);
-  fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
   fireEvent.click(screen.getByRole("radio", { name: /เข้ามหาวิทยาลัย/ }));
   fireEvent.click(screen.getByRole("button", { name: "ดูแผนของฉัน" }));
   fireEvent.click(
@@ -462,8 +456,6 @@ test.each([
       await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" })
     );
     fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
-    fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
-    fireEvent.click(screen.getAllByRole("button", { name: "เลือกอันนี้" })[0]);
     fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
     fireEvent.click(screen.getByRole("radio", { name: /เข้ามหาวิทยาลัย/ }));
     fireEvent.click(screen.getByRole("button", { name: "ดูแผนของฉัน" }));

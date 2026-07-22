@@ -450,7 +450,9 @@ export function getCareerCardVisual(field: RadarField) {
   return {
     background: template.background,
     dotStyle,
-    figure: CAREER_FIGURES[seed % CAREER_FIGURES.length],
+    figure: (field.slug ?? "").toLowerCase().includes("cyber")
+      ? "/images/radar/cybersec.webp"
+      : CAREER_FIGURES[seed % CAREER_FIGURES.length],
     scrim:
       "linear-gradient(to top, rgb(0 0 0 / 0.92) 0%, rgb(0 0 0 / 0.74) 28%, rgb(0 0 0 / 0.38) 56%, rgb(0 0 0 / 0.08) 78%, transparent 100%)",
     tagBackground: "rgb(0 0 0 / 0.18)",
@@ -541,10 +543,13 @@ export function RadarPageClient({
   initialFields,
   initialCollections,
   initialError = null,
+  fromPlan = false,
 }: {
   initialFields: RadarField[];
   initialCollections: RadarCollection[];
   initialError?: string | null;
+  /** Arrived from the My Path wizard — field pages then offer the plan decision. */
+  fromPlan?: boolean;
 }) {
   const router = useRouter();
   const [fields, setFields] = useState<RadarField[]>(initialFields);
@@ -758,7 +763,11 @@ export function RadarPageClient({
                 >
                   <div className="radar-career-grid">
                     {batch.map((field) => (
-                      <FieldTile key={field.id} field={field} />
+                      <FieldTile
+                        key={field.id}
+                        field={field}
+                        fromPlan={fromPlan}
+                      />
                     ))}
                   </div>
                 </div>
@@ -771,7 +780,14 @@ export function RadarPageClient({
   );
 }
 
-const FieldTile = memo(function FieldTile({ field }: { field: RadarField }) {
+const FieldTile = memo(function FieldTile({
+  field,
+  fromPlan = false,
+}: {
+  field: RadarField;
+  fromPlan?: boolean;
+}) {
+  const fieldHref = `/radar/${field.slug}${fromPlan ? "?from=plan" : ""}`;
   const visual = getCareerCardVisual(field);
   const labels = getCareerLabels(field);
   const primaryLabel = labels.primary;
@@ -794,9 +810,9 @@ const FieldTile = memo(function FieldTile({ field }: { field: RadarField }) {
 
   return (
     <Link
-      href={`/radar/${field.slug}`}
+      href={fieldHref}
       prefetch={false}
-      data-radar-href={`/radar/${field.slug}`}
+      data-radar-href={fieldHref}
       className="radar-career-card group relative isolate block aspect-[4/5] w-full cursor-pointer overflow-visible rounded-lg text-left shadow-[0_18px_50px_rgba(0,0,0,0.28)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/60 sm:aspect-[3/5]"
       style={cardStyle}
     >

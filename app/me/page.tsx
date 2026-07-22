@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { MyPathDashboard } from "@/components/my-path/MyPathDashboard";
+import { MyPathSummaryCard } from "@/components/my-path/MyPathSummaryCard";
 import { buildMyPathDashboard } from "@/lib/my-path/dashboard";
 import {
   loadMyPathDashboardSource,
@@ -10,6 +11,7 @@ import {
   loadPersistedMyPathResult,
   type MyPathReadClient,
 } from "@/lib/my-path/server-read";
+import { buildMyPathSummary } from "@/lib/my-path/summary";
 import { createClient } from "@/utils/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -36,6 +38,11 @@ export default async function PortalPage() {
     persistedPathStatus: persistedPath.status,
     ...dashboardSource,
   });
+  const persistedDraft = persistedPath.state?.draft;
+  const myPathSummary =
+    persistedDraft?.answers && persistedDraft.possibilities
+      ? buildMyPathSummary(persistedDraft)
+      : null;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#020617_0%,#0f172a_32%,#1e1b4b_70%,#172554_100%)] antialiased">
@@ -45,6 +52,7 @@ export default async function PortalPage() {
       />
       <main id="my-path" className="dawn-theme relative z-10 flex-1">
         <div className="container mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10 lg:py-14">
+          <MyPathSummaryCard summary={myPathSummary} />
           <MyPathDashboard model={model} />
         </div>
       </main>

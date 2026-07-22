@@ -7,7 +7,12 @@ type RadarCollection = Database["public"]["Tables"]["radar_collections"]["Row"];
 
 export const dynamic = "force-dynamic";
 
-export default async function RadarPage() {
+export default async function RadarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string }>;
+}) {
+  const { from } = await searchParams;
   const supabase = await createClient();
 
   const [fieldsResult, collectionsResult] = await Promise.all([
@@ -33,6 +38,7 @@ export default async function RadarPage() {
       initialFields={(fieldsResult.data || []) as RadarField[]}
       initialCollections={(collectionsResult.data || []) as RadarCollection[]}
       initialError={error ? "Radar request failed" : null}
+      fromPlan={from === "plan"}
     />
   );
 }

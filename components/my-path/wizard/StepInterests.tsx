@@ -32,7 +32,8 @@ export function StepInterests({
       </h2>
       <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
         เลือกได้หลายอัน (สูงสุด {maxSelections}) — ยังไม่ต้องรู้ว่าอันไหน &quot;ใช่&quot;
-        แค่เลือกอันที่ทำให้อยากรู้ต่อ แล้วเราจะลองพิสูจน์กันจริงๆ ในขั้นต่อไป
+        ถ้ายังไม่แน่ใจ เปิด Radar ไปอ่านให้ลึกก่อน กด &quot;สนใจเส้นทางนี้&quot; ที่นั่นได้เลย
+        แล้วกลับมาที่แผนนี้ ตัวเลือกจะติดกลับมาให้เอง
       </p>
 
       <div className="mt-6 flex flex-wrap gap-2.5" role="group" aria-label="เลือกสิ่งที่สนใจ">
@@ -63,7 +64,7 @@ export function StepInterests({
       </div>
 
       <Link
-        href="/radar"
+        href="/radar?from=plan"
         className="dawn-card group mt-6 flex w-full items-center gap-4 border border-white/10 bg-white/[0.04] p-4"
       >
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-200">
@@ -74,7 +75,7 @@ export function StepInterests({
             เปิด Radar สำรวจทุกเส้นทาง
           </p>
           <p className="mt-0.5 text-sm text-slate-400">
-            ดูข้อมูลละเอียดของทุกสายอาชีพ ก่อนตัดสินใจเลือก
+            อ่านให้ลึกทีละสาย แล้วกด &quot;สนใจ&quot; หรือ &quot;ดูทางอื่นต่อ&quot; — กลับมาที่แผนได้ทุกเมื่อ
           </p>
         </div>
         <ArrowRight
