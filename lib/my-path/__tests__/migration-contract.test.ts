@@ -100,6 +100,38 @@ test("Radar freshness is bounded by database receipt time", () => {
   );
 });
 
+test("full draft possibility freshness is bounded before the private sync core", () => {
+  const migrationsDirectory = new URL("../../../supabase/migrations/", import.meta.url);
+  const receiptTimeMigrationName = readdirSync(migrationsDirectory).find((name) =>
+    name.endsWith("_bound_my_path_draft_freshness.sql")
+  );
+  assert.ok(
+    receiptTimeMigrationName,
+    "My Path draft receipt-time migration must be created via the Supabase CLI"
+  );
+  const receiptTimeMigration = readFileSync(
+    new URL(receiptTimeMigrationName, migrationsDirectory),
+    "utf8"
+  );
+
+  assert.match(
+    receiptTimeMigration,
+    /alter function private\.sync_my_path_journey\(jsonb, jsonb, jsonb\)[\s\S]*rename to sync_my_path_journey_unbounded/
+  );
+  assert.match(
+    receiptTimeMigration,
+    /v_effective_updated_at := least\([\s\S]*statement_timestamp\(\)/
+  );
+  assert.match(
+    receiptTimeMigration,
+    /jsonb_set\([\s\S]*array\[v_slug, 'updatedAt'\][\s\S]*to_jsonb\(v_effective_updated_at\)/
+  );
+  assert.match(
+    receiptTimeMigration,
+    /revoke all on function private\.sync_my_path_journey_unbounded\(jsonb, jsonb, jsonb\)[\s\S]*from public, anon, authenticated/
+  );
+});
+
 test("a stale plan sync cannot regress a newer Radar possibility state", () => {
   const migrationsDirectory = new URL("../../../supabase/migrations/", import.meta.url);
   const freshnessMigrationName = readdirSync(migrationsDirectory).find((name) =>
