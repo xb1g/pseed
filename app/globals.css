@@ -6770,7 +6770,16 @@ summary:focus-visible .radar-expand-indicator {
 .radar-field-page--safari .salary-chess-level--queen .salary-chess-piece::after,
 .radar-field-page--safari .salary-chess-detail-piece--queen::before,
 .radar-field-page--safari .salary-chess-detail-piece--queen::after {
+  display: none !important;
   animation: none !important;
+}
+
+.radar-field-page--safari .salary-chess-piece::before,
+.radar-field-page--safari .salary-chess-piece::after,
+.radar-field-page--safari .salary-chess-detail-piece::before,
+.radar-field-page--safari .salary-chess-detail-piece::after,
+.radar-field-page--safari .salary-chess-intro-pawn::after {
+  display: none !important;
 }
 
 .radar-field-page--safari .salary-chess-board--intro-complete .salary-chess-piece-image,

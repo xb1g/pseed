@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
 import { RadarFieldPageClient } from "@/components/radar/RadarFieldPageClient";
 import type { Database } from "@/lib/supabase/database.types";
-import { createClient } from "@/utils/supabase/server";
+import { getCachedPublishedRadarField } from "@/lib/radar/server";
 
 type RadarField = Database["public"]["Tables"]["radar_fields"]["Row"];
 type RadarCard = Database["public"]["Tables"]["radar_cards"]["Row"];
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export default async function RadarFieldPage({
   params,
@@ -14,22 +14,7 @@ export default async function RadarFieldPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const supabase = await createClient();
-
-  const { data: fieldResult, error: fieldError } = await supabase
-    .from("radar_fields")
-    .select("*, radar_cards(*), radar_sources(ref, title, publisher, url)")
-    .eq("slug", slug)
-    .eq("is_published", true)
-    .eq("radar_cards.is_hidden", false)
-    .order("position", { referencedTable: "radar_cards", ascending: true })
-    .order("ref", { referencedTable: "radar_sources", ascending: true })
-    .maybeSingle();
-
-  if (fieldError) {
-    console.error("Error loading Radar field:", fieldError);
-    throw new Error("Radar request failed");
-  }
+  const fieldResult = await getCachedPublishedRadarField(slug);
 
   if (!fieldResult) {
     notFound();

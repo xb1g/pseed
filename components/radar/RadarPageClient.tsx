@@ -4,6 +4,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { getRadarFields, getRadarCollections } from "@/lib/supabase/radar";
 import { normalizeRadarCollections } from "@/lib/radar/filters";
 import type { Database } from "@/lib/supabase/database.types";
@@ -545,6 +546,7 @@ export function RadarPageClient({
   initialCollections: RadarCollection[];
   initialError?: string | null;
 }) {
+  const router = useRouter();
   const [fields, setFields] = useState<RadarField[]>(initialFields);
   const [collections, setCollections] =
     useState<RadarCollection[]>(initialCollections);
@@ -626,6 +628,10 @@ export function RadarPageClient({
       (entries) => {
         entries.forEach((entry) => {
           entry.target.classList.toggle("in-view", entry.isIntersecting);
+          if (entry.isIntersecting) {
+            const href = (entry.target as HTMLElement).dataset.radarHref;
+            if (href) router.prefetch(href);
+          }
         });
       },
       {
@@ -636,7 +642,7 @@ export function RadarPageClient({
 
     cards.forEach((card) => observer.observe(card));
     return () => observer.disconnect();
-  }, [filteredFields]);
+  }, [filteredFields, router]);
 
   return (
     <div ref={pageRef} className="radar-index-page min-h-screen">
@@ -789,7 +795,8 @@ const FieldTile = memo(function FieldTile({ field }: { field: RadarField }) {
   return (
     <Link
       href={`/radar/${field.slug}`}
-      prefetch
+      prefetch={false}
+      data-radar-href={`/radar/${field.slug}`}
       className="radar-career-card group relative isolate block aspect-[4/5] w-full cursor-pointer overflow-visible rounded-lg text-left shadow-[0_18px_50px_rgba(0,0,0,0.28)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/60 sm:aspect-[3/5]"
       style={cardStyle}
     >
