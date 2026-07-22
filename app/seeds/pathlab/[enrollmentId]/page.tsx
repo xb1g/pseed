@@ -184,7 +184,8 @@ export default async function PathLabExperiencePage({ params, searchParams }: Pa
   ]);
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-6xl px-4 py-8">
+    // No wrapper padding — PlayerShell owns the full-bleed player layout
+    <>
       <PathLabExperience
         enrollment={enrollment}
         seed={enrollment.path.seed}
@@ -199,6 +200,6 @@ export default async function PathLabExperiencePage({ params, searchParams }: Pa
         exitReflection={exitReflection}
         endReflection={endReflection}
       />
-    </div>
+    </>
   );
 }

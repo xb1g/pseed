@@ -1,7 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { ChevronRight } from "lucide-react";
 
 export type PathDecision = "continue_now" | "continue_tomorrow" | "pause" | "quit";
 
@@ -37,28 +36,51 @@ const OPTIONS: Array<{
   },
 ];
 
+/**
+ * The daily decision. Every option is presented with equal weight on purpose —
+ * "this isn't for me" is a valid result of the instrument, not a failure, so it
+ * does not get styled as the dangerous choice.
+ */
 export function DecisionGate({ submitting = false, onChoose }: DecisionGateProps) {
   return (
-    <Card className="border-neutral-800 bg-neutral-900/80">
-      <CardHeader>
-        <CardTitle className="text-2xl text-white">What’s next?</CardTitle>
-      </CardHeader>
-      <CardContent className="grid gap-3">
+    <section aria-labelledby="decision-heading">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-300/70">
+        Your call
+      </p>
+      <h2
+        id="decision-heading"
+        className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl"
+      >
+        What&apos;s next?
+      </h2>
+      <p className="mt-2 text-sm leading-6 text-neutral-400">
+        Every option here is a real answer. Stopping counts as one.
+      </p>
+
+      <div className="mt-6 space-y-2.5">
         {OPTIONS.map((option) => (
-          <Button
+          <button
             key={option.decision}
-            variant="outline"
+            type="button"
             disabled={submitting}
             onClick={() => onChoose(option.decision)}
-            className="h-auto items-start justify-start border-neutral-700 bg-neutral-950/70 p-4 text-left text-white hover:bg-neutral-800"
+            className="group flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-left transition-colors hover:border-amber-400/30 hover:bg-white/[0.06] disabled:pointer-events-none disabled:opacity-50"
           >
-            <div>
-              <p className="text-sm font-semibold">{option.title}</p>
-              <p className="mt-1 text-xs text-neutral-400">{option.description}</p>
-            </div>
-          </Button>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-semibold text-white">
+                {option.title}
+              </span>
+              <span className="mt-1 block text-sm leading-6 text-neutral-400">
+                {option.description}
+              </span>
+            </span>
+            <ChevronRight
+              aria-hidden="true"
+              className="h-5 w-5 shrink-0 text-neutral-600 transition-colors group-hover:text-amber-300"
+            />
+          </button>
         ))}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }
