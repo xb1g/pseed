@@ -54,6 +54,7 @@ export function PayPageClient({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
   const amount = priceAmount > 0 ? priceAmount : TRIAL_PRICE_THB;
   const parentOutcomes =
     outcomes.length >= 3 ? outcomes.slice(0, 3) : DEFAULT_OUTCOMES;
@@ -63,6 +64,29 @@ export function PayPageClient({
       if (slipPreview) URL.revokeObjectURL(slipPreview);
     };
   }, [slipPreview]);
+
+  useEffect(() => {
+    const root = pageRef.current;
+    if (
+      !root ||
+      typeof IntersectionObserver === "undefined" ||
+      !window.matchMedia("(hover: none)").matches
+    ) {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          entry.target.classList.toggle("in-view", entry.isIntersecting);
+        }
+      },
+      { threshold: 0.45 }
+    );
+    root
+      .querySelectorAll(".ei-card, .ei-button-dawn")
+      .forEach((element) => observer.observe(element));
+    return () => observer.disconnect();
+  }, [status]);
 
   function selectSlip(file: File | null) {
     setError(null);
@@ -135,30 +159,79 @@ export function PayPageClient({
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,0.72fr)] lg:items-start">
+    <div
+      ref={pageRef}
+      className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,0.72fr)] lg:items-start"
+    >
       <section
         className="ei-card px-5 py-6 sm:px-7 sm:py-8"
         aria-labelledby="parent-value-title"
         data-parent-value-story
       >
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-200/80">
-          PathLab ที่บุตรหลานเลือก
-        </p>
-        <h1
-          id="parent-value-title"
-          className="mt-2 font-kodchasan text-2xl font-bold leading-snug text-white sm:text-3xl"
-        >
-          {seedTitle}
-        </h1>
-        <p className="mt-3 text-sm font-semibold leading-6 text-blue-100">
-          {radarDirectionTitle
-            ? `เชื่อมกับทิศ ${radarDirectionTitle} ที่บุตรหลานกำลังสนใจใน My Path`
-            : "บุตรหลานเลือกไว้เป็นส่วนหนึ่งของ My Path เพื่อทดลองก่อนตัดสินใจจริง"}
-        </p>
+        <div data-mobile-first-viewport>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-200/80">
+            PathLab ที่บุตรหลานเลือก
+          </p>
+          <h1
+            id="parent-value-title"
+            title={seedTitle}
+            className="mt-1 line-clamp-2 font-kodchasan text-2xl font-bold leading-snug text-white sm:text-3xl"
+          >
+            {seedTitle}
+          </h1>
+          <p className="mt-2 line-clamp-2 text-sm font-semibold leading-6 text-blue-100">
+            {radarDirectionTitle
+              ? `เชื่อมกับทิศ ${radarDirectionTitle} ใน My Path`
+              : "เลือกไว้เป็นส่วนหนึ่งของ My Path เพื่อทดลองก่อนตัดสินใจจริง"}
+          </p>
+          <ul className="mt-3 space-y-2">
+            {parentOutcomes.map((outcome) => (
+              <li
+                key={outcome}
+                className="flex items-start gap-2 text-sm leading-5 text-slate-100"
+              >
+                <CheckCircle2
+                  className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300"
+                  aria-hidden="true"
+                />
+                <span className="line-clamp-2" title={outcome}>
+                  {outcome}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-4 flex items-end justify-between gap-3">
+            <div>
+              <p className="text-xs text-slate-400">ค่าทดลอง PathLab ทั้งหมด</p>
+              <p className="text-4xl font-extrabold tracking-tight text-white">
+                {formatThb(amount)}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="flex items-center justify-end gap-1 text-xs text-slate-400">
+                <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
+                {status === "active" ? "ภายใน 24 ชม." : "เลยกำหนดแล้ว"}
+              </p>
+              {status === "active" && (
+                <TrialCountdown
+                  deadline={paymentDeadline}
+                  expiredLabel="เลยกำหนดแล้ว"
+                  className="block font-mono text-base font-bold tabular-nums text-amber-100"
+                />
+              )}
+            </div>
+          </div>
+          <a
+            href="#payment"
+            className="ei-button-dawn mt-4 min-h-12 w-full justify-center"
+          >
+            <span>ดูวิธีชำระ</span>
+          </a>
+        </div>
 
-        <div className="mt-6 border-y border-white/10 py-5">
+        <div className="mt-5 border-t border-white/10 pt-5">
           <h2 className="font-kodchasan text-base font-bold text-white">
-            สิ่งที่จะได้ลงมือทำและมีในมือ
+            สิ่งที่จะได้ลงมือทำ
           </h2>
           <p className="mt-2 text-sm leading-6 text-slate-300">
             ลงมือทำจริง {totalDays ? `${totalDays} วัน` : "ตามเส้นทาง PathLab"}
@@ -166,58 +239,16 @@ export function PayPageClient({
               ? `: ${seedDescription}`
               : " จากโจทย์ที่ใกล้กับงานจริง"}
           </p>
-          <ul className="mt-4 space-y-3">
-            {parentOutcomes.map((outcome) => (
-              <li
-                key={outcome}
-                className="flex items-start gap-3 text-sm leading-6 text-slate-100"
-              >
-                <CheckCircle2
-                  className="mt-0.5 h-5 w-5 shrink-0 text-emerald-300"
-                  aria-hidden="true"
-                />
-                <span>{outcome}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <p className="mt-5 text-sm leading-6 text-slate-300">
-          ค่าทดลองนี้เป็นเครดิตเต็มจำนวนสำหรับ Admission Evidence Sprint
-          หากครอบครัวเลือกไปต่อ
-        </p>
-        <div className="mt-5 flex items-end justify-between gap-4">
-          <div>
-            <p className="text-xs text-slate-400">ค่าทดลอง PathLab ทั้งหมด</p>
-            <p className="mt-1 text-4xl font-extrabold tracking-tight text-white">
-              {formatThb(amount)}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="flex items-center justify-end gap-1 text-xs text-slate-400">
-              <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
-              {status === "active" ? "ชำระภายใน 24 ชม." : "เลยกำหนดแล้ว"}
-            </p>
-            {status === "active" && (
-              <TrialCountdown
-                deadline={paymentDeadline}
-                expiredLabel="เลยกำหนดแล้ว"
-                className="mt-1 block font-mono text-lg font-bold tabular-nums text-amber-100"
-              />
-            )}
-          </div>
-        </div>
-        <a
-          href="#payment"
-          className="ei-button-dawn mt-5 min-h-12 w-full justify-center"
-        >
-          <span>ดูวิธีชำระ</span>
-        </a>
-        {status === "expired" && (
-          <p className="mt-4 rounded-xl border border-amber-200/25 bg-amber-200/[0.08] px-4 py-3 text-sm leading-6 text-amber-100">
-            เลยกำหนด 24 ชม. แล้ว แต่ยังชำระเพื่อปลดล็อก PathLab ได้
+          <p className="mt-3 text-sm leading-6 text-slate-300">
+            ค่าทดลองนี้เป็นเครดิตเต็มจำนวนสำหรับ Admission Evidence Sprint
+            หากครอบครัวเลือกไปต่อ
           </p>
-        )}
+          {status === "expired" && (
+            <p className="mt-3 rounded-xl border border-amber-200/25 bg-amber-200/[0.08] px-4 py-3 text-sm leading-6 text-amber-100">
+              เลยกำหนด 24 ชม. แล้ว แต่ยังชำระเพื่อปลดล็อก PathLab ได้
+            </p>
+          )}
+        </div>
       </section>
 
       <ParentUpdateOptIn token={token} />
@@ -324,7 +355,40 @@ export function PayPageClient({
             <span>{uploading ? "กำลังอัปโหลด…" : "ส่งสลิปยืนยันการชำระ"}</span>
           </button>
         </div>
+
+        <div className="mt-7 border-t border-white/10 pt-6">
+          <h3 className="font-kodchasan text-lg font-bold text-white">
+            คำถามที่ผู้ปกครองมักถาม
+          </h3>
+          <dl className="mt-4 divide-y divide-white/10">
+            <FaqItem
+              question="ใช้เวลาเท่าไร?"
+              answer={`PathLab แบ่งเป็น ${totalDays ? `${totalDays} วัน` : "หลายวัน"} แต่เวลาแต่ละกิจกรรมขึ้นกับงานและจังหวะของผู้เรียน`}
+            />
+            <FaqItem
+              question="ข้อมูลอะไรที่ครอบครัวจะได้รับ?"
+              answer="รับเฉพาะสถานะเริ่ม หมุดหมายสำคัญ และสรุปเมื่อทำจบ ไม่ส่งคำตอบส่วนตัว บันทึกสะท้อนคิด แชต หรือโน้ต"
+            />
+            <FaqItem
+              question="ถ้าเลย 24 ชั่วโมงจะเกิดอะไรขึ้น?"
+              answer="แผน My Path และสิ่งที่ทำไว้ยังอยู่ แต่การทำ PathLab ต่อจะรอจนกว่าจะชำระเพื่อเปิดสิทธิ์อีกครั้ง"
+            />
+            <FaqItem
+              question="หลังทำจบจะเกิดอะไรขึ้น?"
+              answer="ผู้เรียนจะมีผลงานและสัญญาณความเหมาะกับสายอาชีพไว้ทบทวน หากเลือก Admission Evidence Sprint ค่าทดลองนี้เป็นเครดิตเต็มจำนวน"
+            />
+          </dl>
+        </div>
       </section>
+    </div>
+  );
+}
+
+function FaqItem({ question, answer }: { question: string; answer: string }) {
+  return (
+    <div className="py-3">
+      <dt className="text-sm font-semibold text-slate-100">{question}</dt>
+      <dd className="mt-1 text-sm leading-6 text-slate-400">{answer}</dd>
     </div>
   );
 }

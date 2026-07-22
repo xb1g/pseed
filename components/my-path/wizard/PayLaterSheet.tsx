@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { CircleAlert, Play } from "lucide-react";
+import { CircleAlert, Play, X } from "lucide-react";
 
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -44,7 +45,14 @@ export function PayLaterSheet({
       <DialogContent
         className="dawn-theme inset-x-0 bottom-0 left-0 top-auto w-full max-w-none translate-x-0 translate-y-0 gap-0 rounded-t-3xl border-white/10 bg-slate-950/95 p-5 pb-8 text-slate-100 backdrop-blur-xl sm:bottom-auto sm:left-[50%] sm:top-[50%] sm:max-w-md sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-3xl"
         aria-describedby={undefined}
+        hideClose
       >
+        <DialogClose
+          aria-label="ปิดหน้าต่าง"
+          className="absolute right-2 top-2 z-10 inline-flex min-h-12 min-w-12 items-center justify-center rounded-xl text-slate-300 hover:bg-white/[0.08] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200"
+        >
+          <X className="h-5 w-5" aria-hidden="true" />
+        </DialogClose>
         {state === "loading" && (
           <div className="py-10 text-center" role="status">
             <DialogTitle className="sr-only">กำลังเปิดการทดลอง</DialogTitle>

@@ -304,8 +304,8 @@ export function PlanWizard({
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
-  async function savePlan() {
-    if (!draft) return;
+  async function persistPlan(): Promise<boolean> {
+    if (!draft) return false;
     setImportStatus("saving");
     try {
       const response = await fetch("/api/my-path", {
@@ -322,9 +322,15 @@ export function PlanWizard({
       setImportStatus("saved");
       clearMyPathDraft(window.localStorage);
       window.localStorage.removeItem(WIZARD_STEP_STORAGE_KEY);
+      return true;
     } catch {
       setImportStatus("error");
+      return false;
     }
+  }
+
+  async function savePlan() {
+    await persistPlan();
   }
 
   // Launch สำหรับนักเรียนที่ sign in แล้ว: เปิด trial "ทำก่อน จ่ายทีหลัง"
@@ -333,6 +339,8 @@ export function PlanWizard({
     if (!firstActionSeed) return;
     setPayLaterSheet({ status: "loading", trial: null, enrollmentUrl: null });
     try {
+      const saved = await persistPlan();
+      if (!saved) throw new Error("durable My Path save failed");
       const response = await fetch("/api/trials", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

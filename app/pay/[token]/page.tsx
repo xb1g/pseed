@@ -118,7 +118,10 @@ export default async function PayPage({ params }: PayPageProps) {
 
       <div className="relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-6xl flex-col px-4 pb-10 pt-6 sm:px-6 sm:pt-10">
         <header className="mb-6 flex items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-2.5">
+          <Link
+            href="/"
+            className="flex min-h-12 min-w-12 items-center gap-2.5 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200"
+          >
             <Image
               src="/passionseed-logo.svg"
               alt="PassionSeed"
