@@ -3193,17 +3193,27 @@ summary:focus-visible .radar-expand-indicator {
   background-size: auto;
 }
 
+/* WebKit can stall when an auto-contained batch becomes visible mid-scroll.
+   Other engines keep the batch optimization; Safari uses the lighter scrolling
+   state below instead. */
+.radar-index-page--safari .radar-career-batch {
+  content-visibility: visible;
+  contain-intrinsic-block-size: none;
+}
+
 .radar-index-page--safari-scrolling .radar-career-card {
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+  box-shadow: none;
   transition: none;
 }
 
 .radar-index-page--safari-scrolling .radar-career-card__grain {
+  display: none;
   background-image: none;
   opacity: 0;
 }
 
 .radar-index-page--safari-scrolling .radar-career-card__figure {
+  filter: none !important;
   transition: none;
 }
 
