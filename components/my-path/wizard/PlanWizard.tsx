@@ -50,7 +50,7 @@ const TOTAL_STEPS = 5;
 const WIZARD_STEP_STORAGE_KEY = "passionseed_my_path_wizard_step_v1";
 
 interface PayLaterSheetState {
-  status: "loading" | "error" | "ready";
+  status: "loading" | "error" | "ready" | "recovery";
   trial: TrialShareInfo | null;
   enrollmentUrl: string | null;
 }
@@ -357,6 +357,7 @@ export function PlanWizard({
       if (
         typeof payload.payToken !== "string" ||
         typeof payload.payUrl !== "string" ||
+        !["active", "pending", "paid", "expired"].includes(payload.status) ||
         typeof payload.paymentDeadline !== "string" ||
         typeof payload.enrollmentId !== "string" ||
         typeof payload.enrollmentUrl !== "string"
@@ -364,6 +365,18 @@ export function PlanWizard({
         throw new Error("trial enrollment confirmation missing");
       }
       if (generation !== launchGeneration.current) return;
+      if (payload.status === "expired") {
+        setPayLaterSheet({
+          status: "recovery",
+          trial: {
+            payToken: payload.payToken,
+            payUrl: payload.payUrl,
+            paymentDeadline: payload.paymentDeadline,
+          },
+          enrollmentUrl: null,
+        });
+        return;
+      }
       setPayLaterSheet({
         status: "ready",
         trial: {
