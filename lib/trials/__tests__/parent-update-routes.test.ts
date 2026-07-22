@@ -54,6 +54,8 @@ test("cron requires a bearer secret and is registered in Vercel", () => {
   assert.match(route, /Bearer/);
   assert.match(route, /claimDueParentUpdates/);
   assert.match(vercel, /\/api\/cron\/parent-pathlab-updates/);
+  // Hobby plans reject anything denser than once/day — keep this daily.
+  assert.match(vercel, /"schedule":\s*"0 2 \* \* \*"/);
   assert.match(publicRoutes, /\/api\/cron\/parent-pathlab-updates/);
 });
 
