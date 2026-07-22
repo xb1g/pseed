@@ -15,6 +15,23 @@ export interface MyPathEvidence {
 }
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+const DRAFT_ID_PATTERN = /^[A-Za-z0-9._:-]{6,128}$/;
+
+/** Build a draftId that always satisfies the sync RPC / Zod safeId contract. */
+export function durableDraftId(
+  lastImportKey: string | null | undefined,
+  createdAt: string
+): string {
+  if (lastImportKey && DRAFT_ID_PATTERN.test(lastImportKey)) {
+    return lastImportKey;
+  }
+  // PostgREST timestamps often use "+00:00"; "+" is not allowed in draftId.
+  const stamp = createdAt.replace(/[^A-Za-z0-9._:-]/g, "-");
+  const candidate = `persisted-${stamp}`.slice(0, 128);
+  return DRAFT_ID_PATTERN.test(candidate)
+    ? candidate
+    : `persisted-${Date.now()}`;
+}
 
 interface PersistedSnapshot {
   path: {
@@ -138,7 +155,10 @@ export function hydratePersistedMyPath(
   const updatedAt = snapshot.path.updated_at;
   const draft: MyPathDraft = {
     version: 1,
-    draftId: snapshot.path.last_import_key ?? `persisted-${snapshot.path.created_at}`,
+    draftId: durableDraftId(
+      snapshot.path.last_import_key,
+      snapshot.path.created_at
+    ),
     entryKey: snapshot.path.entry_key,
     createdAt: snapshot.path.created_at,
     updatedAt,

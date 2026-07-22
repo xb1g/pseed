@@ -61,6 +61,8 @@ interface StepMissionProps {
   isSignedIn: boolean;
   loginHref: string;
   importStatus: "idle" | "saving" | "saved" | "error";
+  /** Narrower reason when importStatus is "error" — drives the alert copy. */
+  saveError?: "auth" | "unavailable" | "generic" | null;
   persisted: boolean;
   onSave: () => void;
   onLaunch: () => void;
@@ -70,12 +72,25 @@ interface StepMissionProps {
   onBook: () => void;
 }
 
+function saveErrorMessage(
+  saveError: StepMissionProps["saveError"]
+): string {
+  if (saveError === "auth") {
+    return "เซสชันหมดอายุ — เข้าสู่ระบบอีกครั้งแล้วกดบันทึก";
+  }
+  if (saveError === "unavailable") {
+    return "ระบบบันทึกยังไม่พร้อมในสภาพแวดล้อมนี้ — ใช้ production database";
+  }
+  return "ยังบันทึกไม่ได้ ลองอีกครั้ง — ข้อมูลในเครื่องนี้ยังอยู่ครบ";
+}
+
 export function StepMission({
   plan,
   firstAction,
   isSignedIn,
   loginHref,
   importStatus,
+  saveError = null,
   persisted,
   onSave,
   onLaunch,
@@ -147,10 +162,7 @@ export function StepMission({
           </p>
           {onLaunchStart ? (
             <div className="mt-4">
-              <p className="mb-3 text-sm leading-6 text-slate-300">
-                ทดลองครบ PathLab ฿1,490 · ส่งให้ผู้ปกครองชำระภายใน 24 ชม. ·
-                ไม่มีการตัดเงินอัตโนมัติ
-              </p>
+              {/* Trial price / parent-pay copy hidden for now — restore with PayLaterSheet. */}
               <button
                 type="button"
                 onClick={() => {
@@ -335,8 +347,7 @@ export function StepMission({
             className="mt-3 inline-flex items-center gap-2 text-sm text-rose-200"
             role="alert"
           >
-            <CircleAlert className="h-4 w-4" /> ยังบันทึกไม่ได้ ลองอีกครั้ง —
-            ข้อมูลในเครื่องนี้ยังอยู่ครบ
+            <CircleAlert className="h-4 w-4" /> {saveErrorMessage(saveError)}
           </p>
         )}
         {!isSignedIn && importStatus !== "saved" && (

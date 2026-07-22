@@ -1,12 +1,9 @@
 "use client";
 
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
-import { createClient } from "@/utils/supabase/client";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useState } from "react";
-import { toast } from "sonner";
+import Link from "next/link";
 import { useLanguage } from "@/lib/i18n/language-context";
 import { HeroBackground } from "@/components/hero-background";
 import { LandingDemoPaths } from "@/components/landing-demo-paths";
@@ -29,37 +26,7 @@ const content = {
 };
 
 export function LandingHero() {
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const supabase = createClient();
   const { language } = useLanguage();
-
-  const handleGuestAccess = async () => {
-    setIsLoading(true);
-    try {
-      const { error } = await supabase.auth.signInAnonymously();
-      if (error) throw error;
-      router.push("/onboard");
-    } catch (error: any) {
-      console.error("Guest auth error:", error);
-      if (error.message?.includes("Anonymous sign-ins are disabled")) {
-        toast.error(
-          language === "th"
-            ? "ระบบยังไม่พร้อมใช้งาน กรุณาลองใหม่ภายหลัง"
-            : "System is not ready. Please try again later.",
-        );
-      } else {
-        toast.error(
-          language === "th"
-            ? "เกิดข้อผิดพลาด กรุณาลองใหม่"
-            : "Something went wrong. Please try again.",
-        );
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const t = content[language];
 
   return (
@@ -111,7 +78,7 @@ export function LandingHero() {
               {t.subheadline}
             </motion.p>
 
-            {/* CTA */}
+            {/* CTA → plan wizard */}
             <motion.div
               animate={{ opacity: 1, y: 0 }}
               initial={false}
@@ -122,9 +89,8 @@ export function LandingHero() {
               }}
               className="mt-8 w-full sm:w-auto"
             >
-              <button
-                onClick={handleGuestAccess}
-                disabled={isLoading}
+              <Link
+                href="/plan"
                 className="ei-button-dusk w-full sm:w-auto justify-center"
                 style={{
                   fontSize: "1.125rem",
@@ -132,15 +98,9 @@ export function LandingHero() {
                   borderRadius: "14px",
                 }}
               >
-                {isLoading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <>
-                    {t.cta}
-                    <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
-                  </>
-                )}
-              </button>
+                {t.cta}
+                <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
+              </Link>
             </motion.div>
 
             {/* Mobile demo paths - shown below text on mobile */}

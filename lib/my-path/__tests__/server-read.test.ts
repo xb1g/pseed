@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 
 import {
+  durableDraftId,
   hydratePersistedMyPath,
   loadPersistedMyPathResult,
 } from "../server-read";
@@ -67,6 +68,30 @@ test("a persisted My Path restores possibilities, questions, history, and Radar 
 test("an account without a My Path hydrates to null", () => {
   assert.equal(hydratePersistedMyPath(null), null);
   assert.equal(hydratePersistedMyPath({ path: null }), null);
+});
+
+test("hydrated draft ids stay within the sync safeId alphabet", () => {
+  assert.equal(durableDraftId("draft-persisted", "2026-07-10T00:00:00.000Z"), "draft-persisted");
+  assert.equal(
+    durableDraftId(null, "2026-07-10T00:00:00.123456+00:00"),
+    "persisted-2026-07-10T00:00:00.123456-00:00"
+  );
+  assert.match(
+    durableDraftId(null, "2026-07-10T00:00:00.123456+00:00"),
+    /^[A-Za-z0-9._:-]{6,128}$/
+  );
+
+  const state = hydratePersistedMyPath({
+    path: {
+      entry_key: "generic",
+      direction_hypothesis: null,
+      last_import_key: null,
+      created_at: "2026-07-10T00:00:00.123456+00:00",
+      updated_at: "2026-07-16T00:00:00.000Z",
+    },
+  });
+  assert.match(state!.draft.draftId, /^[A-Za-z0-9._:-]{6,128}$/);
+  assert.equal(state!.draft.draftId.includes("+"), false);
 });
 
 test("hydrated events restore metadata from the event payload", () => {
