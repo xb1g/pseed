@@ -45,12 +45,12 @@ export async function GET(req: NextRequest) {
     admin
       .from("my_path_events")
       .select("created_at, event_type")
-      .eq("event_type", "entry_viewed")
+      .in("event_type", ["entry_viewed"])
       .gte("created_at", sinceISO),
     admin
       .from("anonymous_my_path_events")
       .select("created_at, event_type")
-      .eq("event_type", "reel_entry_viewed")
+      .in("event_type", ["reel_entry_viewed", "plan_page_viewed"])
       .gte("created_at", sinceISO),
   ]);
 
