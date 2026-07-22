@@ -606,7 +606,7 @@ export function RadarPageClient({
         });
       },
       {
-        rootMargin: "-40% 0px -34% 0px",
+        rootMargin: "-38% 0px -38% 0px",
         threshold: 0,
       }
     );

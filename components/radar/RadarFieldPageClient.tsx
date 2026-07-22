@@ -380,13 +380,13 @@ export function RadarFieldPageClient({
         ...visual.dotStyle,
       }}
     >
-      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+      <div className="radar-atmosphere pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <span
           className="radar-career-card__grain radar-detail-grain"
           aria-hidden="true"
         />
         <div
-          className="absolute inset-0 bg-[linear-gradient(180deg,rgba(3,7,18,0.58)_0%,rgba(3,7,18,0.82)_48%,rgba(3,7,18,0.94)_100%)]"
+          className="radar-atmosphere-shade absolute inset-0 bg-[linear-gradient(180deg,rgba(3,7,18,0.58)_0%,rgba(3,7,18,0.82)_48%,rgba(3,7,18,0.94)_100%)]"
           aria-hidden="true"
         />
         <div
@@ -665,7 +665,7 @@ function RadarCardSection({
           </div>
         </div>
       )}
-      <div className="radar-card-viewport relative z-10 h-[calc(100dvh-10rem)]">
+      <div className="radar-card-viewport relative z-10 min-h-[calc(100dvh-10rem)]">
         <RadarViewportFit>
           {children}
           {sourceRefs.length > 0 && fieldSources.length > 0 && (
