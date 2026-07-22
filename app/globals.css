@@ -3208,9 +3208,14 @@ summary:focus-visible .radar-expand-indicator {
 }
 
 @media (max-width: 640px) {
+  .radar-deck {
+    scroll-snap-type: y proximity;
+  }
+
   .radar-card-section {
     padding-inline: 1rem;
     padding-block: 4.5rem 1rem;
+    scroll-snap-stop: normal;
   }
 
   .radar-card-viewport,
@@ -3535,19 +3540,32 @@ summary:focus-visible .radar-expand-indicator {
   pointer-events: none;
 }
 
-.radar-career-card:hover,
 .radar-career-card:focus-visible {
   z-index: 80;
   transform: translate3d(0, -5px, 0) scale(1.025);
   will-change: transform;
 }
 
-.radar-career-card:hover .radar-career-card__figure,
 .radar-career-card:focus-visible .radar-career-card__figure {
   z-index: 90;
   filter: grayscale(0) saturate(1.08) contrast(1.02) drop-shadow(0 18px 18px rgba(0, 0, 0, 0.42));
   transform: translate3d(0, -9%, 0) scale(1.24);
   will-change: transform, filter;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .radar-career-card:hover {
+    z-index: 80;
+    transform: translate3d(0, -5px, 0) scale(1.025);
+    will-change: transform;
+  }
+
+  .radar-career-card:hover .radar-career-card__figure {
+    z-index: 90;
+    filter: grayscale(0) saturate(1.08) contrast(1.02) drop-shadow(0 18px 18px rgba(0, 0, 0, 0.42));
+    transform: translate3d(0, -9%, 0) scale(1.24);
+    will-change: transform, filter;
+  }
 }
 
 .faculty-radar-page,
@@ -4705,16 +4723,20 @@ summary:focus-visible .radar-expand-indicator {
     opacity: 0.26;
   }
 
-  .radar-career-card.in-view .radar-career-card__figure {
+  .radar-career-card:active {
+    z-index: 80;
+    transform: translate3d(0, -5px, 0) scale(1.025);
+  }
+
+  .radar-career-card:active .radar-career-card__figure {
     z-index: 90;
     filter: grayscale(0.08) saturate(1.02) contrast(1.02);
     transform: translate3d(0, -5%, 0) scale(1.08);
   }
 
-  /* Preserve the center-card color reveal on mobile Safari. The Safari base
-     rule is important to avoid filter interpolation, so this state must be
-     equally explicit. */
-  .radar-index-page--safari .radar-career-card.in-view .radar-career-card__figure {
+  /* Preserve the tap color reveal on mobile Safari. The Safari base rule is
+     important to avoid filter interpolation, so this state must be explicit. */
+  .radar-index-page--safari .radar-career-card:active .radar-career-card__figure {
     filter: none !important;
     will-change: transform;
   }
@@ -6925,20 +6947,14 @@ summary:focus-visible .radar-expand-indicator {
 }
 
 .radar-field-page--safari .salary-chess-piece-image,
-.radar-field-page--safari .salary-chess-intro-pawn,
-.radar-field-page--safari .salary-chess-intro-pawn::after,
-.radar-field-page--safari .salary-chess-piece::before,
-.radar-field-page--safari .salary-chess-piece::after {
+.radar-field-page--safari .salary-chess-intro-pawn {
   will-change: transform, opacity;
-  filter: none !important;
 }
 
-.radar-field-page--safari .salary-chess-piece-image {
-  filter: grayscale(1) brightness(0.72) !important;
-}
-
-.radar-field-page--safari .salary-chess-level--knight .salary-chess-piece-image {
-  filter: grayscale(1) brightness(0.82) !important;
+.radar-field-page--safari .salary-chess-piece-image,
+.radar-field-page--safari .salary-chess-intro-pawn img {
+  filter: sepia(0.9) saturate(3.2) hue-rotate(var(--salary-chess-image-hue, 60deg)) brightness(1.05)
+    contrast(1.05) !important;
 }
 
 .radar-field-page--safari .salary-chess-level--queen .salary-chess-piece::before,
@@ -6954,43 +6970,6 @@ summary:focus-visible .radar-expand-indicator {
 .radar-field-page--safari .salary-chess-detail-piece::after,
 .radar-field-page--safari .salary-chess-intro-pawn::after {
   display: none !important;
-}
-
-/* WebKit can reuse a custom-property mask between sibling pieces. Give each
-   animated accent layer an explicit source so it follows the correct artwork. */
-.radar-field-page--safari .salary-chess-level--pawn .salary-chess-piece::after,
-.radar-field-page--safari .salary-chess-detail-piece--pawn::after {
-  display: block !important;
-  -webkit-mask-image: url("/images/experimental-pawn.svg");
-  mask-image: url("/images/experimental-pawn.svg");
-}
-
-.radar-field-page--safari .salary-chess-level--rook .salary-chess-piece::after,
-.radar-field-page--safari .salary-chess-detail-piece--rook::after {
-  display: block !important;
-  -webkit-mask-image: url("/images/experimental-piece-130.png");
-  mask-image: url("/images/experimental-piece-130.png");
-}
-
-.radar-field-page--safari .salary-chess-level--knight .salary-chess-piece::after,
-.radar-field-page--safari .salary-chess-detail-piece--knight::after {
-  display: block !important;
-  -webkit-mask-image: url("/images/experimental-piece-131.svg");
-  mask-image: url("/images/experimental-piece-131.svg");
-}
-
-.radar-field-page--safari .salary-chess-level--queen .salary-chess-piece::after,
-.radar-field-page--safari .salary-chess-detail-piece--queen::after {
-  display: block !important;
-  -webkit-mask-image: url("/images/experimental-piece-129.svg");
-  mask-image: url("/images/experimental-piece-129.svg");
-}
-
-.radar-field-page--safari .salary-chess-board--intro-complete .salary-chess-level--queen .salary-chess-piece::after,
-.radar-field-page--safari .salary-chess-board--visited-detail .salary-chess-level--queen .salary-chess-piece::after {
-  animation: none !important;
-  opacity: 0.82;
-  transform: none;
 }
 
 .radar-field-page--safari .salary-chess-board--intro-complete .salary-chess-piece-image,
