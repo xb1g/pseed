@@ -3221,6 +3221,10 @@ summary:focus-visible .radar-expand-indicator {
     scroll-snap-stop: always;
   }
 
+  .radar-card-section--tall {
+    scroll-snap-align: none;
+  }
+
   .radar-card-viewport,
   .radar-viewport-fit {
     height: auto;
