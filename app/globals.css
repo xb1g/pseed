@@ -3212,6 +3212,7 @@ summary:focus-visible .radar-expand-indicator {
 @media (max-width: 640px) {
   .radar-deck {
     scroll-snap-type: y mandatory;
+    scroll-behavior: auto;
   }
 
   .radar-card-section {
@@ -3225,6 +3226,26 @@ summary:focus-visible .radar-expand-indicator {
     height: auto;
     min-height: calc(100dvh - 5.5rem);
     overflow: visible;
+  }
+
+  .radar-field-page .radar-glow-a,
+  .radar-field-page .radar-glow-b,
+  .radar-field-page .radar-glow-c {
+    animation: none !important;
+    transition: none !important;
+    filter: blur(60px) !important;
+  }
+
+  .radar-field-page .radar-glow-follow {
+    display: none;
+  }
+
+  .radar-field-page .radar-glow-a,
+  .radar-field-page .radar-glow-b,
+  .radar-field-page .radar-glow-c,
+  .radar-field-page .radar-glow-follow,
+  .radar-detail-grain {
+    will-change: auto;
   }
 }
 
@@ -3267,6 +3288,7 @@ summary:focus-visible .radar-expand-indicator {
 .radar-field-page .radar-glow-follow,
 .radar-detail-grain {
   transition: opacity 900ms cubic-bezier(0.05, 0.7, 0.35, 0.99), filter 900ms cubic-bezier(0.05, 0.7, 0.35, 0.99);
+  will-change: transform, opacity;
 }
 
 .radar-detail-blackout {
