@@ -187,3 +187,43 @@ test("authenticated Radar events use the narrow idempotent RPC contract", async 
     },
   });
 });
+
+test("Radar freshness caps a year-9999 client timestamp at server receipt time", async () => {
+  const fake = client();
+
+  await recordAuthenticatedRadarMyPathEvent(
+    fake.value,
+    {
+      clientEventId: "radar-event-future",
+      careerSlug: "ux-designer",
+      intent: "saved",
+      occurredAt: "9999-12-31T23:59:59.999Z",
+    },
+    { now: () => "2026-07-22T09:30:00.000Z" }
+  );
+
+  assert.equal(
+    fake.calls[0].args.p_occurred_at,
+    "2026-07-22T09:30:00.000Z"
+  );
+});
+
+test("Radar freshness preserves legitimate delayed offline timestamps", async () => {
+  const fake = client();
+
+  await recordAuthenticatedRadarMyPathEvent(
+    fake.value,
+    {
+      clientEventId: "radar-event-offline",
+      careerSlug: "ux-designer",
+      intent: "opened",
+      occurredAt: "2026-07-20T09:30:00.000Z",
+    },
+    { now: () => "2026-07-22T09:30:00.000Z" }
+  );
+
+  assert.equal(
+    fake.calls[0].args.p_occurred_at,
+    "2026-07-20T09:30:00.000Z"
+  );
+});

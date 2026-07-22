@@ -42,6 +42,16 @@ export interface MutationResult {
   body: Record<string, unknown>;
 }
 
+interface RadarMutationOptions {
+  now?: () => string;
+}
+
+function capRadarOccurredAt(occurredAt: string, receivedAt: string): string {
+  return new Date(occurredAt).getTime() > new Date(receivedAt).getTime()
+    ? receivedAt
+    : occurredAt;
+}
+
 export async function persistMyPathMutation(
   client: MyPathRpcClient,
   input: unknown
@@ -53,7 +63,6 @@ export async function persistMyPathMutation(
       body: { error: "invalid_request", issues: parsed.error.flatten() },
     };
   }
-
   const auth = await client.auth.getUser();
   if (auth.error || !auth.data.user) {
     return { status: 401, body: { error: "authentication_required" } };
@@ -113,7 +122,8 @@ export async function recordAnonymousMyPathEvent(
 
 export async function recordAuthenticatedRadarMyPathEvent(
   client: MyPathRpcClient,
-  input: unknown
+  input: unknown,
+  options: RadarMutationOptions = {}
 ): Promise<MutationResult> {
   const parsed = radarMyPathEventSchema.safeParse(input);
   if (!parsed.success) {
@@ -122,6 +132,7 @@ export async function recordAuthenticatedRadarMyPathEvent(
       body: { error: "invalid_request", issues: parsed.error.flatten() },
     };
   }
+  const receivedAt = (options.now ?? (() => new Date().toISOString()))();
 
   const auth = await client.auth.getUser();
   if (auth.error || !isAuthenticatedRadarUser(auth.data.user)) {
@@ -135,7 +146,7 @@ export async function recordAuthenticatedRadarMyPathEvent(
     p_client_event_id: parsed.data.clientEventId,
     p_event_type: mapRadarFieldIntent(parsed.data.intent),
     p_career_slug: parsed.data.careerSlug,
-    p_occurred_at: parsed.data.occurredAt,
+    p_occurred_at: capRadarOccurredAt(parsed.data.occurredAt, receivedAt),
   });
   if (error) {
     console.error("Radar My Path persistence failed:", error.code ?? "unknown");
