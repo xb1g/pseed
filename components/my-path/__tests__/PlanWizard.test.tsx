@@ -245,8 +245,81 @@ test("discloses the trial terms before launch and only links to the confirmed en
   );
 
   expect(await screen.findByText("ลิงก์ชำระเงินสำหรับผู้ปกครอง")).toBeVisible();
+  expect(screen.getByRole("button", { name: "ปิดหน้าต่าง" })).toHaveClass(
+    "min-h-12",
+    "min-w-12"
+  );
   expect(screen.getByText(/แผน My Path ของคุณยังอยู่ครบ/)).toBeVisible();
   expect(
     screen.getByRole("link", { name: "เริ่ม PathLab เลย" })
   ).toHaveAttribute("href", "/seeds/pathlab/enrollment-123?day=1");
+});
+
+test("persists My Path before creating a trial and enrollment", async () => {
+  (global.fetch as jest.Mock).mockImplementation(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url === "/api/trials") {
+      return {
+        ok: true,
+        json: async () => ({
+          payToken: "0123456789abcdef0123456789abcdef",
+          payUrl: "/pay/0123456789abcdef0123456789abcdef",
+          paymentDeadline: "2099-07-23T12:00:00.000Z",
+          enrollmentId: "enrollment-123",
+          enrollmentUrl: "/seeds/pathlab/enrollment-123?day=1",
+        }),
+      };
+    }
+    return { ok: true, json: async () => ({}) };
+  });
+  renderWizard(true);
+  fireEvent.click(await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" }));
+  fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
+  fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
+  fireEvent.click(screen.getAllByRole("button", { name: "เลือกอันนี้" })[0]);
+  fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
+  fireEvent.click(screen.getByRole("radio", { name: /เข้ามหาวิทยาลัย/ }));
+  fireEvent.click(screen.getByRole("button", { name: "ดูแผนของฉัน" }));
+  (global.fetch as jest.Mock).mockClear();
+
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: "เริ่มวันแรกก่อนได้ — ยังไม่ต้องจ่ายตอนนี้",
+    })
+  );
+  await screen.findByText("ลิงก์ชำระเงินสำหรับผู้ปกครอง");
+
+  const urls = (global.fetch as jest.Mock).mock.calls.map(([url]) => String(url));
+  const saveIndex = urls.indexOf("/api/my-path");
+  const trialIndex = urls.indexOf("/api/trials");
+  expect(saveIndex).toBeGreaterThanOrEqual(0);
+  expect(trialIndex).toBeGreaterThan(saveIndex);
+});
+
+test("blocks trial launch when the durable My Path save fails", async () => {
+  (global.fetch as jest.Mock).mockImplementation(async (input: RequestInfo | URL) => {
+    if (String(input) === "/api/my-path") return { ok: false };
+    return { ok: true, json: async () => ({}) };
+  });
+  renderWizard(true);
+  fireEvent.click(await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" }));
+  fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
+  fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
+  fireEvent.click(screen.getAllByRole("button", { name: "เลือกอันนี้" })[0]);
+  fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
+  fireEvent.click(screen.getByRole("radio", { name: /เข้ามหาวิทยาลัย/ }));
+  fireEvent.click(screen.getByRole("button", { name: "ดูแผนของฉัน" }));
+  (global.fetch as jest.Mock).mockClear();
+
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: "เริ่มวันแรกก่อนได้ — ยังไม่ต้องจ่ายตอนนี้",
+    })
+  );
+
+  expect(await screen.findByRole("heading", { name: "เปิดการทดลองไม่สำเร็จ" })).toBeVisible();
+  expect(global.fetch).not.toHaveBeenCalledWith(
+    "/api/trials",
+    expect.anything()
+  );
 });
