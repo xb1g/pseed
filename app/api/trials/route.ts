@@ -1,4 +1,3 @@
-import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser, safeServerError } from "@/lib/security/route-guards";
@@ -24,7 +23,7 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response;
 
   try {
-    const { supabase, userId } = auth.value;
+    const { supabase } = auth.value;
 
     const body = await request.json().catch(() => ({}));
     const parsed = seedIdSchema.safeParse(body);
@@ -34,110 +33,62 @@ export async function POST(request: NextRequest) {
     const { seedId } = parsed.data;
 
     const mapTrial = (row: {
-      id: string;
+      trial_id: string;
       pay_token: string;
-      status: string;
+      trial_status: string;
       payment_deadline: string;
       paid_at: string | null;
     }): TrialLaunchTrial => ({
-      id: row.id,
+      id: row.trial_id,
       payToken: row.pay_token,
-      status: resolveTrialStatus({
-        status: row.status as TrialLaunchTrial["status"],
-        payment_deadline: row.payment_deadline,
-        paid_at: row.paid_at,
-      }),
+      status: row.trial_status as TrialLaunchTrial["status"],
       paymentDeadline: row.payment_deadline,
       paidAt: row.paid_at,
     });
     const mapEnrollment = (row: {
-      id: string;
+      enrollment_id: string;
       current_day: number;
-      status: TrialLaunchEnrollment["status"];
+      enrollment_status: TrialLaunchEnrollment["status"];
     }): TrialLaunchEnrollment => ({
-      id: row.id,
+      id: row.enrollment_id,
       currentDay: row.current_day,
-      status: row.status,
+      status: row.enrollment_status,
     });
 
     const repository: TrialLaunchRepository = {
-      async findPathLabSeed(candidateSeedId) {
-        const { data: seed, error: seedError } = await supabase
-          .from("seeds")
-          .select("id, seed_type")
-          .eq("id", candidateSeedId)
-          .maybeSingle();
-        if (seedError) throw seedError;
-        if (!seed || seed.seed_type !== "pathlab") return null;
-        const { data: path, error: pathError } = await supabase
-          .from("paths")
-          .select("id")
-          .eq("seed_id", candidateSeedId)
-          .maybeSingle();
-        if (pathError) throw pathError;
-        return path ? { id: seed.id, pathId: path.id } : null;
-      },
-      async createTrial(candidateUserId, candidateSeedId) {
-        const { data, error } = await supabase
-          .from("trial_accesses")
-          .insert({
-            user_id: candidateUserId,
-            seed_id: candidateSeedId,
-            pay_token: randomBytes(16).toString("hex"),
-          })
-          .select("id, pay_token, status, payment_deadline, paid_at")
-          .single();
+      async launch(candidateSeedId) {
+        const { data, error } = await supabase.rpc("start_pathlab_trial", {
+          p_seed_id: candidateSeedId,
+        });
         if (error) throw error;
-        return mapTrial(data);
-      },
-      async findTrial(candidateUserId, candidateSeedId) {
-        const { data, error } = await supabase
-          .from("trial_accesses")
-          .select("id, pay_token, status, payment_deadline, paid_at")
-          .eq("user_id", candidateUserId)
-          .eq("seed_id", candidateSeedId)
-          .maybeSingle();
-        if (error) throw error;
-        return data ? mapTrial(data) : null;
-      },
-      async findEnrollment(candidateUserId, pathId) {
-        const { data, error } = await supabase
-          .from("path_enrollments")
-          .select("id, current_day, status")
-          .eq("user_id", candidateUserId)
-          .eq("path_id", pathId)
-          .maybeSingle();
-        if (error) throw error;
-        if (!data) return null;
-        if (data.status === "paused" || data.status === "quit") {
-          const { data: resumed, error: resumeError } = await supabase
-            .from("path_enrollments")
-            .update({ status: "active", completed_at: null })
-            .eq("id", data.id)
-            .select("id, current_day, status")
-            .single();
-          if (resumeError) throw resumeError;
-          return mapEnrollment(resumed);
-        }
-        return mapEnrollment(data);
-      },
-      async createEnrollment(candidateUserId, pathId) {
-        const { data, error } = await supabase
-          .from("path_enrollments")
-          .insert({
-            user_id: candidateUserId,
-            path_id: pathId,
-            current_day: 1,
-            status: "active",
-          })
-          .select("id, current_day, status")
-          .single();
-        if (error) throw error;
-        return mapEnrollment(data);
+
+        const row = (Array.isArray(data) ? data[0] : data) as {
+          trial_id: string;
+          pay_token: string;
+          trial_status: TrialLaunchTrial["status"];
+          payment_deadline: string;
+          paid_at: string | null;
+          enrollment_id: string | null;
+          current_day: number | null;
+          enrollment_status: TrialLaunchEnrollment["status"] | null;
+        } | null;
+        if (!row) return null;
+
+        return {
+          trial: mapTrial(row),
+          enrollment:
+            row.enrollment_id && row.current_day && row.enrollment_status
+              ? mapEnrollment({
+                  enrollment_id: row.enrollment_id,
+                  current_day: row.current_day,
+                  enrollment_status: row.enrollment_status,
+                })
+              : null,
+        };
       },
     };
 
-    const launch = await startTrialAndEnrollment({ userId, seedId }, repository);
+    const launch = await startTrialAndEnrollment({ seedId }, repository);
     return NextResponse.json(launch);
   } catch (error) {
     if (error instanceof TrialLaunchError) {

@@ -400,8 +400,8 @@ test("routes a reused expired trial to payment recovery instead of locked enroll
             payUrl: "/pay/0123456789abcdef0123456789abcdef",
             status: "expired",
             paymentDeadline: "2026-07-21T12:00:00.000Z",
-            enrollmentId: "enrollment-123",
-            enrollmentUrl: "/seeds/pathlab/enrollment-123?day=1",
+            enrollmentId: null,
+            enrollmentUrl: null,
           }),
         };
       }
