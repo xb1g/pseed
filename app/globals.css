@@ -3201,6 +3201,13 @@ summary:focus-visible .radar-expand-indicator {
   contain-intrinsic-block-size: none;
 }
 
+/* WebKit is especially slow when interpolating grayscale/contrast filters.
+   Keep the character treatment stable in Safari and animate only transforms. */
+.radar-index-page--safari .radar-career-card__figure {
+  filter: none !important;
+  transition: transform 220ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99));
+}
+
 .radar-index-page--safari-scrolling .radar-career-card {
   box-shadow: none;
   transition: none;
@@ -3213,7 +3220,6 @@ summary:focus-visible .radar-expand-indicator {
 }
 
 .radar-index-page--safari-scrolling .radar-career-card__figure {
-  filter: none !important;
   transition: none;
 }
 
