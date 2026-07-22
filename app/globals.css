@@ -3237,19 +3237,21 @@ summary:focus-visible .radar-expand-indicator {
   .radar-field-page .radar-glow-c {
     animation: none !important;
     transition: none !important;
-    filter: blur(60px) !important;
+    filter: blur(40px) !important;
+    opacity: 0.18 !important;
   }
 
   .radar-field-page .radar-glow-follow {
     display: none;
   }
 
-  .radar-field-page .radar-glow-a,
-  .radar-field-page .radar-glow-b,
-  .radar-field-page .radar-glow-c,
-  .radar-field-page .radar-glow-follow,
-  .radar-detail-grain {
-    will-change: auto;
+  .radar-field-page .radar-detail-grain {
+    display: none;
+  }
+
+  .radar-field-page [class*="backdrop-blur"] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
   }
 }
 
