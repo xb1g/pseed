@@ -1,6 +1,6 @@
 import type { PlanEntry } from "./types";
 
-const GENERIC_ENTRY: PlanEntry = {
+export const GENERIC_ENTRY: PlanEntry = {
   key: "generic",
   title: "What kind of future are you trying to build?",
   subtitle:
@@ -17,7 +17,7 @@ const GENERIC_ENTRY: PlanEntry = {
   comparison: null,
 };
 
-const PLAN_ENTRIES: Record<string, PlanEntry> = {
+export const PLAN_ENTRIES: Record<string, PlanEntry> = {
   "tech-beyond-software": {
     key: "tech-beyond-software",
     title: "ชอบเทคโนโลยี ไม่ได้แปลว่าต้องเป็น Software Engineer",
