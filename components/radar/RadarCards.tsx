@@ -769,6 +769,7 @@ function SalaryProgressionCard({ c, accent }: { c: SalaryProgressionContent; acc
       : chessPieces.some((piece) => piece.key === "rook")
         ? "salary-rook-crash-image"
         : null;
+  const safariImageHue = `${Math.round(getHexHue(accent) - 45)}deg`;
 
   const changeCurrency = (nextCurrency: "USD" | "THB") => {
     setCurrency(nextCurrency);
@@ -811,7 +812,15 @@ function SalaryProgressionCard({ c, accent }: { c: SalaryProgressionContent; acc
           </button>
         </div>
       )}
-      <div className="salary-chess-scene" style={{ "--salary-chess-accent": accent } as CSSProperties}>
+      <div
+        className="salary-chess-scene"
+        style={
+          {
+            "--salary-chess-accent": accent,
+            "--salary-chess-image-hue": safariImageHue,
+          } as CSSProperties
+        }
+      >
           {selected ? (
             <div className="salary-chess-detail">
               <button
@@ -937,6 +946,37 @@ const SALARY_CHESS_PIECES = [
 
 function needsYearSuffix(value: string) {
   return !/(yr|year|ปี)/i.test(value);
+}
+
+function getHexHue(value: string) {
+  const compact = value.trim().replace(/^#/, "");
+  const hex =
+    compact.length === 3
+      ? compact
+          .split("")
+          .map((digit) => `${digit}${digit}`)
+          .join("")
+      : compact;
+
+  if (!/^[\da-f]{6}$/i.test(hex)) return 105;
+
+  const red = Number.parseInt(hex.slice(0, 2), 16) / 255;
+  const green = Number.parseInt(hex.slice(2, 4), 16) / 255;
+  const blue = Number.parseInt(hex.slice(4, 6), 16) / 255;
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  const delta = max - min;
+
+  if (delta === 0) return 0;
+
+  const hue =
+    max === red
+      ? ((green - blue) / delta) % 6
+      : max === green
+        ? (blue - red) / delta + 2
+        : (red - green) / delta + 4;
+
+  return (hue * 60 + 360) % 360;
 }
 
 function formatSalaryDisplay(value: string) {
