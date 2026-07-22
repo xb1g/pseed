@@ -294,7 +294,12 @@ export function RadarFieldPageClient({
   const handleDeckTouchStart = useCallback(
     (event: React.TouchEvent<HTMLDivElement>) => {
       const deck = scrollRef.current;
-      if (!deck || !window.matchMedia("(max-width: 640px)").matches) {
+      if (!deck) {
+        touchSectionGuardRef.current = null;
+        return;
+      }
+      // On mobile, let the browser handle scrolling natively — no snap guard
+      if (window.matchMedia("(max-width: 640px)").matches) {
         touchSectionGuardRef.current = null;
         return;
       }

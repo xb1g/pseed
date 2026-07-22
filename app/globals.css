@@ -3211,18 +3211,15 @@ summary:focus-visible .radar-expand-indicator {
 
 @media (max-width: 640px) {
   .radar-deck {
-    scroll-snap-type: y mandatory;
+    scroll-snap-type: none;
     scroll-behavior: auto;
   }
 
   .radar-card-section {
     padding-inline: 1rem;
     padding-block: 4.5rem 1rem;
-    scroll-snap-stop: always;
-  }
-
-  .radar-card-section--tall {
     scroll-snap-align: none;
+    scroll-snap-stop: normal;
   }
 
   .radar-card-viewport,
@@ -3232,26 +3229,8 @@ summary:focus-visible .radar-expand-indicator {
     overflow: visible;
   }
 
-  .radar-field-page .radar-glow-a,
-  .radar-field-page .radar-glow-b,
-  .radar-field-page .radar-glow-c {
-    animation: none !important;
-    transition: none !important;
-    filter: blur(40px) !important;
-    opacity: 0.18 !important;
-  }
-
-  .radar-field-page .radar-glow-follow {
-    display: none;
-  }
-
-  .radar-field-page .radar-detail-grain {
-    display: none;
-  }
-
-  .radar-field-page [class*="backdrop-blur"] {
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
+  .radar-atmosphere-shade {
+    opacity: 0.65;
   }
 }
 
@@ -3294,7 +3273,6 @@ summary:focus-visible .radar-expand-indicator {
 .radar-field-page .radar-glow-follow,
 .radar-detail-grain {
   transition: opacity 900ms cubic-bezier(0.05, 0.7, 0.35, 0.99), filter 900ms cubic-bezier(0.05, 0.7, 0.35, 0.99);
-  will-change: transform, opacity;
 }
 
 .radar-detail-blackout {
