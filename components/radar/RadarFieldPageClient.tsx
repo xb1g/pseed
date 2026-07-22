@@ -76,6 +76,13 @@ function normalizedCardText(card: RadarCard): string {
     .toLocaleLowerCase();
 }
 
+function isExploreCard(card: RadarCard): boolean {
+  if (card.kind !== "text") return false;
+  const content = pickContent(card);
+  const presentation = String(content.presentation ?? "").toLowerCase();
+  return !presentation.includes("skill") && !presentation.includes("start");
+}
+
 function radarCardDisplayOrder(card: RadarCard): number {
   const text = normalizedCardText(card);
 
@@ -204,6 +211,7 @@ export function RadarFieldPageClient({
       sortRadarCardsForStory(
         initialCards.filter((card) => {
           if (HIDDEN_RADAR_CARD_KINDS.has(card.kind)) return false;
+          if (isExploreCard(card)) return false;
           if (
             card.kind === "text" &&
             (card.content_th as Record<string, string>)?.title === "ทางนี้คืออะไร"
