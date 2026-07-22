@@ -6787,6 +6787,41 @@ summary:focus-visible .radar-expand-indicator {
   display: none !important;
 }
 
+/* WebKit can reuse a custom-property mask between sibling pieces. Restore the
+   static accent layer with an explicit source per piece so every silhouette is
+   correct without running masked animations. */
+.radar-field-page--safari .salary-chess-level--pawn .salary-chess-piece::after,
+.radar-field-page--safari .salary-chess-detail-piece--pawn::after {
+  display: block !important;
+  animation: none !important;
+  -webkit-mask-image: url("/images/experimental-pawn.svg");
+  mask-image: url("/images/experimental-pawn.svg");
+}
+
+.radar-field-page--safari .salary-chess-level--rook .salary-chess-piece::after,
+.radar-field-page--safari .salary-chess-detail-piece--rook::after {
+  display: block !important;
+  animation: none !important;
+  -webkit-mask-image: url("/images/experimental-piece-130.png");
+  mask-image: url("/images/experimental-piece-130.png");
+}
+
+.radar-field-page--safari .salary-chess-level--knight .salary-chess-piece::after,
+.radar-field-page--safari .salary-chess-detail-piece--knight::after {
+  display: block !important;
+  animation: none !important;
+  -webkit-mask-image: url("/images/experimental-piece-131.svg");
+  mask-image: url("/images/experimental-piece-131.svg");
+}
+
+.radar-field-page--safari .salary-chess-level--queen .salary-chess-piece::after,
+.radar-field-page--safari .salary-chess-detail-piece--queen::after {
+  display: block !important;
+  animation: none !important;
+  -webkit-mask-image: url("/images/experimental-piece-129.svg");
+  mask-image: url("/images/experimental-piece-129.svg");
+}
+
 .radar-field-page--safari .salary-chess-board--intro-complete .salary-chess-piece-image,
 .radar-field-page--safari .salary-chess-board--intro-complete .salary-chess-piece::before,
 .radar-field-page--safari .salary-chess-board--intro-complete .salary-chess-piece::after {
