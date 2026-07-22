@@ -3220,6 +3220,7 @@ summary:focus-visible .radar-expand-indicator {
     padding-block: 4.5rem 1rem;
     scroll-snap-align: none;
     scroll-snap-stop: normal;
+    contain: content;
   }
 
   .radar-card-viewport,
@@ -3231,6 +3232,24 @@ summary:focus-visible .radar-expand-indicator {
 
   .radar-atmosphere-shade {
     opacity: 0.65;
+  }
+
+  .radar-atmosphere {
+    contain: strict;
+    transform: translateZ(0);
+  }
+
+  .radar-glow-a,
+  .radar-glow-b,
+  .radar-glow-c,
+  .radar-detail-grain,
+  .radar-detail-blackout,
+  .radar-atmosphere-shade {
+    transform: translateZ(0);
+  }
+
+  .radar-deck {
+    contain: layout style;
   }
 }
 
