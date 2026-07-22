@@ -375,7 +375,7 @@ module.exports = {
 
 | Use Case | Dusk | Dawn |
 |----------|------|------|
-| Primary CTA | `#f97316` → `#ea580c` → `#be185d` | `#3b82f6` → `#6366f1` → `#a855f7` |
+| Primary CTA | `#f97316` → `#ea580c` → `#be185d` | `#1d4ed8` → `#2563eb` → `#3b82f6` |
 | Success | `#10b981` | `#10b981` (shared) |
 | Warning | `#f59e0b` | `#f59e0b` (shared) |
 | Error | `#ef4444` | `#ef4444` (shared) |
@@ -640,7 +640,7 @@ Primary CTA button for students.
   font-size: 1.125rem;
   font-weight: 600;
   color: white;
-  background: linear-gradient(180deg, #3b82f6 0%, #6366f1 45%, #a855f7 100%);
+  background: linear-gradient(180deg, #1d4ed8 0%, #2563eb 45%, #3b82f6 100%);
   border: none;
   border-radius: 14px;
   cursor: pointer;
