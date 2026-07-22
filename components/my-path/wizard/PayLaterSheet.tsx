@@ -19,7 +19,7 @@ import {
 interface PayLaterSheetProps {
   open: boolean;
   /** สถานะการสร้าง trial — loading ขณะ POST, error ล้มเหลว (retry ได้), ready พร้อมแชร์ */
-  state: "loading" | "error" | "ready";
+  state: "loading" | "error" | "ready" | "recovery";
   trial: TrialShareInfo | null;
   enrollmentUrl: string | null;
   seedTitle: string;
@@ -125,6 +125,42 @@ export function PayLaterSheet({
               >
                 <Play className="h-4 w-4" aria-hidden="true" />
                 <span>เริ่ม PathLab เลย</span>
+              </Link>
+              <button
+                type="button"
+                onClick={onClose}
+                className="min-h-12 w-full rounded-xl text-sm font-semibold text-slate-400 hover:bg-white/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
+              >
+                ไว้ทีหลัง
+              </button>
+            </div>
+          </div>
+        )}
+
+        {state === "recovery" && trial && (
+          <div>
+            <DialogHeader className="text-center sm:text-center">
+              <DialogTitle className="font-kodchasan text-xl leading-snug text-slate-50">
+                ช่วงทดลอง 24 ชั่วโมงครบแล้ว
+              </DialogTitle>
+              <DialogDescription className="text-sm leading-6 text-slate-400">
+                แผน My Path และสิ่งที่ทำไว้ยังอยู่ ส่งลิงก์นี้ให้ผู้ปกครองดูรายละเอียดและชำระเพื่อเปิด PathLab ต่อ
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="mt-5">
+              <TrialShareActions
+                payUrl={trial.payUrl}
+                paymentDeadline={trial.paymentDeadline}
+              />
+            </div>
+
+            <div className="mt-5 space-y-2.5">
+              <Link
+                href={trial.payUrl}
+                className="ei-button-dawn min-h-12 w-full justify-center"
+              >
+                <span>ดูหน้าชำระเพื่อเปิดสิทธิ์ต่อ</span>
               </Link>
               <button
                 type="button"
