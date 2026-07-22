@@ -1845,7 +1845,9 @@ function CtaCard({
       </p>
       <div className="flex flex-col gap-2">
         <Button
-          className="mt-2 w-full font-semibold text-white transition-all"
+          className={`mt-2 w-full font-semibold transition-all ${
+            interestedRecorded ? "text-white" : "text-neutral-950"
+          }`}
           style={{ background: interestedRecorded ? undefined : accent }}
           variant={interestedRecorded ? "outline" : "default"}
           onClick={recordInterested}
