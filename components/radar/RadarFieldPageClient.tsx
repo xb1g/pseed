@@ -245,7 +245,13 @@ export function RadarFieldPageClient({
   const blackoutRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const isSafariRef = useRef(false);
-  const [isSafari, setIsSafari] = useState(false);
+  const [isSafari, setIsSafari] = useState(() => {
+    if (typeof navigator === "undefined") return false;
+    return (
+      navigator.vendor.includes("Apple") &&
+      !/(CriOS|FxiOS|EdgiOS|OPiOS)/.test(navigator.userAgent)
+    );
+  });
   const fieldOpenRecordedRef = useRef(false);
   const touchSectionGuardRef = useRef<{
     sectionIndex: number;
@@ -272,16 +278,10 @@ export function RadarFieldPageClient({
     });
   }, []);
 
-  // Detect Safari via state (not a manual classList mutation) so the
-  // radar-field-page--safari class survives React className rewrites —
-  // e.g. when the AI Impact slide toggles radar-field-page--ai.
+  // Sync the ref with the initial state value
   useEffect(() => {
-    const safari =
-      navigator.vendor.includes("Apple") &&
-      !/(CriOS|FxiOS|EdgiOS|OPiOS)/.test(navigator.userAgent);
-    isSafariRef.current = safari;
-    setIsSafari(safari);
-  }, []);
+    isSafariRef.current = isSafari;
+  }, [isSafari]);
 
   const goTo = useCallback((i: number) => {
     touchSectionGuardRef.current = null;
