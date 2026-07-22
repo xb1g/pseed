@@ -1,5 +1,6 @@
 import type React from "react";
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import {
   Space_Mono,
   Libre_Franklin,
@@ -201,6 +202,7 @@ export default async function RootLayout({
             </DirectionFinderProvider>
           </LanguageProvider>
         </ThemeProvider>
+        <Analytics />
         {process.env.NEXT_PUBLIC_CF_BEACON_TOKEN && (
           <script
             defer

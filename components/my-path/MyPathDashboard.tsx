@@ -81,7 +81,7 @@ function NextActionHero({ model }: MyPathDashboardProps) {
         </p>
         <h1
           id="my-path-next-action"
-          className="font-kodchasan text-3xl font-bold leading-tight text-white sm:text-4xl lg:text-5xl"
+          className="font-kodchasan text-3xl font-bold leading-tight text-white sm:text-3xl lg:text-4xl"
         >
           {model.nextAction.title}
         </h1>
