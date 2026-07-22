@@ -4725,15 +4725,34 @@ summary:focus-visible .radar-expand-indicator {
     opacity: 0.26;
   }
 
-  .radar-career-card:active {
+  .radar-career-card.in-view {
     z-index: 80;
     transform: translate3d(0, -5px, 0) scale(1.025);
+  }
+
+  .radar-career-card.in-view .radar-career-card__figure {
+    z-index: 90;
+    filter: grayscale(0.08) saturate(1.02) contrast(1.02);
+    transform: translate3d(0, -5%, 0) scale(1.08);
+    will-change: transform, filter;
+  }
+
+  /* Safari keeps filter changes discrete, but the centered mobile card still
+     receives the same color reveal and character pop as every other browser. */
+  .radar-index-page--safari .radar-career-card.in-view .radar-career-card__figure {
+    filter: none !important;
+    will-change: transform;
+  }
+
+  .radar-career-card:active {
+    z-index: 80;
+    transform: translate3d(0, -7px, 0) scale(1.045);
   }
 
   .radar-career-card:active .radar-career-card__figure {
     z-index: 90;
     filter: grayscale(0.08) saturate(1.02) contrast(1.02);
-    transform: translate3d(0, -5%, 0) scale(1.08);
+    transform: translate3d(0, -7%, 0) scale(1.14);
   }
 
   /* Preserve the tap color reveal on mobile Safari. The Safari base rule is
