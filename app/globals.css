@@ -3292,6 +3292,18 @@ summary:focus-visible .radar-expand-indicator {
   background: transparent;
 }
 
+/* Twelve cards divide evenly into the responsive 2/3/4-column layouts. This
+   lets browsers skip whole off-screen groups without changing grid alignment.
+   Padding expands the paint boundary so character pop-outs are never clipped. */
+.radar-career-batch {
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto 90rem;
+  padding-block: 4rem;
+  margin-block: -4rem;
+  overflow: visible;
+  overflow-clip-margin: 4rem;
+}
+
 /* Career Radar index: tall editorial career cards */
 .radar-career-card {
   transform: translate3d(0, 0, 0) scale(1);

@@ -588,6 +588,13 @@ export function RadarPageClient({
     () => filterFieldsByCareerTags(fields, activeCollection, searchQuery),
     [fields, activeCollection, searchQuery]
   );
+  const fieldBatches = useMemo(() => {
+    const batches: RadarField[][] = [];
+    for (let index = 0; index < filteredFields.length; index += 12) {
+      batches.push(filteredFields.slice(index, index + 12));
+    }
+    return batches;
+  }, [filteredFields]);
 
   useEffect(() => {
     const page = pageRef.current;
@@ -760,13 +767,19 @@ export function RadarPageClient({
           ) : (
             <div
               ref={cardGridRef}
-              className={`grid grid-cols-2 gap-4 transition-opacity duration-200 md:grid-cols-3 lg:grid-cols-4 ${isLoading ? "pointer-events-none opacity-60" : ""}`}
+              className={`radar-career-batches flex flex-col gap-4 transition-opacity duration-200 ${isLoading ? "pointer-events-none opacity-60" : ""}`}
             >
-              {filteredFields.map((field) => (
-                <FieldTile
-                  key={field.id}
-                  field={field}
-                />
+              {fieldBatches.map((batch, batchIndex) => (
+                <div
+                  key={batch[0]?.id ?? batchIndex}
+                  className="radar-career-batch"
+                >
+                  <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                    {batch.map((field) => (
+                      <FieldTile key={field.id} field={field} />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}
