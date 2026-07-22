@@ -83,6 +83,14 @@ function isExploreCard(card: RadarCard): boolean {
   return !presentation.includes("skill") && !presentation.includes("start");
 }
 
+function isStartCard(card: RadarCard): boolean {
+  if (card.kind !== "text") return false;
+  const presentation = String(
+    (pickContent(card).presentation as string | undefined) ?? ""
+  ).toLowerCase();
+  return presentation.includes("start");
+}
+
 function radarCardDisplayOrder(card: RadarCard): number {
   const text = normalizedCardText(card);
 
@@ -179,11 +187,7 @@ export type FieldSource = { ref: number; title: string; publisher?: string | nul
  */
 function isPlanReplacedCta(card: RadarCard): boolean {
   if (card.kind === "cta") return true;
-  if (card.kind !== "text") return false;
-  const presentation = String(
-    (pickContent(card).presentation as string | undefined) ?? ""
-  ).toLowerCase();
-  return presentation.includes("start");
+  return isStartCard(card);
 }
 
 export function RadarFieldPageClient({
@@ -218,6 +222,7 @@ export function RadarFieldPageClient({
           ) {
             return false;
           }
+          if (isStartCard(card)) return false;
           if (fromPlan && isPlanReplacedCta(card)) return false;
           return true;
         })
