@@ -606,32 +606,8 @@ export function RadarPageClient({
     if (!isSafari) return;
 
     page.classList.add("radar-index-page--safari");
-    let scrollEndTimer = 0;
-    let frame = 0;
-
-    const handleScroll = () => {
-      if (!frame) {
-        frame = window.requestAnimationFrame(() => {
-          page.classList.add("radar-index-page--safari-scrolling");
-          frame = 0;
-        });
-      }
-
-      window.clearTimeout(scrollEndTimer);
-      scrollEndTimer = window.setTimeout(() => {
-        page.classList.remove("radar-index-page--safari-scrolling");
-      }, 140);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.clearTimeout(scrollEndTimer);
-      if (frame) window.cancelAnimationFrame(frame);
-      page.classList.remove(
-        "radar-index-page--safari",
-        "radar-index-page--safari-scrolling"
-      );
+      page.classList.remove("radar-index-page--safari");
     };
   }, []);
 
@@ -774,7 +750,7 @@ export function RadarPageClient({
                   key={batch[0]?.id ?? batchIndex}
                   className="radar-career-batch"
                 >
-                  <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                  <div className="radar-career-grid">
                     {batch.map((field) => (
                       <FieldTile key={field.id} field={field} />
                     ))}

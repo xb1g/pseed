@@ -3201,26 +3201,31 @@ summary:focus-visible .radar-expand-indicator {
   contain-intrinsic-block-size: none;
 }
 
-/* WebKit is especially slow when interpolating grayscale/contrast filters.
-   Keep the character treatment stable in Safari and animate only transforms. */
+/* Safari keeps the same grayscale-to-color interaction, but the filter changes
+   instantly while only the transform is animated. This avoids WebKit's costly
+   per-frame filter interpolation. */
+.radar-index-page--safari .radar-career-card {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+}
+
+.radar-index-page--safari .radar-career-card__grain {
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.18) 0 0.65px, transparent 0.95px),
+    radial-gradient(circle, rgba(0, 0, 0, 0.14) 0 0.75px, transparent 1.05px);
+  background-position: 0 0, 4px 5px;
+  background-size: 11px 11px, 14px 14px;
+  opacity: 0.24;
+}
+
 .radar-index-page--safari .radar-career-card__figure {
-  filter: none !important;
+  filter: grayscale(1) !important;
   transition: transform 220ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99));
 }
 
-.radar-index-page--safari-scrolling .radar-career-card {
-  box-shadow: none;
-  transition: none;
-}
-
-.radar-index-page--safari-scrolling .radar-career-card__grain {
-  display: none;
-  background-image: none;
-  opacity: 0;
-}
-
-.radar-index-page--safari-scrolling .radar-career-card__figure {
-  transition: none;
+.radar-index-page--safari .radar-career-card:hover .radar-career-card__figure,
+.radar-index-page--safari .radar-career-card:focus-visible .radar-career-card__figure {
+  filter: none !important;
+  will-change: transform;
 }
 
 .faculty-radar-mode {
@@ -3318,6 +3323,24 @@ summary:focus-visible .radar-expand-indicator {
   margin-block: -4rem;
   overflow: visible;
   overflow-clip-margin: 4rem;
+}
+
+.radar-career-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .radar-career-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .radar-career-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 /* Career Radar index: tall editorial career cards */
