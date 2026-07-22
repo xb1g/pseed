@@ -50,7 +50,7 @@ const TOTAL_STEPS = 5;
 const WIZARD_STEP_STORAGE_KEY = "passionseed_my_path_wizard_step_v1";
 
 interface PayLaterSheetState {
-  status: "loading" | "error" | "ready" | "recovery";
+  status: "loading" | "error" | "ready" | "pending" | "paid" | "recovery";
   trial: TrialShareInfo | null;
   enrollmentUrl: string | null;
 }
@@ -378,7 +378,12 @@ export function PlanWizard({
         return;
       }
       setPayLaterSheet({
-        status: "ready",
+        status:
+          payload.status === "pending"
+            ? "pending"
+            : payload.status === "paid"
+            ? "paid"
+            : "ready",
         trial: {
           payToken: payload.payToken,
           payUrl: payload.payUrl,

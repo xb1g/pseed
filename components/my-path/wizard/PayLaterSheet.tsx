@@ -19,7 +19,7 @@ import {
 interface PayLaterSheetProps {
   open: boolean;
   /** สถานะการสร้าง trial — loading ขณะ POST, error ล้มเหลว (retry ได้), ready พร้อมแชร์ */
-  state: "loading" | "error" | "ready" | "recovery";
+  state: "loading" | "error" | "ready" | "pending" | "paid" | "recovery";
   trial: TrialShareInfo | null;
   enrollmentUrl: string | null;
   seedTitle: string;
@@ -96,24 +96,35 @@ export function PayLaterSheet({
           </div>
         )}
 
-        {state === "ready" && trial && enrollmentUrl && (
+        {(state === "ready" || state === "pending" || state === "paid") &&
+          trial &&
+          enrollmentUrl && (
           <div>
             <DialogHeader className="text-center sm:text-center">
               <DialogTitle className="font-kodchasan text-xl leading-snug text-slate-50">
-                วันแรกพร้อมแล้ว คุณเป็นคนเลือกว่าจะเริ่มเมื่อไร
+                {state === "pending"
+                  ? "วันแรกพร้อมแล้ว กำลังตรวจสลิป"
+                  : state === "paid"
+                  ? "ชำระเรียบร้อย วันแรกพร้อมแล้ว"
+                  : "วันแรกพร้อมแล้ว คุณเป็นคนเลือกว่าจะเริ่มเมื่อไร"}
               </DialogTitle>
               <DialogDescription className="text-sm leading-6 text-slate-400">
-                {seedTitle} เปิดให้แล้ว ไม่มีบัตรและไม่มีการตัดเงินอัตโนมัติ
-                ผู้ปกครองจะเห็นรายละเอียดครบก่อนตัดสินใจชำระ ฿1,490 ภายใน 24 ชม.
+                {state === "pending"
+                  ? `ได้รับสลิปของ ${seedTitle} แล้ว ระหว่างตรวจสอบคุณเริ่มทำต่อได้ตามปกติ ไม่ต้องส่งคำขอชำระซ้ำ`
+                  : state === "paid"
+                  ? `${seedTitle} เปิดสิทธิ์เรียบร้อยแล้ว เริ่มทำต่อได้เลย ไม่มีรายการชำระที่ต้องส่งให้ผู้ปกครองอีก`
+                  : `${seedTitle} เปิดให้แล้ว ไม่มีบัตรและไม่มีการตัดเงินอัตโนมัติ ผู้ปกครองจะเห็นรายละเอียดครบก่อนตัดสินใจชำระ ฿1,490 ภายใน 24 ชม.`}
               </DialogDescription>
             </DialogHeader>
 
-            <div className="mt-5">
-              <TrialShareActions
-                payUrl={trial.payUrl}
-                paymentDeadline={trial.paymentDeadline}
-              />
-            </div>
+            {state === "ready" && (
+              <div className="mt-5">
+                <TrialShareActions
+                  payUrl={trial.payUrl}
+                  paymentDeadline={trial.paymentDeadline}
+                />
+              </div>
+            )}
 
             <div className="mt-5 space-y-2.5">
               <p className="text-center text-sm leading-6 text-slate-300">

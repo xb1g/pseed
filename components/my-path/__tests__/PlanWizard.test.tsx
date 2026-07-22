@@ -432,3 +432,53 @@ test("routes a reused expired trial to payment recovery instead of locked enroll
     screen.queryByRole("link", { name: "เริ่ม PathLab เลย" })
   ).not.toBeInTheDocument();
 });
+
+test.each([
+  ["pending", "วันแรกพร้อมแล้ว กำลังตรวจสลิป"],
+  ["paid", "ชำระเรียบร้อย วันแรกพร้อมแล้ว"],
+] as const)(
+  "keeps %s access ready without asking the parent to pay again",
+  async (status, heading) => {
+    (global.fetch as jest.Mock).mockImplementation(
+      async (input: RequestInfo | URL) => {
+        if (String(input) === "/api/trials") {
+          return {
+            ok: true,
+            json: async () => ({
+              payToken: "0123456789abcdef0123456789abcdef",
+              payUrl: "/pay/0123456789abcdef0123456789abcdef",
+              status,
+              paymentDeadline: "2099-07-23T12:00:00.000Z",
+              enrollmentId: "enrollment-123",
+              enrollmentUrl: "/seeds/pathlab/enrollment-123?day=1",
+            }),
+          };
+        }
+        return { ok: true, json: async () => ({}) };
+      }
+    );
+    renderWizard(true);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" })
+    );
+    fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
+    fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "เลือกอันนี้" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
+    fireEvent.click(screen.getByRole("radio", { name: /เข้ามหาวิทยาลัย/ }));
+    fireEvent.click(screen.getByRole("button", { name: "ดูแผนของฉัน" }));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "เริ่มวันแรกก่อนได้ — ยังไม่ต้องจ่ายตอนนี้",
+      })
+    );
+
+    expect(await screen.findByRole("heading", { name: heading })).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "เริ่ม PathLab เลย" })
+    ).toHaveAttribute("href", "/seeds/pathlab/enrollment-123?day=1");
+    expect(
+      screen.queryByText("ลิงก์ชำระเงินสำหรับผู้ปกครอง")
+    ).not.toBeInTheDocument();
+  }
+);
