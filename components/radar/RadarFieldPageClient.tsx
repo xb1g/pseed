@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { memo, useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -259,6 +259,7 @@ export function RadarFieldPageClient({
 
   const handlePointer = useCallback((e: React.MouseEvent) => {
     if (isSafariRef.current) return;
+    if (window.matchMedia("(hover: none)").matches) return;
     const root = rootRef.current;
     const glow = followRef.current;
     if (!root || !glow) return;
@@ -650,7 +651,8 @@ export function RadarFieldPageClient({
       style={{
         background: visual.background,
         ...visual.dotStyle,
-      }}
+        '--radar-accent': accent,
+      } as React.CSSProperties}
     >
       <div className="radar-atmosphere pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <span
@@ -663,10 +665,7 @@ export function RadarFieldPageClient({
         />
         <div
           className="radar-glow-a absolute top-0 left-1/2 w-[720px] h-[420px] rounded-full blur-[140px]"
-          style={{
-            background: accent,
-            filter: `blur(140px) saturate(${1 + Math.min(current, 12) * 0.06})`,
-          }}
+          style={{ background: accent }}
         />
         <div
           className="radar-glow-b absolute bottom-[-10%] left-[-5%] w-[480px] h-[480px] rounded-full blur-[150px]"
@@ -952,7 +951,7 @@ function RadarViewportFit({ children }: { children: React.ReactNode }) {
   );
 }
 
-function RadarCardSection({
+const RadarCardSection = memo(function RadarCardSection({
   children,
   isFirst,
   hasMore,
@@ -1063,4 +1062,4 @@ function RadarCardSection({
       </div>
     </section>
   );
-}
+});

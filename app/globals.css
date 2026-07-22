@@ -3233,20 +3233,11 @@ summary:focus-visible .radar-expand-indicator {
   }
 
   .radar-atmosphere-shade {
-    opacity: 0.65;
+    opacity: 0.45;
   }
 
   .radar-atmosphere {
-    contain: strict;
-    transform: translateZ(0);
-  }
-
-  .radar-glow-a,
-  .radar-glow-b,
-  .radar-glow-c,
-  .radar-detail-grain,
-  .radar-detail-blackout,
-  .radar-atmosphere-shade {
+    contain: layout paint style;
     transform: translateZ(0);
   }
 
