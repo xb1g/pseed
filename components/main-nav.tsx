@@ -13,15 +13,14 @@ import {
   VisuallyHidden,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, Globe, X, Compass, Sprout, User, Wrench, Target, Map } from "lucide-react";
+import { Menu, Globe, X, Compass, Sprout, User, Wrench, Target } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 
 const navItems = [
   { href: "/about", label: { en: "About", th: "เกี่ยวกับ" }, icon: Compass },
   { href: "/seeds", label: { en: "Seeds", th: "Seeds" }, icon: Sprout },
-  { href: "/me", label: { en: "My Journey", th: "เส้นทางของฉัน" }, icon: User },
+  { href: "/me", label: { en: "My Path", th: "เส้นทางของฉัน" }, icon: User },
   { href: "/radar", label: { en: "Radar", th: "เรดาร์" }, icon: Target },
-  { href: "/plan", label: { en: "Plan", th: "แผน" }, icon: Map },
 ];
 
 // Easing curves from design system
@@ -84,6 +83,7 @@ export function MainNav({ isAuthenticated = false }: { isAuthenticated?: boolean
           </SheetTrigger>
           <SheetContent 
             side="left" 
+            aria-describedby={undefined}
             className="w-[280px] sm:w-[320px] border-r border-white/[0.06] bg-gradient-to-b from-[#1a0a2e] via-[#2d1449] to-[#0d0d0d] p-0 [&>button]:hidden"
           >
             <VisuallyHidden.Root>
@@ -292,19 +292,13 @@ export function MainNav({ isAuthenticated = false }: { isAuthenticated?: boolean
               href="/me"
               className="text-sm font-medium transition-colors hover:text-white whitespace-nowrap px-3 py-2 text-gray-400"
             >
-              My Journey
+              My Path
             </Link>
             <Link
               href="/radar"
               className="text-sm font-medium transition-colors hover:text-white whitespace-nowrap px-3 py-2 text-gray-400"
             >
               Radar
-            </Link>
-            <Link
-              href="/plan"
-              className="text-sm font-medium transition-colors hover:text-white whitespace-nowrap px-3 py-2 text-gray-400"
-            >
-              Plan
             </Link>
             {hasBuildAccess && (
               <Link

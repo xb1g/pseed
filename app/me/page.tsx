@@ -1,8 +1,16 @@
 import { redirect } from "next/navigation";
-import { Suspense } from "react";
-import { UserPortal } from "@/components/user-portal";
+
+import { MyPathDashboard } from "@/components/my-path/MyPathDashboard";
+import { buildMyPathDashboard } from "@/lib/my-path/dashboard";
+import {
+  loadMyPathDashboardSource,
+  type MyPathDashboardReadClient,
+} from "@/lib/my-path/dashboard-read";
+import {
+  loadPersistedMyPathResult,
+  type MyPathReadClient,
+} from "@/lib/my-path/server-read";
 import { createClient } from "@/utils/supabase/server";
-import { getUserDashboardData } from "@/lib/supabase/reflection";
 
 export const dynamic = "force-dynamic";
 
@@ -16,25 +24,28 @@ export default async function PortalPage() {
     redirect("/login");
   }
 
-  const dashboardData = await getUserDashboardData(supabase);
-
-  const userName =
-    user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
-  const userAvatar = user.user_metadata?.avatar_url;
+  const myPathReadClient = supabase as unknown as MyPathReadClient;
+  const dashboardReadClient =
+    supabase as unknown as MyPathDashboardReadClient;
+  const [persistedPath, dashboardSource] = await Promise.all([
+    loadPersistedMyPathResult(myPathReadClient),
+    loadMyPathDashboardSource(dashboardReadClient, user.id),
+  ]);
+  const model = buildMyPathDashboard({
+    persistedPath: persistedPath.state,
+    persistedPathStatus: persistedPath.status,
+    ...dashboardSource,
+  });
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#05030a] via-[#080510] to-[#020104] relative overflow-hidden font-sans antialiased">
-      {/* Gradient overlay for smooth transition */}
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-transparent to-[#020005]/95 z-0" />
-      
-      {/* Drifting Cloud Blobs - very subtle warm sunset colors */}
-      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-orange-950/5 blur-[120px] animate-cloud-slow z-0" style={{ animationDuration: '18s' }} />
-      <div className="absolute bottom-1/4 right-1/4 w-[350px] h-[350px] rounded-full bg-amber-950/4 blur-[110px] animate-cloud-slow z-0" style={{ animationDuration: '22s', animationDelay: '-5s' }} />
-
-      <main className="relative z-10 flex-1">
-        <div className="container mx-auto px-4 md:px-6 py-6 md:py-10 max-w-7xl">
-          {/* User Portal Content */}
-          <UserPortal dashboardData={dashboardData} />
+    <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#020617_0%,#0f172a_32%,#1e1b4b_70%,#172554_100%)] antialiased">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_14%,rgba(59,130,246,0.17),transparent_35%),radial-gradient(circle_at_82%_24%,rgba(168,85,247,0.12),transparent_32%),radial-gradient(ellipse_at_50%_100%,rgba(254,217,92,0.08),transparent_56%)]"
+      />
+      <main id="my-path" className="dawn-theme relative z-10 flex-1">
+        <div className="container mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10 lg:py-14">
+          <MyPathDashboard model={model} />
         </div>
       </main>
     </div>

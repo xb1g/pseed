@@ -1,8 +1,14 @@
-import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser, safeServerError } from "@/lib/security/route-guards";
 import { resolveTrialStatus } from "@/lib/trials/status";
+import {
+  startTrialAndEnrollment,
+  TrialLaunchError,
+  type TrialLaunchEnrollment,
+  type TrialLaunchRepository,
+  type TrialLaunchTrial,
+} from "@/lib/trials/start-trial";
 
 const seedIdSchema = z.object({
   seedId: z.string().uuid(),
@@ -17,7 +23,7 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response;
 
   try {
-    const { supabase, userId } = auth.value;
+    const { supabase } = auth.value;
 
     const body = await request.json().catch(() => ({}));
     const parsed = seedIdSchema.safeParse(body);
@@ -26,59 +32,68 @@ export async function POST(request: NextRequest) {
     }
     const { seedId } = parsed.data;
 
-    // Verify the seed exists before starting a trial for it
-    const { data: seed, error: seedError } = await supabase
-      .from("seeds")
-      .select("id")
-      .eq("id", seedId)
-      .single();
-
-    if (seedError || !seed) {
-      return NextResponse.json({ error: "Seed not found" }, { status: 404 });
-    }
-
-    // Insert a fresh trial. On unique (user_id, seed_id) conflict, fall back
-    // to the existing row so the endpoint is idempotent for the student.
-    const { data: inserted, error: insertError } = await supabase
-      .from("trial_accesses")
-      .insert({
-        user_id: userId,
-        seed_id: seedId,
-        pay_token: randomBytes(16).toString("hex"),
-      })
-      .select("id, pay_token, status, payment_deadline, paid_at")
-      .single();
-
-    let trial = inserted;
-    if (insertError) {
-      if (insertError.code !== "23505") {
-        return safeServerError("Failed to start trial", insertError);
-      }
-      const { data: existing, error: existingError } = await supabase
-        .from("trial_accesses")
-        .select("id, pay_token, status, payment_deadline, paid_at")
-        .eq("user_id", userId)
-        .eq("seed_id", seedId)
-        .single();
-
-      if (existingError || !existing) {
-        return safeServerError("Failed to load existing trial", existingError);
-      }
-      trial = existing;
-    }
-
-    if (!trial) {
-      return safeServerError("Failed to start trial");
-    }
-
-    return NextResponse.json({
-      trialId: trial.id,
-      payToken: trial.pay_token,
-      payUrl: payUrlFor(trial.pay_token),
-      status: resolveTrialStatus(trial),
-      paymentDeadline: trial.payment_deadline,
+    const mapTrial = (row: {
+      trial_id: string;
+      pay_token: string;
+      trial_status: string;
+      payment_deadline: string;
+      paid_at: string | null;
+    }): TrialLaunchTrial => ({
+      id: row.trial_id,
+      payToken: row.pay_token,
+      status: row.trial_status as TrialLaunchTrial["status"],
+      paymentDeadline: row.payment_deadline,
+      paidAt: row.paid_at,
     });
+    const mapEnrollment = (row: {
+      enrollment_id: string;
+      current_day: number;
+      enrollment_status: TrialLaunchEnrollment["status"];
+    }): TrialLaunchEnrollment => ({
+      id: row.enrollment_id,
+      currentDay: row.current_day,
+      status: row.enrollment_status,
+    });
+
+    const repository: TrialLaunchRepository = {
+      async launch(candidateSeedId) {
+        const { data, error } = await supabase.rpc("start_pathlab_trial", {
+          p_seed_id: candidateSeedId,
+        });
+        if (error) throw error;
+
+        const row = (Array.isArray(data) ? data[0] : data) as {
+          trial_id: string;
+          pay_token: string;
+          trial_status: TrialLaunchTrial["status"];
+          payment_deadline: string;
+          paid_at: string | null;
+          enrollment_id: string | null;
+          current_day: number | null;
+          enrollment_status: TrialLaunchEnrollment["status"] | null;
+        } | null;
+        if (!row) return null;
+
+        return {
+          trial: mapTrial(row),
+          enrollment:
+            row.enrollment_id && row.current_day && row.enrollment_status
+              ? mapEnrollment({
+                  enrollment_id: row.enrollment_id,
+                  current_day: row.current_day,
+                  enrollment_status: row.enrollment_status,
+                })
+              : null,
+        };
+      },
+    };
+
+    const launch = await startTrialAndEnrollment({ seedId }, repository);
+    return NextResponse.json(launch);
   } catch (error) {
+    if (error instanceof TrialLaunchError) {
+      return NextResponse.json({ error: error.code }, { status: error.status });
+    }
     return safeServerError("Failed to start trial", error);
   }
 }

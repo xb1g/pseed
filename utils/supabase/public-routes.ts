@@ -18,6 +18,7 @@ const PUBLIC_ROUTE_PREFIXES = [
   "/pay",
   "/api/trials",
   "/faculty-radar",
+  "/api/cron/parent-pathlab-updates",
   "/fireball",
 ] as const;
 

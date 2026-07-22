@@ -1,6 +1,11 @@
 import { buildDirectionHypothesis, selectNextStep } from "./recommendations";
 import { planningRegistry } from "./registry";
 import {
+  isAuthenticatedRadarUser,
+  mapRadarFieldIntent,
+  radarMyPathEventSchema,
+} from "./radar-sync";
+import {
   anonymousEventSchema,
   myPathMutationSchema,
 } from "./validation";
@@ -13,7 +18,16 @@ interface RpcError {
 export interface MyPathRpcClient {
   auth: {
     getUser(): Promise<{
-      data: { user: { id: string } | null };
+      data: {
+        user: {
+          id: string;
+          is_anonymous?: boolean;
+          email?: string | null;
+          aud?: string;
+          app_metadata?: { provider?: unknown };
+          identities?: Array<{ provider?: string }> | null;
+        } | null;
+      };
       error: RpcError | null;
     }>;
   };
@@ -28,9 +42,20 @@ export interface MutationResult {
   body: Record<string, unknown>;
 }
 
+interface ServerReceiptOptions {
+  now?: () => string;
+}
+
+function capClientTimestamp(occurredAt: string, receivedAt: string): string {
+  return new Date(occurredAt).getTime() > new Date(receivedAt).getTime()
+    ? receivedAt
+    : occurredAt;
+}
+
 export async function persistMyPathMutation(
   client: MyPathRpcClient,
-  input: unknown
+  input: unknown,
+  options: ServerReceiptOptions = {}
 ): Promise<MutationResult> {
   const parsed = myPathMutationSchema.safeParse(input);
   if (!parsed.success) {
@@ -39,16 +64,31 @@ export async function persistMyPathMutation(
       body: { error: "invalid_request", issues: parsed.error.flatten() },
     };
   }
+  const receivedAt = (options.now ?? (() => new Date().toISOString()))();
+  const boundedDraft = {
+    ...parsed.data.draft,
+    possibilities: Object.fromEntries(
+      Object.entries(parsed.data.draft.possibilities).map(
+        ([slug, possibility]) => [
+          slug,
+          {
+            ...possibility,
+            updatedAt: capClientTimestamp(possibility.updatedAt, receivedAt),
+          },
+        ]
+      )
+    ),
+  };
 
   const auth = await client.auth.getUser();
   if (auth.error || !auth.data.user) {
     return { status: 401, body: { error: "authentication_required" } };
   }
 
-  const direction = buildDirectionHypothesis(parsed.data.draft, planningRegistry);
-  const nextStep = selectNextStep(parsed.data.draft, planningRegistry);
+  const direction = buildDirectionHypothesis(boundedDraft, planningRegistry);
+  const nextStep = selectNextStep(boundedDraft, planningRegistry);
   const { data, error } = await client.rpc("sync_my_path_journey", {
-    p_draft: parsed.data.draft,
+    p_draft: boundedDraft,
     p_direction: direction,
     p_next_step: nextStep,
   });
@@ -95,4 +135,40 @@ export async function recordAnonymousMyPathEvent(
     return { status: 500, body: { error: "analytics_failed" } };
   }
   return { status: 202, body: { accepted: true } };
+}
+
+export async function recordAuthenticatedRadarMyPathEvent(
+  client: MyPathRpcClient,
+  input: unknown,
+  options: ServerReceiptOptions = {}
+): Promise<MutationResult> {
+  const parsed = radarMyPathEventSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      status: 400,
+      body: { error: "invalid_request", issues: parsed.error.flatten() },
+    };
+  }
+  const receivedAt = (options.now ?? (() => new Date().toISOString()))();
+
+  const auth = await client.auth.getUser();
+  if (auth.error || !isAuthenticatedRadarUser(auth.data.user)) {
+    return { status: 401, body: { error: "authentication_required" } };
+  }
+  if (!planningRegistry[parsed.data.careerSlug]) {
+    return { status: 400, body: { error: "unknown_career" } };
+  }
+
+  const { data, error } = await client.rpc("apply_my_path_radar_event", {
+    p_client_event_id: parsed.data.clientEventId,
+    p_event_type: mapRadarFieldIntent(parsed.data.intent),
+    p_career_slug: parsed.data.careerSlug,
+    p_occurred_at: capClientTimestamp(parsed.data.occurredAt, receivedAt),
+  });
+  if (error) {
+    console.error("Radar My Path persistence failed:", error.code ?? "unknown");
+    return { status: 500, body: { error: "persistence_failed" } };
+  }
+
+  return { status: 202, body: { accepted: true, data } };
 }

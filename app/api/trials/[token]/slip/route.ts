@@ -1,7 +1,9 @@
+import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient, createServiceRoleClient } from "@/utils/supabase/server";
+import { createServiceRoleClient } from "@/utils/supabase/server";
 import { safeServerError } from "@/lib/security/route-guards";
+import { resolveTrialAccessByToken } from "@/lib/trials/trial-token-server";
 
 const tokenSchema = z.string().regex(/^[0-9a-f]{32}$/);
 const MAX_SLIP_BYTES = 5 * 1024 * 1024; // 5MB
@@ -37,18 +39,8 @@ export async function POST(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    // Public endpoint: look the trial up via the anon-callable RPC
-    const supabase = await createClient();
-    const { data, error: rpcError } = await supabase.rpc(
-      "get_trial_by_token",
-      { p_token: parsed.data }
-    );
-
-    if (rpcError) {
-      return safeServerError("Failed to fetch trial", rpcError);
-    }
-
-    const trial = (data ?? null) as { id: string; status: string } | null;
+    const service = createServiceRoleClient();
+    const trial = await resolveTrialAccessByToken(service, parsed.data);
     if (!trial) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
@@ -70,31 +62,39 @@ export async function POST(
     }
 
     // Storage uploads and trial updates are service-role only (RLS)
-    const service = createServiceRoleClient();
-    const slipPath = `${trial.id}/${sanitizeFilename(file.name, file.type)}`;
+    const slipPath = `${trial.id}/${randomBytes(8).toString("hex")}-${sanitizeFilename(file.name, file.type)}`;
 
     const { error: uploadError } = await service.storage
       .from("trial-slips")
-      .upload(slipPath, file, { contentType: file.type, upsert: true });
+      .upload(slipPath, file, { contentType: file.type, upsert: false });
 
     if (uploadError) {
       return safeServerError("Failed to upload slip", uploadError);
     }
 
-    const { error: updateError } = await service
-      .from("trial_accesses")
-      .update({
-        status: "pending",
-        slip_path: slipPath,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", trial.id);
+    const { data: transitioned, error: updateError } = await service.rpc(
+      "submit_trial_payment_slip",
+      {
+        p_trial_id: trial.id,
+        p_slip_path: slipPath,
+      }
+    );
 
     if (updateError) {
       return safeServerError("Failed to update trial", updateError);
     }
+    if (!transitioned) {
+      // The upload has a unique path, so cleanup cannot remove a previously
+      // verified slip. The status transition itself is the source of truth.
+      await service.storage.from("trial-slips").remove([slipPath]);
+      const current = await resolveTrialAccessByToken(service, parsed.data);
+      return NextResponse.json(
+        { error: current?.status === "paid" ? "already_paid" : "status_changed" },
+        { status: 409 }
+      );
+    }
 
-    return NextResponse.json({ status: "pending" });
+    return NextResponse.json({ status: transitioned });
   } catch (error) {
     return safeServerError("Failed to upload slip", error);
   }

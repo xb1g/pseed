@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createAnonymousDraft, applyJourneyEvent } from "../journey";
 import {
   persistMyPathMutation,
+  recordAuthenticatedRadarMyPathEvent,
   recordAnonymousMyPathEvent,
   type MyPathRpcClient,
 } from "../server-mutation";
@@ -73,6 +74,67 @@ test("the server recalculates direction and next step before the atomic RPC", as
   );
 });
 
+test("full draft sync caps year-9999 possibility freshness at server receipt time", async () => {
+  let draft = createAnonymousDraft("generic", "draft-future-sync");
+  draft = applyJourneyEvent(draft, {
+    id: "future-sync-event",
+    type: "career_saved",
+    careerSlug: "ux-designer",
+    occurredAt: "2026-07-20T10:30:00.000Z",
+  });
+  draft = {
+    ...draft,
+    possibilities: {
+      ...draft.possibilities,
+      "ux-designer": {
+        ...draft.possibilities["ux-designer"],
+        updatedAt: "9999-12-31T23:59:59.999Z",
+      },
+    },
+  };
+  const fake = client();
+
+  await persistMyPathMutation(
+    fake.value,
+    { operation: "sync", draft },
+    { now: () => "2026-07-22T10:30:00.000Z" }
+  );
+
+  const syncedDraft = fake.calls[0].args.p_draft as typeof draft;
+  assert.equal(
+    syncedDraft.possibilities["ux-designer"].updatedAt,
+    "2026-07-22T10:30:00.000Z"
+  );
+  assert.equal(
+    draft.possibilities["ux-designer"].updatedAt,
+    "9999-12-31T23:59:59.999Z",
+    "normalization must not mutate the browser draft"
+  );
+});
+
+test("full draft sync preserves legitimate offline possibility freshness", async () => {
+  let draft = createAnonymousDraft("generic", "draft-offline-sync");
+  draft = applyJourneyEvent(draft, {
+    id: "offline-sync-event",
+    type: "career_saved",
+    careerSlug: "ux-designer",
+    occurredAt: "2026-07-20T10:30:00.000Z",
+  });
+  const fake = client();
+
+  await persistMyPathMutation(
+    fake.value,
+    { operation: "sync", draft },
+    { now: () => "2026-07-22T10:30:00.000Z" }
+  );
+
+  const syncedDraft = fake.calls[0].args.p_draft as typeof draft;
+  assert.equal(
+    syncedDraft.possibilities["ux-designer"].updatedAt,
+    "2026-07-20T10:30:00.000Z"
+  );
+});
+
 test("the server exposes the active-path limit as a conflict", async () => {
   const fake = client({
     rpcError: { code: "23514", message: "active saved path limit is three" },
@@ -103,4 +165,126 @@ test("anonymous events use the validated rate-limited RPC contract", async () =>
     p_career_slug: "ux-designer",
     p_metadata: { entry: "generic" },
   });
+});
+
+test("Radar My Path events require a durable authenticated user", async () => {
+  const signedOut = client({ userId: null });
+  const signedOutResult = await recordAuthenticatedRadarMyPathEvent(
+    signedOut.value,
+    {
+      clientEventId: "radar-event-auth",
+      careerSlug: "ux-designer",
+      intent: "opened",
+      occurredAt: "2026-07-22T08:00:00.000Z",
+    }
+  );
+
+  assert.equal(signedOutResult.status, 401);
+  assert.equal(signedOut.calls.length, 0);
+
+  const anonymous = client();
+  anonymous.value.auth.getUser = async () => ({
+    data: {
+      user: {
+        id: "anonymous-user",
+        is_anonymous: true,
+        app_metadata: { provider: "anonymous" },
+        identities: [],
+      },
+    },
+    error: null,
+  });
+  const anonymousResult = await recordAuthenticatedRadarMyPathEvent(
+    anonymous.value,
+    {
+      clientEventId: "radar-event-anon",
+      careerSlug: "ux-designer",
+      intent: "opened",
+      occurredAt: "2026-07-22T08:00:00.000Z",
+    }
+  );
+
+  assert.equal(anonymousResult.status, 401);
+  assert.equal(anonymous.calls.length, 0);
+});
+
+test("unknown Radar slugs never enter the canonical My Path", async () => {
+  const fake = client();
+  const result = await recordAuthenticatedRadarMyPathEvent(fake.value, {
+    clientEventId: "radar-event-unknown",
+    careerSlug: "start-option-1",
+    intent: "interested",
+    occurredAt: "2026-07-22T08:00:00.000Z",
+  });
+
+  assert.equal(result.status, 400);
+  assert.equal(result.body.error, "unknown_career");
+  assert.equal(fake.calls.length, 0);
+});
+
+test("authenticated Radar events use the narrow idempotent RPC contract", async () => {
+  const fake = client();
+  const input = {
+    clientEventId: "radar-event-duplicate",
+    careerSlug: "ux-designer",
+    intent: "saved" as const,
+    occurredAt: "2026-07-22T08:00:00.000Z",
+  };
+
+  const first = await recordAuthenticatedRadarMyPathEvent(fake.value, input);
+  const duplicate = await recordAuthenticatedRadarMyPathEvent(fake.value, input);
+
+  assert.equal(first.status, 202);
+  assert.equal(duplicate.status, 202);
+  assert.equal(fake.calls.length, 2);
+  assert.deepEqual(fake.calls[0], fake.calls[1]);
+  assert.deepEqual(fake.calls[0], {
+    name: "apply_my_path_radar_event",
+    args: {
+      p_client_event_id: "radar-event-duplicate",
+      p_event_type: "career_saved",
+      p_career_slug: "ux-designer",
+      p_occurred_at: "2026-07-22T08:00:00.000Z",
+    },
+  });
+});
+
+test("Radar freshness caps a year-9999 client timestamp at server receipt time", async () => {
+  const fake = client();
+
+  await recordAuthenticatedRadarMyPathEvent(
+    fake.value,
+    {
+      clientEventId: "radar-event-future",
+      careerSlug: "ux-designer",
+      intent: "saved",
+      occurredAt: "9999-12-31T23:59:59.999Z",
+    },
+    { now: () => "2026-07-22T09:30:00.000Z" }
+  );
+
+  assert.equal(
+    fake.calls[0].args.p_occurred_at,
+    "2026-07-22T09:30:00.000Z"
+  );
+});
+
+test("Radar freshness preserves legitimate delayed offline timestamps", async () => {
+  const fake = client();
+
+  await recordAuthenticatedRadarMyPathEvent(
+    fake.value,
+    {
+      clientEventId: "radar-event-offline",
+      careerSlug: "ux-designer",
+      intent: "opened",
+      occurredAt: "2026-07-20T09:30:00.000Z",
+    },
+    { now: () => "2026-07-22T09:30:00.000Z" }
+  );
+
+  assert.equal(
+    fake.calls[0].args.p_occurred_at,
+    "2026-07-20T09:30:00.000Z"
+  );
 });

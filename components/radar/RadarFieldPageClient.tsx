@@ -8,7 +8,10 @@ import {
   submitRadarReflection,
   syncPendingRadarReflections,
   recordRadarFieldView,
+  recordRadarMyPathIntent,
   recordRadarPathIntent,
+  routeRadarCardIntent,
+  syncPendingRadarMyPathEvents,
 } from "@/lib/supabase/radar";
 import { RadarCardView, SourceRefs } from "@/components/radar/RadarCards";
 import { getCareerCardVisual } from "@/components/radar/RadarPageClient";
@@ -196,6 +199,7 @@ export function RadarFieldPageClient({
   const followRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const isSafariRef = useRef(false);
+  const fieldOpenRecordedRef = useRef(false);
 
   const handlePointer = useCallback((e: React.MouseEvent) => {
     if (isSafariRef.current) return;
@@ -258,6 +262,7 @@ export function RadarFieldPageClient({
       if (!active) return;
       setShowSignupPrompt(!user || isAnonymousUser(user));
       void syncPendingRadarReflections().then(loadSavedReflections);
+      void syncPendingRadarMyPathEvents();
     })();
 
     const {
@@ -265,6 +270,7 @@ export function RadarFieldPageClient({
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setShowSignupPrompt(!session?.user || isAnonymousUser(session.user));
       void syncPendingRadarReflections().then(loadSavedReflections);
+      void syncPendingRadarMyPathEvents();
     });
 
     return () => {
@@ -277,6 +283,10 @@ export function RadarFieldPageClient({
   useEffect(() => {
     if (!fieldSlug || !field.id) return;
     void recordRadarFieldView(fieldSlug, field.id);
+    if (!fieldOpenRecordedRef.current) {
+      fieldOpenRecordedRef.current = true;
+      recordRadarMyPathIntent({ careerSlug: fieldSlug, intent: "opened" });
+    }
   }, [fieldSlug, field.id]);
 
   useEffect(
@@ -546,16 +556,28 @@ export function RadarFieldPageClient({
                     onReflect={(payload) =>
                       handleReflect(card, chapterKey, payload)
                     }
-                    onIntent={(pathSlug, buttonLabel) => {
+                    onIntent={(pathSlug, buttonLabel, scope) => {
                       if (!fieldSlug || !field.id) return;
-                      void recordRadarPathIntent({
-                        fieldSlug,
-                        fieldId: field.id,
-                        pathSlug,
-                        buttonLabel:
-                          buttonLabel ||
-                          (content.button as string | undefined) ||
-                          undefined,
+                      routeRadarCardIntent({
+                        scope,
+                        buttonLabel,
+                        recordAnalytics() {
+                          void recordRadarPathIntent({
+                            fieldSlug,
+                            fieldId: field.id,
+                            pathSlug,
+                            buttonLabel:
+                              buttonLabel ||
+                              (content.button as string | undefined) ||
+                              undefined,
+                          });
+                        },
+                        recordCanonical(intent) {
+                          recordRadarMyPathIntent({
+                            careerSlug: fieldSlug,
+                            intent,
+                          });
+                        },
                       });
                     }}
                   />
