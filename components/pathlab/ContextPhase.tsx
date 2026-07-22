@@ -1,24 +1,19 @@
 "use client";
 
 import { useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { markdownToSafeHtml } from "@/lib/security/sanitize-html";
 
 interface ContextPhaseProps {
   dayNumber: number;
   dayTitle?: string | null;
   contextText: string;
-  onContinue: () => void;
-  onSkip: () => void;
-  skipLabel?: string;
 }
 
 function ContextHtml({ markdown }: { markdown: string }) {
   const html = useMemo(() => markdownToSafeHtml(markdown), [markdown]);
   return (
     <div
-      className="prose prose-invert max-w-none leading-relaxed"
+      className="prose prose-invert prose-sm max-w-none text-neutral-300 prose-headings:text-white prose-p:leading-7 prose-a:text-amber-300 prose-strong:text-white sm:prose-base"
       // Content is sanitized through markdownToSafeHtml which strips
       // unsafe tags/attributes via lib/security/sanitize-html.ts
       dangerouslySetInnerHTML={{ __html: html }}
@@ -26,42 +21,26 @@ function ContextHtml({ markdown }: { markdown: string }) {
   );
 }
 
+/**
+ * Why today matters. Content only — the player shell owns the actions, so the
+ * student always finds "continue" in the same place.
+ */
 export function ContextPhase({
   dayNumber,
   dayTitle,
   contextText,
-  onContinue,
-  onSkip,
-  skipLabel = "Skip to Reflection",
 }: ContextPhaseProps) {
   return (
-    <Card className="border-neutral-800 bg-neutral-900/80">
-      <CardHeader>
-        <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
-          Day {dayNumber}
-        </p>
-        <CardTitle className="text-2xl text-white">
-          {dayTitle || "Why today matters"}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <section>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-300/70">
+        Before you start
+      </p>
+      <h2 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+        {dayTitle || `Day ${dayNumber}`}
+      </h2>
+      <div className="mt-5">
         <ContextHtml markdown={contextText} />
-        <div className="flex justify-end gap-3">
-          <Button
-            variant="ghost"
-            onClick={onSkip}
-            className="text-neutral-400 hover:text-white"
-          >
-            {skipLabel}
-          </Button>
-          <Button
-            onClick={onContinue}
-            className="bg-white text-black hover:bg-neutral-200"
-          >
-            Start Action
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

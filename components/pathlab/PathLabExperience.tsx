@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,10 @@ import { Node } from "@xyflow/react";
 import { toast } from "sonner";
 import { ActivityViewPanel, type ActivityRow } from "./ActivityViewPanel";
 import { ContextPhase } from "./ContextPhase";
+import { PlayerShell } from "./player/PlayerShell";
+import { PlayerHeader } from "./player/PlayerHeader";
+import { PlayerActionBar } from "./player/PlayerActionBar";
+import { ActivityRail } from "./player/ActivityRail";
 import { ReflectionForm, type DailyReflectionDraft } from "./ReflectionForm";
 import { DecisionGate, type PathDecision } from "./DecisionGate";
 import { ExitReflection } from "./ExitReflection";
@@ -76,74 +80,37 @@ function PhaseStepper({
 
   if (currentIndex === -1) return null;
 
+  // A breadcrumb, not a billboard: the old stepper ate 160px of vertical
+  // space to say one word. The header already carries progress within the day.
   return (
-    <div className="mb-8 px-4">
-      <div className="relative flex justify-between rounded-2xl border border-neutral-800/50 bg-gradient-to-br from-neutral-900/50 to-neutral-950/50 p-8 shadow-xl">
-        {/* Background Line */}
-        <div className="absolute top-1/2 left-8 right-8 h-[3px] -translate-y-1/2 rounded-full bg-neutral-800/50" />
+    <ol className="mb-6 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em]">
+      {stepsToShow.map((step, idx) => {
+        const isActive = step.id === currentPhase;
+        const isCompleted = idx < currentIndex;
 
-        {/* Progress Line with Gradient */}
-        <div
-          className="absolute top-1/2 left-8 h-[3px] -translate-y-1/2 rounded-full bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)] transition-all duration-700 ease-out"
-          style={{
-            width: `calc(${(currentIndex / (stepsToShow.length - 1)) * 100}% - 1rem)`,
-          }}
-        />
-
-        {stepsToShow.map((step, idx) => {
-          const isActive = step.id === currentPhase;
-          const isCompleted = idx < currentIndex;
-
-          return (
-            <div
-              key={step.id}
-              className="relative z-10 flex flex-col items-center gap-3"
+        return (
+          <li key={step.id} className="flex items-center gap-1.5">
+            {idx > 0 && (
+              <span aria-hidden="true" className="text-neutral-700">
+                /
+              </span>
+            )}
+            <span
+              aria-current={isActive ? "step" : undefined}
+              className={
+                isActive
+                  ? "text-amber-300"
+                  : isCompleted
+                    ? "text-neutral-400"
+                    : "text-neutral-600"
+              }
             >
-              <div
-                className={`flex h-12 w-12 items-center justify-center rounded-full border-2 transition-all duration-500 ${
-                  isActive
-                    ? "scale-110 border-blue-500 bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-[0_0_25px_rgba(59,130,246,0.8)]"
-                    : isCompleted
-                      ? "border-blue-500/70 bg-gradient-to-br from-neutral-900 to-neutral-950 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
-                      : "border-neutral-700/50 bg-gradient-to-br from-neutral-900 to-neutral-950 text-neutral-500"
-                }`}
-              >
-                {isCompleted ? (
-                  <svg
-                    className="h-6 w-6 animate-in zoom-in duration-300"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={3}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                ) : (
-                  <span className="text-sm font-bold">{idx + 1}</span>
-                )}
-              </div>
-              <div className="text-center">
-                <p
-                  className={`text-xs font-bold uppercase tracking-widest transition-colors duration-300 ${
-                    isActive
-                      ? "text-blue-300"
-                      : isCompleted
-                        ? "text-neutral-400"
-                        : "text-neutral-600"
-                  }`}
-                >
-                  {step.label}
-                </p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+              {step.label}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -194,6 +161,10 @@ export function PathLabExperience({
 
   // Map View State
   const [isMapOpen, setIsMapOpen] = useState(false);
+  // Set the moment the last required activity lands, so the action bar can
+  // announce itself instead of quietly switching from disabled to enabled
+  const [dayJustFinished, setDayJustFinished] = useState(false);
+  const workRef = useRef<HTMLElement>(null);
   const [progressMap, setProgressMap] = useState<Record<string, any>>(
     initialProgressMap || {},
   );
@@ -283,6 +254,28 @@ export function PathLabExperience({
     );
   }, [dayActivities, progressMap]);
 
+  // When the open activity is finished, move to the next unfinished one.
+  // Leaving the student parked on a completed panel makes them hunt for what
+  // to do next, which is the moment the day feels like homework.
+  function advanceAfterCompletion(nextProgress: Record<string, any>) {
+    const isDone = (activity: ActivityRow) =>
+      COMPLETE_STATUSES.has(nextProgress[activity.id]?.status);
+
+    const current = dayActivities.find(
+      (activity) => activity.id === selectedActivityId,
+    );
+    if (!current || !isDone(current)) return;
+
+    const nextUp = dayActivities.find((activity) => !isDone(activity));
+    if (nextUp) {
+      setSelectedActivityId(nextUp.id);
+      workRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    setDayJustFinished(true);
+  }
+
   async function refreshProgress() {
     try {
       const response = await fetch(
@@ -292,7 +285,9 @@ export function PathLabExperience({
       if (!response.ok || !payload?.success) {
         return;
       }
-      setProgressMap(payload.progressMap || {});
+      const nextProgress = payload.progressMap || {};
+      setProgressMap(nextProgress);
+      advanceAfterCompletion(nextProgress);
     } catch {
       // no-op
     }
@@ -326,6 +321,11 @@ export function PathLabExperience({
       setSelectedActivityId(dayActivities[0]?.id || null);
     }
   }, [dayActivities, selectedActivityId]);
+
+  // The "day finished" emphasis is a one-shot; drop it once the student acts
+  useEffect(() => {
+    if (phase !== "action") setDayJustFinished(false);
+  }, [phase]);
 
   // Auto time tracking - start when entering action phase
   useEffect(() => {
@@ -594,11 +594,99 @@ export function PathLabExperience({
     );
   }
 
+  const dayActivityTotal = dayActivities.length;
+  const dayActivityCompleted = dayActivities.filter((activity) =>
+    COMPLETE_STATUSES.has(progressMap[activity.id]?.status),
+  ).length;
+
+  const railItems = dayActivities.map((activity) => ({
+    id: activity.id,
+    title: activity.title,
+    isComplete: COMPLETE_STATUSES.has(progressMap[activity.id]?.status),
+  }));
+
+  // One action bar, one rule: the primary button is always the next real step.
+  let actionBar: ReactNode = null;
+  if (phase === "context") {
+    actionBar = (
+      <PlayerActionBar
+        primaryLabel={
+          dayActivityTotal > 0 ? "Start today's work" : "Continue"
+        }
+        onPrimary={() =>
+          setPhase(dayActivityTotal > 0 || !isCurrentDayView ? "action" : "reflection")
+        }
+        secondaryLabel={isCurrentDayView ? "Skip" : undefined}
+        onSecondary={
+          isCurrentDayView ? () => setPhase("reflection") : undefined
+        }
+      />
+    );
+  } else if (phase === "action") {
+    if (!isCurrentDayView) {
+      actionBar = (
+        <PlayerActionBar
+          primaryLabel={`Back to day ${currentDayNumber}`}
+          onPrimary={() => navigateToDay(currentDayNumber)}
+          hint="You're reviewing a day you've already worked through."
+        />
+      );
+    } else if (dayActivityTotal === 0) {
+      actionBar = (
+        <PlayerActionBar
+          primaryLabel="Continue to reflection"
+          onPrimary={() => setPhase("reflection")}
+          hint="No activities are assigned for this day."
+        />
+      );
+    } else {
+      actionBar = (
+        <PlayerActionBar
+          primaryLabel="Next: Reflection"
+          onPrimary={() => setPhase("reflection")}
+          primaryDisabled={!allActivitiesComplete}
+          emphasis={dayJustFinished}
+          hint={
+            dayJustFinished
+              ? "That's the day's work done — now the part that matters."
+              : allActivitiesComplete
+                ? undefined
+                : `${dayActivityCompleted} of ${dayActivityTotal} done`
+          }
+          secondaryLabel="Skip"
+          onSecondary={() => setPhase("reflection")}
+        />
+      );
+    }
+  }
+
   return (
-    <div className="space-y-4">
+    <PlayerShell
+      header={
+        <PlayerHeader
+          dayNumber={day.day_number}
+          totalDays={path.total_days}
+          dayTitle={day.title}
+          completed={dayActivityCompleted}
+          total={dayActivityTotal}
+          onOpenMap={
+            mapViewerDays.length > 0 ? () => setIsMapOpen(true) : undefined
+          }
+          onPreviousDay={
+            previousDayNumber
+              ? () => navigateToDay(previousDayNumber)
+              : undefined
+          }
+          onNextDay={
+            nextDayNumber ? () => navigateToDay(nextDayNumber) : undefined
+          }
+        />
+      }
+      actionBar={actionBar}
+    >
       {/* Map Modal */}
       <Dialog open={isMapOpen} onOpenChange={setIsMapOpen}>
-        <DialogContent className="max-w-2xl border-neutral-800 bg-neutral-950">
+        <DialogContent className="max-w-2xl border-white/10 bg-[#0e0e10]">
           <DialogTitle className="text-white">What&apos;s coming</DialogTitle>
           <div className="max-h-[70vh] space-y-2 overflow-y-auto pr-1">
             {upcomingDays.length > 0 ? (
@@ -614,164 +702,85 @@ export function PathLabExperience({
                   ? entry.context_text.replace(/\s+/g, " ").trim()
                   : "";
                 const activityPreview = entry.activities.slice(0, 4);
-                const promptPreview = entry.reflection_prompts.slice(0, 2);
 
                 return (
                   <div
                     key={entry.day_number}
-                    className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-3"
+                    className="rounded-xl border border-white/10 bg-white/[0.03] p-3.5"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-white">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-300/70">
                         Day {entry.day_number}
                       </p>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs ${
-                          isCurrent
-                            ? "bg-blue-500/20 text-blue-300"
-                            : "bg-neutral-800 text-neutral-300"
-                        }`}
-                      >
-                        {isCurrent ? "Current" : "Upcoming"}
-                      </span>
+                      {isCurrent && (
+                        <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[11px] font-semibold text-amber-200">
+                          Current
+                        </span>
+                      )}
                     </div>
-                    <p className="mt-1 text-sm text-neutral-200">
+                    <p className="mt-1.5 text-sm font-semibold text-white">
                       {entry.title?.trim() || "Planned day"}
                     </p>
-                    <p className="mt-1 text-xs text-neutral-400">
+                    <p className="mt-1 text-xs text-neutral-500">
                       {activityLabel}
                       {progress.total > 0 &&
                         ` · ${progress.completed}/${progress.total} complete`}
                     </p>
 
                     {contextPreview && (
-                      <p className="mt-2 text-xs text-neutral-300">
-                        {contextPreview.length > 180
-                          ? `${contextPreview.slice(0, 180)}...`
+                      <p className="mt-2 text-xs leading-5 text-neutral-400">
+                        {contextPreview.length > 160
+                          ? `${contextPreview.slice(0, 160)}…`
                           : contextPreview}
                       </p>
                     )}
 
                     {activityPreview.length > 0 && (
-                      <div className="mt-2">
-                        <p className="text-[11px] uppercase tracking-wider text-neutral-500">
-                          Activities
-                        </p>
-                        <ul className="mt-1 space-y-1">
-                          {activityPreview.map((activity) => (
-                            <li
-                              key={`${entry.day_number}-${activity.id}`}
-                              className="text-xs text-neutral-200"
-                            >
-                              {activity.title}
-                            </li>
-                          ))}
-                        </ul>
+                      <ul className="mt-2.5 space-y-1">
+                        {activityPreview.map((activity) => (
+                          <li
+                            key={`${entry.day_number}-${activity.id}`}
+                            className="flex items-start gap-2 text-xs text-neutral-300"
+                          >
+                            <span
+                              aria-hidden="true"
+                              className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-neutral-600"
+                            />
+                            {activity.title}
+                          </li>
+                        ))}
                         {entry.activities.length > activityPreview.length && (
-                          <p className="mt-1 text-xs text-neutral-500">
+                          <li className="text-xs text-neutral-600">
                             +{entry.activities.length - activityPreview.length} more
-                          </p>
+                          </li>
                         )}
-                      </div>
-                    )}
-
-                    {promptPreview.length > 0 && (
-                      <div className="mt-2">
-                        <p className="text-[11px] uppercase tracking-wider text-neutral-500">
-                          Reflection prompts
-                        </p>
-                        <ul className="mt-1 space-y-1">
-                          {promptPreview.map((prompt, index) => (
-                            <li
-                              key={`${entry.day_number}-prompt-${index}`}
-                              className="text-xs text-neutral-300"
-                            >
-                              {prompt}
-                            </li>
-                          ))}
-                        </ul>
-                        {entry.reflection_prompts.length > promptPreview.length && (
-                          <p className="mt-1 text-xs text-neutral-500">
-                            +{entry.reflection_prompts.length - promptPreview.length} more
-                          </p>
-                        )}
-                      </div>
+                      </ul>
                     )}
                   </div>
                 );
               })
             ) : (
-              <div className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-4 text-sm text-neutral-300">
+              <p className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-neutral-400">
                 No upcoming days are available yet.
-              </div>
+              </p>
             )}
-          </div>
-          <div className="flex justify-end border-t border-neutral-800 pt-4">
-            <Button variant="outline" onClick={() => setIsMapOpen(false)}>
-              Close
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      <Card className="border-neutral-800 bg-neutral-900/80">
-        <CardContent className="flex flex-wrap items-center justify-between gap-2 p-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">
-              PathLab
-            </p>
-            <h2 className="text-xl font-semibold text-white">{seed.title}</h2>
-          </div>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {mapViewerDays.length > 0 && (
-              <Button
-                variant="ghost"
-                className="text-neutral-400 hover:text-white"
-                onClick={() => setIsMapOpen(true)}
-              >
-                View what&apos;s coming
-              </Button>
-            )}
-            <p className="text-sm text-neutral-300">
-              Day {day.day_number} of {path.total_days}
-            </p>
-            <Button
-              variant="outline"
-              onClick={() =>
-                previousDayNumber && navigateToDay(previousDayNumber)
-              }
-              disabled={!previousDayNumber}
-              className="border-neutral-700 bg-neutral-950/70 text-neutral-200 hover:bg-neutral-800 disabled:opacity-40"
-            >
-              Previous day
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => nextDayNumber && navigateToDay(nextDayNumber)}
-              disabled={!nextDayNumber}
-              className="border-neutral-700 bg-neutral-950/70 text-neutral-200 hover:bg-neutral-800 disabled:opacity-40"
-            >
-              Next day
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {!isCurrentDayView && (
-        <Card className="border-neutral-800 bg-neutral-900/80">
-          <CardContent className="flex flex-wrap items-center justify-between gap-2 p-4">
-            <p className="text-sm text-neutral-300">
-              Review mode. Day {currentDayNumber} is your active day for
-              reflections and decisions.
-            </p>
-            <Button
-              onClick={() => navigateToDay(currentDayNumber)}
-              className="bg-white text-black hover:bg-neutral-200"
-            >
-              Go to active day
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+          <p className="text-sm text-neutral-400">
+            Review mode — day {currentDayNumber} is your active day.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigateToDay(currentDayNumber)}
+            className="text-sm font-semibold text-amber-300 transition-colors hover:text-amber-200"
+          >
+            Go to active day
+          </button>
+        </div>
       )}
 
       {isCurrentDayView && (
@@ -783,118 +792,38 @@ export function PathLabExperience({
           dayNumber={day.day_number}
           dayTitle={day?.title}
           contextText={day.context_text}
-          onContinue={() => setPhase("action")}
-          onSkip={() => setPhase(isCurrentDayView ? "reflection" : "action")}
-          skipLabel={isCurrentDayView ? "Skip to Reflection" : "Skip to Action"}
         />
       )}
 
       {phase === "action" && (
-        <Card className="border-neutral-800 bg-neutral-900/80">
-          <CardHeader>
-            <CardTitle className="text-white">Action</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {dayActivities.length > 0 ? (
-              <>
-                <div className="flex flex-wrap gap-2">
-                  {dayActivities.map((activity) => {
-                    const isDone = COMPLETE_STATUSES.has(
-                      progressMap[activity.id]?.status,
-                    );
+        <section ref={workRef} className="scroll-mt-40">
+          <ActivityRail
+            items={railItems}
+            selectedId={selectedActivityId}
+            onSelect={setSelectedActivityId}
+          />
 
-                    return (
-                      <Button
-                        key={activity.id}
-                        variant={
-                          selectedActivityId === activity.id
-                            ? "default"
-                            : "outline"
-                        }
-                        onClick={() => setSelectedActivityId(activity.id)}
-                        className={
-                          selectedActivityId === activity.id
-                            ? "bg-white text-black hover:bg-neutral-200"
-                            : "border-neutral-700 bg-neutral-950/70 text-neutral-200 hover:bg-neutral-800"
-                        }
-                      >
-                        {isDone && <span className="mr-1.5 text-emerald-400">✓</span>}
-                        {activity.title}
-                      </Button>
-                    );
-                  })}
-                </div>
-
-                <div className="min-h-[80vh] overflow-hidden rounded-xl border border-neutral-800 bg-neutral-950/50">
-                  {selectedActivity && (
-                    <ActivityViewPanel
-                      key={selectedActivity.id}
-                      activity={selectedActivity}
-                      enrollmentId={enrollment.id}
-                      progressId={progressMap[selectedActivity.id]?.id || null}
-                      isComplete={COMPLETE_STATUSES.has(
-                        progressMap[selectedActivity.id]?.status,
-                      )}
-                      onProgressUpdate={refreshProgress}
-                    />
+          {dayActivities.length > 0 ? (
+            <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.02]">
+              {selectedActivity && (
+                <ActivityViewPanel
+                  key={selectedActivity.id}
+                  activity={selectedActivity}
+                  enrollmentId={enrollment.id}
+                  progressId={progressMap[selectedActivity.id]?.id || null}
+                  isComplete={COMPLETE_STATUSES.has(
+                    progressMap[selectedActivity.id]?.status,
                   )}
-                </div>
-
-                {isCurrentDayView ? (
-                  <div className="flex items-center justify-between rounded-lg border border-neutral-800 bg-neutral-950/70 p-3">
-                    <p className="text-sm text-neutral-300">
-                      {allActivitiesComplete
-                        ? "All activities for this day are complete."
-                        : "Finish each activity in this day before reflection."}
-                    </p>
-                    <div className="flex items-center gap-3">
-                      <Button
-                        variant="ghost"
-                        onClick={() => setPhase("reflection")}
-                        className="text-neutral-400 hover:text-white"
-                      >
-                        Skip to reflection
-                      </Button>
-                      <Button
-                        onClick={() => setPhase("reflection")}
-                        disabled={!allActivitiesComplete}
-                        className="bg-white text-black hover:bg-neutral-200"
-                      >
-                        Next: Reflection
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="rounded-lg border border-neutral-800 bg-neutral-950/70 p-3">
-                    <p className="text-sm text-neutral-300">
-                      Reviewing a previous day. Switch back to Day{" "}
-                      {currentDayNumber} to continue your path.
-                    </p>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="space-y-4 text-neutral-300">
-                <p>No action nodes are assigned for this day.</p>
-                {isCurrentDayView ? (
-                  <Button
-                    onClick={() => setPhase("reflection")}
-                    className="bg-white text-black hover:bg-neutral-200"
-                  >
-                    Continue to reflection
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => navigateToDay(currentDayNumber)}
-                    className="bg-white text-black hover:bg-neutral-200"
-                  >
-                    Go to active day
-                  </Button>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  onProgressUpdate={refreshProgress}
+                />
+              )}
+            </div>
+          ) : (
+            <p className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-neutral-400">
+              No activities are assigned for this day yet.
+            </p>
+          )}
+        </section>
       )}
 
       {isCurrentDayView && phase === "reflection" && (
@@ -951,6 +880,6 @@ export function PathLabExperience({
           />
         </div>
       )}
-    </div>
+    </PlayerShell>
   );
 }
