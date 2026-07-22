@@ -728,8 +728,9 @@ summary:focus-visible .radar-expand-indicator {
   .market-ticket__metric { min-height: 5.6rem; }
   .market-ticket__companies { border-top: 1px dashed rgba(83, 63, 52, 0.5); border-left: 0; }
   .market-ticket__companies::before { top: -0.45rem; right: 0; bottom: auto; left: 0; width: auto; height: 0.9rem; background-size: 2.1rem 0.9rem; background-repeat: repeat-x; }
+  .market-ticket__companies > p { font-size: 1rem; }
   .market-ticket__logo img { width: 74%; height: 74%; }
-  .market-ticket__logo > span:not(.sr-only) { font-size: 0.9rem; }
+  .market-ticket__logo > span:not(.sr-only) { font-size: 1.5rem; }
   .market-ticket__wordmark { font-size: 0.68rem !important; }
 }
 @keyframes dusk-cloud-b {
@@ -6921,13 +6922,22 @@ summary:focus-visible .radar-expand-indicator {
 /* Safari Radar detail performance path. WebKit repaints large blurs, masks,
    backdrop filters, and filtered keyframes much more aggressively than Blink.
    Preserve content and transform choreography while removing those paint loops. */
+/* Keep the glow blobs for atmosphere but freeze them. The infinite drift
+   keyframes are what forces WebKit to repaint the huge blurs every frame;
+   opacity/centering that the keyframes supplied are restated statically.
+   The filter transition is dropped too so per-slide saturate changes don't
+   trigger an animated 140px-blur repaint. */
 .radar-field-page--safari .radar-glow-a,
 .radar-field-page--safari .radar-glow-b,
 .radar-field-page--safari .radar-glow-c,
 .radar-field-page--safari .radar-glow-follow {
-  display: none;
   animation: none !important;
+  transition: none !important;
 }
+
+.radar-field-page--safari .radar-glow-a { opacity: 0.2; transform: translate(-50%, 0); }
+.radar-field-page--safari .radar-glow-b { opacity: 0.13; }
+.radar-field-page--safari .radar-glow-c { opacity: 0.1; }
 
 .radar-field-page--safari .radar-detail-grain {
   background-image:
@@ -6942,20 +6952,20 @@ summary:focus-visible .radar-expand-indicator {
   animation: none !important;
 }
 
+/* Tint on the wrapper, not the images: WebKit lets the intro keyframes'
+   grayscale filter beat the !important image tint while they run, so pieces
+   went colorless mid-animation. A parent filter composes after the child's
+   animated filter, keeping the color through the whole choreography. */
 .radar-field-page--safari .salary-chess-piece,
-.radar-field-page--safari .salary-chess-level--queen .salary-chess-piece {
-  filter: none;
+.radar-field-page--safari .salary-chess-level--queen .salary-chess-piece,
+.radar-field-page--safari .salary-chess-detail-piece {
+  filter: sepia(0.9) saturate(3.2) hue-rotate(var(--salary-chess-image-hue, 60deg)) brightness(1.05)
+    contrast(1.05);
 }
 
 .radar-field-page--safari .salary-chess-piece-image,
 .radar-field-page--safari .salary-chess-intro-pawn {
   will-change: transform, opacity;
-}
-
-.radar-field-page--safari .salary-chess-piece-image,
-.radar-field-page--safari .salary-chess-intro-pawn img {
-  filter: sepia(0.9) saturate(3.2) hue-rotate(var(--salary-chess-image-hue, 60deg)) brightness(1.05)
-    contrast(1.05) !important;
 }
 
 .radar-field-page--safari .salary-chess-level--queen .salary-chess-piece::before,
