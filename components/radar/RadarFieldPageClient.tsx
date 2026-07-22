@@ -343,6 +343,11 @@ export function RadarFieldPageClient({
     const guard = touchSectionGuardRef.current;
     if (!deck || !guard?.direction) return;
 
+    // On mobile, tall sections have scroll-snap disabled via CSS.
+    // Skip JS clamping too so the browser's native inertia works smoothly.
+    const section = sectionRefs.current[guard.sectionIndex];
+    if (section?.classList.contains("radar-card-section--tall")) return;
+
     if (
       guard.direction === "down" &&
       guard.lockDown &&
@@ -445,6 +450,28 @@ export function RadarFieldPageClient({
     },
     []
   );
+
+  // Tag sections taller than the viewport so CSS can disable scroll-snap on them
+  // This prevents Chrome mobile from snapping past tall content
+  useEffect(() => {
+    const deck = scrollRef.current;
+    if (!deck) return;
+    const markTall = () => {
+      const vh = deck.clientHeight;
+      sectionRefs.current.forEach((section) => {
+        if (!section) return;
+        section.classList.toggle(
+          "radar-card-section--tall",
+          section.scrollHeight > vh + 20
+        );
+      });
+    };
+    markTall();
+    const ro = new ResizeObserver(markTall);
+    ro.observe(deck);
+    sectionRefs.current.forEach((s) => s && ro.observe(s));
+    return () => ro.disconnect();
+  }, [cards.length, initialSkills.length]);
 
   useEffect(() => {
     const root = scrollRef.current;
