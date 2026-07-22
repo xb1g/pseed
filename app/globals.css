@@ -3185,6 +3185,28 @@ summary:focus-visible .radar-expand-indicator {
   background-size: 100vw 100vh;
 }
 
+/* Safari frequently repaints fixed gradients and every textured card while
+   scrolling. Keep the resting design intact, but remove those paint hotspots
+   during active Safari scrolling. */
+.radar-index-page--safari {
+  background-attachment: scroll;
+  background-size: auto;
+}
+
+.radar-index-page--safari-scrolling .radar-career-card {
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+  transition: none;
+}
+
+.radar-index-page--safari-scrolling .radar-career-card__grain {
+  background-image: none;
+  opacity: 0;
+}
+
+.radar-index-page--safari-scrolling .radar-career-card__figure {
+  transition: none;
+}
+
 .faculty-radar-mode {
   display: inline-flex;
   min-height: 2.55rem;
