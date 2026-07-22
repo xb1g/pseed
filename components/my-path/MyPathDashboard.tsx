@@ -119,17 +119,17 @@ function SectionHeading({
   icon: typeof Route;
 }) {
   return (
-    <div className="flex items-start gap-3">
-      <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-300/20 bg-blue-400/10 text-blue-200">
-        <Icon aria-hidden="true" className="h-5 w-5" />
+    <div className="flex items-start gap-2.5">
+      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-blue-300/20 bg-blue-400/10 text-blue-200">
+        <Icon aria-hidden="true" className="h-4 w-4" />
       </span>
       <div>
-        <p className="font-bai-jamjuree text-xs font-semibold uppercase tracking-[0.14em] text-blue-200/80">
+        <p className="font-bai-jamjuree text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-200/80">
           {eyebrow}
         </p>
         <h2
           id={id}
-          className="mt-1 font-kodchasan text-xl font-bold text-white sm:text-2xl"
+          className="mt-0.5 font-kodchasan text-lg font-bold text-white sm:text-xl"
         >
           {title}
         </h2>
@@ -145,19 +145,19 @@ function PlanSummary({ model }: MyPathDashboardProps) {
     : "กำหนดทิศทางของฉัน";
 
   return (
-    <section aria-labelledby="my-path-plan-heading" className="my-path-section">
+    <section aria-labelledby="my-path-plan-heading" className="ei-card p-6 sm:p-8">
       <SectionHeading
         id="my-path-plan-heading"
         eyebrow="Plan"
         title="แผน 2–4 เดือนของฉัน"
         icon={Route}
       />
-      <div className="mt-5 grid gap-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+      <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
         <div>
-          <p className="font-bai-jamjuree text-sm text-slate-400">
+          <p className="font-bai-jamjuree text-xs text-slate-400">
             เป้าหมาย · {goal} · {model.plan.timelineMonths} เดือน
           </p>
-          <p className="mt-2 max-w-2xl font-kodchasan text-lg font-semibold leading-8 text-slate-100">
+          <p className="mt-1.5 max-w-2xl font-kodchasan text-base font-semibold leading-7 text-slate-100">
             {model.plan.headline}
           </p>
         </div>
@@ -174,7 +174,7 @@ function RadarShortlist({ model }: MyPathDashboardProps) {
   return (
     <section
       aria-labelledby="my-path-radar-heading"
-      className="my-path-section"
+      className="ei-card p-6 sm:p-8"
     >
       <SectionHeading
         id="my-path-radar-heading"
@@ -227,7 +227,7 @@ function PathlabExperiments({ model }: MyPathDashboardProps) {
   return (
     <section
       aria-labelledby="my-path-pathlabs-heading"
-      className="my-path-section"
+      className="ei-card p-6 sm:p-8"
     >
       <SectionHeading
         id="my-path-pathlabs-heading"
@@ -386,7 +386,7 @@ function EvidenceSection({ model }: MyPathDashboardProps) {
   return (
     <section
       aria-labelledby="my-path-evidence-heading"
-      className="my-path-section"
+      className="ei-card p-6 sm:p-8"
     >
       <SectionHeading
         id="my-path-evidence-heading"
@@ -470,20 +470,7 @@ export function MyPathDashboard({ model }: MyPathDashboardProps) {
   return (
     <div className="dawn-theme my-path-dashboard font-bai-jamjuree">
       <NextActionHero model={model} />
-      <div className="my-path-core-loop" data-my-path-reveal>
-        <div
-          className="my-path-journey-marker"
-          aria-label="Plan ไป Radar ไป PathLab ไป Evidence"
-        >
-          <ClipboardList aria-hidden="true" className="h-4 w-4" />
-          <span>Plan</span>
-          <span aria-hidden="true">→</span>
-          <span>Radar</span>
-          <span aria-hidden="true">→</span>
-          <span>PathLab</span>
-          <span aria-hidden="true">→</span>
-          <span>Evidence</span>
-        </div>
+      <div className="mt-8 flex flex-col gap-6" data-my-path-reveal>
         <PlanSummary model={model} />
         <RadarShortlist model={model} />
         <PathlabExperiments model={model} />
