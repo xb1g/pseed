@@ -50,12 +50,14 @@ const TOTAL_STEPS = 5;
 const WIZARD_STEP_STORAGE_KEY = "passionseed_my_path_wizard_step_v1";
 
 interface PayLaterSheetState {
-  status: "loading" | "error" | "ready";
+  status: "loading" | "error" | "ready" | "pending" | "paid" | "recovery";
   trial: TrialShareInfo | null;
+  enrollmentUrl: string | null;
 }
 
 function eventId(): string {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  if (typeof crypto !== "undefined" && crypto.randomUUID)
+    return crypto.randomUUID();
   return `event-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
@@ -78,6 +80,8 @@ export function PlanWizard({
   const lastSyncedAt = useRef<string | null>(initialDraft?.updatedAt ?? null);
   const missionTracked = useRef(false);
   const stepRestored = useRef(false);
+  const launchGeneration = useRef(0);
+  const launchInFlight = useRef(false);
 
   // Restore the furthest step reached so an accidental exit (swipe-back,
   // app switch, tab close) resumes exactly where the student left off.
@@ -102,7 +106,10 @@ export function PlanWizard({
           : 0;
       setStep(next);
       window.localStorage.setItem(WIZARD_STEP_STORAGE_KEY, String(next));
-      trackAnalytics("wizard_step_viewed", undefined, { step: next, via: "swipe" });
+      trackAnalytics("wizard_step_viewed", undefined, {
+        step: next,
+        via: "swipe",
+      });
     }
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -114,7 +121,9 @@ export function PlanWizard({
     if (initialDraft) return;
     const stored = loadMyPathDraft(window.localStorage);
     const base = stored ?? createAnonymousDraft(null, eventId());
-    const isFirstEntry = !base.events.some((event) => event.type === "entry_viewed");
+    const isFirstEntry = !base.events.some(
+      (event) => event.type === "entry_viewed"
+    );
     const next = isFirstEntry
       ? applyJourneyEvent(base, {
           id: eventId(),
@@ -143,7 +152,8 @@ export function PlanWizard({
   }, [draft]);
 
   useEffect(() => {
-    if (!draft || !persisted || draft.updatedAt === lastSyncedAt.current) return;
+    if (!draft || !persisted || draft.updatedAt === lastSyncedAt.current)
+      return;
     const timer = window.setTimeout(async () => {
       try {
         const response = await fetch("/api/my-path", {
@@ -218,7 +228,9 @@ export function PlanWizard({
       id: eventId(),
       occurredAt: new Date().toISOString(),
     };
-    setDraft((current) => (current ? applyJourneyEvent(current, event) : current));
+    setDraft((current) =>
+      current ? applyJourneyEvent(current, event) : current
+    );
     if (draft && analyticsType) {
       trackAnalytics(analyticsType, input.careerSlug, {
         ...(input.metadata ?? {}),
@@ -247,7 +259,10 @@ export function PlanWizard({
   function toggleInterest(slug: string) {
     const saved = draft?.possibilities[slug]?.state === "saved";
     if (saved) {
-      recordEvent({ type: "career_removed", careerSlug: slug }, "career_removed");
+      recordEvent(
+        { type: "career_removed", careerSlug: slug },
+        "career_removed"
+      );
     } else {
       recordEvent({ type: "career_saved", careerSlug: slug }, "career_saved");
     }
@@ -291,14 +306,17 @@ export function PlanWizard({
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
-  async function savePlan() {
-    if (!draft) return;
+  async function persistPlan(): Promise<boolean> {
+    if (!draft) return false;
     setImportStatus("saving");
     try {
       const response = await fetch("/api/my-path", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ operation: persisted ? "sync" : "import", draft }),
+        body: JSON.stringify({
+          operation: persisted ? "sync" : "import",
+          draft,
+        }),
       });
       if (!response.ok) throw new Error("save failed");
       lastSyncedAt.current = draft.updatedAt;
@@ -306,17 +324,29 @@ export function PlanWizard({
       setImportStatus("saved");
       clearMyPathDraft(window.localStorage);
       window.localStorage.removeItem(WIZARD_STEP_STORAGE_KEY);
+      return true;
     } catch {
       setImportStatus("error");
+      return false;
     }
+  }
+
+  async function savePlan() {
+    await persistPlan();
   }
 
   // Launch สำหรับนักเรียนที่ sign in แล้ว: เปิด trial "ทำก่อน จ่ายทีหลัง"
   // (idempotent — POST ซ้ำได้ไม่เป็นไร) แล้วโชว์ sheet ให้ส่งลิงก์ให้ผู้ปกครอง
   async function startTrialLaunch() {
-    if (!firstActionSeed) return;
-    setPayLaterSheet({ status: "loading", trial: null });
+    if (!firstActionSeed || launchInFlight.current) return;
+    const generation = launchGeneration.current + 1;
+    launchGeneration.current = generation;
+    launchInFlight.current = true;
+    setPayLaterSheet({ status: "loading", trial: null, enrollmentUrl: null });
     try {
+      const saved = await persistPlan();
+      if (!saved) throw new Error("durable My Path save failed");
+      if (generation !== launchGeneration.current) return;
       const response = await fetch("/api/trials", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -324,17 +354,62 @@ export function PlanWizard({
       });
       if (!response.ok) throw new Error("trial create failed");
       const payload = await response.json();
+      if (
+        typeof payload.payToken !== "string" ||
+        typeof payload.payUrl !== "string" ||
+        !["active", "pending", "paid", "expired"].includes(payload.status) ||
+        typeof payload.paymentDeadline !== "string"
+      ) {
+        throw new Error("trial confirmation missing");
+      }
+      if (generation !== launchGeneration.current) return;
+      if (payload.status === "expired") {
+        setPayLaterSheet({
+          status: "recovery",
+          trial: {
+            payToken: payload.payToken,
+            payUrl: payload.payUrl,
+            paymentDeadline: payload.paymentDeadline,
+          },
+          enrollmentUrl: null,
+        });
+        return;
+      }
+      if (
+        typeof payload.enrollmentId !== "string" ||
+        typeof payload.enrollmentUrl !== "string"
+      ) {
+        throw new Error("trial enrollment confirmation missing");
+      }
       setPayLaterSheet({
-        status: "ready",
+        status:
+          payload.status === "pending"
+            ? "pending"
+            : payload.status === "paid"
+            ? "paid"
+            : "ready",
         trial: {
           payToken: payload.payToken,
           payUrl: payload.payUrl,
           paymentDeadline: payload.paymentDeadline,
         },
+        enrollmentUrl: payload.enrollmentUrl,
       });
     } catch {
-      setPayLaterSheet({ status: "error", trial: null });
+      if (generation === launchGeneration.current) {
+        setPayLaterSheet({ status: "error", trial: null, enrollmentUrl: null });
+      }
+    } finally {
+      if (generation === launchGeneration.current) {
+        launchInFlight.current = false;
+      }
     }
+  }
+
+  function closeTrialLaunch() {
+    launchGeneration.current += 1;
+    launchInFlight.current = false;
+    setPayLaterSheet(null);
   }
 
   if (!draft) {
@@ -453,12 +528,12 @@ export function PlanWizard({
                   {step === 0
                     ? "เริ่มออกแบบชีวิต"
                     : step === 1 && savedSlugs.length === 0
-                      ? "เลือกอย่างน้อย 1 อันเพื่อไปต่อ"
-                      : step === 3 && goal === null
-                        ? "เลือกเป้าหมายเพื่อดูแผน"
-                        : step === 3
-                          ? "ดูแผนของฉัน"
-                          : "ถัดไป"}
+                    ? "เลือกอย่างน้อย 1 อันเพื่อไปต่อ"
+                    : step === 3 && goal === null
+                    ? "เลือกเป้าหมายเพื่อดูแผน"
+                    : step === 3
+                    ? "ดูแผนของฉัน"
+                    : "ถัดไป"}
                 </span>
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </button>
@@ -475,10 +550,10 @@ export function PlanWizard({
           open={payLaterSheet !== null}
           state={payLaterSheet?.status ?? "loading"}
           trial={payLaterSheet?.trial ?? null}
-          seedHref={firstActionSeed ? `/seeds/${firstActionSeed.id}` : "/seeds"}
+          enrollmentUrl={payLaterSheet?.enrollmentUrl ?? null}
           seedTitle={firstActionSeed?.title ?? "PathLab"}
           onRetry={startTrialLaunch}
-          onClose={() => setPayLaterSheet(null)}
+          onClose={closeTrialLaunch}
         />
       </div>
     </main>

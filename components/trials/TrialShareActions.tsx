@@ -7,7 +7,7 @@ import { TrialCountdown } from "./TrialCountdown";
 
 /** ข้อความที่นักเรียนส่งให้ผู้ปกครองทาง LINE */
 export const TRIAL_SHARE_MESSAGE =
-  "หนูเริ่มทดลอง PathLab แล้ว รบกวนชำระค่าทดลอง ฿1,490 ภายใน 24 ชม.นะคะ/ครับ";
+  "หนูเลือกทดลอง PathLab นี้ใน My Path ค่ะ/ครับ หน้านี้มีรายละเอียดสิ่งที่จะได้ทำและค่าทดลอง ฿1,490 ให้ดูก่อนตัดสินใจ";
 
 /** ข้อมูลที่จำเป็นสำหรับแชร์ลิงก์ชำระเงินของ trial */
 export interface TrialShareInfo {
@@ -89,7 +89,9 @@ export function TrialShareActions({
       </div>
 
       <div>
-        <p className="text-xs font-medium text-slate-400">ลิงก์ชำระเงินสำหรับผู้ปกครอง</p>
+        <p className="text-xs font-medium text-slate-400">
+          ลิงก์ชำระเงินสำหรับผู้ปกครอง
+        </p>
         <div className="mt-1.5 flex items-stretch gap-2">
           <p className="min-w-0 flex-1 truncate rounded-xl border border-white/10 bg-black/30 px-3 py-3 font-mono text-xs leading-6 text-slate-300">
             {origin ? absolutePayUrl : payUrl}
@@ -101,7 +103,10 @@ export function TrialShareActions({
           >
             {copied ? (
               <>
-                <Check className="h-4 w-4 text-emerald-300" aria-hidden="true" />
+                <Check
+                  className="h-4 w-4 text-emerald-300"
+                  aria-hidden="true"
+                />
                 คัดลอกแล้ว
               </>
             ) : (

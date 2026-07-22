@@ -8,13 +8,9 @@ const tokenSchema = z.string().regex(/^[0-9a-f]{32}$/);
 
 // Shape returned by the get_trial_by_token RPC (json)
 interface TrialByToken {
-  id: string;
   status: TrialStatus;
   priceAmount: number;
-  startedAt: string;
   paymentDeadline: string;
-  paidAt: string | null;
-  seedId: string;
   seedTitle: string;
 }
 
@@ -48,7 +44,7 @@ export async function GET(
     const status = resolveTrialStatus({
       status: trial.status,
       payment_deadline: trial.paymentDeadline,
-      paid_at: trial.paidAt,
+      paid_at: null,
     });
 
     return NextResponse.json({
@@ -56,7 +52,6 @@ export async function GET(
       priceAmount: trial.priceAmount,
       paymentDeadline: trial.paymentDeadline,
       seedTitle: trial.seedTitle,
-      paidAt: trial.paidAt,
     });
   } catch (error) {
     return safeServerError("Failed to fetch trial", error);

@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { CircleAlert, Play } from "lucide-react";
+import { CircleAlert, Play, X } from "lucide-react";
 
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -18,9 +19,9 @@ import {
 interface PayLaterSheetProps {
   open: boolean;
   /** สถานะการสร้าง trial — loading ขณะ POST, error ล้มเหลว (retry ได้), ready พร้อมแชร์ */
-  state: "loading" | "error" | "ready";
+  state: "loading" | "error" | "ready" | "pending" | "paid" | "recovery";
   trial: TrialShareInfo | null;
-  seedHref: string;
+  enrollmentUrl: string | null;
   seedTitle: string;
   onRetry: () => void;
   onClose: () => void;
@@ -34,7 +35,7 @@ export function PayLaterSheet({
   open,
   state,
   trial,
-  seedHref,
+  enrollmentUrl,
   seedTitle,
   onRetry,
   onClose,
@@ -43,15 +44,22 @@ export function PayLaterSheet({
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent
         className="dawn-theme inset-x-0 bottom-0 left-0 top-auto w-full max-w-none translate-x-0 translate-y-0 gap-0 rounded-t-3xl border-white/10 bg-slate-950/95 p-5 pb-8 text-slate-100 backdrop-blur-xl sm:bottom-auto sm:left-[50%] sm:top-[50%] sm:max-w-md sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-3xl"
-        aria-describedby={undefined}
+        hideClose
       >
+        <DialogClose
+          aria-label="ปิดหน้าต่าง"
+          className="absolute right-2 top-2 z-10 inline-flex min-h-12 min-w-12 items-center justify-center rounded-xl text-slate-300 hover:bg-white/[0.08] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200"
+        >
+          <X className="h-5 w-5" aria-hidden="true" />
+        </DialogClose>
         {state === "loading" && (
           <div className="py-10 text-center" role="status">
             <DialogTitle className="sr-only">กำลังเปิดการทดลอง</DialogTitle>
+            <DialogDescription className="sr-only">
+              กำลังบันทึก My Path และเปิดสิทธิ์วันแรกให้เรียบร้อยก่อนเริ่ม
+            </DialogDescription>
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-amber-200" />
-            <p className="mt-4 text-sm text-slate-400">
-              กำลังเปิดการทดลองให้…
-            </p>
+            <p className="mt-4 text-sm text-slate-400">กำลังเปิดการทดลองให้…</p>
           </div>
         )}
 
@@ -88,16 +96,66 @@ export function PayLaterSheet({
           </div>
         )}
 
-        {state === "ready" && trial && (
+        {(state === "ready" || state === "pending" || state === "paid") &&
+          trial &&
+          enrollmentUrl && (
           <div>
             <DialogHeader className="text-center sm:text-center">
               <DialogTitle className="font-kodchasan text-xl leading-snug text-slate-50">
-                เริ่มได้เลยวันนี้ — ฝากผู้ปกครองชำระภายใน 24 ชม.
+                {state === "pending"
+                  ? "วันแรกพร้อมแล้ว กำลังตรวจสลิป"
+                  : state === "paid"
+                  ? "ชำระเรียบร้อย วันแรกพร้อมแล้ว"
+                  : "วันแรกพร้อมแล้ว คุณเป็นคนเลือกว่าจะเริ่มเมื่อไร"}
               </DialogTitle>
               <DialogDescription className="text-sm leading-6 text-slate-400">
-                {seedTitle} ปลดล็อกให้คุณแล้ว —
-                ส่งลิงก์นี้ให้ผู้ปกครองชำระค่าทดลอง ฿1,490
-                แล้วลุยวันแรกได้ทันที
+                {state === "pending"
+                  ? `ได้รับสลิปของ ${seedTitle} แล้ว ระหว่างตรวจสอบคุณเริ่มทำต่อได้ตามปกติ ไม่ต้องส่งคำขอชำระซ้ำ`
+                  : state === "paid"
+                  ? `${seedTitle} เปิดสิทธิ์เรียบร้อยแล้ว เริ่มทำต่อได้เลย ไม่มีรายการชำระที่ต้องส่งให้ผู้ปกครองอีก`
+                  : `${seedTitle} เปิดให้แล้ว ไม่มีบัตรและไม่มีการตัดเงินอัตโนมัติ ผู้ปกครองจะเห็นรายละเอียดครบก่อนตัดสินใจชำระ ฿1,490 ภายใน 24 ชม.`}
+              </DialogDescription>
+            </DialogHeader>
+
+            {state === "ready" && (
+              <div className="mt-5">
+                <TrialShareActions
+                  payUrl={trial.payUrl}
+                  paymentDeadline={trial.paymentDeadline}
+                />
+              </div>
+            )}
+
+            <div className="mt-5 space-y-2.5">
+              <p className="text-center text-sm leading-6 text-slate-300">
+                แผน My Path ของคุณยังอยู่ครบ แม้จะหยุดไว้แล้วค่อยกลับมา
+              </p>
+              <Link
+                href={enrollmentUrl}
+                className="ei-button-dawn min-h-12 w-full justify-center"
+              >
+                <Play className="h-4 w-4" aria-hidden="true" />
+                <span>เริ่ม PathLab เลย</span>
+              </Link>
+              <button
+                type="button"
+                onClick={onClose}
+                className="min-h-12 w-full rounded-xl text-sm font-semibold text-slate-400 hover:bg-white/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
+              >
+                ไว้ทีหลัง
+              </button>
+            </div>
+          </div>
+        )}
+
+        {state === "recovery" && trial && (
+          <div>
+            <DialogHeader className="text-center sm:text-center">
+              <DialogTitle className="font-kodchasan text-xl leading-snug text-slate-50">
+                ช่วงทดลอง 24 ชั่วโมงครบแล้ว
+              </DialogTitle>
+              <DialogDescription className="text-sm leading-6 text-slate-400">
+                แผน My Path และสิ่งที่ทำไว้ยังอยู่ ส่งลิงก์นี้ให้ผู้ปกครองดูรายละเอียดและชำระเพื่อเปิด PathLab ต่อ
               </DialogDescription>
             </DialogHeader>
 
@@ -110,11 +168,10 @@ export function PayLaterSheet({
 
             <div className="mt-5 space-y-2.5">
               <Link
-                href={seedHref}
+                href={trial.payUrl}
                 className="ei-button-dawn min-h-12 w-full justify-center"
               >
-                <Play className="h-4 w-4" aria-hidden="true" />
-                <span>เริ่ม PathLab เลย</span>
+                <span>ดูหน้าชำระเพื่อเปิดสิทธิ์ต่อ</span>
               </Link>
               <button
                 type="button"

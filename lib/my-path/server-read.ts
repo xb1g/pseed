@@ -65,6 +65,10 @@ export interface PersistedMyPathState {
   hasPersistedPath: true;
 }
 
+export type PersistedMyPathReadResult =
+  | { status: "ready"; state: PersistedMyPathState | null }
+  | { status: "error"; state: null };
+
 export interface MyPathReadClient {
   rpc(
     name: "get_my_path_journey"
@@ -192,10 +196,20 @@ export function hydratePersistedMyPath(
 export async function loadPersistedMyPath(
   client: MyPathReadClient
 ): Promise<PersistedMyPathState | null> {
+  const result = await loadPersistedMyPathResult(client);
+  return result.state;
+}
+
+export async function loadPersistedMyPathResult(
+  client: MyPathReadClient
+): Promise<PersistedMyPathReadResult> {
   const { data, error } = await client.rpc("get_my_path_journey");
   if (error) {
     console.error("My Path could not restore the signed-in journey:", error.message);
-    return null;
+    return { status: "error", state: null };
   }
-  return hydratePersistedMyPath(data as PersistedSnapshot | null);
+  return {
+    status: "ready",
+    state: hydratePersistedMyPath(data as PersistedSnapshot | null),
+  };
 }

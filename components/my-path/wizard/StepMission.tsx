@@ -83,17 +83,23 @@ export function StepMission({
             ไม่ต้องอ่านทั้งแผนก่อน — แค่ทำวันแรกให้จบ แล้วแผนจะพาคุณไปเอง
           </p>
           {onLaunchStart ? (
-            <button
-              type="button"
-              onClick={() => {
-                onLaunch();
-                onLaunchStart();
-              }}
-              className="ei-button-dawn mt-4 min-h-12 w-full justify-center"
-            >
-              <Play className="h-4 w-4" aria-hidden="true" />
-              <span>เริ่ม PathLab วันแรก</span>
-            </button>
+            <div className="mt-4">
+              <p className="mb-3 text-sm leading-6 text-slate-300">
+                ทดลองครบ PathLab ฿1,490 · ส่งให้ผู้ปกครองชำระภายใน 24 ชม. ·
+                ไม่มีการตัดเงินอัตโนมัติ
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  onLaunch();
+                  onLaunchStart();
+                }}
+                className="ei-button-dawn min-h-12 w-full justify-center"
+              >
+                <Play className="h-4 w-4" aria-hidden="true" />
+                <span>เริ่มวันแรกก่อนได้ — ยังไม่ต้องจ่ายตอนนี้</span>
+              </button>
+            </div>
           ) : (
             <Link
               href={firstAction.href}
@@ -115,7 +121,10 @@ export function StepMission({
           {plan.outcomes.map((outcome) => {
             const Icon = OUTCOME_ICONS[outcome.id];
             return (
-              <li key={outcome.id} className="flex items-center gap-3 px-4 py-3">
+              <li
+                key={outcome.id}
+                className="flex items-center gap-3 px-4 py-3"
+              >
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-200/10 text-amber-100">
                   <Icon className="h-4 w-4" aria-hidden="true" />
                 </span>
@@ -142,7 +151,9 @@ export function StepMission({
               <div
                 key={month.month}
                 className={`overflow-hidden rounded-2xl border ${
-                  open ? "border-amber-200/30 bg-white/[0.04]" : "border-white/10 bg-white/[0.02]"
+                  open
+                    ? "border-amber-200/30 bg-white/[0.04]"
+                    : "border-white/10 bg-white/[0.02]"
                 }`}
               >
                 <button
@@ -153,7 +164,9 @@ export function StepMission({
                 >
                   <span
                     className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                      open ? "bg-amber-200/20 text-amber-100" : "bg-white/[0.06] text-slate-400"
+                      open
+                        ? "bg-amber-200/20 text-amber-100"
+                        : "bg-white/[0.06] text-slate-400"
                     }`}
                   >
                     {month.month}
@@ -163,17 +176,23 @@ export function StepMission({
                       {month.title}
                     </span>
                     {!open && (
-                      <span className="block truncate text-xs text-slate-500">{month.theme}</span>
+                      <span className="block truncate text-xs text-slate-500">
+                        {month.theme}
+                      </span>
                     )}
                   </span>
                   <ChevronDown
-                    className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`}
+                    className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${
+                      open ? "rotate-180" : ""
+                    }`}
                     aria-hidden="true"
                   />
                 </button>
                 {open && (
                   <div className="border-t border-white/[0.06] px-4 pb-4 pt-3">
-                    <p className="text-sm leading-6 text-slate-400">{month.theme}</p>
+                    <p className="text-sm leading-6 text-slate-400">
+                      {month.theme}
+                    </p>
                     <ul className="mt-3 space-y-2">
                       {month.milestones.map((milestone) => (
                         <li
@@ -204,10 +223,22 @@ export function StepMission({
 
       <div className="mt-8">
         {importStatus === "saved" ? (
-          <p className="flex items-center gap-2 text-sm font-semibold text-emerald-200" role="status">
-            <CheckCircle2 className="h-4.5 w-4.5" aria-hidden="true" />
-            บันทึกแผนนี้เข้า My Path แล้ว — กลับมาดูได้ทุกเมื่อ
-          </p>
+          <div>
+            <p
+              className="flex items-center gap-2 text-sm font-semibold text-emerald-200"
+              role="status"
+            >
+              <CheckCircle2 className="h-4.5 w-4.5" aria-hidden="true" />
+              บันทึกแผนนี้เข้า My Path แล้ว — กลับมาดูได้ทุกเมื่อ
+            </p>
+            <Link
+              href="/me#my-path"
+              className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-lg text-sm font-semibold text-amber-100 underline decoration-amber-200/40 underline-offset-4 hover:text-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
+            >
+              ไปดู My Path ของฉัน
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
         ) : isSignedIn ? (
           <button
             type="button"
@@ -219,25 +250,32 @@ export function StepMission({
               {importStatus === "saving"
                 ? "กำลังบันทึก…"
                 : persisted
-                  ? "อัปเดตแผนนี้เข้า My Path"
-                  : "บันทึกแผนนี้เข้า My Path"}
+                ? "อัปเดตแผนนี้เข้า My Path"
+                : "บันทึกแผนนี้เข้า My Path"}
             </span>
           </button>
         ) : (
-          <Link href={loginHref} className="ei-button-dawn min-h-12 w-full justify-center sm:w-auto">
+          <Link
+            href={loginHref}
+            className="ei-button-dawn min-h-12 w-full justify-center sm:w-auto"
+          >
             <LogIn className="h-4 w-4" aria-hidden="true" />
             <span>เข้าสู่ระบบเพื่อบันทึกแผนนี้</span>
           </Link>
         )}
         {importStatus === "error" && (
-          <p className="mt-3 inline-flex items-center gap-2 text-sm text-rose-200" role="alert">
+          <p
+            className="mt-3 inline-flex items-center gap-2 text-sm text-rose-200"
+            role="alert"
+          >
             <CircleAlert className="h-4 w-4" /> ยังบันทึกไม่ได้ ลองอีกครั้ง —
             ข้อมูลในเครื่องนี้ยังอยู่ครบ
           </p>
         )}
         {!isSignedIn && importStatus !== "saved" && (
           <p className="mt-3 text-xs leading-5 text-slate-500">
-            ทุกอย่างที่เลือกไว้ถูกเก็บในเครื่องนี้แล้ว และจะกลับมาครบหลังเข้าสู่ระบบ
+            ทุกอย่างที่เลือกไว้ถูกเก็บในเครื่องนี้แล้ว
+            และจะกลับมาครบหลังเข้าสู่ระบบ
           </p>
         )}
       </div>
@@ -255,7 +293,10 @@ function RedFlagsDisclosure({ plan }: { plan: MissionPlan }) {
         aria-expanded={open}
         className="flex w-full items-center gap-3 px-4 py-3.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-200"
       >
-        <AlertTriangle className="h-4 w-4 shrink-0 text-rose-200/80" aria-hidden="true" />
+        <AlertTriangle
+          className="h-4 w-4 shrink-0 text-rose-200/80"
+          aria-hidden="true"
+        />
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold text-rose-100">
             {plan.redFlags.length} กับดักที่ทำให้แผนพัง
@@ -265,7 +306,9 @@ function RedFlagsDisclosure({ plan }: { plan: MissionPlan }) {
           </span>
         </span>
         <ChevronDown
-          className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
           aria-hidden="true"
         />
       </button>
@@ -273,8 +316,12 @@ function RedFlagsDisclosure({ plan }: { plan: MissionPlan }) {
         <ul className="space-y-4 border-t border-rose-200/10 px-4 pb-4 pt-3">
           {plan.redFlags.map((flag) => (
             <li key={flag.title}>
-              <p className="text-sm font-semibold text-rose-100/90">✗ {flag.title}</p>
-              <p className="mt-1 text-sm leading-6 text-slate-400">{flag.detail}</p>
+              <p className="text-sm font-semibold text-rose-100/90">
+                ✗ {flag.title}
+              </p>
+              <p className="mt-1 text-sm leading-6 text-slate-400">
+                {flag.detail}
+              </p>
             </li>
           ))}
         </ul>
