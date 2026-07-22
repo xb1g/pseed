@@ -27,6 +27,7 @@ interface PayPageClientProps {
 }
 
 const MAX_SLIP_BYTES = 5 * 1024 * 1024;
+const MAX_BROWSER_TIMEOUT_MS = 2_147_483_647;
 const DEFAULT_OUTCOMES = [
   "ผลงานจริงที่ใช้เป็นหลักฐานได้",
   "สัญญาณความเหมาะกับสายอาชีพที่ชัดขึ้น",
@@ -87,6 +88,22 @@ export function PayPageClient({
       .forEach((element) => observer.observe(element));
     return () => observer.disconnect();
   }, [status]);
+
+  useEffect(() => {
+    if (status !== "active") return;
+    const remaining = new Date(paymentDeadline).getTime() - Date.now();
+    if (!Number.isFinite(remaining) || remaining > MAX_BROWSER_TIMEOUT_MS) {
+      return;
+    }
+    if (remaining <= 0) {
+      setStatus("expired");
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setStatus((current) => (current === "active" ? "expired" : current));
+    }, remaining + 25);
+    return () => window.clearTimeout(timer);
+  }, [paymentDeadline, status]);
 
   function selectSlip(file: File | null) {
     setError(null);

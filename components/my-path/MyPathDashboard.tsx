@@ -307,6 +307,7 @@ function ParentUpdateContact({ payHref }: { payHref: string }) {
   const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
   const [revoking, setRevoking] = useState(false);
   const [revoked, setRevoked] = useState(false);
+  const [revokeError, setRevokeError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -331,13 +332,16 @@ function ParentUpdateContact({ payHref }: { payHref: string }) {
   async function revoke() {
     if (!token || revoking) return;
     setRevoking(true);
+    setRevokeError(null);
     try {
       const response = await fetch(`/api/trials/${token}/parent-updates`, {
         method: "DELETE",
       });
-      if (!response.ok) return;
+      if (!response.ok) throw new Error("revoke failed");
       setMaskedEmail(null);
       setRevoked(true);
+    } catch {
+      setRevokeError("ยังหยุดส่งอัปเดตไม่ได้ กรุณาลองอีกครั้ง");
     } finally {
       setRevoking(false);
     }
@@ -363,8 +367,17 @@ function ParentUpdateContact({ payHref }: { payHref: string }) {
         disabled={revoking}
         className="inline-flex min-h-12 items-center rounded-lg px-2 text-xs font-semibold text-rose-200 underline decoration-rose-200/40 underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-200/70 disabled:opacity-50"
       >
-        {revoking ? "กำลังหยุดส่ง…" : "หยุดส่งอัปเดตให้ผู้ปกครอง"}
+        {revoking
+          ? "กำลังหยุดส่ง…"
+          : revokeError
+          ? "ลองหยุดส่งอีกครั้ง"
+          : "หยุดส่งอัปเดตให้ผู้ปกครอง"}
       </button>
+      {revokeError && (
+        <p className="text-xs leading-5 text-rose-200" role="alert">
+          {revokeError}
+        </p>
+      )}
     </div>
   );
 }
