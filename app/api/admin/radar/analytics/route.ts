@@ -60,12 +60,16 @@ export async function GET(req: NextRequest) {
     { planVisits: number; radarViews: number; interestClicks: number }
   >();
 
-  // Fill all dates so chart has no gaps (always include today)
-  const todayKey = new Date().toISOString().slice(0, 10);
-  for (let d = new Date(since); ; d.setDate(d.getDate() + 1)) {
+  // Fill all dates so chart has no gaps.
+  // Add +1 day buffer so "today" in UTC+7..+12 is always included even when
+  // the server clock is still on the previous UTC day.
+  const endDate = new Date();
+  endDate.setUTCDate(endDate.getUTCDate() + 1);
+  const endKey = endDate.toISOString().slice(0, 10);
+  for (let d = new Date(since); ; d.setUTCDate(d.getUTCDate() + 1)) {
     const key = d.toISOString().slice(0, 10);
     dateMap.set(key, { planVisits: 0, radarViews: 0, interestClicks: 0 });
-    if (key >= todayKey) break;
+    if (key >= endKey) break;
   }
 
   function toDateKey(ts: string) {
