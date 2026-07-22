@@ -32,23 +32,32 @@ export default async function RadarFieldPage({
     notFound();
   }
 
-  const { data: cards, error: cardsError } = await supabase
-    .from("radar_cards")
-    .select("*")
-    .eq("field_id", field.id)
-    .eq("is_hidden", false)
-    .order("position", { ascending: true });
+  const [cardsResult, sourcesResult] = await Promise.all([
+    supabase
+      .from("radar_cards")
+      .select("*")
+      .eq("field_id", field.id)
+      .eq("is_hidden", false)
+      .order("position", { ascending: true }),
+    supabase
+      .from("radar_sources")
+      .select("ref, title, publisher, url")
+      .eq("field_id", field.id)
+      .order("ref", { ascending: true }),
+  ]);
+
+  const { data: cards, error: cardsError } = cardsResult;
 
   if (cardsError) {
     console.error("Error loading Radar cards:", cardsError);
     throw new Error("Radar request failed");
   }
 
-  const { data: sources } = await supabase
-    .from("radar_sources")
-    .select("ref, title, publisher, url")
-    .eq("field_id", field.id)
-    .order("ref", { ascending: true });
+  const { data: sources, error: sourcesError } = sourcesResult;
+
+  if (sourcesError) {
+    console.error("Error loading Radar sources:", sourcesError);
+  }
 
   // TODO: Enable when radar_skills FK relationship is set up
   const initialSkills: never[] = [];

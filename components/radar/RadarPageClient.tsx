@@ -789,7 +789,7 @@ const FieldTile = memo(function FieldTile({ field }: { field: RadarField }) {
   return (
     <Link
       href={`/radar/${field.slug}`}
-      prefetch={false}
+      prefetch
       className="radar-career-card group relative isolate block aspect-[4/5] w-full cursor-pointer overflow-visible rounded-lg text-left shadow-[0_18px_50px_rgba(0,0,0,0.28)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/60 sm:aspect-[3/5]"
       style={cardStyle}
     >
