@@ -46,7 +46,7 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
-test("leads with the child's choice, connection, outcomes, and full price before payment mechanics", () => {
+test("leads with the child's choice, honest context, outcomes, and full price before payment mechanics", () => {
   const { container } = render(<PayPageClient {...props} />);
 
   const firstViewport = container.querySelector("[data-mobile-first-viewport]");
@@ -59,9 +59,10 @@ test("leads with the child's choice, connection, outcomes, and full price before
   ).toHaveClass("line-clamp-2");
   expect(
     within(firstViewport as HTMLElement).getByText(
-      /เชื่อมกับทิศ AI Product Manager/
+      /ทดลองลงมือทำจริง ก่อนตัดสินใจเรื่องเส้นทางต่อไป/
     )
   ).toBeVisible();
+  expect(firstViewport).not.toHaveTextContent("AI Product Manager");
   expect(
     within(firstViewport as HTMLElement).getByText(
       "ผลงานจริงที่ใช้เป็นหลักฐานได้"
@@ -112,10 +113,12 @@ test("leads with the child's choice, connection, outcomes, and full price before
   ).toBeTruthy();
 });
 
-test("uses an honest fallback when no Radar direction is available and protects private reflection content", () => {
-  render(<PayPageClient {...props} radarDirectionTitle={null} />);
+test("uses honest generic PathLab context and protects private reflection content", () => {
+  render(<PayPageClient {...props} />);
 
-  expect(screen.getByText(/เลือกไว้เป็นส่วนหนึ่งของ My Path/)).toBeVisible();
+  expect(
+    screen.getByText(/ทดลองลงมือทำจริง ก่อนตัดสินใจเรื่องเส้นทางต่อไป/)
+  ).toBeVisible();
   expect(
     screen.getAllByText(/ไม่ส่งคำตอบส่วนตัว บันทึกสะท้อนคิด แชต หรือโน้ต/)
   ).not.toHaveLength(0);
@@ -235,6 +238,11 @@ test("shows upload failure and allows a successful retry into pending", async ()
   expect(
     await screen.findByRole("heading", { name: "ได้รับสลิปแล้ว กำลังตรวจสอบ" })
   ).toBeVisible();
+  expect(
+    screen.getByRole("heading", {
+      name: "รับอัปเดตความคืบหน้าแบบสั้น ๆ",
+    })
+  ).toBeVisible();
   expect(global.fetch).toHaveBeenCalledTimes(2);
 });
 
@@ -251,4 +259,26 @@ test("treats an already-paid slip response as paid", async () => {
   expect(
     await screen.findByRole("heading", { name: "ชำระเรียบร้อย ขอบคุณครับ/ค่ะ" })
   ).toBeVisible();
+  expect(
+    screen.getByRole("heading", {
+      name: "รับอัปเดตความคืบหน้าแบบสั้น ๆ",
+    })
+  ).toBeVisible();
 });
+
+test.each([
+  ["pending", "ได้รับสลิปแล้ว กำลังตรวจสอบ"],
+  ["paid", "ชำระเรียบร้อย ขอบคุณครับ/ค่ะ"],
+] as const)(
+  "keeps parent update opt-in available for %s trials",
+  (initialStatus, heading) => {
+    render(<PayPageClient {...props} initialStatus={initialStatus} />);
+
+    expect(screen.getByRole("heading", { name: heading })).toBeVisible();
+    expect(
+      screen.getByRole("heading", {
+        name: "รับอัปเดตความคืบหน้าแบบสั้น ๆ",
+      })
+    ).toBeVisible();
+  }
+);

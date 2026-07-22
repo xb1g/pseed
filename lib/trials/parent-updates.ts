@@ -131,6 +131,7 @@ export type VerificationEmailSender = (input: {
   seedTitle: string;
   verificationUrl: string;
   unsubscribeUrl: string;
+  idempotencyKey: string;
 }) => Promise<ParentEmailSendResult>;
 
 export type ParentUpdateEmailSender = (input: {
@@ -281,6 +282,7 @@ export async function subscribeParentUpdates(input: {
     seedTitle: trial.seedTitle,
     verificationUrl: tokenUrl(input.origin, "verify", verificationToken),
     unsubscribeUrl: tokenUrl(input.origin, "unsubscribe", unsubscribeToken),
+    idempotencyKey: `parent-verification/${id}/v${verificationVersion}`,
   });
   if (!delivery.ok) {
     throw new ParentUpdateError(

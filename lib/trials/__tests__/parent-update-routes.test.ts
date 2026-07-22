@@ -119,6 +119,11 @@ test("cron preserves delivery idempotency keys when calling the email transport"
   assert.match(route, /idempotencyKey:\s*email\.idempotencyKey/);
 });
 
+test("verification delivery forwards its stable idempotency key to the provider", () => {
+  const route = source("app/api/trials/[token]/parent-updates/route.ts");
+  assert.match(route, /idempotencyKey:\s*email\.idempotencyKey/);
+});
+
 test("outbox finalization is lease-token CAS guarded", () => {
   const server = source("lib/trials/parent-updates-server.ts");
   assert.match(server, /delivery_lease_token/);
