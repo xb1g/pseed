@@ -68,13 +68,12 @@ test("the final field CTA records analytics and canonical field intent", () => {
       accent="#60a5fa"
       content={{
         title: "ทางนี้เหมาะกับเราหรือไม่",
-        button: "สนใจเส้นทางนี้",
       }}
       onIntent={wiring.onIntent}
     />
   );
 
-  fireEvent.click(screen.getByRole("button", { name: "สนใจเส้นทางนี้" }));
+  fireEvent.click(screen.getByRole("button", { name: "นัดคุยกับรุ่นพี่" }));
 
   expect(wiring.analytics).toHaveBeenCalledWith("interested", "interested");
   expect(wiring.canonical).toHaveBeenCalledWith("interested");

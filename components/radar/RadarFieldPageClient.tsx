@@ -47,6 +47,7 @@ function pickContent(card: RadarCard): Record<string, unknown> {
 }
 
 function cardLabel(card: RadarCard): string {
+  if (card.kind === "cta") return "Next Step";
   const c = pickContent(card);
   return (
     (c.eyebrow as string) ||
@@ -591,6 +592,8 @@ export function RadarFieldPageClient({
                     kind={card.kind}
                     content={content}
                     accent={accent}
+                    fieldNameTh={field.name_th ?? undefined}
+                    fieldNameEn={field.name_en ?? undefined}
                     squadUrl={field.squad_url}
                     fieldSources={fieldSources}
                     reflectionSubmitted={submitted.has(card.id)}
