@@ -16,11 +16,14 @@ export default async function RadarFieldPage({
   const { slug } = await params;
   const supabase = await createClient();
 
-  const { data: field, error: fieldError } = await supabase
+  const { data: fieldResult, error: fieldError } = await supabase
     .from("radar_fields")
-    .select("*")
+    .select("*, radar_cards(*), radar_sources(ref, title, publisher, url)")
     .eq("slug", slug)
     .eq("is_published", true)
+    .eq("radar_cards.is_hidden", false)
+    .order("position", { referencedTable: "radar_cards", ascending: true })
+    .order("ref", { referencedTable: "radar_sources", ascending: true })
     .maybeSingle();
 
   if (fieldError) {
@@ -28,36 +31,15 @@ export default async function RadarFieldPage({
     throw new Error("Radar request failed");
   }
 
-  if (!field) {
+  if (!fieldResult) {
     notFound();
   }
 
-  const [cardsResult, sourcesResult] = await Promise.all([
-    supabase
-      .from("radar_cards")
-      .select("*")
-      .eq("field_id", field.id)
-      .eq("is_hidden", false)
-      .order("position", { ascending: true }),
-    supabase
-      .from("radar_sources")
-      .select("ref, title, publisher, url")
-      .eq("field_id", field.id)
-      .order("ref", { ascending: true }),
-  ]);
-
-  const { data: cards, error: cardsError } = cardsResult;
-
-  if (cardsError) {
-    console.error("Error loading Radar cards:", cardsError);
-    throw new Error("Radar request failed");
-  }
-
-  const { data: sources, error: sourcesError } = sourcesResult;
-
-  if (sourcesError) {
-    console.error("Error loading Radar sources:", sourcesError);
-  }
+  const {
+    radar_cards: cards,
+    radar_sources: sources,
+    ...field
+  } = fieldResult;
 
   // TODO: Enable when radar_skills FK relationship is set up
   const initialSkills: never[] = [];

@@ -130,6 +130,10 @@ export function OglTrendBackground({
     const container = containerRef.current;
     if (!container) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const isSafari =
+      navigator.vendor.includes("Apple") &&
+      !/(CriOS|FxiOS|EdgiOS|OPiOS)/.test(navigator.userAgent);
+    if (isSafari) return;
 
     const renderer = new Renderer({
       dpr: Math.min(window.devicePixelRatio || 1, 2),
