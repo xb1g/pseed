@@ -358,11 +358,9 @@ export function PlanWizard({
         typeof payload.payToken !== "string" ||
         typeof payload.payUrl !== "string" ||
         !["active", "pending", "paid", "expired"].includes(payload.status) ||
-        typeof payload.paymentDeadline !== "string" ||
-        typeof payload.enrollmentId !== "string" ||
-        typeof payload.enrollmentUrl !== "string"
+        typeof payload.paymentDeadline !== "string"
       ) {
-        throw new Error("trial enrollment confirmation missing");
+        throw new Error("trial confirmation missing");
       }
       if (generation !== launchGeneration.current) return;
       if (payload.status === "expired") {
@@ -376,6 +374,12 @@ export function PlanWizard({
           enrollmentUrl: null,
         });
         return;
+      }
+      if (
+        typeof payload.enrollmentId !== "string" ||
+        typeof payload.enrollmentUrl !== "string"
+      ) {
+        throw new Error("trial enrollment confirmation missing");
       }
       setPayLaterSheet({
         status:

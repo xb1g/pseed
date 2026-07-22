@@ -14,12 +14,13 @@ export interface TrialLaunchEnrollment {
   status: "active" | "paused" | "quit" | "explored";
 }
 
+export interface AtomicTrialLaunch {
+  trial: TrialLaunchTrial;
+  enrollment: TrialLaunchEnrollment | null;
+}
+
 export interface TrialLaunchRepository {
-  findPathLabSeed(seedId: string): Promise<{ id: string; pathId: string } | null>;
-  createTrial(userId: string, seedId: string): Promise<TrialLaunchTrial>;
-  findTrial(userId: string, seedId: string): Promise<TrialLaunchTrial | null>;
-  findEnrollment(userId: string, pathId: string): Promise<TrialLaunchEnrollment | null>;
-  createEnrollment(userId: string, pathId: string): Promise<TrialLaunchEnrollment>;
+  launch(seedId: string): Promise<AtomicTrialLaunch | null>;
 }
 
 export class TrialLaunchError extends Error {
@@ -32,17 +33,8 @@ export class TrialLaunchError extends Error {
   }
 }
 
-function isUniqueViolation(error: unknown): boolean {
-  return Boolean(
-    error &&
-      typeof error === "object" &&
-      "code" in error &&
-      (error as { code?: string }).code === "23505"
-  );
-}
-
 export async function startTrialAndEnrollment(
-  input: { userId: string; seedId: string },
+  input: { seedId: string },
   repository: TrialLaunchRepository
 ): Promise<{
   trialId: string;
@@ -50,31 +42,15 @@ export async function startTrialAndEnrollment(
   payUrl: string;
   status: TrialLaunchStatus;
   paymentDeadline: string;
-  enrollmentId: string;
-  enrollmentUrl: string;
+  enrollmentId: string | null;
+  enrollmentUrl: string | null;
 }> {
-  const seed = await repository.findPathLabSeed(input.seedId);
-  if (!seed) throw new TrialLaunchError("seed_not_found", 404);
+  const launch = await repository.launch(input.seedId);
+  if (!launch) throw new TrialLaunchError("seed_not_found", 404);
 
-  let trial: TrialLaunchTrial;
-  try {
-    trial = await repository.createTrial(input.userId, input.seedId);
-  } catch (error) {
-    if (!isUniqueViolation(error)) throw error;
-    const existing = await repository.findTrial(input.userId, input.seedId);
-    if (!existing) throw error;
-    trial = existing;
-  }
-
-  let enrollment = await repository.findEnrollment(input.userId, seed.pathId);
-  if (!enrollment) {
-    try {
-      enrollment = await repository.createEnrollment(input.userId, seed.pathId);
-    } catch (error) {
-      if (!isUniqueViolation(error)) throw error;
-      enrollment = await repository.findEnrollment(input.userId, seed.pathId);
-      if (!enrollment) throw error;
-    }
+  const { trial, enrollment } = launch;
+  if (trial.status !== "expired" && !enrollment) {
+    throw new TrialLaunchError("launch_incomplete", 409);
   }
 
   return {
@@ -83,7 +59,9 @@ export async function startTrialAndEnrollment(
     payUrl: `/pay/${trial.payToken}`,
     status: trial.status,
     paymentDeadline: trial.paymentDeadline,
-    enrollmentId: enrollment.id,
-    enrollmentUrl: `/seeds/pathlab/${enrollment.id}?day=${enrollment.currentDay}`,
+    enrollmentId: enrollment?.id ?? null,
+    enrollmentUrl: enrollment
+      ? `/seeds/pathlab/${enrollment.id}?day=${enrollment.currentDay}`
+      : null,
   };
 }
