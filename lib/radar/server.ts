@@ -34,6 +34,9 @@ async function loadPublishedRadarField(slug: string) {
 
 export const getCachedPublishedRadarField = unstable_cache(
   loadPublishedRadarField,
-  ["published-radar-field-v1"],
+  // Keep this version aligned with material backfills to published card JSON.
+  // v4 invalidates entries created before the market ticket and individual
+  // faculty-route backfills were synchronized locally and in production.
+  ["published-radar-field-v4"],
   { revalidate: 300, tags: ["published-radar-fields"] }
 );

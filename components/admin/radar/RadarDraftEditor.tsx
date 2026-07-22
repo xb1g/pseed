@@ -316,6 +316,8 @@ export function RadarDraftEditor({ canonical }: { canonical: CanonicalField }) {
                   kind={selected.kind}
                   content={content}
                   accent={accent}
+                  fieldNameTh={String(field.name_th ?? "") || undefined}
+                  fieldNameEn={String(field.name_en ?? "") || undefined}
                   squadUrl={String(field.squad_url ?? "") || null}
                   reflectionSubmitted={false}
                   showSignupPrompt={false}

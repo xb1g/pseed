@@ -577,6 +577,17 @@ summary:focus-visible .radar-expand-indicator {
 
 .market-ticket__logo img { width: 58%; height: 58%; object-fit: contain; filter: saturate(0.82) contrast(0.96); }
 .market-ticket__logo > span:not(.sr-only) { font-family: var(--font-space-mono); font-size: 0.7rem; font-weight: 700; }
+.market-ticket__wordmark {
+  display: grid;
+  max-width: 76%;
+  place-items: center;
+  white-space: pre-line;
+  text-align: center;
+  font-size: clamp(0.52rem, 0.85vw, 0.72rem) !important;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
 
 @media (max-width: 700px) {
   .market-section-frame { gap: 1.6rem; }

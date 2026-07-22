@@ -3,6 +3,13 @@
 import { createContext, useContext, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { OglTrendBackground } from "@/components/radar/OglTrendBackground";
 import {
   getAiImpactLabel,
@@ -13,7 +20,7 @@ import {
 } from "@/lib/radar/presentation";
 import { Textarea } from "@/components/ui/textarea";
 import Image from "next/image";
-import { ExternalLink, ArrowRight, Check, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
+import { ExternalLink, Check, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 
 // ── content shapes (one per radar_cards.kind) ────────────────────────────────
 
@@ -260,9 +267,36 @@ function Panel({ children, className = "" }: { children: React.ReactNode; classN
 
 // ── per-kind renderers ───────────────────────────────────────────────────────
 
-function HookCard({ c, accent }: { c: HookContent; accent: string }) {
+function HookCard({
+  c,
+  accent,
+  fieldNameTh,
+  fieldNameEn,
+}: {
+  c: HookContent;
+  accent: string;
+  fieldNameTh?: string;
+  fieldNameEn?: string;
+}) {
+  const thaiTitle = fieldNameTh || c.eyebrow;
+  const englishTitle = fieldNameEn || c.title;
+
   return (
-    <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-5">
+      {thaiTitle && (
+        <p
+          className="rc-eyebrow font-radar-thai text-lg font-medium leading-tight sm:text-xl"
+          style={{ color: accent }}
+        >
+          {thaiTitle}
+        </p>
+      )}
+      {englishTitle && (
+        <h1 className="rc-title font-radar-title text-5xl font-normal leading-[0.9] tracking-normal text-white sm:text-7xl">
+          {englishTitle}
+        </h1>
+      )}
+      <div className="rc-content flex flex-col gap-5">
       {c.stat && (
         <div className="flex items-baseline gap-3">
           <span className="text-4xl sm:text-5xl font-extrabold" style={{ color: accent }}>
@@ -278,7 +312,8 @@ function HookCard({ c, accent }: { c: HookContent; accent: string }) {
           <EditableText value={c.body} field="body" className="block text-neutral-300 text-base leading-relaxed" />
         </p>
       )}
-    </CardFrame>
+      </div>
+    </div>
   );
 }
 
@@ -706,7 +741,7 @@ function JobsCard({ c, accent }: { c: JobsContent; accent: string }) {
 }
 
 function SalaryProgressionCard({ c, accent }: { c: SalaryProgressionContent; accent: string }) {
-  const [currency, setCurrency] = useState<"USD" | "THB">("USD");
+  const [currency, setCurrency] = useState<"USD" | "THB">("THB");
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
   const [introComplete, setIntroComplete] = useState(false);
   const [hasOpenedDetail, setHasOpenedDetail] = useState(false);
@@ -744,10 +779,12 @@ function SalaryProgressionCard({ c, accent }: { c: SalaryProgressionContent; acc
 
   return (
     <div className="salary-progression mx-auto flex w-full max-w-6xl flex-col gap-4">
-      <header className="radar-standard-heading">
-        <h2>Salary</h2>
-        <p>ฐานเงินเดือน</p>
-      </header>
+      {!selected && (
+        <header className="radar-standard-heading">
+          <h2>Salary</h2>
+          <p>ฐานเงินเดือน</p>
+        </header>
+      )}
       {hasThb && (
         <div className="flex rounded-full border border-white/10 bg-white/5 overflow-hidden self-start">
           <button
@@ -1086,43 +1123,76 @@ function PixelMonsterIcon({ className }: { className: string }) {
   );
 }
 
-const COMPANY_DOMAINS: Record<string, string | null> = {
-  "AIS": "ais.th",
-  "True Corporation": "true.th",
-  "SCB": "scb.co.th",
-  "SCB (Siam Commercial Bank)": "scb.co.th",
-  "SCB DataX": "scbdatax.io",
-  "Bangkok Bank": null,
-  "PTT Global Chemical": "pttgcgroup.com",
-  "DECODE Thailand": null,
-  "Kasikornbank (KBank)": "kasikornbank.com",
-  "Digital Economy Promotion Agency (depa)": "depa.or.th",
-  "Government agencies (e.g., NCSA Thailand)": "ncsa.or.th",
-  "ttb": "ttbbank.com",
-  "ETDA": "etda.or.th",
-  "SCG": "scg.com",
-  "CP Axtra": "cpaxtra.com",
-  "Fujitsu Thailand": "fujitsu.com",
-  "MUI Robotics": "muirobotics.com",
-  "KBTG": "kbtg.tech",
-  "Agoda": "agoda.com",
-  "Shopee": "shopee.co.th",
-  "Central Group": "centralgroup.com",
-  "True Digital": "true-digital.com",
-  "LINE MAN Wongnai": "lmwn.com",
-  "Grab": "grab.com",
+const COMPANY_MONOGRAMS: Record<string, string> = {
+  "AIS": "AIS",
+  "SCB": "SCB",
+  "SCB (Siam Commercial Bank)": "SCB",
+  "Bangkok Bank": "BBL",
+  "PTT Global Chemical": "PTT GC",
+  "DECODE Thailand": "DE",
+  "Kasikornbank (KBank)": "KBank",
+  "Digital Economy Promotion Agency (depa)": "depa",
+  "Government agencies (e.g., NCSA Thailand)": "NCSA",
+  "KBTG": "KBTG",
+  "Shopee": "Shopee",
+  "Central Group": "CENTRAL",
+  "True Digital": "TRUE DIGITAL",
+  "LINE MAN Wongnai": "LINE MAN\nWONGNAI",
+  "Grab": "Grab",
 };
 
-const COMPANY_MONOGRAMS: Record<string, string> = {
-  "Bangkok Bank": "BBL",
-  "DECODE Thailand": "DE",
+const COMPANY_WORDMARK_COLORS: Record<string, string> = {
+  "AIS": "#6b9822",
+  "SCB": "#4e2a84",
+  "SCB (Siam Commercial Bank)": "#4e2a84",
+  "PTT Global Chemical": "#006ab6",
+  "DECODE Thailand": "#202020",
+  "Kasikornbank (KBank)": "#13854a",
+  "Digital Economy Promotion Agency (depa)": "#6d4898",
+  "Government agencies (e.g., NCSA Thailand)": "#173f68",
+  "KBTG": "#18864b",
+  "Shopee": "#ee4d2d",
+  "Central Group": "#b21f2d",
+  "True Digital": "#d71920",
+  "LINE MAN Wongnai": "#00a950",
+  "Grab": "#00b14f",
+};
+
+// Locally bundled high-resolution marks (public/images/company-logos/).
+// Preferred over remote favicons, which are often low-res or missing entirely.
+const COMPANY_LOGOS: Record<string, string> = {
+  "SCB DataX": "/images/company-logos/scb-datax.jpg",
+  "Bangkok Bank": "/images/company-logos/bangkok-bank.svg",
+  "ttb": "/images/company-logos/ttb.svg",
+  "True Corporation": "/images/company-logos/true-corporation.svg",
+  "ETDA": "/images/company-logos/etda.png",
+  "SCG": "/images/company-logos/scg.svg",
+  "CP Axtra": "/images/company-logos/cp-axtra.svg",
+  "Fujitsu Thailand": "/images/company-logos/fujitsu.svg",
+  "MUI Robotics": "/images/company-logos/mui-robotics.png",
+  "Agoda": "/images/company-logos/agoda.svg",
 };
 
 function companyLogoUrl(company: string): string | null {
-  const domain = COMPANY_DOMAINS[company];
-  return domain
-    ? `https://www.google.com/s2/favicons?domain_url=https://${domain}&sz=128`
-    : null;
+  return COMPANY_LOGOS[company] ?? null;
+}
+
+function CompanyLogo({ company, logoUrl }: { company: string; logoUrl: string | null }) {
+  const [failed, setFailed] = useState(false);
+  if (!logoUrl || failed) {
+    return (
+      <span
+        className="market-ticket__wordmark"
+        style={{ color: COMPANY_WORDMARK_COLORS[company] ?? "#352c28" }}
+        aria-hidden="true"
+      >
+        {COMPANY_MONOGRAMS[company] ?? company.slice(0, 2).toUpperCase()}
+      </span>
+    );
+  }
+  // Company marks are local assets or remote favicons; native img avoids coupling to Next image domains.
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={logoUrl} alt={`${company} logo`} loading="lazy" onError={() => setFailed(true)} />;
 }
 
 function jobDifficultyLabel(score: number): string {
@@ -1196,21 +1266,12 @@ function MarketThailandCard({ c, accent }: { c: MarketThailandContent; accent: s
             <aside className="market-ticket__companies" aria-label="ตัวอย่างบริษัทที่จ้าง">
               <p>ตัวอย่างบริษัทที่จ้าง</p>
               <div className="market-ticket__logo-grid">
-                {(c.companies ?? []).slice(0, 9).map((company) => {
-                  const logoUrl = companyLogoUrl(company);
-                  return (
-                    <div className="market-ticket__logo" key={company} title={company}>
-                      {logoUrl ? (
-                        // Company marks are remote favicons; native img avoids coupling to Next image domains.
-                        // eslint-disable-next-line @next/next/no-img-element
-                      <img src={logoUrl} alt={`${company} logo`} loading="lazy" />
-                    ) : (
-                        <span aria-hidden="true">{COMPANY_MONOGRAMS[company] ?? company.slice(0, 2).toUpperCase()}</span>
-                      )}
-                      <span className="sr-only">{company}</span>
-                    </div>
-                  );
-                })}
+                {(c.companies ?? []).slice(0, 9).map((company) => (
+                  <div className="market-ticket__logo" key={company} title={company}>
+                    <CompanyLogo company={company} logoUrl={companyLogoUrl(company)} />
+                    <span className="sr-only">{company}</span>
+                  </div>
+                ))}
               </div>
             </aside>
           </div>
@@ -1731,7 +1792,6 @@ function SourcesCard({ c, accent }: { c: SourcesContent; accent: string }) {
 }
 
 function CtaCard({
-  c,
   accent,
   squadUrl,
   onIntent,
@@ -1741,24 +1801,32 @@ function CtaCard({
   squadUrl?: string | null;
   onIntent?: (pathSlug: string, buttonLabel?: string) => void;
 }) {
+  const nextStepBody =
+    "ถ้าสนใจสายนี้ มาลองคุยกับพวกเรารุ่นพี่จะช่วยแนะนำเส้นทางให้ ควรเตรียมตัวยังไงบ้าง?";
+  const nextStepButton = "นัดคุยกับรุ่นพี่";
   const [interestedRecorded, setInterestedRecorded] = useState(false);
   const [notInterestedRecorded, setNotInterestedRecorded] = useState(false);
+  const [lineQrOpen, setLineQrOpen] = useState(false);
   const anyRecorded = interestedRecorded || notInterestedRecorded;
 
   const recordInterested = () => {
-    if (!onIntent) return;
+    if (interestedRecorded) {
+      setLineQrOpen(true);
+      return;
+    }
     if (squadUrl) {
       try {
         const url = new URL(squadUrl, window.location.origin);
         const pathSlug = url.pathname.split("/").filter(Boolean).pop();
-        if (pathSlug) onIntent(pathSlug, "interested");
+        if (pathSlug) onIntent?.(pathSlug, "interested");
       } catch {
-        onIntent("interested", "interested");
+        onIntent?.("interested", "interested");
       }
     } else {
-      onIntent("interested", "interested");
+      onIntent?.("interested", "interested");
     }
     setInterestedRecorded(true);
+    setLineQrOpen(true);
   };
 
   const recordNotInterested = () => {
@@ -1767,51 +1835,78 @@ function CtaCard({
   };
 
   return (
-    <CardFrame eyebrow={c.eyebrow} title={c.title} accent={accent}>
-      {c.body && (
-        <p>
-          <EditableText value={c.body} field="body" className="block text-neutral-300 text-base leading-relaxed" />
-        </p>
-      )}
-      {c.button && (
-        <div className="flex flex-col gap-2">
-          <Button
-            asChild={!!squadUrl && !anyRecorded}
-            className="mt-2 w-full font-semibold text-white transition-all"
-            style={{ background: interestedRecorded ? undefined : accent }}
-            variant={interestedRecorded ? "outline" : "default"}
-            onClick={squadUrl ? undefined : recordInterested}
-            disabled={anyRecorded}
-          >
-            {squadUrl && !anyRecorded ? (
-              <a
-                href={squadUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={recordInterested}
-              >
-                <EditableText value={c.button} field="button" className="inline" /> <ArrowRight className="h-4 w-4 ml-1" />
-              </a>
+    <CardFrame accent={accent}>
+      <p>
+        <EditableText
+          value={nextStepBody}
+          field="body"
+          className="block text-neutral-300 text-base leading-relaxed"
+        />
+      </p>
+      <div className="flex flex-col gap-2">
+        <Button
+          className="mt-2 w-full font-semibold text-white transition-all"
+          style={{ background: interestedRecorded ? undefined : accent }}
+          variant={interestedRecorded ? "outline" : "default"}
+          onClick={recordInterested}
+          disabled={notInterestedRecorded}
+        >
+          <span className="inline-flex items-center gap-2">
+            {interestedRecorded ? (
+              <><Check className="h-4 w-4" /> บันทึกแล้ว!</>
             ) : (
-              <span className="inline-flex items-center gap-2">
-                {interestedRecorded ? (
-                  <><Check className="h-4 w-4" /> บันทึกแล้ว!</>
-                ) : (
-                  <EditableText value={c.button} field="button" className="inline" />
-                )}
-              </span>
+              <EditableText value={nextStepButton} field="button" className="inline" />
             )}
-          </Button>
-          <button
-            type="button"
-            disabled={anyRecorded}
-            onClick={recordNotInterested}
-            className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-white/10 px-3 text-xs font-medium text-neutral-400 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {notInterestedRecorded ? "บันทึกแล้ว" : "ไม่สนใจลอง"}
-          </button>
-        </div>
-      )}
+          </span>
+        </Button>
+        <button
+          type="button"
+          disabled={anyRecorded}
+          onClick={recordNotInterested}
+          className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-white/10 px-3 text-xs font-medium text-neutral-400 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {notInterestedRecorded ? "บันทึกแล้ว" : "ไม่สนใจลอง"}
+        </button>
+      </div>
+      <Dialog open={lineQrOpen} onOpenChange={setLineQrOpen}>
+        <DialogContent
+          overlayClassName="!z-[190]"
+          className="!z-[200] w-[calc(100%_-_2rem)] max-w-sm border-white/15 bg-[#101b22] text-white shadow-2xl"
+        >
+          <DialogHeader className="items-center text-center sm:text-center">
+            <DialogTitle className="text-2xl">เพิ่มเพื่อนทาง LINE</DialogTitle>
+            <DialogDescription className="text-neutral-300">
+              สแกน QR Code เพื่อพูดคุยและรับข้อมูลขั้นตอนถัดไป
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white">
+            <p className="text-center font-medium">
+              Mentor session จะใช้เวลาประมาณ 30-60 นาที ในราคา 100 บาท
+            </p>
+            <div className="mt-3 border-t border-white/10 pt-3 text-neutral-300">
+              <p className="font-medium text-white">รุ่นพี่จะช่วยแนะนำ</p>
+              <ul className="mt-2 list-disc space-y-1 pl-5">
+                <li>การเลือกสายที่ตรงกับเราและอยู่ได้ในอนาคต</li>
+                <li>การเตรียมตัวเข้าสายนั้น</li>
+                <li>วางแผนระยะสั้นให้ในการเตรียมตัว</li>
+              </ul>
+            </div>
+          </div>
+          <div className="mx-auto rounded-2xl bg-white p-3 shadow-[0_0_40px_rgba(0,185,0,0.18)]">
+            <Image
+              src="https://qr-official.line.me/gs/M_161irjbq_BW.png?oat_content=qr"
+              alt="LINE official account QR Code"
+              width={240}
+              height={240}
+              className="h-auto w-60 rounded-xl"
+              unoptimized
+            />
+          </div>
+          <p className="text-center text-xs text-neutral-400">
+            เปิดกล้องหรือแอป LINE เพื่อสแกน
+          </p>
+        </DialogContent>
+      </Dialog>
     </CardFrame>
   );
 }
@@ -2140,6 +2235,8 @@ export interface RadarCardViewProps {
   kind: string;
   content: Record<string, unknown>;
   accent: string;
+  fieldNameTh?: string;
+  fieldNameEn?: string;
   squadUrl?: string | null;
   fieldSources?: FieldSource[];
   reflectionSubmitted?: boolean;
@@ -2212,6 +2309,8 @@ export function RadarCardView({
   kind,
   content,
   accent,
+  fieldNameTh,
+  fieldNameEn,
   squadUrl,
   fieldSources = [],
   reflectionSubmitted = false,
@@ -2224,7 +2323,14 @@ export function RadarCardView({
   let cardNode: React.ReactNode;
   switch (kind) {
     case "hook":
-      cardNode = <HookCard c={c} accent={accent} />;
+      cardNode = (
+        <HookCard
+          c={c}
+          accent={accent}
+          fieldNameTh={fieldNameTh}
+          fieldNameEn={fieldNameEn}
+        />
+      );
       break;
     case "careerSurvival":
       cardNode = <CareerSurvivalCard c={c} accent={accent} />;
@@ -2292,7 +2398,7 @@ export function RadarCardView({
   if (hasEditorialHeading) return cardNode;
 
   const englishTitle = getSimpleRadarTitle(kind, content);
-  const thaiSubtitle = getThaiRadarSubtitle(content);
+  const thaiSubtitle = kind === "cta" ? "สนใจสายนี้แล้วไงต่อ?" : getThaiRadarSubtitle(content);
 
   return (
     <section className={`radar-standard-page radar-standard-page--${kind}`}>
