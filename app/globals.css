@@ -6298,7 +6298,6 @@ summary:focus-visible .radar-expand-indicator {
     grid-template-columns: 3rem minmax(10rem, 1fr) 3.4rem;
   }
 
-  .ai-pixel-actions,
   .ai-pixel-panel ul {
     grid-template-columns: 1fr;
   }
@@ -6674,8 +6673,14 @@ summary:focus-visible .radar-expand-indicator {
   }
 
   .ai-pixel-actions {
-    grid-template-columns: 1fr;
-    gap: 0.7rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .ai-pixel-toggle {
+    min-width: 0;
+    padding-inline: 0.25rem;
+    font-size: clamp(0.85rem, 3.7vw, 1rem);
   }
 }
 

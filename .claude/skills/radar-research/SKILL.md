@@ -119,8 +119,8 @@ Before writing to any database:
   },
   "global_metrics": { "...same shape, global data..." },
   "metric_details": {
-    "demand_growth": { "th": "Thai explanation", "source": "Title", "source_url": "https://..." },
-    "grad_employment_pct": { "th": "...", "source": "...", "source_url": "..." }
+    "demand_growth": { "th": "Thai explanation", "sources": [{ "title": "Title", "url": "https://..." }] },
+    "grad_employment_pct": { "th": "...", "sources": [{ "title": "...", "url": "..." }] }
   },
   "global_metric_details": { "...same shape..." },
   "sources": [
@@ -136,9 +136,9 @@ Before writing to any database:
 
 All `content_th` fields are required for display; `content_en` is optional and the UI falls back to Thai when English is absent.
 
-### radar_cards — exactly 12 cards per field
+### radar_cards — exactly 13 cards per field
 
-Every field MUST have exactly these 12 cards, no more, no less. Do NOT add extra cards like `reflection`, `jobs`, `growthCompare`, `list`.
+Every field MUST have exactly these 13 cards, no more, no less. Do NOT add extra cards like `reflection`, `jobs`, `growthCompare`, `list`.
 
 | # | Kind | Position | Required fields |
 |---|------|----------|----------------|
@@ -146,14 +146,15 @@ Every field MUST have exactly these 12 cards, no more, no less. Do NOT add extra
 | 2 | `fantasyReality` | 10 | `eyebrow`, `title`, `fantasy`, `reality`, `source_refs` |
 | 3 | `salaryProgression` | 40 | `eyebrow`, `title`, `currency` (default e.g. `USD`), `levels[]` (each: `level`, `years`, `salary`, `note`), optional `eyebrow_thb`/`title_thb`/`levels_thb[]` for Thai-Baht toggle, `source_refs` |
 | 4 | `aiImpact` | 70 | `eyebrow`, `title`, `verdict`, `augmented[]`, `automated[]`, `ai_risk_score`, `source_refs` |
-| 5 | `marketThailand` | 80 | `eyebrow`, `title`, `body`, `openings`, `companies[]`, `source_refs` |
-| 6 | `dayInLife` | 90 | `eyebrow`, `title`, `steps[]` (each: `label`, `detail`), `source_refs`. **No `time` field** — steps describe activities, not a schedule. |
-| 7 | `risks` | 110 | `eyebrow`, `title`, `risks[]`, `source_refs` |
-| 8 | `entryRoutes` | 120 | `eyebrow`, `title`, `description`, `faculties[]` (each: `name`, `tier`: `direct`/`related`/`alternative`, `examples?`, `note?`), `source_refs` |
-| 9 | `text` | 125 | `eyebrow`, `title`, `body`, `source_refs` — "ทักษะที่ใช้จริง" researched skills needed/used in this path, comes after entryRoutes |
-| 10 | `text` | 130 | `eyebrow`, `title`, `body`, `source_refs?` — "เริ่มลงมือ" practical, scannable recommendations such as YouTube, trusted resources, projects, courses, or PathLabs; include a separate interest CTA |
-| 11 | `cta` | 140 | `eyebrow`, `title`, `body`, `button` |
-| 12 | `sources` | 150 | `eyebrow`, `title`, `items[]` (each: `ref`, `title`, `publisher`, `url`) |
+| 5 | `marketThailand` | 80 | `eyebrow`, `title`, `body`, `openings`, `companies[]`, `source_refs`. Optional `job_access` object: `{ score, label?, confidence?, demand_score?, competition_score?, entry_barrier_score?, applicant_data?, methodology? }` |
+| 6 | `dayInLife` | 90 | `eyebrow`, `title`, `steps[]` (each: `label`, `detail`), `source_refs`. Steps describe activities, not a schedule. |
+| 7 | `realPeople` | 100 | `eyebrow`, `title`, `people[]` (each: `name?`, `role?`, `imageUrl?`, `background`, `salary?`, `path?[]` (year+label), `nowDoing?`, `whereHeading?`, `advice?`, `publisher?`, `url?`), `source_refs` |
+| 8 | `risks` | 110 | `eyebrow`, `title`, `risks[]`, `source_refs` |
+| 9 | `entryRoutes` | 120 | `eyebrow`, `title`, `description`, `faculties[]` (each: `name`, `tier`: `direct`/`related`/`alternative`, `examples?`, `note?`), `source_refs` |
+| 10 | `text` | 125 | `presentation: "skills"`, `eyebrow`, `title`, `skills[]` (each: `title`, `description?`, `level?`), `source_refs` — "ทักษะที่ใช้จริง" structured skills list |
+| 11 | `text` | 130 | `presentation: "startCarousel"`, `eyebrow`, `title`, `options[]` (each: `type`, `title`, `description?`, `url?`, `duration?`, `cost?`, `cta`), `source_refs?` — "เริ่มลงมือ" scannable start options |
+| 12 | `cta` | 140 | `eyebrow`, `title`, `body`, `button` |
+| 13 | `sources` | 150 | `eyebrow`, `title`, `items[]` (each: `ref`, `title`, `publisher`, `url`) |
 
 The `entryRoutes` card shows which university faculties/majors lead to the career. Each faculty has a `tier`:
 - `direct` — the faculty directly teaches this career's core skills (e.g., CS for Software Engineer)
@@ -172,8 +173,9 @@ Depth determines whether a smart teen trusts the card or skips it. Follow these 
 - **dayInLife**: 5-7 `steps` describing **activities/tasks** the person actually does — NOT a time-based schedule. Each step has `label` (short activity description) and `detail` (expanded context: tools used, what it involves in practice). Do NOT include `time` field. Focus on what they work on, not when.
 - **risks**: 3-5 risks, each 1 sentence. Be honest — this builds trust.
 - **entryRoutes**: 4-6 faculties with tiers (`direct`, `related`, `alternative`). Each faculty has `examples` (university names) and a `note` explaining the path.
-- **text (pos 125)**: "ทักษะที่ใช้จริง" — practitioner-level depth, 7-9 Thai bullets. See below.
-- **text (pos 130)**: "เริ่มลงมือ" — short recommendation tiles students can scan and try now. Avoid a wall of text.
+- **realPeople (pos 100)**: 1-3 real people with sourced backgrounds. Each person needs at minimum `background` (short bio). Optional but valuable: `path` (trajectory), `nowDoing`, `whereHeading`, `advice`. Never fabricate — only use data from verified sources.
+- **text (pos 125)**: `presentation: "skills"` — structured `skills[]` array with 7-9 items. Each skill has `title` (specific skill name in Thai) and `description` (how it's used in real work). See below.
+- **text (pos 130)**: `presentation: "startCarousel"` — structured `options[]` array with 3-5 actionable items. Each option has `type` (e.g. "YouTube", "ลองทำ", "คอร์ส / PathLab"), `title`, `description`, optional `url`/`duration`/`cost`, and `cta` button text.
 - **cta**: `body` 1-2 sentences; `button` 2-4 words.
 - **sources**: 3-6 sources. Every card that uses `source_refs` must point to a real source in this list.
 
@@ -185,20 +187,44 @@ Cross-cutting rules from the editorial spine:
 
 ### Skills card depth (position 125)
 
-The position 125 `text` card is a separate skills page shown immediately after "มีเส้นทางไหนเข้าสู่อาชีพนี้ได้บ้าง?". Always set `eyebrow: "ทักษะที่ใช้จริง"` and write a concise Thai `title` such as "งานนี้ต้องใช้ทักษะอะไรบ้าง?".
+The position 125 `text` card uses `presentation: "skills"` and a structured `skills[]` array (NOT a plain `body` string). Always set `eyebrow: "ทักษะที่ใช้จริง"` and `title: "งานนี้ต้องใช้ทักษะอะไรบ้าง?"`.
 
-The skills card must have practitioner-level depth. It should read like it came from someone inside that field, not from a generic career article. Do not write vague bullets like "communication", "problem solving", "attention to detail", or "use tools" unless each one is anchored to the field's actual work.
+The skills card must have practitioner-level depth. It should read like it came from someone inside that field, not from a generic career article.
 
-Write 7-9 Thai bullets. Each bullet should have:
-- a specific skill name or competency;
-- a short explanation of how it is used in real work;
-- field-specific nouns, workflows, artifacts, tools, or decisions.
+Provide 7-9 items in the `skills[]` array. Each item has:
+- `title`: specific skill name or competency in Thai
+- `description`: how it is used in real work, with field-specific nouns, workflows, artifacts, tools, or decisions
+
+Example:
+```json
+{
+  "presentation": "skills",
+  "eyebrow": "ทักษะที่ใช้จริง",
+  "title": "งานนี้ต้องใช้ทักษะอะไรบ้าง?",
+  "skills": [
+    { "title": "การวิเคราะห์ช่องโหว่ (Vulnerability Analysis)", "description": "อ่าน CVE, ประเมินความรุนแรง, จัดลำดับ patch ตามความเสี่ยงจริงของระบบ" },
+    { "title": "Incident Response", "description": "วิเคราะห์ log, กำหนด scope ของ breach, ตัดสินใจ contain vs. eradicate ภายใต้แรงกดดัน" }
+  ],
+  "source_refs": [1, 3]
+}
+```
 
 Prioritize durable fundamentals over random tool lists. Include tools only as examples and clarify when tools differ by sub-role.
 
-Add `source_refs` to sources that specifically support the skill claims, such as O*NET, BLS/OOH, professional bodies, certification bodies, role-specific frameworks, or reputable employer/career sources.
+### Start card depth (position 130)
 
-The position 130 `text` card remains the "How to start now" page. Do not merge it with the skills card. It should give practical steps students can try now: beginner resources, small projects/practice, tools to learn, portfolio or internship ideas, and next milestones.
+The position 130 `text` card uses `presentation: "startCarousel"` and a structured `options[]` array (NOT a plain `body` string). Always set `eyebrow: "เริ่มลงมือ"` and `title: "ไม่ต้องรอจบมหาวิทยาลัย"`.
+
+Provide 3-5 items in the `options[]` array. Each item has:
+- `type`: category label (e.g. "YouTube", "ลองทำ", "คอร์ส / PathLab")
+- `title`: name of the resource or activity
+- `description`: what the student will learn/do
+- `url`: link (optional)
+- `duration`: estimated time (optional)
+- `cost`: price or "ฟรี" (optional)
+- `cta`: button text (e.g. "สนใจวิธีนี้", "อยากลองโจทย์นี้")
+
+Do not merge with the skills card. Keep start options scannable and actionable.
 
 The `cta` card is always generated with: `eyebrow: "สนใจไหม?"`, `title: "อยากลองสาย[field_name_th]"`, `body` inviting the user to tap if interested, and `button: "สนใจสายนี้"`. The button links to `field.squad_url` if set.
 
@@ -302,7 +328,7 @@ The `careerSurvival` card is NOT stored in radar_cards. It's injected server-sid
    ```
    If the score doesn't match your intuition about the field's prospects, re-examine each metric.
 
-4. **metric_details must have real source URLs.** Every entry in `metric_details` and `global_metric_details` must include a `source_url` that was fetched and verified with `WebFetch` during research. Do not leave `source_url` empty or use a URL from training data.
+4. **metric_details must have real source URLs.** Every entry in `metric_details` and `global_metric_details` must include a `sources` array with `{ title, url }` objects, each fetched and verified with `WebFetch` during research. Do not leave `sources` empty or use URLs from training data.
 
 5. **Minimum source count.** Each field must have at least 4 verified sources in `research.sources`. If you can only find 2, search harder — try BLS, JobsDB, Glassdoor, professional associations, and industry reports.
 
@@ -311,7 +337,7 @@ The `careerSurvival` card is NOT stored in radar_cards. It's injected server-sid
 ### Red flags that metrics are hallucinated
 
 - `research.sources` array is empty or has fewer than 3 entries
-- `metric_details` entries have empty `source_url` fields
+- `metric_details` entries have empty `sources` arrays
 - A niche field scores higher than a mainstream high-demand field
 - `salary_ceiling` exceeds what senior roles actually pay (check JobsDB/Glassdoor)
 - `grad_employment_pct` is above 90% for a non-licensed profession
