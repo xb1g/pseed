@@ -244,7 +244,17 @@ export function RadarFieldPageClient({
   const followRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const isSafariRef = useRef(false);
+  const [isSafari, setIsSafari] = useState(false);
   const fieldOpenRecordedRef = useRef(false);
+  const touchSectionGuardRef = useRef<{
+    sectionIndex: number;
+    startY: number;
+    direction: "up" | "down" | null;
+    minScrollTop: number;
+    maxScrollTop: number;
+    lockUp: boolean;
+    lockDown: boolean;
+  } | null>(null);
 
   const handlePointer = useCallback((e: React.MouseEvent) => {
     if (isSafariRef.current) return;
@@ -260,25 +270,120 @@ export function RadarFieldPageClient({
     });
   }, []);
 
+  // Detect Safari via state (not a manual classList mutation) so the
+  // radar-field-page--safari class survives React className rewrites —
+  // e.g. when the AI Impact slide toggles radar-field-page--ai.
   useEffect(() => {
-    const root = rootRef.current;
-    if (!root) return;
-    const isSafari =
+    const safari =
       navigator.vendor.includes("Apple") &&
       !/(CriOS|FxiOS|EdgiOS|OPiOS)/.test(navigator.userAgent);
-    isSafariRef.current = isSafari;
-    if (!isSafari) return;
-    root.classList.add("radar-field-page--safari");
-    return () => root.classList.remove("radar-field-page--safari");
+    isSafariRef.current = safari;
+    setIsSafari(safari);
   }, []);
 
   const goTo = useCallback((i: number) => {
+    touchSectionGuardRef.current = null;
     sectionRefs.current[i]?.scrollIntoView({
       block: "start",
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
         ? "auto"
         : "smooth",
     });
+  }, []);
+
+  const handleDeckTouchStart = useCallback(
+    (event: React.TouchEvent<HTMLDivElement>) => {
+      const deck = scrollRef.current;
+      if (!deck || !window.matchMedia("(max-width: 640px)").matches) {
+        touchSectionGuardRef.current = null;
+        return;
+      }
+
+      const sectionIndex = sectionRefs.current.findIndex(
+        (candidate) =>
+          !!candidate &&
+          deck.scrollTop >= candidate.offsetTop - 2 &&
+          deck.scrollTop < candidate.offsetTop + candidate.offsetHeight - 2
+      );
+      const activeSectionIndex = sectionIndex >= 0 ? sectionIndex : current;
+      const section = sectionRefs.current[activeSectionIndex];
+      if (!section) {
+        touchSectionGuardRef.current = null;
+        return;
+      }
+
+      const minScrollTop = section.offsetTop;
+      const maxScrollTop = Math.max(
+        minScrollTop,
+        section.offsetTop + section.offsetHeight - deck.clientHeight
+      );
+      touchSectionGuardRef.current = {
+        sectionIndex: activeSectionIndex,
+        startY: event.touches[0]?.clientY ?? 0,
+        direction: null,
+        minScrollTop,
+        maxScrollTop,
+        lockUp: deck.scrollTop > minScrollTop + 2,
+        lockDown: deck.scrollTop < maxScrollTop - 2,
+      };
+    },
+    [current]
+  );
+
+  const handleDeckTouchMove = useCallback((event: React.TouchEvent<HTMLDivElement>) => {
+    const guard = touchSectionGuardRef.current;
+    if (!guard || guard.direction) return;
+    const distance = guard.startY - (event.touches[0]?.clientY ?? guard.startY);
+    if (Math.abs(distance) < 4) return;
+    guard.direction = distance > 0 ? "down" : "up";
+  }, []);
+
+  const handleDeckScroll = useCallback(() => {
+    const deck = scrollRef.current;
+    const guard = touchSectionGuardRef.current;
+    if (!deck || !guard?.direction) return;
+
+    if (
+      guard.direction === "down" &&
+      guard.lockDown &&
+      deck.scrollTop > guard.maxScrollTop
+    ) {
+      deck.scrollTop = guard.maxScrollTop;
+    } else if (
+      guard.direction === "up" &&
+      guard.lockUp &&
+      deck.scrollTop < guard.minScrollTop
+    ) {
+      deck.scrollTop = guard.minScrollTop;
+    }
+  }, []);
+
+  const handleDeckTouchEnd = useCallback(() => {
+    const deck = scrollRef.current;
+    const guard = touchSectionGuardRef.current;
+    if (!deck || !guard?.direction) return;
+
+    const canAdvance = guard.direction === "down" && !guard.lockDown;
+    const canReturn = guard.direction === "up" && !guard.lockUp;
+    if (!canAdvance && !canReturn) return;
+
+    const targetIndex = canAdvance
+      ? guard.sectionIndex + 1
+      : Math.max(0, guard.sectionIndex - 1);
+    const target = sectionRefs.current[targetIndex];
+    if (!target) return;
+
+    const targetScrollTop = target.offsetTop;
+    deck.scrollTo({ top: targetScrollTop, behavior: "auto" });
+    touchSectionGuardRef.current = {
+      sectionIndex: targetIndex,
+      startY: 0,
+      direction: guard.direction,
+      minScrollTop: targetScrollTop,
+      maxScrollTop: targetScrollTop,
+      lockUp: true,
+      lockDown: true,
+    };
   }, []);
 
   useEffect(() => {
@@ -454,7 +559,7 @@ export function RadarFieldPageClient({
     <div
       ref={rootRef}
       onMouseMove={handlePointer}
-      className={`radar-field-page ${isAiImpactSlide ? "radar-field-page--ai" : ""} fixed inset-0 isolate z-[100] h-[100dvh] overflow-hidden bg-neutral-950`}
+      className={`radar-field-page ${isSafari ? "radar-field-page--safari" : ""} ${isAiImpactSlide ? "radar-field-page--ai" : ""} fixed inset-0 isolate z-[100] h-[100dvh] overflow-hidden bg-neutral-950`}
       style={{
         background: isAiImpactSlide ? "#141414" : visual.background,
         ...visual.dotStyle,
@@ -580,6 +685,10 @@ export function RadarFieldPageClient({
         ref={scrollRef}
         className="radar-deck relative z-10"
         style={fromPlan ? { paddingBottom: "8.5rem" } : undefined}
+        onTouchStart={handleDeckTouchStart}
+        onTouchMove={handleDeckTouchMove}
+        onTouchEnd={handleDeckTouchEnd}
+        onScroll={handleDeckScroll}
       >
         {cards.length > 0 ? (
           <>

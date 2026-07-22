@@ -1450,11 +1450,13 @@ const TIER_STYLES: Record<string, { label: string; bg: string; text: string }> =
 };
 
 function EntryRoutesCard({ c, accent }: { c: EntryRoutesContent; accent: string }) {
+  const description = c.description?.trim();
+
   return (
     <CardFrame eyebrow={c.eyebrow} title={c.title ?? "มีเส้นทางไหนเข้าสู่อาชีพนี้ได้บ้าง?"} accent={accent} wide>
-      {c.description && (
+      {description && (
         <p className="entry-routes-description mb-2">
-          <EditableText value={c.description} field="description" className="block text-neutral-400 text-sm leading-relaxed" />
+          <EditableText value={description} field="description" className="block text-neutral-400 text-sm leading-relaxed" />
         </p>
       )}
       <div className="entry-routes-grid grid gap-3 md:grid-cols-2">

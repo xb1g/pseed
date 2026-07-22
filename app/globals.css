@@ -730,6 +730,7 @@ summary:focus-visible .radar-expand-indicator {
   .market-ticket__companies::before { top: -0.45rem; right: 0; bottom: auto; left: 0; width: auto; height: 0.9rem; background-size: 2.1rem 0.9rem; background-repeat: repeat-x; }
   .market-ticket__logo img { width: 74%; height: 74%; }
   .market-ticket__logo > span:not(.sr-only) { font-size: 0.9rem; }
+  .market-ticket__wordmark { font-size: 0.68rem !important; }
 }
 @keyframes dusk-cloud-b {
   0%,
@@ -3209,13 +3210,13 @@ summary:focus-visible .radar-expand-indicator {
 
 @media (max-width: 640px) {
   .radar-deck {
-    scroll-snap-type: y proximity;
+    scroll-snap-type: y mandatory;
   }
 
   .radar-card-section {
     padding-inline: 1rem;
     padding-block: 4.5rem 1rem;
-    scroll-snap-stop: normal;
+    scroll-snap-stop: always;
   }
 
   .radar-card-viewport,
