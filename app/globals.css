@@ -3029,18 +3029,18 @@ summary:focus-visible .radar-expand-indicator {
 
 .radar-card-section {
   position: relative;
-  height: 100svh;
-  height: 100dvh;
+  min-height: 100svh;
+  min-height: 100dvh;
   scroll-snap-align: start;
   scroll-snap-stop: always;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .radar-viewport-fit {
   position: relative;
   width: 100%;
-  height: calc(100dvh - 10rem);
-  overflow: hidden;
+  min-height: calc(100dvh - 10rem);
+  overflow: visible;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3073,7 +3073,9 @@ summary:focus-visible .radar-expand-indicator {
 
   .radar-card-viewport,
   .radar-viewport-fit {
-    height: calc(100dvh - 5.5rem);
+    height: auto;
+    min-height: calc(100dvh - 5.5rem);
+    overflow: visible;
   }
 }
 
@@ -3138,7 +3140,16 @@ summary:focus-visible .radar-expand-indicator {
 }
 
 .radar-field-page--ai .radar-detail-grain {
-  opacity: 0.16;
+  opacity: 0;
+}
+
+.radar-field-page--ai,
+.radar-field-page--ai .radar-atmosphere {
+  background: #141414 !important;
+}
+
+.radar-field-page--ai .radar-atmosphere-shade {
+  opacity: 0;
 }
 
 .radar-horizontal-carousel {
@@ -3266,8 +3277,6 @@ summary:focus-visible .radar-expand-indicator {
     transform 180ms var(--ease-snap, cubic-bezier(0.4, 0, 0.2, 1));
   isolation: isolate;
   contain: layout style;
-  content-visibility: auto;
-  contain-intrinsic-size: auto 18rem;
   backface-visibility: hidden;
 }
 
@@ -5675,6 +5684,12 @@ summary:focus-visible .radar-expand-indicator {
 }
 
 @media (max-width: 760px) {
+  .radar-card-section:not(.in-view) .salary-chess-board *,
+  .radar-card-section:not(.in-view) .salary-chess-board *::before,
+  .radar-card-section:not(.in-view) .salary-chess-board *::after {
+    animation-play-state: paused !important;
+  }
+
   .salary-chess-scene,
   .salary-chess-board,
   .salary-chess-detail {
@@ -5742,6 +5757,43 @@ summary:focus-visible .radar-expand-indicator {
   .salary-chess-detail-piece {
     height: 12rem;
     max-height: 12rem;
+  }
+
+  /* Keep the chess choreography on mobile, but avoid repainting filtered and
+     masked layers on every animation frame. Transforms and opacity remain the
+     animated properties, so the visual sequence and timing stay unchanged. */
+  .radar-card-section.in-view .salary-chess-piece-image {
+    will-change: transform, opacity;
+  }
+
+  .radar-card-section.in-view .salary-chess-intro-pawn,
+  .radar-card-section.in-view .salary-chess-piece::before,
+  .radar-card-section.in-view .salary-chess-piece::after {
+    will-change: transform, opacity;
+    filter: none !important;
+  }
+
+  .radar-card-section.in-view .salary-chess-piece-image {
+    filter: grayscale(1) contrast(1.02) brightness(0.64) !important;
+  }
+
+  .radar-card-section.in-view .salary-chess-level--knight .salary-chess-piece-image {
+    filter: grayscale(1) contrast(1.03) brightness(0.78) !important;
+  }
+
+  .radar-card-section.in-view .salary-chess-board--intro-complete .salary-chess-piece-image,
+  .radar-card-section.in-view .salary-chess-board--intro-complete .salary-chess-piece::before,
+  .radar-card-section.in-view .salary-chess-board--intro-complete .salary-chess-piece::after {
+    will-change: auto;
+  }
+
+  /* The queen keeps its gradient finish, but its masked gradient and shine no
+     longer repaint forever on low-powered mobile GPUs after the reveal. */
+  .radar-card-section.in-view .salary-chess-board--intro-complete .salary-chess-level--queen .salary-chess-piece::before,
+  .radar-card-section.in-view .salary-chess-board--intro-complete .salary-chess-level--queen .salary-chess-piece::after,
+  .radar-card-section.in-view .salary-chess-board--visited-detail .salary-chess-level--queen .salary-chess-piece::before,
+  .radar-card-section.in-view .salary-chess-board--visited-detail .salary-chess-level--queen .salary-chess-piece::after {
+    animation: none !important;
   }
 }
 
@@ -5932,22 +5984,28 @@ summary:focus-visible .radar-expand-indicator {
 }
 
 .ai-pixel-page {
-  width: min(100%, 72rem);
-  min-height: min(68svh, 42rem);
+  position: relative;
+  width: 100%;
+  height: auto;
+  min-height: calc(100dvh - 10rem);
   margin-inline: auto;
   display: grid;
-  align-content: start;
+  align-content: center;
   gap: clamp(0.8rem, 1.8vw, 1.45rem);
-  padding: 0;
+  padding: clamp(6rem, 13vh, 8rem) 0 0;
   color: #f8f7f2;
   background: #141414;
 }
 
 .ai-pixel-heading {
+  position: absolute;
+  top: 0;
+  left: 0;
   display: grid;
   gap: 0.2rem;
   max-width: 72rem;
-  margin-inline: auto;
+  margin: 0;
+  text-align: left;
 }
 
 .ai-pixel-title {
@@ -6514,9 +6572,9 @@ summary:focus-visible .radar-expand-indicator {
   }
 
   .ai-pixel-page {
-    min-height: min(76svh, 44rem);
-    gap: 1.45rem;
-    padding: 1.2rem 1rem 1.4rem;
+    min-height: calc(100dvh - 5.5rem);
+    gap: 1rem;
+    padding: 5.5rem 0.25rem 0;
   }
 
   .ai-pixel-meter {
