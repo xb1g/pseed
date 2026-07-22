@@ -76,6 +76,30 @@ test("Radar events use a narrow authenticated idempotent mutation", () => {
   assert.doesNotMatch(radarMigration, /grant execute on function public\.apply_my_path_radar_event[\s\S]*to anon/);
 });
 
+test("Radar freshness is bounded by database receipt time", () => {
+  const migrationsDirectory = new URL("../../../supabase/migrations/", import.meta.url);
+  const receiptTimeMigrationName = readdirSync(migrationsDirectory).find((name) =>
+    name.endsWith("_bound_radar_event_freshness.sql")
+  );
+  assert.ok(
+    receiptTimeMigrationName,
+    "Radar receipt-time migration must be created via the Supabase CLI"
+  );
+  const receiptTimeMigration = readFileSync(
+    new URL(receiptTimeMigrationName, migrationsDirectory),
+    "utf8"
+  );
+
+  assert.match(
+    receiptTimeMigration,
+    /v_effective_occurred_at timestamptz := least\(p_occurred_at, statement_timestamp\(\)\)/
+  );
+  assert.doesNotMatch(
+    receiptTimeMigration,
+    /last_interaction_at[^;]*p_occurred_at/
+  );
+});
+
 test("a stale plan sync cannot regress a newer Radar possibility state", () => {
   const migrationsDirectory = new URL("../../../supabase/migrations/", import.meta.url);
   const freshnessMigrationName = readdirSync(migrationsDirectory).find((name) =>
