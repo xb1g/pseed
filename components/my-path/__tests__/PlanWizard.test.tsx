@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 import { PlanWizard } from "../wizard/PlanWizard";
 import type { SeedPathlab } from "@/lib/my-path/pathlab-match";
@@ -245,6 +245,9 @@ test("discloses the trial terms before launch and only links to the confirmed en
   );
 
   expect(await screen.findByText("ลิงก์ชำระเงินสำหรับผู้ปกครอง")).toBeVisible();
+  expect(screen.getByRole("dialog")).toHaveAccessibleDescription(
+    /ไม่มีบัตรและไม่มีการตัดเงินอัตโนมัติ/
+  );
   expect(screen.getByRole("button", { name: "ปิดหน้าต่าง" })).toHaveClass(
     "min-h-12",
     "min-w-12"
@@ -322,4 +325,63 @@ test("blocks trial launch when the durable My Path save fails", async () => {
     "/api/trials",
     expect.anything()
   );
+});
+
+test("dismissal invalidates an in-flight launch and rapid clicks do not duplicate it", async () => {
+  let resolveTrial!: (value: {
+    ok: boolean;
+    json: () => Promise<Record<string, string>>;
+  }) => void;
+  const trialResponse = new Promise<{
+    ok: boolean;
+    json: () => Promise<Record<string, string>>;
+  }>((resolve) => {
+    resolveTrial = resolve;
+  });
+  (global.fetch as jest.Mock).mockImplementation((input: RequestInfo | URL) => {
+    if (String(input) === "/api/trials") return trialResponse;
+    return Promise.resolve({ ok: true, json: async () => ({}) });
+  });
+
+  renderWizard(true);
+  fireEvent.click(await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" }));
+  fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
+  fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
+  fireEvent.click(screen.getAllByRole("button", { name: "เลือกอันนี้" })[0]);
+  fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
+  fireEvent.click(screen.getByRole("radio", { name: /เข้ามหาวิทยาลัย/ }));
+  fireEvent.click(screen.getByRole("button", { name: "ดูแผนของฉัน" }));
+  (global.fetch as jest.Mock).mockClear();
+
+  const launchButton = screen.getByRole("button", {
+    name: "เริ่มวันแรกก่อนได้ — ยังไม่ต้องจ่ายตอนนี้",
+  });
+  fireEvent.click(launchButton);
+  fireEvent.click(launchButton);
+
+  await waitFor(() => {
+    expect(
+      (global.fetch as jest.Mock).mock.calls.filter(
+        ([url]) => String(url) === "/api/trials"
+      )
+    ).toHaveLength(1);
+  });
+  fireEvent.click(screen.getByRole("button", { name: "ปิดหน้าต่าง" }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+  await act(async () => {
+    resolveTrial({
+      ok: true,
+      json: async () => ({
+        payToken: "0123456789abcdef0123456789abcdef",
+        payUrl: "/pay/0123456789abcdef0123456789abcdef",
+        paymentDeadline: "2099-07-23T12:00:00.000Z",
+        enrollmentId: "enrollment-123",
+        enrollmentUrl: "/seeds/pathlab/enrollment-123?day=1",
+      }),
+    });
+    await trialResponse;
+  });
+
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });

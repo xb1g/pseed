@@ -43,6 +43,7 @@ const GATE_POINTS = [
  */
 export function TrialGate({ seedId, seedTitle, trial }: TrialGateProps) {
   const [activeTrial, setActiveTrial] = useState<TrialShareInfo | null>(trial);
+  const [accessExpired, setAccessExpired] = useState(trial !== null);
   const [enrollmentUrl, setEnrollmentUrl] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,6 +74,7 @@ export function TrialGate({ seedId, seedTitle, trial }: TrialGateProps) {
         payUrl: payload.payUrl,
         paymentDeadline: payload.paymentDeadline,
       });
+      setAccessExpired(false);
       setEnrollmentUrl(payload.enrollmentUrl);
     } catch {
       setError("เปิดการทดลองไม่สำเร็จ ลองอีกครั้งนะ");
@@ -90,7 +92,9 @@ export function TrialGate({ seedId, seedTitle, trial }: TrialGateProps) {
           PathLab Trial · ทำก่อน จ่ายทีหลัง
         </p>
         <h2 className="mt-2 text-2xl md:text-3xl font-bold text-white leading-snug">
-          เริ่มทดลอง {seedTitle} ได้เลยวันนี้
+          {accessExpired
+            ? `เปิดสิทธิ์ ${seedTitle} เพื่อกลับไปทำต่อ`
+            : `เริ่มทดลอง ${seedTitle} ได้เลยวันนี้`}
         </h2>
 
         <div className="mt-4 flex items-baseline gap-3">
@@ -129,8 +133,9 @@ export function TrialGate({ seedId, seedTitle, trial }: TrialGateProps) {
         {activeTrial ? (
           <div className="mt-7">
             <p className="mb-4 text-sm leading-6 text-neutral-300">
-              การทดลองของคุณเปิดแล้ว —
-              ส่งลิงก์นี้ให้ผู้ปกครองเพื่อชำระและปลดล็อกการทดลองต่อ
+              {accessExpired
+                ? "การทดลองเดิมครบ 24 ชม. แล้ว ส่งลิงก์นี้ให้ผู้ปกครองเพื่อชำระและปลดล็อก PathLab ต่อ"
+                : "วันแรกพร้อมแล้ว ส่งลิงก์นี้ให้ผู้ปกครองดูรายละเอียดและชำระภายใน 24 ชม."}
             </p>
             <TrialShareActions
               payUrl={activeTrial.payUrl}

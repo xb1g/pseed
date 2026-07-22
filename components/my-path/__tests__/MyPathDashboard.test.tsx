@@ -211,6 +211,54 @@ test("shows the verified parent contact and lets the student revoke updates", as
   );
 });
 
+test("keeps the verified contact visible and offers retry when revoke fails", async () => {
+  global.fetch = jest
+    .fn()
+    .mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ verified: true, maskedEmail: "p****@example.com" }),
+    })
+    .mockRejectedValueOnce(new Error("network unavailable"));
+
+  render(
+    <MyPathDashboard
+      model={model({
+        state: "active",
+        pathlabs: [
+          {
+            seedId: "seed-a",
+            title: "AI Builder",
+            enrollmentId: "enrollment-a",
+            status: "active",
+            currentDay: 2,
+            completedActivities: 3,
+            href: "/seeds/pathlab/enrollment-a?day=2",
+            trial: {
+              status: "active",
+              label: "กำลังทดลอง",
+              payHref: "/pay/0123456789abcdef0123456789abcdef",
+              paymentDeadline: "2026-07-23T00:00:00.000Z",
+            },
+          },
+        ],
+      })}
+    />
+  );
+
+  expect(await screen.findByText(/p\*\*\*\*@example.com/)).toBeVisible();
+  fireEvent.click(
+    screen.getByRole("button", { name: "หยุดส่งอัปเดตให้ผู้ปกครอง" })
+  );
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "ยังหยุดส่งอัปเดตไม่ได้"
+  );
+  expect(screen.getByText(/p\*\*\*\*@example.com/)).toBeVisible();
+  expect(
+    screen.getByRole("button", { name: "ลองหยุดส่งอีกครั้ง" })
+  ).toBeEnabled();
+});
+
 test("expired access explains recovery without losing the saved plan", () => {
   render(
     <MyPathDashboard

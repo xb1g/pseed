@@ -80,6 +80,8 @@ export function PlanWizard({
   const lastSyncedAt = useRef<string | null>(initialDraft?.updatedAt ?? null);
   const missionTracked = useRef(false);
   const stepRestored = useRef(false);
+  const launchGeneration = useRef(0);
+  const launchInFlight = useRef(false);
 
   // Restore the furthest step reached so an accidental exit (swipe-back,
   // app switch, tab close) resumes exactly where the student left off.
@@ -336,11 +338,15 @@ export function PlanWizard({
   // Launch สำหรับนักเรียนที่ sign in แล้ว: เปิด trial "ทำก่อน จ่ายทีหลัง"
   // (idempotent — POST ซ้ำได้ไม่เป็นไร) แล้วโชว์ sheet ให้ส่งลิงก์ให้ผู้ปกครอง
   async function startTrialLaunch() {
-    if (!firstActionSeed) return;
+    if (!firstActionSeed || launchInFlight.current) return;
+    const generation = launchGeneration.current + 1;
+    launchGeneration.current = generation;
+    launchInFlight.current = true;
     setPayLaterSheet({ status: "loading", trial: null, enrollmentUrl: null });
     try {
       const saved = await persistPlan();
       if (!saved) throw new Error("durable My Path save failed");
+      if (generation !== launchGeneration.current) return;
       const response = await fetch("/api/trials", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -357,6 +363,7 @@ export function PlanWizard({
       ) {
         throw new Error("trial enrollment confirmation missing");
       }
+      if (generation !== launchGeneration.current) return;
       setPayLaterSheet({
         status: "ready",
         trial: {
@@ -367,8 +374,20 @@ export function PlanWizard({
         enrollmentUrl: payload.enrollmentUrl,
       });
     } catch {
-      setPayLaterSheet({ status: "error", trial: null, enrollmentUrl: null });
+      if (generation === launchGeneration.current) {
+        setPayLaterSheet({ status: "error", trial: null, enrollmentUrl: null });
+      }
+    } finally {
+      if (generation === launchGeneration.current) {
+        launchInFlight.current = false;
+      }
     }
+  }
+
+  function closeTrialLaunch() {
+    launchGeneration.current += 1;
+    launchInFlight.current = false;
+    setPayLaterSheet(null);
   }
 
   if (!draft) {
@@ -512,7 +531,7 @@ export function PlanWizard({
           enrollmentUrl={payLaterSheet?.enrollmentUrl ?? null}
           seedTitle={firstActionSeed?.title ?? "PathLab"}
           onRetry={startTrialLaunch}
-          onClose={() => setPayLaterSheet(null)}
+          onClose={closeTrialLaunch}
         />
       </div>
     </main>

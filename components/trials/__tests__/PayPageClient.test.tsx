@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 
 import { PayPageClient } from "../PayPageClient";
 
@@ -23,6 +23,27 @@ const props = {
 
 beforeEach(() => {
   global.fetch = jest.fn();
+  global.IntersectionObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof IntersectionObserver;
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: jest.fn().mockReturnValue({ matches: false }),
+  });
+  Object.defineProperty(URL, "createObjectURL", {
+    configurable: true,
+    value: jest.fn().mockReturnValue("blob:slip-preview"),
+  });
+  Object.defineProperty(URL, "revokeObjectURL", {
+    configurable: true,
+    value: jest.fn(),
+  });
+});
+
+afterEach(() => {
+  jest.useRealTimers();
 });
 
 test("leads with the child's choice, connection, outcomes, and full price before payment mechanics", () => {
@@ -159,4 +180,75 @@ test("the parent-page logo link is a 48px touch target", () => {
     "utf8"
   );
   expect(source).toMatch(/href="\/"[\s\S]{0,120}min-h-12[\s\S]{0,80}min-w-12/);
+});
+
+test("moves the live page into expired recovery when its deadline passes", () => {
+  jest.useFakeTimers();
+  jest.setSystemTime(new Date("2026-07-22T12:00:00.000Z"));
+  render(
+    <PayPageClient
+      {...props}
+      paymentDeadline="2026-07-22T12:00:01.000Z"
+    />
+  );
+
+  expect(screen.getByText("ภายใน 24 ชม.")).toBeVisible();
+  act(() => jest.advanceTimersByTime(1_100));
+
+  expect(screen.getByText(/เลยกำหนด 24 ชม. แล้ว/)).toBeVisible();
+  expect(screen.queryByText("ภายใน 24 ชม.")).not.toBeInTheDocument();
+});
+
+test("validates slip type and size before upload", () => {
+  render(<PayPageClient {...props} />);
+  const input = screen.getByLabelText("เลือกรูปสลิปการโอน");
+
+  fireEvent.change(input, {
+    target: { files: [new File(["not an image"], "slip.txt", { type: "text/plain" })] },
+  });
+  expect(screen.getByRole("alert")).toHaveTextContent("ไฟล์รูปภาพ");
+
+  const oversized = new File(["image"], "large.png", { type: "image/png" });
+  Object.defineProperty(oversized, "size", { value: 5 * 1024 * 1024 + 1 });
+  fireEvent.change(input, { target: { files: [oversized] } });
+  expect(screen.getByRole("alert")).toHaveTextContent("ไฟล์ใหญ่เกิน 5MB");
+  expect(global.fetch).not.toHaveBeenCalled();
+});
+
+test("shows upload failure and allows a successful retry into pending", async () => {
+  (global.fetch as jest.Mock)
+    .mockResolvedValueOnce({ ok: false, status: 500 })
+    .mockResolvedValueOnce({ ok: true, status: 200 });
+  render(<PayPageClient {...props} />);
+  fireEvent.change(screen.getByLabelText("เลือกรูปสลิปการโอน"), {
+    target: {
+      files: [new File(["image"], "slip.png", { type: "image/png" })],
+    },
+  });
+
+  fireEvent.click(screen.getByRole("button", { name: "ส่งสลิปยืนยันการชำระ" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "อัปโหลดสลิปไม่สำเร็จ"
+  );
+  fireEvent.click(screen.getByRole("button", { name: "ส่งสลิปยืนยันการชำระ" }));
+
+  expect(
+    await screen.findByRole("heading", { name: "ได้รับสลิปแล้ว กำลังตรวจสอบ" })
+  ).toBeVisible();
+  expect(global.fetch).toHaveBeenCalledTimes(2);
+});
+
+test("treats an already-paid slip response as paid", async () => {
+  (global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 409 });
+  render(<PayPageClient {...props} />);
+  fireEvent.change(screen.getByLabelText("เลือกรูปสลิปการโอน"), {
+    target: {
+      files: [new File(["image"], "slip.png", { type: "image/png" })],
+    },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "ส่งสลิปยืนยันการชำระ" }));
+
+  expect(
+    await screen.findByRole("heading", { name: "ชำระเรียบร้อย ขอบคุณครับ/ค่ะ" })
+  ).toBeVisible();
 });

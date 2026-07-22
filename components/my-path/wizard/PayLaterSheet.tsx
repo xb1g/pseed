@@ -44,7 +44,6 @@ export function PayLaterSheet({
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent
         className="dawn-theme inset-x-0 bottom-0 left-0 top-auto w-full max-w-none translate-x-0 translate-y-0 gap-0 rounded-t-3xl border-white/10 bg-slate-950/95 p-5 pb-8 text-slate-100 backdrop-blur-xl sm:bottom-auto sm:left-[50%] sm:top-[50%] sm:max-w-md sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-3xl"
-        aria-describedby={undefined}
         hideClose
       >
         <DialogClose
@@ -56,6 +55,9 @@ export function PayLaterSheet({
         {state === "loading" && (
           <div className="py-10 text-center" role="status">
             <DialogTitle className="sr-only">กำลังเปิดการทดลอง</DialogTitle>
+            <DialogDescription className="sr-only">
+              กำลังบันทึก My Path และเปิดสิทธิ์วันแรกให้เรียบร้อยก่อนเริ่ม
+            </DialogDescription>
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-amber-200" />
             <p className="mt-4 text-sm text-slate-400">กำลังเปิดการทดลองให้…</p>
           </div>
