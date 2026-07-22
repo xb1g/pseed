@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -24,6 +24,7 @@ import { isAnonymousUser } from "@/lib/supabase/auth";
 
 type RadarField = Database["public"]["Tables"]["radar_fields"]["Row"];
 type RadarCard = Database["public"]["Tables"]["radar_cards"]["Row"];
+const HIDDEN_RADAR_CARD_KINDS = new Set(["jobs", "growthCompare", "list"]);
 
 function pickContent(card: RadarCard): Record<string, unknown> {
   const th = card.content_th as Record<string, unknown> | null;
@@ -164,13 +165,21 @@ export function RadarFieldPageClient({
   const router = useRouter();
   const field = initialField;
   const fieldSlug = field.slug ?? "";
-  const HIDDEN_KINDS = new Set(["jobs", "growthCompare", "list"]);
-  const cards = sortRadarCardsForStory(
-    initialCards.filter((c) => {
-      if (HIDDEN_KINDS.has(c.kind)) return false;
-      if (c.kind === "text" && (c.content_th as Record<string, string>)?.title === "ทางนี้คืออะไร") return false;
-      return true;
-    })
+  const cards = useMemo(
+    () =>
+      sortRadarCardsForStory(
+        initialCards.filter((card) => {
+          if (HIDDEN_RADAR_CARD_KINDS.has(card.kind)) return false;
+          if (
+            card.kind === "text" &&
+            (card.content_th as Record<string, string>)?.title === "ทางนี้คืออะไร"
+          ) {
+            return false;
+          }
+          return true;
+        })
+      ),
+    [initialCards]
   );
   const [current, setCurrent] = useState(0);
   const [submitted, setSubmitted] = useState<Set<string>>(new Set());
@@ -186,8 +195,10 @@ export function RadarFieldPageClient({
   const rootRef = useRef<HTMLDivElement>(null);
   const followRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
+  const isSafariRef = useRef(false);
 
   const handlePointer = useCallback((e: React.MouseEvent) => {
+    if (isSafariRef.current) return;
     const root = rootRef.current;
     const glow = followRef.current;
     if (!root || !glow) return;
@@ -198,6 +209,18 @@ export function RadarFieldPageClient({
     rafRef.current = requestAnimationFrame(() => {
       glow.style.transform = `translate(${x - width / 2}px, ${y - height / 2}px)`;
     });
+  }, []);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const isSafari =
+      navigator.vendor.includes("Apple") &&
+      !/(CriOS|FxiOS|EdgiOS|OPiOS)/.test(navigator.userAgent);
+    isSafariRef.current = isSafari;
+    if (!isSafari) return;
+    root.classList.add("radar-field-page--safari");
+    return () => root.classList.remove("radar-field-page--safari");
   }, []);
 
   const goTo = useCallback((i: number) => {

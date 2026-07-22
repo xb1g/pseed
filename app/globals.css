@@ -4568,6 +4568,14 @@ summary:focus-visible .radar-expand-indicator {
     filter: grayscale(0.08) saturate(1.02) contrast(1.02);
     transform: translate3d(0, -5%, 0) scale(1.08);
   }
+
+  /* Preserve the center-card color reveal on mobile Safari. The Safari base
+     rule is important to avoid filter interpolation, so this state must be
+     equally explicit. */
+  .radar-index-page--safari .radar-career-card.in-view .radar-career-card__figure {
+    filter: none !important;
+    will-change: transform;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -6710,6 +6718,85 @@ summary:focus-visible .radar-expand-indicator {
   border-bottom: 2px solid currentColor;
   transform: rotate(45deg);
   opacity: 0.6;
+}
+
+/* Safari Radar detail performance path. WebKit repaints large blurs, masks,
+   backdrop filters, and filtered keyframes much more aggressively than Blink.
+   Preserve content and transform choreography while removing those paint loops. */
+.radar-field-page--safari .radar-glow-a,
+.radar-field-page--safari .radar-glow-b,
+.radar-field-page--safari .radar-glow-c,
+.radar-field-page--safari .radar-glow-follow {
+  display: none;
+  animation: none !important;
+}
+
+.radar-field-page--safari .radar-detail-grain {
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.12) 0 0.65px, transparent 0.95px),
+    radial-gradient(circle, rgba(0, 0, 0, 0.12) 0 0.75px, transparent 1.05px);
+  background-size: 14px 14px, 17px 17px;
+  mix-blend-mode: normal;
+  opacity: 0.18;
+}
+
+.radar-field-page--safari .radar-card-section--after-first.in-view::before {
+  animation: none !important;
+}
+
+.radar-field-page--safari .salary-chess-piece,
+.radar-field-page--safari .salary-chess-level--queen .salary-chess-piece {
+  filter: none;
+}
+
+.radar-field-page--safari .salary-chess-piece-image,
+.radar-field-page--safari .salary-chess-intro-pawn,
+.radar-field-page--safari .salary-chess-intro-pawn::after,
+.radar-field-page--safari .salary-chess-piece::before,
+.radar-field-page--safari .salary-chess-piece::after {
+  will-change: transform, opacity;
+  filter: none !important;
+}
+
+.radar-field-page--safari .salary-chess-piece-image {
+  filter: grayscale(1) brightness(0.72) !important;
+}
+
+.radar-field-page--safari .salary-chess-level--knight .salary-chess-piece-image {
+  filter: grayscale(1) brightness(0.82) !important;
+}
+
+.radar-field-page--safari .salary-chess-level--queen .salary-chess-piece::before,
+.radar-field-page--safari .salary-chess-level--queen .salary-chess-piece::after,
+.radar-field-page--safari .salary-chess-detail-piece--queen::before,
+.radar-field-page--safari .salary-chess-detail-piece--queen::after {
+  animation: none !important;
+}
+
+.radar-field-page--safari .salary-chess-board--intro-complete .salary-chess-piece-image,
+.radar-field-page--safari .salary-chess-board--intro-complete .salary-chess-piece::before,
+.radar-field-page--safari .salary-chess-board--intro-complete .salary-chess-piece::after {
+  will-change: auto;
+}
+
+.radar-field-page--safari .salary-chess-back,
+.radar-field-page--safari .future-outlook-panel,
+.radar-field-page--safari .fantasy-reality-sheet,
+.radar-field-page--safari [class*="backdrop-blur"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.radar-field-page--safari .ai-pixel-title-ai,
+.radar-field-page--safari .ai-pixel-title-ai::before,
+.radar-field-page--safari .ai-pixel-title-ai::after,
+.radar-field-page--safari .ai-pixel-character {
+  animation: none !important;
+  filter: none !important;
+}
+
+.radar-field-page--safari .future-outlook-bg {
+  display: none !important;
 }
 
 /* Reduced motion: instant everything */
