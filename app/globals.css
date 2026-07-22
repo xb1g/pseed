@@ -1272,7 +1272,7 @@ summary:focus-visible .radar-expand-indicator {
 .ei-button-dawn {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(180deg, #3b82f6 0%, #6366f1 45%, #a855f7 100%);
+  background: linear-gradient(180deg, #1d4ed8 0%, #2563eb 45%, #3b82f6 100%);
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 12px;
   color: white;
@@ -6857,4 +6857,15 @@ summary:focus-visible .radar-expand-indicator {
   }
   .radar-dot-active { animation: none; }
   .radar-scroll-cue { animation: none; opacity: 0.5; }
+}
+
+/* ── Toasts ────────────────────────────────────────────────────────────── */
+/* On phones the bottom edge belongs to sticky primary actions (PathLab action
+   bar, seed CTA), so toasts anchor to the top. Sonner writes
+   --mobile-offset-top as an inline style, which no prop or class can outrank,
+   so the navbar clearance has to override `top` directly. */
+@media (max-width: 600px) {
+  [data-sonner-toaster][data-y-position="top"] {
+    top: 76px !important;
+  }
 }
