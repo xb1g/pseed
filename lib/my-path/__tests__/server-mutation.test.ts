@@ -74,6 +74,67 @@ test("the server recalculates direction and next step before the atomic RPC", as
   );
 });
 
+test("full draft sync caps year-9999 possibility freshness at server receipt time", async () => {
+  let draft = createAnonymousDraft("generic", "draft-future-sync");
+  draft = applyJourneyEvent(draft, {
+    id: "future-sync-event",
+    type: "career_saved",
+    careerSlug: "ux-designer",
+    occurredAt: "2026-07-20T10:30:00.000Z",
+  });
+  draft = {
+    ...draft,
+    possibilities: {
+      ...draft.possibilities,
+      "ux-designer": {
+        ...draft.possibilities["ux-designer"],
+        updatedAt: "9999-12-31T23:59:59.999Z",
+      },
+    },
+  };
+  const fake = client();
+
+  await persistMyPathMutation(
+    fake.value,
+    { operation: "sync", draft },
+    { now: () => "2026-07-22T10:30:00.000Z" }
+  );
+
+  const syncedDraft = fake.calls[0].args.p_draft as typeof draft;
+  assert.equal(
+    syncedDraft.possibilities["ux-designer"].updatedAt,
+    "2026-07-22T10:30:00.000Z"
+  );
+  assert.equal(
+    draft.possibilities["ux-designer"].updatedAt,
+    "9999-12-31T23:59:59.999Z",
+    "normalization must not mutate the browser draft"
+  );
+});
+
+test("full draft sync preserves legitimate offline possibility freshness", async () => {
+  let draft = createAnonymousDraft("generic", "draft-offline-sync");
+  draft = applyJourneyEvent(draft, {
+    id: "offline-sync-event",
+    type: "career_saved",
+    careerSlug: "ux-designer",
+    occurredAt: "2026-07-20T10:30:00.000Z",
+  });
+  const fake = client();
+
+  await persistMyPathMutation(
+    fake.value,
+    { operation: "sync", draft },
+    { now: () => "2026-07-22T10:30:00.000Z" }
+  );
+
+  const syncedDraft = fake.calls[0].args.p_draft as typeof draft;
+  assert.equal(
+    syncedDraft.possibilities["ux-designer"].updatedAt,
+    "2026-07-20T10:30:00.000Z"
+  );
+});
+
 test("the server exposes the active-path limit as a conflict", async () => {
   const fake = client({
     rpcError: { code: "23514", message: "active saved path limit is three" },
