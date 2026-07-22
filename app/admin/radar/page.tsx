@@ -14,6 +14,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   BarChart3,
+  Calendar,
   Eye,
   FileText,
   MousePointerClick,
@@ -21,6 +22,25 @@ import {
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+function groupByDay<T extends { created_at: string | null }>(
+  rows: T[],
+  days: number = 30
+): Map<string, T[]> {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  const map = new Map<string, T[]>();
+  for (const row of rows) {
+    if (!row.created_at) continue;
+    const d = new Date(row.created_at);
+    if (d < cutoff) continue;
+    const key = d.toISOString().slice(0, 10);
+    const arr = map.get(key);
+    if (arr) arr.push(row);
+    else map.set(key, [row]);
+  }
+  return map;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -74,6 +94,80 @@ export default async function AdminRadarPage({
     .from("analytics_radar_totals")
     .select("total_views, unique_viewers, total_intents")
     .maybeSingle();
+
+  // Daily analytics queries (last 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const sinceISO = thirtyDaysAgo.toISOString();
+
+  const [
+    { data: dailyViews },
+    { data: dailyIntents },
+    { data: dailyInterests },
+    { data: dailyPlanAuth },
+    { data: dailyPlanAnon },
+  ] = await Promise.all([
+    supabase
+      .from("radar_field_views")
+      .select("created_at, field_slug")
+      .gte("created_at", sinceISO)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("radar_path_intents")
+      .select("created_at, field_slug, path_slug")
+      .gte("created_at", sinceISO)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("radar_interest_events")
+      .select("created_at, event_type")
+      .gte("created_at", sinceISO)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("my_path_events")
+      .select("created_at, event_type")
+      .eq("event_type", "entry_viewed")
+      .gte("created_at", sinceISO),
+    supabase
+      .from("anonymous_my_path_events")
+      .select("created_at, event_type")
+      .eq("event_type", "reel_entry_viewed")
+      .gte("created_at", sinceISO),
+  ]);
+
+  // Aggregate daily radar views
+  const viewsByDay = groupByDay(dailyViews || []);
+  const dailyViewRows = Array.from(viewsByDay.entries())
+    .map(([date, rows]) => ({ date, count: rows.length }))
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  // Aggregate daily interest clicks per career path
+  const intentsByDay = groupByDay(dailyIntents || []);
+  const dailyIntentRows = Array.from(intentsByDay.entries())
+    .map(([date, rows]) => {
+      const byPath = new Map<string, number>();
+      for (const r of rows) {
+        const key = `${(r as { field_slug: string }).field_slug}/${(r as { path_slug: string }).path_slug}`;
+        byPath.set(key, (byPath.get(key) || 0) + 1);
+      }
+      return {
+        date,
+        total: rows.length,
+        paths: Array.from(byPath.entries())
+          .sort((a, b) => b[1] - a[1])
+          .map(([path, count]) => ({ path, count })),
+      };
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  // Aggregate daily /plan page visits
+  const allPlanEvents = [
+    ...(dailyPlanAuth || []),
+    ...(dailyPlanAnon || []),
+  ];
+  const planByDay = groupByDay(allPlanEvents);
+  const dailyPlanRows = Array.from(planByDay.entries())
+    .map(([date, rows]) => ({ date, count: rows.length }))
+    .sort((a, b) => b.date.localeCompare(a.date));
 
   const intentUserIds = (recentIntents || [])
     .map((i) => i.user_id)
@@ -431,6 +525,131 @@ export default async function AdminRadarPage({
                 ))
               )}
             </TableBody>
+              </Table>
+            </div>
+          </section>
+
+          {/* ── Daily Analytics ── */}
+          <section className="space-y-4" aria-labelledby="daily-radar-heading">
+            <div>
+              <h3 id="daily-radar-heading" className="text-xl font-semibold flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-muted-foreground" />
+                Daily radar visits
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Visitors per day over the last 30 days.
+              </p>
+            </div>
+            <div className="overflow-x-auto rounded-xl border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Page views</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dailyViewRows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={2} className="text-center py-8">
+                        No radar views in the last 30 days.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    dailyViewRows.map((row) => (
+                      <TableRow key={row.date}>
+                        <TableCell className="font-medium">{row.date}</TableCell>
+                        <TableCell className="text-right">{row.count.toLocaleString()}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </section>
+
+          <section className="space-y-4" aria-labelledby="daily-intents-heading">
+            <div>
+              <h3 id="daily-intents-heading" className="text-xl font-semibold flex items-center gap-2">
+                <MousePointerClick className="h-5 w-5 text-muted-foreground" />
+                Daily interest clicks by career path
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Interest clicks per career path per day (last 30 days).
+              </p>
+            </div>
+            <div className="overflow-x-auto rounded-xl border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead>Breakdown by path</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dailyIntentRows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-center py-8">
+                        No interest clicks in the last 30 days.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    dailyIntentRows.map((row) => (
+                      <TableRow key={row.date}>
+                        <TableCell className="font-medium">{row.date}</TableCell>
+                        <TableCell className="text-right">{row.total.toLocaleString()}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {row.paths.map(({ path, count }) => (
+                              <Badge key={path} variant="secondary" className="text-[10px]">
+                                {path} ({count})
+                              </Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </section>
+
+          <section className="space-y-4" aria-labelledby="daily-plan-heading">
+            <div>
+              <h3 id="daily-plan-heading" className="text-xl font-semibold flex items-center gap-2">
+                <Users className="h-5 w-5 text-muted-foreground" />
+                Daily /plan page visits
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Visitors who opened the /plan page each day (last 30 days).
+              </p>
+            </div>
+            <div className="overflow-x-auto rounded-xl border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Visits</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dailyPlanRows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={2} className="text-center py-8">
+                        No /plan visits in the last 30 days.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    dailyPlanRows.map((row) => (
+                      <TableRow key={row.date}>
+                        <TableCell className="font-medium">{row.date}</TableCell>
+                        <TableCell className="text-right">{row.count.toLocaleString()}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
               </Table>
             </div>
           </section>
