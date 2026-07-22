@@ -200,27 +200,27 @@ export function RadarAnalyticsCharts() {
                 type="monotone"
                 dataKey="planVisits"
                 name="/plan visits"
-                stroke="hsl(var(--chart-1))"
+                stroke="#3b82f6"
                 strokeWidth={2}
-                dot={{ fill: "hsl(var(--chart-1))", r: 3 }}
+                dot={{ fill: "#3b82f6", r: 3 }}
                 activeDot={{ r: 5 }}
               />
               <Line
                 type="monotone"
                 dataKey="radarViews"
                 name="Radar views"
-                stroke="hsl(var(--chart-2))"
+                stroke="#22c55e"
                 strokeWidth={2}
-                dot={{ fill: "hsl(var(--chart-2))", r: 3 }}
+                dot={{ fill: "#22c55e", r: 3 }}
                 activeDot={{ r: 5 }}
               />
               <Line
                 type="monotone"
                 dataKey="interestClicks"
                 name="Interest clicks"
-                stroke="hsl(var(--chart-3))"
+                stroke="#f59e0b"
                 strokeWidth={2}
-                dot={{ fill: "hsl(var(--chart-3))", r: 3 }}
+                dot={{ fill: "#f59e0b", r: 3 }}
                 activeDot={{ r: 5 }}
               />
             </LineChart>
@@ -278,7 +278,7 @@ export function RadarAnalyticsCharts() {
                 <Bar
                   dataKey="clicks"
                   name="Interest clicks"
-                  fill="hsl(var(--chart-4))"
+                  fill="#f59e0b"
                 />
               </BarChart>
             </ResponsiveContainer>
