@@ -35,7 +35,6 @@ interface TrialRpcRow {
   seedTitle?: unknown;
   seedDescription?: unknown;
   totalDays?: unknown;
-  radarDirectionTitle?: unknown;
   outcomes?: unknown;
 }
 
@@ -67,7 +66,6 @@ export default async function PayPage({ params }: PayPageProps) {
   const paymentDeadline = firstText(row?.paymentDeadline);
   const seedTitle = firstText(row?.seedTitle);
   const seedDescription = firstText(row?.seedDescription);
-  const radarDirectionTitle = firstText(row?.radarDirectionTitle);
   const totalDays =
     typeof row?.totalDays === "number" && Number.isFinite(row.totalDays)
       ? row.totalDays
@@ -101,7 +99,6 @@ export default async function PayPage({ params }: PayPageProps) {
           seedTitle,
           seedDescription,
           totalDays,
-          radarDirectionTitle,
           outcomes,
           priceAmount,
         }
@@ -147,7 +144,6 @@ export default async function PayPage({ params }: PayPageProps) {
             seedTitle={trial.seedTitle}
             seedDescription={trial.seedDescription}
             totalDays={trial.totalDays}
-            radarDirectionTitle={trial.radarDirectionTitle}
             outcomes={trial.outcomes}
           />
         ) : (

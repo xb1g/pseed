@@ -47,7 +47,11 @@ export async function POST(
       repository,
       sendVerification: async (email) => {
         const content = buildVerificationEmail(email);
-        return transport.send({ to: email.to, ...content });
+        return transport.send({
+          to: email.to,
+          ...content,
+          idempotencyKey: email.idempotencyKey,
+        });
       },
       now: new Date(),
       tokenSecret: parentUpdateTokenSecret(),

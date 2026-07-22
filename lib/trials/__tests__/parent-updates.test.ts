@@ -216,6 +216,42 @@ test("creates one subscription per trial and sends a 30-minute verification", as
   expect(repository.current()?.verificationTokenHash).toMatch(/^[0-9a-f]{64}$/);
   expect(repository.current()?.unsubscribeTokenHash).toMatch(/^[0-9a-f]{64}$/);
   expect(sendVerification).toHaveBeenCalledTimes(1);
+  expect(sendVerification).toHaveBeenCalledWith(
+    expect.objectContaining({
+      idempotencyKey: `parent-verification/${repository.current()?.id}/v1`,
+    })
+  );
+});
+
+test("parallel duplicate opt-ins use one stable verification delivery identity", async () => {
+  const repository = memoryRepository();
+  const sendVerification = jest.fn().mockResolvedValue({ ok: true as const });
+  const request = {
+    payToken: "a".repeat(32),
+    input: {
+      email: "parent@example.com",
+      recipientAttested: true as const,
+      consented: true as const,
+    },
+    repository,
+    sendVerification,
+    now: NOW,
+    tokenSecret: SECRET,
+    origin: "https://passionseed.org",
+  };
+
+  await Promise.all([
+    subscribeParentUpdates(request),
+    subscribeParentUpdates(request),
+  ]);
+
+  expect(sendVerification).toHaveBeenCalledTimes(2);
+  const deliveryKeys = sendVerification.mock.calls.map(
+    ([email]) => email.idempotencyKey
+  );
+  expect(new Set(deliveryKeys)).toEqual(
+    new Set([`parent-verification/${repository.current()?.id}/v1`])
+  );
 });
 
 test("rejects an unknown public pay token without revealing trial data", async () => {

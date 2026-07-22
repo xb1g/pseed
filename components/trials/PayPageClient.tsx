@@ -22,7 +22,6 @@ interface PayPageClientProps {
   seedTitle: string;
   seedDescription: string | null;
   totalDays: number | null;
-  radarDirectionTitle: string | null;
   outcomes: string[];
 }
 
@@ -46,7 +45,6 @@ export function PayPageClient({
   seedTitle,
   seedDescription,
   totalDays,
-  radarDirectionTitle,
   outcomes,
 }: PayPageClientProps) {
   const [status, setStatus] = useState<TrialStatus>(initialStatus);
@@ -148,30 +146,37 @@ export function PayPageClient({
     }
   }
 
-  if (status === "pending") {
+  if (status === "pending" || status === "paid") {
+    const paid = status === "paid";
     return (
-      <StatusCard
-        icon={
-          <Hourglass className="h-10 w-10 text-amber-200" aria-hidden="true" />
-        }
-        title="ได้รับสลิปแล้ว กำลังตรวจสอบ"
-        description="ทีมงานจะตรวจสอบยอดและยืนยันให้เร็วที่สุด ระหว่างนี้บุตรหลานยังทดลองต่อได้ตามปกติ"
-      />
-    );
-  }
-
-  if (status === "paid") {
-    return (
-      <StatusCard
-        icon={
-          <BadgeCheck
-            className="h-10 w-10 text-emerald-300"
-            aria-hidden="true"
-          />
-        }
-        title="ชำระเรียบร้อย ขอบคุณครับ/ค่ะ"
-        description="PathLab นี้ปลดล็อกเรียบร้อยแล้ว บุตรหลานทำต่อได้ตามแผน"
-      />
+      <div ref={pageRef} className="mx-auto grid w-full max-w-xl gap-5">
+        <StatusCard
+          icon={
+            paid ? (
+              <BadgeCheck
+                className="h-10 w-10 text-emerald-300"
+                aria-hidden="true"
+              />
+            ) : (
+              <Hourglass
+                className="h-10 w-10 text-amber-200"
+                aria-hidden="true"
+              />
+            )
+          }
+          title={
+            paid
+              ? "ชำระเรียบร้อย ขอบคุณครับ/ค่ะ"
+              : "ได้รับสลิปแล้ว กำลังตรวจสอบ"
+          }
+          description={
+            paid
+              ? "PathLab นี้ปลดล็อกเรียบร้อยแล้ว บุตรหลานทำต่อได้ตามแผน"
+              : "ทีมงานจะตรวจสอบยอดและยืนยันให้เร็วที่สุด ระหว่างนี้บุตรหลานยังทดลองต่อได้ตามปกติ"
+          }
+        />
+        <ParentUpdateOptIn token={token} />
+      </div>
     );
   }
 
@@ -197,9 +202,7 @@ export function PayPageClient({
             {seedTitle}
           </h1>
           <p className="mt-2 line-clamp-2 text-sm font-semibold leading-6 text-blue-100">
-            {radarDirectionTitle
-              ? `เชื่อมกับทิศ ${radarDirectionTitle} ใน My Path`
-              : "เลือกไว้เป็นส่วนหนึ่งของ My Path เพื่อทดลองก่อนตัดสินใจจริง"}
+            PathLab นี้ให้บุตรหลานทดลองลงมือทำจริง ก่อนตัดสินใจเรื่องเส้นทางต่อไป
           </p>
           <ul className="mt-3 space-y-2">
             {parentOutcomes.map((outcome) => (
