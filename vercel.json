@@ -21,7 +21,7 @@
   "crons": [
     {
       "path": "/api/cron/parent-pathlab-updates",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 2 * * *"
     }
   ]
 }
