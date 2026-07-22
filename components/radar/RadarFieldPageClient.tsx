@@ -497,7 +497,7 @@ export function RadarFieldPageClient({
     return () => observer.disconnect();
   }, [cards.length, initialSkills.length]);
 
-  // Gradually fade in blackout overlay as AI impact section scrolls into view
+  // Gradually fade in/out blackout overlay around AI impact section
   useEffect(() => {
     const deck = scrollRef.current;
     const blackout = blackoutRef.current;
@@ -506,21 +506,43 @@ export function RadarFieldPageClient({
     if (aiIndex < 0) return;
 
     let raf = 0;
+    let lastOpacity = "0";
     const update = () => {
+      raf = 0;
       const section = sectionRefs.current[aiIndex];
       if (!section) return;
       const sectionTop = section.offsetTop;
-      const fadeStart = sectionTop - deck.clientHeight;
-      const fadeEnd = sectionTop;
-      const progress = Math.min(1, Math.max(0, (deck.scrollTop - fadeStart) / (fadeEnd - fadeStart)));
-      blackout.style.opacity = String(progress);
+      const sectionBottom = sectionTop + section.offsetHeight;
+      const vh = deck.clientHeight;
+      const scroll = deck.scrollTop;
+
+      const fadeInStart = sectionTop - vh;
+      const fadeInEnd = sectionTop;
+      const fadeOutStart = sectionBottom - vh;
+      const fadeOutEnd = sectionBottom;
+
+      let progress: number;
+      if (scroll <= fadeInStart) {
+        progress = 0;
+      } else if (scroll < fadeInEnd) {
+        progress = (scroll - fadeInStart) / (fadeInEnd - fadeInStart);
+      } else if (scroll <= fadeOutStart) {
+        progress = 1;
+      } else if (scroll < fadeOutEnd) {
+        progress = 1 - (scroll - fadeOutStart) / (fadeOutEnd - fadeOutStart);
+      } else {
+        progress = 0;
+      }
+
+      // Round to 2 decimals to avoid unnecessary style writes
+      const val = String(Math.round(Math.min(1, Math.max(0, progress)) * 100) / 100);
+      if (val !== lastOpacity) {
+        lastOpacity = val;
+        blackout.style.opacity = val;
+      }
     };
     const onScroll = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        update();
-      });
+      if (!raf) raf = requestAnimationFrame(update);
     };
     deck.addEventListener("scroll", onScroll, { passive: true });
     update();

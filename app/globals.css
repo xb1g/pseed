@@ -3221,6 +3221,8 @@ summary:focus-visible .radar-expand-indicator {
     scroll-snap-align: none;
     scroll-snap-stop: normal;
     contain: content;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 100dvh;
   }
 
   .radar-card-viewport,
