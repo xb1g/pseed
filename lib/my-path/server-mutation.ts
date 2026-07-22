@@ -99,6 +99,20 @@ export async function persistMyPathMutation(
       body: { error: "active_path_limit", message: error.message },
     };
   }
+  if (error?.code === "42501") {
+    return { status: 401, body: { error: "authentication_required" } };
+  }
+  if (error?.code === "22023") {
+    return {
+      status: 400,
+      body: { error: "invalid_draft", message: error.message },
+    };
+  }
+  // PostgREST: function missing from this database (common on an unmigrated local DB).
+  if (error?.code === "PGRST202") {
+    console.error("My Path persistence unavailable:", error.message);
+    return { status: 503, body: { error: "my_path_unavailable" } };
+  }
   if (error) {
     console.error("My Path persistence failed:", error.code ?? "unknown");
     return { status: 500, body: { error: "persistence_failed" } };

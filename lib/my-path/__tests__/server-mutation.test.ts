@@ -148,6 +148,40 @@ test("the server exposes the active-path limit as a conflict", async () => {
   assert.equal(result.body.error, "active_path_limit");
 });
 
+test("a missing sync RPC is surfaced as unavailable instead of a generic 500", async () => {
+  const errorSpy = jest.spyOn(console, "error").mockImplementation(() => undefined);
+  const fake = client({
+    rpcError: {
+      code: "PGRST202",
+      message: "Could not find the function public.sync_my_path_journey",
+    },
+  });
+  const result = await persistMyPathMutation(fake.value, {
+    operation: "import",
+    draft: createAnonymousDraft("generic", "draft-missing-rpc"),
+  });
+
+  assert.equal(result.status, 503);
+  assert.equal(result.body.error, "my_path_unavailable");
+  errorSpy.mockRestore();
+});
+
+test("an invalid or unpublished Radar career is a client error", async () => {
+  const fake = client({
+    rpcError: {
+      code: "22023",
+      message: "draft contains an invalid or unpublished Radar career",
+    },
+  });
+  const result = await persistMyPathMutation(fake.value, {
+    operation: "import",
+    draft: createAnonymousDraft("generic", "draft-bad-career"),
+  });
+
+  assert.equal(result.status, 400);
+  assert.equal(result.body.error, "invalid_draft");
+});
+
 test("anonymous events use the validated rate-limited RPC contract", async () => {
   const fake = client();
   const result = await recordAnonymousMyPathEvent(fake.value, {

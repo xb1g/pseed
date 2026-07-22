@@ -77,6 +77,9 @@ export function PlanWizard({
   const [importStatus, setImportStatus] = useState<
     "idle" | "saving" | "saved" | "error"
   >(hasPersistedPath ? "saved" : "idle");
+  const [saveError, setSaveError] = useState<
+    "auth" | "unavailable" | "generic" | null
+  >(null);
   const [payLaterSheet, setPayLaterSheet] =
     useState<PayLaterSheetState | null>(null);
   const lastSyncedAt = useRef<string | null>(initialDraft?.updatedAt ?? null);
@@ -310,6 +313,7 @@ export function PlanWizard({
   async function persistPlan(): Promise<boolean> {
     if (!draft) return false;
     setImportStatus("saving");
+    setSaveError(null);
     try {
       const response = await fetch("/api/my-path", {
         method: "POST",
@@ -319,7 +323,19 @@ export function PlanWizard({
           draft,
         }),
       });
-      if (!response.ok) throw new Error("save failed");
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        if (payload?.error === "authentication_required") {
+          setSaveError("auth");
+        } else if (payload?.error === "my_path_unavailable") {
+          setSaveError("unavailable");
+        } else {
+          setSaveError("generic");
+        }
+        throw new Error("save failed");
+      }
       lastSyncedAt.current = draft.updatedAt;
       setPersisted(true);
       setImportStatus("saved");
@@ -328,6 +344,7 @@ export function PlanWizard({
       return true;
     } catch {
       setImportStatus("error");
+      setSaveError((current) => current ?? "generic");
       return false;
     }
   }
@@ -469,6 +486,7 @@ export function PlanWizard({
               isSignedIn={isSignedIn}
               loginHref={LOGIN_HREF}
               importStatus={importStatus}
+              saveError={saveError}
               persisted={persisted}
               onSave={savePlan}
               onLaunch={() =>

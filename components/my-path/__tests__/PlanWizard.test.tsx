@@ -234,9 +234,13 @@ test("discloses the trial terms before launch and only links to the confirmed en
       name: "เริ่มวันแรกก่อนได้ — ยังไม่ต้องจ่ายตอนนี้",
     })
   ).toBeVisible();
-  expect(screen.getByText(/ทดลองครบ PathLab ฿1,490/)).toBeVisible();
-  expect(screen.getByText(/ส่งให้ผู้ปกครองชำระภายใน 24 ชม/)).toBeVisible();
-  expect(screen.getByText(/ไม่มีการตัดเงินอัตโนมัติ/)).toBeVisible();
+  // Trial price / parent-pay copy hidden on plan page for now
+  expect(
+    screen.queryByText(/ทดลองครบ PathLab ฿1,490/)
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByText(/ส่งให้ผู้ปกครองชำระภายใน 24 ชม/)
+  ).not.toBeInTheDocument();
   expect(
     screen.queryByText("ลิงก์ชำระเงินสำหรับผู้ปกครอง")
   ).not.toBeInTheDocument();
