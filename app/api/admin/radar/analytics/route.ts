@@ -61,19 +61,19 @@ export async function GET(req: NextRequest) {
   >();
 
   // Fill all dates so chart has no gaps.
-  // Add +1 day buffer so "today" in UTC+7..+12 is always included even when
-  // the server clock is still on the previous UTC day.
-  const endDate = new Date();
-  endDate.setUTCDate(endDate.getUTCDate() + 1);
-  const endKey = endDate.toISOString().slice(0, 10);
+  // Use UTC+7 (Bangkok) to determine "today" so the chart matches the user's day.
+  const nowMs = Date.now() + 7 * 3600_000;
+  const todayKey = new Date(nowMs).toISOString().slice(0, 10);
   for (let d = new Date(since); ; d.setUTCDate(d.getUTCDate() + 1)) {
     const key = d.toISOString().slice(0, 10);
     dateMap.set(key, { planVisits: 0, radarViews: 0, interestClicks: 0 });
-    if (key >= endKey) break;
+    if (key >= todayKey) break;
   }
 
+  // Bucket timestamps into Bangkok date (UTC+7)
   function toDateKey(ts: string) {
-    return ts.slice(0, 10);
+    const d = new Date(new Date(ts).getTime() + 7 * 3600_000);
+    return d.toISOString().slice(0, 10);
   }
 
   for (const row of views || []) {
