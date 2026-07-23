@@ -83,7 +83,7 @@ test("opens on the hook step and gates the interests step behind a saved career"
 
   fireEvent.click(screen.getByRole("button", { name: "เริ่มออกแบบชีวิต" }));
   expect(
-    screen.getByRole("heading", { name: "อะไรที่จุดไฟให้คุณ?" })
+    screen.getByRole("heading", { name: "อะไรจุดไฟในตัวคุณ" })
   ).toBeVisible();
   expect(
     screen.getByRole("button", { name: "เลือกอย่างน้อย 1 อันเพื่อไปต่อ" })
@@ -178,7 +178,7 @@ test("keeps every step in history so a swipe-back only moves one step", async ()
     );
   });
   expect(
-    screen.getByRole("heading", { name: "อะไรที่จุดไฟให้คุณ?" })
+    screen.getByRole("heading", { name: "อะไรจุดไฟในตัวคุณ" })
   ).toBeVisible();
 });
 

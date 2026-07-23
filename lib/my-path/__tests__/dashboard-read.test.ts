@@ -260,3 +260,44 @@ test("a safe report projection failure preserves the rest of the dashboard", asy
   assert.equal(errorSpy.mock.calls.length, 1);
   errorSpy.mockRestore();
 });
+
+test("a missing report projection function degrades without console errors", async () => {
+  const { client } = mockReadClient({
+    path_enrollments: {
+      data: [
+        {
+          id: "enrollment-a",
+          path_id: "path-a",
+          current_day: 1,
+          status: "active",
+          enrolled_at: "2026-07-10T00:00:00.000Z",
+          completed_at: null,
+          path: {
+            id: "path-a",
+            seed_id: "seed-a",
+            seed: { id: "seed-a", title: "AI Builder" },
+          },
+          path_end_reflections: [],
+        },
+      ],
+      error: null,
+    },
+    trial_accesses: { data: [], error: null },
+    path_activity_progress: { data: [], error: null },
+    get_my_path_report_evidence: {
+      data: null,
+      error: {
+        message:
+          "Could not find the function public.get_my_path_report_evidence without parameters in the schema cache",
+      },
+    },
+  });
+  const errorSpy = jest.spyOn(console, "error").mockImplementation(() => undefined);
+
+  const source = await loadMyPathDashboardSource(client, "user-a");
+
+  assert.equal(source.enrollments.length, 1);
+  assert.equal(source.enrollments[0].report, null);
+  assert.equal(errorSpy.mock.calls.length, 0);
+  errorSpy.mockRestore();
+});
