@@ -204,6 +204,16 @@ function logReadError(section: string, error: { message: string } | null): void 
   }
 }
 
+function isMissingRpcProjection(
+  error: { message: string } | null,
+  rpcName: string
+): boolean {
+  if (!error?.message) return false;
+  return error.message.includes(
+    `Could not find the function public.${rpcName} without parameters in the schema cache`
+  );
+}
+
 function selectFrom(
   client: MyPathDashboardReadClient,
   table: string,
@@ -236,7 +246,13 @@ export async function loadMyPathDashboardSource(
 
   logReadError("PathLab enrollment", enrollmentResult.error);
   logReadError("trial access", trialResult.error);
-  logReadError("report evidence", reportResult.error);
+  const reportError = isMissingRpcProjection(
+    reportResult.error,
+    "get_my_path_report_evidence"
+  )
+    ? null
+    : reportResult.error;
+  logReadError("report evidence", reportError);
 
   const reports = mapped(reportResult.data, mapReportEvidence).sort(
     (a, b) =>

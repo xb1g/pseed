@@ -28,7 +28,7 @@ export function StepInterests({
         id="interests-heading"
         className="mt-2 font-kodchasan text-2xl font-semibold text-slate-50 sm:text-3xl"
       >
-        อะไรที่จุดไฟให้คุณ?
+        อะไรจุดไฟในตัวคุณ
       </h2>
       <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">
         เลือกได้หลายอัน (สูงสุด {maxSelections}) — ยังไม่ต้องรู้ว่าอันไหน &quot;ใช่&quot;

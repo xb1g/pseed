@@ -45,8 +45,8 @@ const FOUNDER = {
   role: "Founder, PassionSeed",
   photo: "/images/founder-bunyasit.jpg",
   linkedIn: "https://www.linkedin.com/in/bigfang/",
-  credentials: ["จุฬาลงกรณ์มหาวิทยาลัย", "ทำงานสาย tech ที่ San Francisco"],
-  note: "คนที่นั่งคุยกับคุณคือผมเอง ไม่ใช่ทีมเซลส์",
+  credentials: ["จุฬาลงกรณ์มหาวิทยาลัย", "ทำงานสาย tech ที่ San Francisco", "Berkeley SCET alumni"],
+  note: "my purpose is to help next generation student to design their own life to live fully",
 };
 
 export interface MissionFirstAction {
