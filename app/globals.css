@@ -3211,13 +3211,18 @@ summary:focus-visible .radar-expand-indicator {
 
 @media (max-width: 640px) {
   .radar-deck {
-    scroll-snap-type: y mandatory;
+    scroll-snap-type: none;
+    scroll-behavior: auto;
   }
 
   .radar-card-section {
     padding-inline: 1rem;
     padding-block: 4.5rem 1rem;
-    scroll-snap-stop: always;
+    scroll-snap-align: none;
+    scroll-snap-stop: normal;
+    contain: content;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 100dvh;
   }
 
   .radar-card-viewport,
@@ -3225,6 +3230,26 @@ summary:focus-visible .radar-expand-indicator {
     height: auto;
     min-height: calc(100dvh - 5.5rem);
     overflow: visible;
+  }
+
+  .radar-atmosphere-shade {
+    opacity: 0.82;
+  }
+
+  .radar-atmosphere {
+    contain: layout paint style;
+    transform: translateZ(0);
+  }
+
+  .radar-glow-a,
+  .radar-glow-b,
+  .radar-glow-c,
+  .radar-glow-follow {
+    display: none !important;
+  }
+
+  .radar-deck {
+    contain: layout style;
   }
 }
 
@@ -4725,15 +4750,34 @@ summary:focus-visible .radar-expand-indicator {
     opacity: 0.26;
   }
 
-  .radar-career-card:active {
+  .radar-career-card.in-view {
     z-index: 80;
     transform: translate3d(0, -5px, 0) scale(1.025);
+  }
+
+  .radar-career-card.in-view .radar-career-card__figure {
+    z-index: 90;
+    filter: grayscale(0.08) saturate(1.02) contrast(1.02);
+    transform: translate3d(0, -5%, 0) scale(1.08);
+    will-change: transform, filter;
+  }
+
+  /* Safari keeps filter changes discrete, but the centered mobile card still
+     receives the same color reveal and character pop as every other browser. */
+  .radar-index-page--safari .radar-career-card.in-view .radar-career-card__figure {
+    filter: none !important;
+    will-change: transform;
+  }
+
+  .radar-career-card:active {
+    z-index: 80;
+    transform: translate3d(0, -7px, 0) scale(1.045);
   }
 
   .radar-career-card:active .radar-career-card__figure {
     z-index: 90;
     filter: grayscale(0.08) saturate(1.02) contrast(1.02);
-    transform: translate3d(0, -5%, 0) scale(1.08);
+    transform: translate3d(0, -7%, 0) scale(1.14);
   }
 
   /* Preserve the tap color reveal on mobile Safari. The Safari base rule is
@@ -6952,35 +6996,19 @@ summary:focus-visible .radar-expand-indicator {
   animation: none !important;
 }
 
-/* Tint on the wrapper, not the images: WebKit lets the intro keyframes'
-   grayscale filter beat the !important image tint while they run, so pieces
-   went colorless mid-animation. A parent filter composes after the child's
-   animated filter, keeping the color through the whole choreography. */
-.radar-field-page--safari .salary-chess-piece,
-.radar-field-page--safari .salary-chess-level--queen .salary-chess-piece,
-.radar-field-page--safari .salary-chess-detail-piece {
-  filter: sepia(0.9) saturate(3.2) hue-rotate(var(--salary-chess-image-hue, 60deg)) brightness(1.05)
-    contrast(1.05);
-}
-
-.radar-field-page--safari .salary-chess-piece-image,
-.radar-field-page--safari .salary-chess-intro-pawn {
-  will-change: transform, opacity;
-}
-
-.radar-field-page--safari .salary-chess-level--queen .salary-chess-piece::before,
-.radar-field-page--safari .salary-chess-detail-piece--queen::before,
-.radar-field-page--safari .salary-chess-detail-piece--queen::after {
-  display: none !important;
-  animation: none !important;
-}
-
+/* Safari: keep pseudo-element tint overlays visible for correct color,
+   but skip animations that cause WebKit mask-image repaint issues. */
 .radar-field-page--safari .salary-chess-piece::before,
 .radar-field-page--safari .salary-chess-piece::after,
 .radar-field-page--safari .salary-chess-detail-piece::before,
 .radar-field-page--safari .salary-chess-detail-piece::after,
 .radar-field-page--safari .salary-chess-intro-pawn::after {
-  display: none !important;
+  animation: none !important;
+}
+
+.radar-field-page--safari .salary-chess-piece-image,
+.radar-field-page--safari .salary-chess-intro-pawn {
+  will-change: transform, opacity;
 }
 
 .radar-field-page--safari .salary-chess-board--intro-complete .salary-chess-piece-image,

@@ -150,6 +150,16 @@ export function PlanWizard({
         }),
       }).catch(() => undefined);
     }
+    // Track every /plan page visit for daily analytics
+    void fetch("/api/my-path/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId: next.draftId,
+        eventType: "plan_page_viewed",
+        metadata: {},
+      }),
+    }).catch(() => undefined);
   }, [initialDraft]);
 
   // Interests flagged over on Radar arrive as bare slugs. Fold them into the
