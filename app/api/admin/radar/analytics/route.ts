@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
     { data: intents },
     { data: planAuth },
     { data: planAnon },
+    { data: planSteps },
   ] = await Promise.all([
     admin
       .from("radar_field_views")
@@ -51,6 +52,11 @@ export async function GET(req: NextRequest) {
       .from("anonymous_my_path_events")
       .select("created_at, event_type")
       .in("event_type", ["reel_entry_viewed", "plan_page_viewed"])
+      .gte("created_at", sinceISO),
+    admin
+      .from("anonymous_my_path_events")
+      .select("created_at, event_type, metadata")
+      .eq("event_type", "wizard_step_viewed")
       .gte("created_at", sinceISO),
   ]);
 
@@ -112,6 +118,63 @@ export async function GET(req: NextRequest) {
     .sort((a, b) => b[1] - a[1])
     .map(([path, count]) => ({ path, count }));
 
+  // Radar views breakdown by field per day
+  const radarByDayField = new Map<string, Map<string, number>>();
+  for (const row of views || []) {
+    if (!row.created_at) continue;
+    const day = toDateKey(row.created_at);
+    let fieldMap = radarByDayField.get(day);
+    if (!fieldMap) {
+      fieldMap = new Map();
+      radarByDayField.set(day, fieldMap);
+    }
+    const slug = row.field_slug || "unknown";
+    fieldMap.set(slug, (fieldMap.get(slug) || 0) + 1);
+  }
+  const radarFieldBreakdown = Array.from(radarByDayField.entries())
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([date, fieldMap]) => ({
+      date,
+      fields: Array.from(fieldMap.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([field, count]) => ({ field, count })),
+    }));
+
+  // Plan wizard step breakdown per day
+  const stepNames = [
+    "เริ่ม (Hook)",
+    "จุดไฟ (Interests)",
+    "เป้าหมาย (Goal)",
+    "แผน (Mission)",
+  ];
+  const planStepsByDay = new Map<string, Map<number, number>>();
+  for (const row of planSteps || []) {
+    if (!row.created_at) continue;
+    const day = toDateKey(row.created_at);
+    let stepMap = planStepsByDay.get(day);
+    if (!stepMap) {
+      stepMap = new Map();
+      planStepsByDay.set(day, stepMap);
+    }
+    const stepNum =
+      typeof (row.metadata as Record<string, unknown>)?.step === "number"
+        ? ((row.metadata as Record<string, unknown>).step as number)
+        : -1;
+    if (stepNum >= 0) stepMap.set(stepNum, (stepMap.get(stepNum) || 0) + 1);
+  }
+  const planStepBreakdown = Array.from(planStepsByDay.entries())
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([date, stepMap]) => ({
+      date,
+      steps: Array.from(stepMap.entries())
+        .sort((a, b) => a[0] - b[0])
+        .map(([step, count]) => ({
+          step,
+          name: stepNames[step] || `Step ${step}`,
+          count,
+        })),
+    }));
+
   // Totals
   const totalPlanVisits = dailyStats.reduce((s, d) => s + d.planVisits, 0);
   const totalRadarViews = dailyStats.reduce((s, d) => s + d.radarViews, 0);
@@ -123,6 +186,8 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     dailyStats,
     pathBreakdown,
+    radarFieldBreakdown,
+    planStepBreakdown,
     summary: {
       totalPlanVisits,
       totalRadarViews,

@@ -8,6 +8,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   LineChart,
   Line,
@@ -40,9 +49,21 @@ interface PathBreakdown {
   count: number;
 }
 
+interface RadarFieldDay {
+  date: string;
+  fields: { field: string; count: number }[];
+}
+
+interface PlanStepDay {
+  date: string;
+  steps: { step: number; name: string; count: number }[];
+}
+
 interface AnalyticsData {
   dailyStats: DailyStat[];
   pathBreakdown: PathBreakdown[];
+  radarFieldBreakdown: RadarFieldDay[];
+  planStepBreakdown: PlanStepDay[];
   summary: {
     totalPlanVisits: number;
     totalRadarViews: number;
@@ -102,6 +123,32 @@ export function RadarAnalyticsCharts() {
       ? ((totalInterestClicks / totalRadarViews) * 100).toFixed(1)
       : "0";
 
+  const daysButtons = (
+    <div className="flex gap-2">
+      {[7, 30, 90].map((d) => (
+        <button
+          key={d}
+          onClick={() => setDays(d)}
+          className={`px-3 py-1 text-sm rounded-md transition-colors ${
+            days === d
+              ? "bg-primary text-primary-foreground"
+              : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+          }`}
+        >
+          {d}d
+        </button>
+      ))}
+    </div>
+  );
+
+  // Filter breakdowns to only days with data
+  const radarDaysWithData = (data.radarFieldBreakdown || []).filter(
+    (d) => d.fields.length > 0
+  );
+  const planDaysWithData = (data.planStepBreakdown || []).filter(
+    (d) => d.steps.length > 0
+  );
+
   return (
     <div className="space-y-6">
       {/* Funnel summary cards */}
@@ -160,21 +207,7 @@ export function RadarAnalyticsCharts() {
                 Plan visits → Radar views → Interest clicks
               </CardDescription>
             </div>
-            <div className="flex gap-2">
-              {[7, 30, 90].map((d) => (
-                <button
-                  key={d}
-                  onClick={() => setDays(d)}
-                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                    days === d
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                  }`}
-                >
-                  {d}d
-                </button>
-              ))}
-            </div>
+            {daysButtons}
           </div>
         </CardHeader>
         <CardContent>
@@ -228,6 +261,108 @@ export function RadarAnalyticsCharts() {
         </CardContent>
       </Card>
 
+      {/* Radar views by field per day */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Radar views by field</CardTitle>
+          <CardDescription>
+            Which career pages were visited each day (last {days} days)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {radarDaysWithData.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              No radar views in this period.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-28">Date</TableHead>
+                    <TableHead>Fields visited</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {radarDaysWithData.map((day) => (
+                    <TableRow key={day.date}>
+                      <TableCell className="font-medium whitespace-nowrap">
+                        {format(parseISO(day.date), "MMM d")}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1.5">
+                          {day.fields.map(({ field, count }) => (
+                            <Badge
+                              key={field}
+                              variant="secondary"
+                              className="text-xs"
+                            >
+                              {field}{" "}
+                              <span className="ml-1 font-bold">{count}</span>
+                            </Badge>
+                          ))}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Plan wizard step funnel per day */}
+      <Card>
+        <CardHeader>
+          <CardTitle>/plan step reach</CardTitle>
+          <CardDescription>
+            How far visitors get in the plan wizard each day (last {days} days)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {planDaysWithData.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              No plan wizard step data in this period.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-28">Date</TableHead>
+                    <TableHead>Steps reached</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {planDaysWithData.map((day) => (
+                    <TableRow key={day.date}>
+                      <TableCell className="font-medium whitespace-nowrap">
+                        {format(parseISO(day.date), "MMM d")}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1.5">
+                          {day.steps.map(({ step, name, count }) => (
+                            <Badge
+                              key={step}
+                              variant="outline"
+                              className="text-xs"
+                            >
+                              {name}{" "}
+                              <span className="ml-1 font-bold">{count}</span>
+                            </Badge>
+                          ))}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Interest clicks by career path */}
       {data.pathBreakdown.length > 0 && (
         <Card>
@@ -240,7 +375,10 @@ export function RadarAnalyticsCharts() {
           <CardContent>
             <ResponsiveContainer
               width="100%"
-              height={Math.max(200, data.pathBreakdown.slice(0, 15).length * 36)}
+              height={Math.max(
+                200,
+                data.pathBreakdown.slice(0, 15).length * 36
+              )}
             >
               <BarChart
                 data={data.pathBreakdown.slice(0, 15).map((p) => ({
