@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { memo, useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -242,9 +242,16 @@ export function RadarFieldPageClient({
   const sectionRefs = useRef<Array<HTMLElement | null>>([]);
   const rootRef = useRef<HTMLDivElement>(null);
   const followRef = useRef<HTMLDivElement>(null);
+  const blackoutRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const isSafariRef = useRef(false);
-  const [isSafari, setIsSafari] = useState(false);
+  const [isSafari, setIsSafari] = useState(() => {
+    if (typeof navigator === "undefined") return false;
+    return (
+      navigator.vendor.includes("Apple") &&
+      !/(CriOS|FxiOS|EdgiOS|OPiOS)/.test(navigator.userAgent)
+    );
+  });
   const fieldOpenRecordedRef = useRef(false);
   const touchSectionGuardRef = useRef<{
     sectionIndex: number;
@@ -258,6 +265,7 @@ export function RadarFieldPageClient({
 
   const handlePointer = useCallback((e: React.MouseEvent) => {
     if (isSafariRef.current) return;
+    if (window.matchMedia("(hover: none)").matches) return;
     const root = rootRef.current;
     const glow = followRef.current;
     if (!root || !glow) return;
@@ -270,16 +278,10 @@ export function RadarFieldPageClient({
     });
   }, []);
 
-  // Detect Safari via state (not a manual classList mutation) so the
-  // radar-field-page--safari class survives React className rewrites —
-  // e.g. when the AI Impact slide toggles radar-field-page--ai.
+  // Sync the ref with the initial state value
   useEffect(() => {
-    const safari =
-      navigator.vendor.includes("Apple") &&
-      !/(CriOS|FxiOS|EdgiOS|OPiOS)/.test(navigator.userAgent);
-    isSafariRef.current = safari;
-    setIsSafari(safari);
-  }, []);
+    isSafariRef.current = isSafari;
+  }, [isSafari]);
 
   const goTo = useCallback((i: number) => {
     touchSectionGuardRef.current = null;
@@ -294,7 +296,12 @@ export function RadarFieldPageClient({
   const handleDeckTouchStart = useCallback(
     (event: React.TouchEvent<HTMLDivElement>) => {
       const deck = scrollRef.current;
-      if (!deck || !window.matchMedia("(max-width: 640px)").matches) {
+      if (!deck) {
+        touchSectionGuardRef.current = null;
+        return;
+      }
+      // On mobile, let the browser handle scrolling natively — no snap guard
+      if (window.matchMedia("(max-width: 640px)").matches) {
         touchSectionGuardRef.current = null;
         return;
       }
@@ -342,6 +349,11 @@ export function RadarFieldPageClient({
     const deck = scrollRef.current;
     const guard = touchSectionGuardRef.current;
     if (!deck || !guard?.direction) return;
+
+    // On mobile, tall sections have scroll-snap disabled via CSS.
+    // Skip JS clamping too so the browser's native inertia works smoothly.
+    const section = sectionRefs.current[guard.sectionIndex];
+    if (section?.classList.contains("radar-card-section--tall")) return;
 
     if (
       guard.direction === "down" &&
@@ -446,6 +458,28 @@ export function RadarFieldPageClient({
     []
   );
 
+  // Tag sections taller than the viewport so CSS can disable scroll-snap on them
+  // This prevents Chrome mobile from snapping past tall content
+  useEffect(() => {
+    const deck = scrollRef.current;
+    if (!deck) return;
+    const markTall = () => {
+      const vh = deck.clientHeight;
+      sectionRefs.current.forEach((section) => {
+        if (!section) return;
+        section.classList.toggle(
+          "radar-card-section--tall",
+          section.scrollHeight > vh + 20
+        );
+      });
+    };
+    markTall();
+    const ro = new ResizeObserver(markTall);
+    ro.observe(deck);
+    sectionRefs.current.forEach((s) => s && ro.observe(s));
+    return () => ro.disconnect();
+  }, [cards.length, initialSkills.length]);
+
   useEffect(() => {
     const root = scrollRef.current;
     if (!root) return;
@@ -464,6 +498,61 @@ export function RadarFieldPageClient({
     return () => observer.disconnect();
   }, [cards.length, initialSkills.length]);
 
+  // Gradually fade in/out blackout overlay around AI impact section
+  useEffect(() => {
+    const deck = scrollRef.current;
+    const blackout = blackoutRef.current;
+    if (!deck || !blackout) return;
+    const aiIndex = cards.findIndex((c) => c.kind === "aiImpact");
+    if (aiIndex < 0) return;
+
+    let raf = 0;
+    let lastOpacity = "0";
+    const update = () => {
+      raf = 0;
+      const section = sectionRefs.current[aiIndex];
+      if (!section) return;
+      const sectionTop = section.offsetTop;
+      const sectionBottom = sectionTop + section.offsetHeight;
+      const vh = deck.clientHeight;
+      const scroll = deck.scrollTop;
+
+      const fadeInStart = sectionTop - vh;
+      const fadeInEnd = sectionTop;
+      const fadeOutStart = sectionBottom - vh;
+      const fadeOutEnd = sectionBottom;
+
+      let progress: number;
+      if (scroll <= fadeInStart) {
+        progress = 0;
+      } else if (scroll < fadeInEnd) {
+        progress = (scroll - fadeInStart) / (fadeInEnd - fadeInStart);
+      } else if (scroll <= fadeOutStart) {
+        progress = 1;
+      } else if (scroll < fadeOutEnd) {
+        progress = 1 - (scroll - fadeOutStart) / (fadeOutEnd - fadeOutStart);
+      } else {
+        progress = 0;
+      }
+
+      // Round to 2 decimals to avoid unnecessary style writes
+      const val = String(Math.round(Math.min(1, Math.max(0, progress)) * 100) / 100);
+      if (val !== lastOpacity) {
+        lastOpacity = val;
+        blackout.style.opacity = val;
+      }
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    deck.addEventListener("scroll", onScroll, { passive: true });
+    update();
+    return () => {
+      deck.removeEventListener("scroll", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [cards]);
+
   const accent = readableAccent(field.color || "#3b82f6");
   const visual = getCareerCardVisual(field);
   const progressItems = [
@@ -480,7 +569,6 @@ export function RadarFieldPageClient({
   const displayCurrent = Math.min(current + 1, totalSlides);
   const keepRadarHref = `/radar/keep?next=${encodeURIComponent(`/radar/${fieldSlug}`)}`;
   const isFinalSlide = current >= totalSlides - 1;
-  const isAiImpactSlide = current < cards.length && cards[current]?.kind === "aiImpact";
   // The plan decision bar owns the bottom of the screen in the wizard flow.
   const shouldShowSignupToast =
     !fromPlan &&
@@ -559,11 +647,12 @@ export function RadarFieldPageClient({
     <div
       ref={rootRef}
       onMouseMove={handlePointer}
-      className={`radar-field-page ${isSafari ? "radar-field-page--safari" : ""} ${isAiImpactSlide ? "radar-field-page--ai" : ""} fixed inset-0 isolate z-[100] h-[100dvh] overflow-hidden bg-neutral-950`}
+      className={`radar-field-page ${isSafari ? "radar-field-page--safari" : ""} fixed inset-0 isolate z-[100] h-[100dvh] overflow-hidden bg-neutral-950`}
       style={{
-        background: isAiImpactSlide ? "#141414" : visual.background,
+        background: visual.background,
         ...visual.dotStyle,
-      }}
+        '--radar-accent': accent,
+      } as React.CSSProperties}
     >
       <div className="radar-atmosphere pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <span
@@ -576,10 +665,7 @@ export function RadarFieldPageClient({
         />
         <div
           className="radar-glow-a absolute top-0 left-1/2 w-[720px] h-[420px] rounded-full blur-[140px]"
-          style={{
-            background: accent,
-            filter: `blur(140px) saturate(${1 + Math.min(current, 12) * 0.06})`,
-          }}
+          style={{ background: accent }}
         />
         <div
           className="radar-glow-b absolute bottom-[-10%] left-[-5%] w-[480px] h-[480px] rounded-full blur-[150px]"
@@ -594,7 +680,7 @@ export function RadarFieldPageClient({
           className="radar-glow-follow absolute top-1/2 left-1/2 -ml-[200px] -mt-[200px] w-[400px] h-[400px] rounded-full blur-[120px] opacity-[0.14]"
           style={{ background: accent }}
         />
-        <div className="radar-detail-blackout" aria-hidden="true" />
+        <div ref={blackoutRef} className="radar-detail-blackout" aria-hidden="true" />
       </div>
 
       <div className="absolute top-0 inset-x-0 z-30 px-4 pt-4">
@@ -865,7 +951,7 @@ function RadarViewportFit({ children }: { children: React.ReactNode }) {
   );
 }
 
-function RadarCardSection({
+const RadarCardSection = memo(function RadarCardSection({
   children,
   isFirst,
   hasMore,
@@ -976,4 +1062,4 @@ function RadarCardSection({
       </div>
     </section>
   );
-}
+});

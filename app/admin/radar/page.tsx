@@ -21,6 +21,7 @@ import {
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { RadarAnalyticsCharts } from "@/components/admin/RadarAnalyticsCharts";
 
 export const dynamic = "force-dynamic";
 
@@ -434,6 +435,9 @@ export default async function AdminRadarPage({
               </Table>
             </div>
           </section>
+
+          {/* ── Daily Analytics Charts ── */}
+          <RadarAnalyticsCharts />
 
           <section className="space-y-4" aria-labelledby="recent-intents-heading">
             <div>
