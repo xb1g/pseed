@@ -14,6 +14,7 @@ import { OglTrendBackground } from "@/components/radar/OglTrendBackground";
 import {
   getAiImpactLabel,
   getEntryRouteLabel,
+  getJobAccessLabel,
   getOutlookLabel,
   interpretRadarMetric,
   parseRadarListItems,
@@ -1241,23 +1242,13 @@ function CompanyLogo({ company, logoUrl }: { company: string; logoUrl: string | 
   return <img src={logoUrl} alt={`${company} logo`} loading="lazy" onError={() => setFailed(true)} />;
 }
 
-function jobDifficultyLabel(score: number): string {
-  if (score >= 75) return "Easy";
-  if (score >= 60) return "Average/easy";
-  if (score >= 45) return "Average";
-  return "Difficult";
-}
-
 function MarketThailandCard({ c, accent }: { c: MarketThailandContent; accent: string }) {
   const access = c.job_access;
   const accessScore = access
     ? Math.max(0, Math.min(100, Math.round(access.score)))
     : null;
-  const confidenceLabel = access?.confidence === "high"
-    ? "Confidence: High"
-    : access?.confidence === "medium"
-      ? "Confidence: Medium"
-      : "Confidence: Low";
+  // `confidence` is an editorial-quality flag, not student-facing information —
+  // it stays in the data and out of the card.
   const factors = access ? [
     { key: "demand_score", label: "ความต้องการจ้าง", value: access.demand_score, positive: true },
     { key: "competition_score", label: "การแข่งขัน", value: access.competition_score, positive: false },
@@ -1284,19 +1275,29 @@ function MarketThailandCard({ c, accent }: { c: MarketThailandContent; accent: s
                 </div>
               </div>
               <div className="market-ticket__verdict">
-                <strong>Difficulty: {jobDifficultyLabel(accessScore)}</strong>
-                <span>{confidenceLabel}</span>
+                <strong>{getJobAccessLabel(accessScore)}</strong>
+                <span>ยิ่งคะแนนสูง ยิ่งหางานได้ง่าย</span>
               </div>
             </div>
 
             <div className="market-ticket__metrics">
               {factors.map((factor) => {
                 const value = Math.max(0, Math.min(10, Number(factor.value)));
+                // Three bars, two directions. Tone + fill + an always-on caption
+                // carry the polarity so "8/10" is never read as good by default.
+                const tone = factor.positive ? "good" : "caution";
                 return (
-                  <div key={factor.key} className="market-ticket__metric">
+                  <div
+                    key={factor.key}
+                    className={`market-ticket__metric market-ticket__metric--${tone}`}
+                    style={{ "--metric-fill": `${value * 10}%` } as CSSProperties}
+                  >
                     <span>{factor.label}</span>
                     <strong>{value}/10</strong>
-                    {!factor.positive && <small>ยิ่งสูงยิ่งหางานยาก</small>}
+                    <span className="market-ticket__metric-bar" aria-hidden="true" />
+                    <small>
+                      {factor.positive ? "ยิ่งสูงยิ่งดี" : "ยิ่งสูงยิ่งหางานยาก"}
+                    </small>
                   </div>
                 );
               })}

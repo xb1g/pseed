@@ -825,7 +825,6 @@ const FieldTile = memo(function FieldTile({
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 34vw, 25vw"
           loading="lazy"
-          quality={72}
           className="object-contain object-center"
           draggable={false}
         />
