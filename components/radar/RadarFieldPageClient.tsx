@@ -285,12 +285,24 @@ export function RadarFieldPageClient({
 
   const goTo = useCallback((i: number) => {
     touchSectionGuardRef.current = null;
-    sectionRefs.current[i]?.scrollIntoView({
-      block: "start",
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "auto"
-        : "smooth",
-    });
+    const section = sectionRefs.current[i];
+    if (!section) return;
+    const behavior: ScrollBehavior = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches
+      ? "auto"
+      : "smooth";
+
+    // The deck scrolls inside `.radar-deck`, not the window. scrollIntoView has
+    // to guess which ancestor to move and does nothing once a section is
+    // `content-visibility: auto` off-screen, so drive the container directly —
+    // section offsets are already relative to the deck (it is their offsetParent).
+    const deck = scrollRef.current;
+    if (deck) {
+      deck.scrollTo({ top: section.offsetTop, behavior });
+      return;
+    }
+    section.scrollIntoView({ block: "start", behavior });
   }, []);
 
   const handleDeckTouchStart = useCallback(
@@ -696,10 +708,11 @@ export function RadarFieldPageClient({
             {progressItems.map((item, i) => (
               <button
                 key={item.key}
+                type="button"
                 onClick={() => goTo(item.scrollIndex)}
-                aria-label={`Go to: ${item.label}`}
+                aria-label={`ไปที่ ${i + 1}: ${item.label}`}
                 aria-current={i === current ? "step" : undefined}
-                className="group relative min-h-12 flex-1 flex items-center"
+                className="group relative min-h-12 flex-1 flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
               >
                 <span
                   className={`h-1 w-full rounded-full transition-all duration-300 group-hover:h-1.5 ${
@@ -710,7 +723,7 @@ export function RadarFieldPageClient({
                     ["--dot-color" as string]: accent,
                   }}
                 />
-                <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-2 whitespace-nowrap rounded-md border border-white/10 bg-neutral-900/95 px-2 py-1 text-[11px] text-white/90 opacity-0 translate-y-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-y-0 z-40 shadow-lg">
+                <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-2 whitespace-nowrap rounded-md border border-white/10 bg-neutral-900/95 px-2 py-1 text-[11px] text-white/90 opacity-0 translate-y-1 transition-all duration-150 group-hover:opacity-100 group-hover:translate-y-0 group-focus-visible:opacity-100 group-focus-visible:translate-y-0 z-40 shadow-lg">
                   <span className="text-white/40 tabular-nums mr-1.5">
                     {i + 1}
                   </span>

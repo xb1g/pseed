@@ -20,6 +20,17 @@ export function getAiImpactLabel(score: number): string {
   return "ได้รับผลกระทบสูง";
 }
 
+/**
+ * Verdict for the 0–100 job-access score on the Competition card. Rendered to
+ * students, so it stays in Thai like every other label in this module.
+ */
+export function getJobAccessLabel(score: number): string {
+  if (score >= 75) return "หางานง่าย";
+  if (score >= 60) return "หางานค่อนข้างง่าย";
+  if (score >= 45) return "หางานปานกลาง";
+  return "หางานยาก";
+}
+
 export function getOutlookLabel(tier?: string | null): string {
   if (!tier) return "ข้อมูลยังไม่พอสรุป";
   return OUTLOOK_LABELS[tier] ?? "ข้อมูลยังไม่พอสรุป";

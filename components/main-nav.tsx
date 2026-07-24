@@ -264,6 +264,9 @@ export function MainNav({ isAuthenticated = false }: { isAuthenticated?: boolean
                   width={40}
                   height={40}
                   className="w-10 h-10 object-contain"
+                  // Header mark is the LCP element on nav-bearing pages (radar
+                  // included). `priority` implies eager loading + fetchpriority=high.
+                  priority
                 />
               </Link>
             </>
