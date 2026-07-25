@@ -35,8 +35,9 @@ async function loadPublishedRadarField(slug: string) {
 export const getCachedPublishedRadarField = unstable_cache(
   loadPublishedRadarField,
   // Keep this version aligned with material backfills to published card JSON.
-  // v5 invalidates entries created before the market ticket, faculty-route,
-  // and locale-specific field-name backfills were synchronized.
-  ["published-radar-field-v5"],
+  // v6 invalidates entries created before the Jul 2026 P0/P1 content pass
+  // (salary reconciliation, source cleanup, AI-impact scores, jargon glosses)
+  // and the CTA card resource links.
+  ["published-radar-field-v6"],
   { revalidate: 300, tags: ["published-radar-fields"] }
 );

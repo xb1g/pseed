@@ -815,6 +815,7 @@ export function RadarFieldPageClient({
                     accent={accent}
                     fieldNameTh={field.name_th ?? undefined}
                     fieldNameEn={field.name_en ?? undefined}
+                    fieldSlug={field.slug ?? undefined}
                     squadUrl={field.squad_url}
                     fieldSources={fieldSources}
                     reflectionSubmitted={submitted.has(card.id)}
