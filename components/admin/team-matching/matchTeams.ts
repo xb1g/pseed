@@ -49,8 +49,8 @@ function makeUnionFind(ids: string[]) {
 export function matchTeams(users: SimUser[]): Team[] {
   if (users.length === 0) return [];
 
-  // Exclude users who picked no preferences at all
-  users = users.filter((u) => u.preferences.length > 0);
+  // Users with no preferences still need a team: they flow through as solo
+  // clusters and are merged into groups by the steps below.
 
   const prefSet = new Set(
     users.flatMap((u) => u.preferences.map((p) => `${u.id}:${p}`))
