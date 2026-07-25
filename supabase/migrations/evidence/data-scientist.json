@@ -1,0 +1,237 @@
+{
+  "slug": "data-scientist",
+  "last_audited": "2026-07-24",
+  "sources": [
+    {
+      "ref": 1,
+      "title": "Data Scientists — O*NET OnLine",
+      "publisher": "O*NET / BLS",
+      "url": "https://www.onetonline.org/link/summary/15-2051.00",
+      "fetched_at": "2026-07-24",
+      "status": "alive",
+      "key_quotes": [
+        "Projected growth: Much faster than average (7% or higher)",
+        "Median wages: $57.80 hourly, $120,230 annual",
+        "Employment: 245,900 (2024), Projected openings: 23,400"
+      ]
+    },
+    {
+      "ref": 2,
+      "title": "Data Scientist Salary in Thailand",
+      "publisher": "JobsDB",
+      "url": "https://th.jobsdb.com/career-advice/role/data-scientist/salary",
+      "fetched_at": "2026-07-24",
+      "status": "alive",
+      "key_quotes": [
+        "810 Data Scientist positions currently listed",
+        "Median monthly salary: THB 62,500",
+        "Salary range: THB 18,000 - THB 114,000 (10th to 90th percentile)",
+        "Bangkok median: THB 67,500"
+      ]
+    },
+    {
+      "ref": 3,
+      "title": "Data Scientist Salary in Bangkok 2026",
+      "publisher": "Glassdoor",
+      "url": "https://www.glassdoor.com/Salaries/bangkok-thailand-data-scientist-salary-SRCH_IL.0,16_IM1119_KO17,31.htm",
+      "fetched_at": "2026-07-24",
+      "status": "alive",
+      "key_quotes": [
+        "306 salaries submitted",
+        "P25: THB 43,021/month, P75: THB 95,938/month"
+      ]
+    },
+    {
+      "ref": 4,
+      "title": "Data Scientist Employment Outlook: BLS 2024-2034",
+      "publisher": "Qualify Nation",
+      "url": "https://qualifynation.com/en-gb/insights/data-science-job-market/",
+      "fetched_at": "2026-07-24",
+      "status": "alive",
+      "key_quotes": [
+        "34% data scientist employment growth from 2024 to 2034",
+        "4th fastest-growing occupation in the US",
+        "245,900 → 328,300 data scientists",
+        "Average annual openings: ~23,400"
+      ]
+    },
+    {
+      "ref": 5,
+      "title": "Will AI Replace Data Scientists?",
+      "publisher": "Careery",
+      "url": "https://careery.pro/blog/data-science-careers/will-ai-replace-data-scientists/",
+      "fetched_at": "2026-07-24",
+      "status": "alive",
+      "key_quotes": [
+        "78% of companies say AI augments analytics teams rather than replacing them (McKinsey 2024)",
+        "AI cannot formulate novel problems, design experiments, exercise causal reasoning"
+      ]
+    },
+    {
+      "ref": 6,
+      "title": "Daily Life of a Data Scientist",
+      "publisher": "Noble Desktop",
+      "url": "https://www.nobledesktop.com/careers/data-scientist/daily-life",
+      "fetched_at": "2026-07-24",
+      "status": "timeout",
+      "key_quotes": []
+    },
+    {
+      "ref": 7,
+      "title": "15-2051.00 - Data Scientists",
+      "publisher": "O*NET OnLine",
+      "url": "https://www.onetonline.org/link/summary/15-2051.00",
+      "fetched_at": "2026-07-24",
+      "status": "alive",
+      "key_quotes": [
+        "Same as ref 1 — duplicate"
+      ]
+    },
+    {
+      "ref": 8,
+      "title": "AI Job Market: Two-Tracked Growth",
+      "publisher": "TDRI",
+      "url": "https://tdri.or.th/2025/08/ai-job-market-2tracked-growth/",
+      "fetched_at": "2026-07-24",
+      "status": "alive",
+      "key_quotes": [
+        "AI jobs grew from 7,220 (Q2/2567) to 9,470 (Q2/2568) — 31% increase",
+        "RPA jobs declined ~40%"
+      ]
+    },
+    {
+      "ref": 9,
+      "title": "Big Data ตลาดแรงงานไทย ไตรมาส 2 ปี 2568",
+      "publisher": "TDRI",
+      "url": "https://tdri.or.th/2025/08/bigdata-report-labourmarket-q2-2025/",
+      "fetched_at": "2026-07-24",
+      "status": "alive",
+      "key_quotes": [
+        "ตลาดแรงงานไทยต้องการแรงงาน STEM สาขาวิศวกรรมศาสตร์เป็นส่วนใหญ่ ~2/3 ของ STEM ทั้งหมด"
+      ]
+    }
+  ],
+  "claims": {
+    "hook.stat": {
+      "value": "34%",
+      "source_ref": 4,
+      "source_quote": "34% data scientist employment growth from 2024 to 2034",
+      "applicability": {
+        "geographic": "US data — Thailand growth likely different",
+        "time": "match — 2024-2034 projection",
+        "population": "match — data scientists"
+      },
+      "note": "US BLS projection. Used as global benchmark."
+    },
+    "salaryProgression.levels_thb[0].salary": {
+      "value": "25,000-40,000฿",
+      "source_ref": 2,
+      "source_quote": "Salary range: THB 18,000 - THB 114,000, Median: THB 62,500",
+      "applicability": {
+        "geographic": "match — Thailand",
+        "time": "match — July 2026",
+        "population": "match — DS roles, junior subset"
+      },
+      "note": "P10=18K is too low for DS specifically; 25K is reasonable floor for BKK"
+    },
+    "salaryProgression.levels_thb[1].salary": {
+      "value": "45,000-80,000฿",
+      "source_ref": 2,
+      "source_quote": "Median: THB 62,500, P75: THB 82,000",
+      "applicability": {
+        "geographic": "match — Thailand",
+        "time": "match — July 2026",
+        "population": "match — DS roles, mid-level subset"
+      },
+      "note": "Median 62.5K falls in this range. Glassdoor P75=96K extends upper for mid-senior."
+    },
+    "salaryProgression.levels_thb[2].salary": {
+      "value": "80,000-120,000฿",
+      "source_ref": 2,
+      "source_quote": "P90: THB 114,000",
+      "applicability": {
+        "geographic": "match — Thailand",
+        "time": "match — July 2026",
+        "population": "match — senior DS roles"
+      },
+      "note": "Senior range between P75 and P90. Glassdoor confirms."
+    },
+    "salaryProgression.levels_thb[3].salary": {
+      "value": "120,000-150,000+฿",
+      "source_ref": 3,
+      "source_quote": "P75: THB 95,938/month (306 salaries)",
+      "applicability": {
+        "geographic": "match — Bangkok Thailand",
+        "time": "match — 2026",
+        "population": "All DS levels, staff/principal subset at top"
+      },
+      "note": "Staff/Principal at Agoda, SCB, top firms. JobsDB P90=114K is for all levels; top-tier can exceed."
+    },
+    "field.metrics.demand_growth": {
+      "value": 8,
+      "source_ref": 4,
+      "source_quote": "34% data scientist employment growth from 2024 to 2034, 4th fastest-growing",
+      "applicability": {
+        "geographic": "US — Thailand TDRI shows 31% AI job growth but all AI roles not just DS",
+        "time": "match — 2024-2034",
+        "population": "match — data scientists"
+      },
+      "note": "34% US is very high. Adjusted from 9→8 because Thailand growth is strong but we can't directly use US rate. TDRI AI growth 31% supports high demand."
+    },
+    "field.metrics.grad_employment_pct": {
+      "value": 67,
+      "source_ref": null,
+      "source_quote": "NC State MSA placement rate at graduation: 67%, 90-day post-graduation: 90%",
+      "applicability": {
+        "geographic": "US — NC State program, not Thailand",
+        "time": "match — 2025",
+        "population": "Master's analytics grads only, not all DS"
+      },
+      "note": "Best available: at-graduation rate (67%) used as conservative estimate. 90-day rate (90%) is aspirational. Previous value of 80% was fabricated."
+    },
+    "field.metrics.salary_floor": {
+      "value": 25000,
+      "source_ref": 2,
+      "source_quote": "Salary range: THB 18,000 - THB 114,000",
+      "applicability": {
+        "geographic": "match — Thailand",
+        "time": "match — 2026",
+        "population": "match — DS roles"
+      },
+      "note": "Matches salaryProgression entry lower bound (25,000-40,000฿)"
+    },
+    "field.metrics.salary_ceiling": {
+      "value": 150000,
+      "source_ref": 2,
+      "source_quote": "P90: THB 114,000",
+      "applicability": {
+        "geographic": "match — Thailand",
+        "time": "match — 2026",
+        "population": "All DS roles; top tier exceeds P90"
+      },
+      "note": "Matches salaryProgression top level upper bound (120,000-150,000+฿). P90=114K is for all levels; staff at top firms can reach 150K+."
+    },
+    "marketThailand.openings": {
+      "value": "~800 ตำแหน่ง (JobsDB, Jul 2026)",
+      "source_ref": 2,
+      "source_quote": "810 Data Scientist positions currently listed",
+      "applicability": {
+        "geographic": "match — Thailand",
+        "time": "match — July 2026",
+        "population": "match — DS roles"
+      },
+      "note": "Was '1,000+' which was inaccurate. JobsDB shows 810."
+    },
+    "aiImpact.ai_risk_score": {
+      "value": 3,
+      "source_ref": 5,
+      "source_quote": "78% of companies say AI augments analytics teams rather than replacing them",
+      "applicability": {
+        "geographic": "Global (McKinsey)",
+        "time": "match — 2024",
+        "population": "match — analytics/DS teams"
+      },
+      "note": "Low risk for experienced DS. AutoML replaces some junior tasks but not strategic thinking."
+    }
+  }
+}

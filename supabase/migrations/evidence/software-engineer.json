@@ -1,0 +1,332 @@
+{
+  "slug": "software-engineer",
+  "last_audited": "2026-07-24",
+  "sources": [
+    {
+      "ref": 1,
+      "title": "Software Developers — O*NET OnLine",
+      "publisher": "O*NET / BLS",
+      "url": "https://www.onetonline.org/link/summary/15-1252.00",
+      "fetched_at": "2026-07-23",
+      "status": "alive",
+      "key_quotes": [
+        "Projected growth: Much faster than average (7% or higher)",
+        "Median wages: $65.38 hourly, $135,980 annual",
+        "Employment: 1,693,800 (2024), Projected openings: 115,200 (2024-2034)"
+      ]
+    },
+    {
+      "ref": 2,
+      "title": "Software Engineer Salary in Thailand",
+      "publisher": "JobsDB",
+      "url": "https://th.jobsdb.com/career-advice/role/software-engineer/salary",
+      "fetched_at": "2026-07-23",
+      "status": "alive",
+      "key_quotes": [
+        "807 Software Engineer positions currently listed",
+        "Median monthly salary: THB 37,500",
+        "Salary range: THB 18,000 - THB 66,000 (10th to 90th percentile)",
+        "Typical range: THB 34,000 - THB 50,000"
+      ]
+    },
+    {
+      "ref": 3,
+      "title": "Coding Bootcamp Statistics for 2026",
+      "publisher": "Metana",
+      "url": "https://metana.io/blog/coding-bootcamp-statistics-for-2026/",
+      "fetched_at": "2026-07-23",
+      "status": "alive",
+      "key_quotes": [
+        "79% of bootcamp alumni are employed full-time",
+        "71% secured positions within 180 days (CIRR standard)",
+        "72% of employers think bootcamp grads are just as prepared as CS degree holders"
+      ]
+    },
+    {
+      "ref": 4,
+      "title": "Stack Overflow Developer Survey 2024",
+      "publisher": "Stack Overflow",
+      "url": "https://survey.stackoverflow.co/2024/",
+      "fetched_at": "2026-07-23",
+      "status": "alive",
+      "key_quotes": [
+        "76% of all respondents are using or are planning to use AI tools",
+        "62% actively using AI tools (up from 44%)",
+        "70% of professional developers do not perceive AI as a threat to their job"
+      ]
+    },
+    {
+      "ref": 5,
+      "title": "WEF Future of Jobs Report 2025 — Coursera Analysis",
+      "publisher": "Coursera / WEF",
+      "url": "https://blog.coursera.org/wef-future-of-jobs-report-2025/",
+      "fetched_at": "2026-07-23",
+      "status": "alive",
+      "key_quotes": [
+        "Net increase of 78 million jobs by 2030, 170 million created, 92 million displaced",
+        "Half of employers plan to re-orient business in response to AI",
+        "Two-thirds plan to hire talent with specific AI skills",
+        "GenAI enrollments tripled, over 3.2 million enrollments in GenAI training"
+      ]
+    },
+    {
+      "ref": 6,
+      "title": "Software Engineer Salary in Thailand 2026",
+      "publisher": "NodeFlair",
+      "url": "https://nodeflair.com/salaries/thailand-software-engineer-salary",
+      "fetched_at": "2026-07-23",
+      "status": "alive",
+      "key_quotes": []
+    },
+    {
+      "ref": 7,
+      "title": "Levels.fyi SWE Level Framework",
+      "publisher": "Levels.fyi",
+      "url": "https://www.levels.fyi/blog/swe-level-framework.html",
+      "fetched_at": "2026-07-23",
+      "status": "alive",
+      "key_quotes": [
+        "Entry Level: up to 2 years, lower complexity components under guidance",
+        "Senior Engineer: moderate to complex components, mentors junior engineers",
+        "Staff Engineer: less than 10% of company, leads complex technical initiatives",
+        "Principal Engineer: sets technical vision for an organization"
+      ]
+    },
+    {
+      "ref": 8,
+      "title": "Software Engineer Compensation — Thailand",
+      "publisher": "Levels.fyi",
+      "url": "https://www.levels.fyi/t/software-engineer/locations/thailand",
+      "fetched_at": "2026-07-23",
+      "status": "alive",
+      "key_quotes": [
+        "P90 total compensation THB 2,650,518/year (~221K/month)",
+        "Median total compensation THB 957,122/year (~80K/month)",
+        "Highest paying: Agoda THB 2,783,625/year",
+        "Sample size: 253 respondents"
+      ]
+    },
+    {
+      "ref": 9,
+      "title": "Junior Developer Crisis 2026: Why Hiring Dropped 50%",
+      "publisher": "ARDURA Consulting",
+      "url": "https://ardura.consulting/blog/junior-developer-crisis-2026-why-companies-stopped-hiring-entry-level/",
+      "fetched_at": "2026-07-23",
+      "status": "alive",
+      "key_quotes": [
+        "junior IT hiring dropped by 50% in 2026"
+      ]
+    }
+  ],
+  "claims": {
+    "hook.stat": {
+      "value": "7%+",
+      "source_ref": 1,
+      "source_quote": "Projected growth: Much faster than average (7% or higher)",
+      "applicability": {
+        "geographic": "US data, used as directional signal",
+        "time": "match — 2024-2034 projection",
+        "population": "match — software developers"
+      },
+      "note": "O*NET US projection 2024-2034"
+    },
+    "hook.statLabel_junior_50pct": {
+      "value": "junior hiring ลดลง 50%",
+      "source_ref": 9,
+      "source_quote": "junior IT hiring dropped by 50% in 2026",
+      "applicability": {
+        "geographic": "Global — includes Thailand market signal",
+        "time": "match — 2026 data",
+        "population": "match — junior developers"
+      },
+      "note": null
+    },
+    "salaryProgression.levels[0].salary": {
+      "value": "24,000-37,000฿",
+      "source_ref": 2,
+      "source_quote": "Salary range: THB 18,000 - THB 66,000 (10th to 90th percentile), Median: THB 37,500",
+      "applicability": {
+        "geographic": "match — Thailand",
+        "time": "match — 2026 data",
+        "population": "match — SWE roles, junior subset of full range"
+      },
+      "note": "Junior subset — P10=18K is too low for dev specifically, 24K is reasonable floor"
+    },
+    "salaryProgression.levels[1].salary": {
+      "value": "40,000-70,000฿",
+      "source_ref": 2,
+      "source_quote": "Typical range: THB 34,000 - THB 50,000",
+      "applicability": {
+        "geographic": "match — Thailand",
+        "time": "match — 2026 data",
+        "population": "All SWE, mid-level subset extrapolated above typical range"
+      },
+      "note": "Mid-level extends above JobsDB typical range — 70K upper aligns with Levels.fyi median ~80K/month"
+    },
+    "salaryProgression.levels[2].salary": {
+      "value": "90,000-130,000฿",
+      "source_ref": 8,
+      "source_quote": "Median total compensation THB 957,122/year (~80K/month), P90 THB 2,650,518/year (~221K/month)",
+      "applicability": {
+        "geographic": "match — Thailand",
+        "time": "match — 2026 data",
+        "population": "All SWE levels, senior subset estimated between median and P90"
+      },
+      "note": "Senior range estimated between Levels.fyi median and P90"
+    },
+    "salaryProgression.levels[3].salary": {
+      "value": "130,000-220,000+฿",
+      "source_ref": 8,
+      "source_quote": "P90 total compensation THB 2,650,518/year (~221K/month)",
+      "applicability": {
+        "geographic": "match — Thailand",
+        "time": "match — 2026 data",
+        "population": "match — SWE in Thailand, top tier"
+      },
+      "note": "Lead/Staff ceiling aligned to Levels.fyi P90"
+    },
+    "aiImpact.ai_risk_score": {
+      "value": 7,
+      "source_ref": 9,
+      "source_quote": "junior IT hiring dropped by 50% in 2026",
+      "applicability": {
+        "geographic": "Global — includes Thailand",
+        "time": "match — 2026",
+        "population": "Junior devs primarily affected, score reflects entry-level impact"
+      },
+      "note": "SO Survey says 70% don't see threat, but actual hiring data shows real impact. Score 7 reflects reality over sentiment."
+    },
+    "aiImpact.76pct_ai_tools": {
+      "value": "76% ใช้หรือวางแผนใช้ AI tools",
+      "source_ref": 4,
+      "source_quote": "76% of all respondents are using or are planning to use AI tools",
+      "applicability": {
+        "geographic": "Global survey",
+        "time": "match — 2024 survey",
+        "population": "match — all developers"
+      },
+      "note": null
+    },
+    "marketThailand.openings": {
+      "value": "~800-1,000 ตำแหน่ง (JobsDB, Jul 2026)",
+      "source_ref": 2,
+      "source_quote": "807 Software Engineer positions currently listed",
+      "applicability": {
+        "geographic": "match — Thailand",
+        "time": "match — July 2026 live count",
+        "population": "match — SWE roles"
+      },
+      "note": "Live count from JobsDB, fluctuates daily. Was 825, now 807."
+    },
+    "marketThailand.job_access.demand_score": {
+      "value": 5,
+      "source_ref": 9,
+      "source_quote": "junior IT hiring dropped by 50%",
+      "applicability": {
+        "geographic": "Global signal applied to Thailand",
+        "time": "match — 2026",
+        "population": "match — junior developers"
+      },
+      "note": "Demand exists for seniors but not juniors"
+    },
+    "marketThailand.job_access.competition_score": {
+      "value": 7,
+      "source_ref": 3,
+      "source_quote": "71% secured positions within 180 days (CIRR standard)",
+      "applicability": {
+        "geographic": "Global bootcamp data, not Thailand-specific",
+        "time": "Pre-AI crisis data",
+        "population": "Bootcamp grads only, not all CS graduates"
+      },
+      "note": "29% fail to place within 6 months = high competition. Thailand likely worse."
+    },
+    "marketThailand.job_access.entry_barrier_score": {
+      "value": 6,
+      "source_ref": 3,
+      "source_quote": "72% of employers think bootcamp grads are just as prepared",
+      "applicability": {
+        "geographic": "Global employer perception",
+        "time": "match — 2026 data",
+        "population": "Employers hiring bootcamp grads"
+      },
+      "note": "Barrier is real — need portfolio + projects, not just cert"
+    },
+    "marketThailand.job_access.score": {
+      "value": 40,
+      "source_ref": null,
+      "source_quote": null,
+      "applicability": {
+        "geographic": "Calculated composite",
+        "time": "match",
+        "population": "match"
+      },
+      "note": "Calculated: demand(5)*50% + (10-7)*25% + (10-6)*25% = 2.5+0.75+1.0 = 4.25 → 42.5, rounded to 40"
+    },
+    "risks.junior_50pct": {
+      "value": "ตำแหน่ง junior ลดลง 50%",
+      "source_ref": 9,
+      "source_quote": "junior IT hiring dropped by 50% in 2026",
+      "applicability": {
+        "geographic": "Global",
+        "time": "match — 2026",
+        "population": "match — junior developers"
+      },
+      "note": null
+    },
+    "field.metrics.demand_growth": {
+      "value": 5,
+      "source_ref": 1,
+      "source_quote": "Projected growth: Much faster than average (7% or higher)",
+      "applicability": {
+        "geographic": "US data, adjusted down for Thailand + junior crisis",
+        "time": "match — 2024-2034",
+        "population": "All SWE, but junior demand significantly lower"
+      },
+      "note": "O*NET says 7%+ US growth but junior market shrinking. Aligned to demand_score=5 for consistency."
+    },
+    "field.metrics.grad_employment_pct": {
+      "value": 50,
+      "source_ref": 3,
+      "source_quote": "71% secured positions within 180 days (CIRR standard), 79% full-time (Course Report)",
+      "applicability": {
+        "geographic": "Global, not Thailand-specific",
+        "time": "Pre-AI crisis — junior hiring dropped 50% since then",
+        "population": "Bootcamp grads only, not all CS graduates"
+      },
+      "note": "Adjusted from 71% → 50% to account for junior hiring -50% (ARDURA 2026). Source is misapplied geographically and temporally, so the number was adjusted downward."
+    },
+    "field.metrics.salary_floor": {
+      "value": 24000,
+      "source_ref": 2,
+      "source_quote": "Salary range: THB 18,000 - THB 66,000",
+      "applicability": {
+        "geographic": "match — Thailand",
+        "time": "match — 2026",
+        "population": "match — SWE roles"
+      },
+      "note": "Aligned to salaryProgression entry level lower bound (24,000-37,000฿). P10=18K is all roles; 24K is dev-specific floor."
+    },
+    "field.metrics.salary_ceiling": {
+      "value": 220000,
+      "source_ref": 8,
+      "source_quote": "P90 total compensation THB 2,650,518/year (~221K/month)",
+      "applicability": {
+        "geographic": "match — Thailand",
+        "time": "match — 2026",
+        "population": "match — SWE in Thailand"
+      },
+      "note": "Aligned to salaryProgression top level (130,000-220,000+฿). Matches Levels.fyi P90 ~221K/month."
+    },
+    "wef.net_jobs_2030": {
+      "value": "78 million net new jobs by 2030",
+      "source_ref": 5,
+      "source_quote": "Net increase of 78 million jobs by 2030, 170 million created, 92 million displaced",
+      "applicability": {
+        "geographic": "Global",
+        "time": "match — projection to 2030",
+        "population": "All jobs, not SWE-specific"
+      },
+      "note": "Used for context in risks/AI cards, not as a direct metric"
+    }
+  }
+}

@@ -1,26 +1,41 @@
 ---
 name: radar-research
-description: Research a career field and create full radar content (cards, sources, metrics). Use when asked to add a new career to radar, research a career field, update radar data, or seed radar content. Covers web research, data validation, DB writes to both local and production.
+description: Research a career field and create full radar content (cards, sources, metrics). Use when asked to add a new career to radar, research a career field, update radar data, seed radar content, or audit existing radar data for accuracy. Covers web research, data validation, evidence tracking, integrity audits, and DB writes.
+user-invocable: true
+argument-hint: "[research|audit] [target-slug]"
 ---
 
 # Radar Research Skill
 
+## Modes
+
+```
+/radar-research research <slug>   — Source-first research to create or update a career field
+/radar-research audit <slug>      — Integrity audit of an existing field's data and sources
+/radar-research audit all         — Audit all published fields
+```
+
+If no mode is specified, ask the user which mode they want.
+
 ## When to Use
 
-- Adding a new career field to Career Radar
-- Updating or fixing existing radar field data
-- Researching career metrics (salary, demand, AI impact) for a field
-- Seeding cards and sources for a radar field
+- **research** — Adding a new career field, updating existing field data, re-researching with fresh sources
+- **audit** — Checking if existing data is accurate, sources are alive, claims have evidence, scores make sense
+
+---
+
+# MODE: research
 
 ## Parallel Research (multiple fields at once)
 
 When asked to research multiple career fields (e.g. "add photographer, chef, and lawyer to radar"), dispatch one **sub-agent per field** using the Agent tool with `subagent_type=Task`. Each sub-agent independently:
 1. Web-searches for real data
 2. Builds the complete data JSON
-3. Writes to both local and production
+3. Writes evidence file
+4. Writes to both local and production
 
 Give each sub-agent this context:
-- The full research phase instructions (Steps 1-4 below)
+- The full research phase instructions (Steps 1-6 below)
 - The data schema reference
 - The DB credentials from `.env.local`
 - The field name (Thai + English), slug, emoji, and color
@@ -42,9 +57,9 @@ DB credentials:
 
 ## Research Phase — DO NOT SKIP
 
-### Step 1: Web search for real data
+### Step 1: Find sources FIRST (source-first workflow)
 
-Use `WebSearch` and `WebFetch` to find **current, real data** for the career field. Search for:
+**Do NOT write any content yet.** First, build your source library. Use `WebSearch` and `WebFetch` to find **current, real data** for the career field:
 
 1. **Salary data Thailand** — search: `"เงินเดือน [field] ไทย 2025"`, `"[field] salary Thailand"` on JobsDB, WorkVenture, Adecco
 2. **Salary data global** — BLS Occupational Outlook, Glassdoor, Payscale
@@ -55,36 +70,387 @@ Use `WebSearch` and `WebFetch` to find **current, real data** for the career fie
 7. **Day in life** — search: `"day in the life of a [field]"`, Reddit, Quora
 8. **Skills used in this path** — research the skills a practitioner in the field would actually name, not a generic outsider's guess. Search official occupation profiles, practitioner guides, certification bodies, professional bodies, employer/career sources, and field-specific frameworks for fundamentals, workflows, tools/processes, judgment calls, communication requirements, ethics/responsibility, and AI/digital tool expectations. Prefer O*NET, BLS/OOH, professional bodies, credential bodies, reputable employer/career pages, and role-specific frameworks.
 
-### Step 2: Verify every source
+### Step 2: Verify every source and extract data points
 
 For each source you plan to cite:
 - **Fetch the URL** with `WebFetch` to confirm it exists and contains relevant content
 - **Extract the actual data point** (salary number, growth %, etc.) from the page
-- **Record**: title, publisher, URL, date, and a key quote
+- **Record**: title, publisher, URL, date, and the **exact quote or data point** from the page
 
-### Step 3: Build the data file
+### Step 3: Build the evidence file
 
-Run the seed script to generate a template:
+**Before writing any card content**, create the evidence file:
+
+```bash
+# Evidence file path
+supabase/migrations/evidence/<slug>.json
+```
+
+The evidence file maps every factual claim to its source. Structure:
+
+```json
+{
+  "slug": "<slug>",
+  "last_audited": "2026-07-23",
+  "sources": [
+    {
+      "ref": 1,
+      "title": "Software Developers — O*NET OnLine",
+      "publisher": "O*NET / BLS",
+      "url": "https://www.onetonline.org/link/summary/15-1252.00",
+      "fetched_at": "2026-07-23",
+      "status": "alive",
+      "key_quotes": [
+        "Projected growth: Much faster than average (17%)"
+      ]
+    }
+  ],
+  "claims": {
+    "hook.stat": {
+      "value": "7%+",
+      "source_ref": 1,
+      "source_quote": "Projected growth: 17% (much faster than average)",
+      "note": "O*NET says 17% US, we use 7%+ as conservative Thailand estimate"
+    },
+    "hook.body": {
+      "value": "junior hiring dropped 50%",
+      "source_ref": 9,
+      "source_quote": "junior IT hiring dropped by 50% in 2026",
+      "note": null
+    },
+    "marketThailand.openings": {
+      "value": "~800-1,000",
+      "source_ref": 2,
+      "source_quote": "825 Software Engineer positions",
+      "note": "Live count from JobsDB, fluctuates"
+    },
+    "salaryProgression.levels[0].salary": {
+      "value": "24,000-37,000฿",
+      "source_ref": 2,
+      "source_quote": "THB 18,000 - THB 66,000 (10th to 90th percentile)",
+      "note": "Junior subset of full range"
+    },
+    "marketThailand.job_access.demand_score": {
+      "value": 5,
+      "source_ref": 9,
+      "source_quote": "junior IT hiring dropped by 50%",
+      "note": "Demand exists for seniors but not juniors"
+    }
+  }
+}
+```
+
+**Rules for the evidence file:**
+- Every number, percentage, score, or factual statement in any card MUST have a `claims` entry
+- Each claim entry MUST have `source_ref` pointing to a source in the `sources` array
+- Each claim entry MUST have `source_quote` — the actual text from the source page
+- Each claim entry MUST have `applicability` — an object with `geographic`, `time`, `population` fields, each `"match"` or a string explaining the mismatch and how the number was adjusted
+- If you cannot find a source for a claim, do NOT include the claim in the card. Omit it.
+- If a source doesn't match geographically/temporally/by population, you MUST either find a better source OR adjust the number and document the adjustment in `note`
+- Editorial opinions (e.g. "ต้องเรียนรู้ตลอดเวลา") don't need evidence entries — only factual claims do
+
+Example claim with applicability:
+```json
+{
+  "value": 50,
+  "source_ref": 3,
+  "source_quote": "71% secured positions within 180 days (CIRR standard)",
+  "applicability": {
+    "geographic": "Global, not Thailand-specific",
+    "time": "Pre-AI crisis data — junior hiring dropped 50% since then",
+    "population": "Bootcamp grads only, not all CS graduates"
+  },
+  "note": "Adjusted from 71% → 50% to account for junior hiring -50% (ARDURA 2026)"
+}
+```
+
+### Step 4: Build the data file from evidence
+
+Now write card content. **Every factual claim must trace back to the evidence file.** Run the seed script to generate a template:
+
 ```bash
 node .claude/skills/radar-research/scripts/seed-template.mjs <slug>
 ```
-Then fill in the JSON with researched data.
 
-### Step 4: Validate before writing
+Then fill in the JSON with researched data. The content is shaped by what sources say — never the other way around.
 
-Before writing to any database:
-- [ ] Every `source.url` has been fetched and verified
-- [ ] Salary figures match what the source actually says (not training data)
-- [ ] `source_refs` on each card point to sources that actually support that card's claims
-- [ ] The `text` card at position 125 explains "ทักษะที่ใช้จริง" with practitioner-depth skill requirements, not generic soft skills or shallow tool lists
-- [ ] The skills card sounds like an expert in the field reviewed it: it includes field-specific fundamentals, workflows, judgment, tools/processes by context, and common failure modes
-- [ ] `metrics.demand_growth` (0-10), `saturation_level` (0-10), `progression_difficulty` (0-10) are justified
-- [ ] `metrics.grad_employment_pct` is a real percentage from a real source
-- [ ] `metrics.salary_floor` and `salary_ceiling` are in THB/month from Thai sources
-- [ ] `tier` is one of: `growing`, `shifting`, `exposed` — justified by the metrics
-- [ ] `ai_risk_score` (0-10) is justified and not tripped by keyword matching
+### Step 5: Pre-write validation (BLOCKS write if fails)
 
-## Data Schema Reference
+Before writing to any database, run ALL of these checks. **If any check fails, fix the issue before proceeding. Do NOT skip.**
+
+- [ ] **Evidence file exists** at `supabase/migrations/evidence/<slug>.json`
+- [ ] **Every source URL fetched and alive** — no 404s, no redirects to unrelated pages
+- [ ] **Every factual claim has an evidence entry** — check `claims` object covers all numbers/stats in cards
+- [ ] **Every evidence entry has a source_quote** — no empty quotes
+- [ ] **source_refs on each card point to sources that actually support that card's claims** — cross-reference with evidence file
+- [ ] **Salary figures match what the source actually says** — not training data, not rounded up
+- [ ] **The `text` card at position 125** explains "ทักษะที่ใช้จริง" with practitioner-depth skill requirements
+- [ ] **The skills card sounds like an expert** — field-specific fundamentals, workflows, judgment, tools/processes by context
+- [ ] **Metrics are justified**: `demand_growth` (0-10), `saturation_level` (0-10), `progression_difficulty` (0-10)
+- [ ] **`metrics.grad_employment_pct`** is a real percentage from a real source
+- [ ] **`metrics.salary_floor` and `salary_ceiling`** are in THB/month from Thai sources
+- [ ] **`tier`** is one of: `growing`, `shifting`, `exposed` — justified by the metrics
+- [ ] **`ai_risk_score`** (0-10) is justified and not tripped by keyword matching
+- [ ] **Score calculation matches formula** (see Score Calculation section)
+- [ ] **Cross-card consistency check** (see below) — no contradictions between cards
+
+### Cross-Card Consistency Check — MANDATORY
+
+Data about the same topic lives in multiple places. If you update one, you MUST check and align the others. This check applies to BOTH research and audit modes.
+
+**Demand signals (must tell the same story):**
+- `radar_fields.research.metrics.demand_growth` → shown in Outlook card as "ความต้องการตลาด X/10"
+- `marketThailand.job_access.demand_score` → shown in Competition card as "ความต้องการจ้าง X/10"
+- These should be within 1 point of each other. If they differ by 2+, align them.
+
+**Employment/hiring signals (must not contradict):**
+- `radar_fields.research.metrics.grad_employment_pct` → shown in Outlook as "อัตราการจ้างจบใหม่ X%"
+- `hook.statLabel` or `hook.body` → may mention hiring trends (e.g. "junior hiring ลดลง 50%")
+- `risks` card → may mention hiring difficulty
+- If the hook says "junior hiring dropped 50%" but grad_employment_pct is 72%, that's a contradiction. The metric must reflect the narrative.
+
+**AI impact signals (must agree):**
+- `radar_cards kind=aiImpact → ai_risk_score` → shown in AI Impact card
+- `radar_fields.research.metrics` → indirectly affects tier/score
+- `risks` card → may mention AI displacement
+- If ai_risk_score is 7/10 but risks card doesn't mention AI, that's inconsistent.
+
+**Salary signals (must match exactly):**
+- `salary_floor` MUST equal the **lower bound** of `salaryProgression.levels[0].salary` (entry level). If entry says "24,000-37,000฿", floor must be 24,000.
+- `salary_ceiling` MUST equal the **upper bound** of `salaryProgression.levels[-1].salary` (top level). If top says "130,000-220,000+฿", ceiling must be 220,000 — not 200,000, not a "conservative" round-down.
+- The rule is simple: a student sees "220,000+" on the salary card and "200,000" on the Outlook card — that's a contradiction. Pick one number from one source and use it everywhere.
+- When updating any salary figure, grep ALL cards + `research.metrics` for the old number before writing.
+
+**Name consistency:**
+- `radar_fields.name_th` must match the name used in: hook title/eyebrow, dayInLife title, cta title, text card titles, risks eyebrow
+- If the field was renamed, grep ALL cards for the old name.
+
+**Rule: When you change ANY metric or claim, scan all 13 cards + field research for related data points before writing.**
+
+### Step 6: Write to DB + cross-field leaderboard
+
+After passing all validations:
+1. Write to both local and production (see Writing to DB section)
+2. Run the **cross-field leaderboard check** (see below)
+
+---
+
+# MODE: audit
+
+## Audit Flow
+
+The audit has 6 phases. Show results after each phase and wait for user judgment before fixing.
+
+### Phase 1: Source Health Check
+
+Fetch every URL in the field's `sources` card items. Report:
+
+```
+## Source Health — <field_name>
+
+| # | Source | Status | Last verified |
+|---|--------|--------|---------------|
+| 1 | O*NET 15-1252 | ✅ Live | 2026-07-23 |
+| 2 | JobsDB salary | ✅ Live | 2026-07-23 |
+| 3 | Robert Walters | ❌ 404 | never |
+| 9 | ARDURA junior crisis | ✅ Live | 2026-07-23 |
+```
+
+For each live source, also check: does the page actually contain the data we cite? If not, mark as `⚠️ Live but data not found`.
+
+### Phase 2: Claim Extraction & Evidence Check
+
+For each card, extract every factual claim (numbers, stats, percentages, rankings, scores). Check against the evidence file if it exists (`supabase/migrations/evidence/<slug>.json`).
+
+```
+## Claim Audit — <field_name>
+
+| Card | Claim | Source | Evidence file | Verdict |
+|------|-------|--------|---------------|---------|
+| hook | "7%+ growth" | [1] O*NET | ✅ Has entry | ✅ Matches |
+| hook | "junior hiring ลดลง 50%" | [9] ARDURA | ✅ Has entry | ✅ Matches |
+| marketThailand | "5,000+ ตำแหน่ง" | None | ❌ No entry | ❌ FABRICATED |
+| salaryProgression | "Junior 24-37K" | [2] JobsDB | ⚠️ No entry | ⚠️ Close but unverified |
+```
+
+Verdicts:
+- ✅ **Matches** — source confirms claim, evidence file has entry
+- ⚠️ **Close** — source has related data but numbers don't exactly match
+- ⚠️ **Stale** — evidence file exists but `fetched_at` is older than 6 months
+- ⚠️ **Misapplied** — source is real but doesn't apply to what we're claiming (see below)
+- ❌ **Fabricated** — no source supports this claim
+- ❌ **Contradicted** — source says something different from the claim
+- ❌ **No source** — claim references a source_ref that doesn't exist
+
+### Phase 2.5: Source Applicability Check — CRITICAL
+
+This is the most dangerous loophole in data integrity: **a claim can cite a real source with a real quote, but the source doesn't actually apply to the claim's context.** This passes all other checks but still produces misleading data.
+
+For every claim that passed Phase 2 as ✅ or ⚠️, ask these three questions:
+
+**1. Geographic match:** Does the source cover the same region as the claim?
+- A US bootcamp placement rate (71-79%) cannot be used as Thailand's `grad_employment_pct`
+- A global salary survey cannot set Thailand `salary_floor`
+- Flag: `⚠️ Source is [region], claim is about [different region]`
+
+**2. Time match:** Is the source still current given known market changes?
+- A 2024 employment rate is invalid if 2025-2026 had a major market shift (e.g. AI crisis)
+- If the hook or risks card mentions a recent disruption, ALL pre-disruption metrics must be adjusted
+- Flag: `⚠️ Source is pre-[event], claim doesn't account for [event]`
+
+**3. Population match:** Does the source measure the same group as the claim?
+- Bootcamp grad placement ≠ all CS graduate employment
+- Senior developer salary ≠ entry-level developer salary
+- Global SWE demand ≠ Thailand junior SWE demand
+- Flag: `⚠️ Source measures [group A], claim is about [group B]`
+
+Report:
+```
+## Source Applicability — <field_name>
+
+| Claim | Source | Geographic | Time | Population | Verdict |
+|-------|--------|-----------|------|-----------|---------|
+| grad_employment_pct: 72% | [3] Metana bootcamp | ❌ Global, not TH | ❌ Pre-AI crisis | ❌ Bootcamp only | ❌ MISAPPLIED |
+| salary_floor: 25K | [2] JobsDB TH | ✅ Thailand | ✅ Current | ✅ SWE roles | ✅ Applicable |
+| demand_growth: 5 | [1] O*NET | ⚠️ US data | ✅ 2024-2034 | ✅ SWE roles | ⚠️ Partial |
+```
+
+**If a claim is marked MISAPPLIED, it must be fixed** — either find an applicable source or adjust the number to account for the mismatch (with a note in the evidence file explaining the adjustment).
+
+### Phase 3: Score Validation
+
+Re-derive all scores from verified data. Compare against stored values.
+
+```
+## Score Validation — <field_name>
+
+| Metric | Current | Suggested | Justification |
+|--------|---------|-----------|---------------|
+| demand_score | 7/10 | 5/10 | Junior hiring -50% [9], only ~825 listings [2] |
+| competition_score | 5/10 | 7/10 | Bootcamp placement 71-79% [3], CS underemploy 42.5% |
+| entry_barrier_score | 4/10 | 6/10 | Need portfolio + projects, not just cert |
+| ai_risk_score | 3/10 | 7/10 | Sources [4,5] say AI reducing headcount |
+| overall job_access | 63 | 40 | Formula: demand*50% + (10-comp)*25% + (10-barrier)*25% |
+```
+
+### Phase 3.5: Cross-Card Consistency Check
+
+Check for contradictions between cards and field metrics. See the **Cross-Card Consistency Check** section (under pre-write validation) for the full list of signals to compare. Report:
+
+```
+## Cross-Card Consistency — <field_name>
+
+| Signal pair | Card A | Card B | Status |
+|-------------|--------|--------|--------|
+| Demand: Outlook vs Competition | demand_growth=5 | demand_score=5 | ✅ Aligned |
+| Employment: Outlook vs Hook | grad_employment_pct=50% | "junior hiring ลดลง 50%" | ✅ Consistent |
+| AI: aiImpact vs Risks | ai_risk_score=7 | risks mentions AI displacement | ✅ Consistent |
+| Salary: Progression vs Metrics | entry 24-37K | salary_floor=25K | ✅ Aligned |
+| Name: field vs cards | "นักพัฒนาซอฟต์แวร์" | all cards use same name | ✅ Consistent |
+```
+
+Flag any ⚠️ or ❌ for the judgment report.
+
+### Phase 4: Cross-Field Sanity Check
+
+Query all published fields and compare. Flag anomalies.
+
+```
+## Cross-Field Comparison
+
+| Field | demand | competition | ai_risk | score | tier |
+|-------|--------|-------------|---------|-------|------|
+| AI Engineer | 8 | 6 | 4 | 7 | growing |
+| Cybersecurity | 7 | 5 | 3 | 7 | growing |
+| Software Dev | 5 | 7 | 7 | 4 | shifting | ← auditing
+| Data Scientist | 6 | 7 | 5 | 5 | shifting |
+
+⚠️ Anomalies:
+- None found (rankings make sense)
+```
+
+### Phase 5: Judgment Report
+
+Summarize all findings in a single decision table:
+
+```
+## Judgment Report — <field_name>
+
+### Must Fix (data integrity issues)
+1. ❌ hook stat "25% growth" → should be "7%+" per O*NET [1]
+2. ❌ marketThailand "5,000+ ตำแหน่ง" → should be "~825" per JobsDB [2]
+3. ❌ ai_risk_score 3/10 → should be 7/10 per SO Survey [4] + WEF [5]
+
+### Should Fix (accuracy improvements)
+4. ⚠️ salaryProgression Junior range could be tighter per JobsDB data
+5. ⚠️ source [3] Robert Walters URL is 404 — replace or remove
+
+### OK (no action needed)
+6. ✅ dayInLife steps are reasonable and sourced
+7. ✅ risks card is honest and verified
+```
+
+**Wait for user to review and approve before proceeding to Phase 6.**
+
+### Phase 6: Fix with Migration
+
+After user approves:
+1. Generate a migration SQL file: `supabase/migrations/YYYYMMDD_audit_fix_<slug>.sql`
+2. Update (or create) the evidence file: `supabase/migrations/evidence/<slug>.json`
+3. Apply with `supabase db push`
+4. Run the cross-field leaderboard check
+5. Print confirmation of what changed
+
+---
+
+# Cross-Field Leaderboard Check
+
+Run this after ANY write (research or audit fix). Query all published fields and print comparison:
+
+```sql
+SELECT slug, name_en, score, tier,
+  research->'metrics'->>'demand_growth' as demand,
+  research->'metrics'->>'saturation_level' as saturation,
+  research->'metrics'->>'salary_ceiling' as ceiling
+FROM radar_fields
+WHERE is_published = true
+ORDER BY score DESC;
+```
+
+Print as a table. Flag if:
+- A niche field scores higher than a mainstream high-demand field
+- Any field's rank changed by more than 2 positions
+- `salary_ceiling` exceeds what senior roles actually pay
+
+---
+
+# Evidence File System
+
+Evidence files live at `supabase/migrations/evidence/<slug>.json`. They are NOT migration files — they are research artifacts that persist across sessions.
+
+### When to create/update
+- **research mode**: Always create before first DB write
+- **audit mode**: Create or update during Phase 2 (claim extraction)
+- **Any card fix**: Update the relevant claims in the evidence file
+
+### Structure
+See Step 3 in the research flow for the full schema.
+
+### What counts as a "claim" that needs evidence
+- Any number (salary, growth %, count of openings, scores)
+- Any statistic or ranking
+- Any "X% of Y" statement
+- Any "X company/organization says Y" statement
+
+### What does NOT need evidence
+- Editorial framing ("ทุกธุรกิจต้องใช้ซอฟต์แวร์")
+- Skill descriptions (unless they cite specific stats)
+- CTA button text
+- Source card items (they ARE the sources)
+
+---
+
+# Data Schema Reference
 
 ### radar_fields (key columns)
 
@@ -291,6 +657,7 @@ After seeding, do these checks before considering the task done:
 2. **Lint / type check** — run `npx eslint components/radar/RadarCards.tsx app/radar/[slug]/page.tsx` and `npx tsc --noEmit | grep -E "RadarCards|RadarField|CareerResearchView"` to catch schema mismatches.
 3. **Data audit** — query the DB to confirm `radar_fields.research`, `radar_sources`, and `radar_cards` all landed, and that every `source_refs` number points to an existing source ref.
 4. **Content audit** — re-read the seeded cards against `docs/CAREER_RADAR_EDITORIAL_SPINE.md`. No hype numbers, no fabricated salaries/quotes, every snapshot carries its price tag.
+5. **Cross-field leaderboard** — run the leaderboard check (see above). Verify rankings make sense.
 
 ## Score Calculation
 
@@ -334,7 +701,7 @@ The `careerSurvival` card is NOT stored in radar_cards. It's injected server-sid
 
 6. **When re-researching existing fields**, always compare before and after values. Log what changed and why in the sub-agent output. If a metric changes by more than 2 points, double-check the new source.
 
-### Red flags that metrics are hallucinated
+### Red flags that metrics are hallucinated or misapplied
 
 - `research.sources` array is empty or has fewer than 3 entries
 - `metric_details` entries have empty `sources` arrays
@@ -342,11 +709,17 @@ The `careerSurvival` card is NOT stored in radar_cards. It's injected server-sid
 - `salary_ceiling` exceeds what senior roles actually pay (check JobsDB/Glassdoor)
 - `grad_employment_pct` is above 90% for a non-licensed profession
 - `demand_growth` is 8+ but BLS shows flat or declining growth
+- Evidence file doesn't exist or has fewer claims than the number of factual statements in cards
+- **A metric uses global/US data for a Thailand-specific claim** — e.g. US bootcamp placement rate as Thailand `grad_employment_pct`
+- **A metric uses pre-disruption data when the field has since been disrupted** — e.g. 2024 employment rate when 2026 had a 50% junior hiring drop
+- **A metric measures a different population than claimed** — e.g. bootcamp grads ≠ all graduates, senior salaries ≠ entry salaries
+- **Two cards show the same concept with different numbers** — e.g. Outlook "demand 8" but Competition "demand 5"
 
 ## Common Mistakes
 
 - Using training data instead of fetching real sources — ALWAYS web search first
 - **Writing plausible-looking metrics without sources** — this is the #1 integrity risk. Every number must trace to a URL.
+- **Skipping the evidence file** — no evidence file = no way to audit later. Always create it.
 - **Not comparing across fields** — a metric only makes sense relative to other fields. Always check the leaderboard after updating.
 - Forgetting to add `source_refs` to cards — every card (except hook, sources) should have them
 - Using `title` instead of `level` in salaryProgression levels
@@ -363,3 +736,5 @@ The `careerSurvival` card is NOT stored in radar_cards. It's injected server-sid
 - Skipping the render and lint checks after seeding
 - Using `time` field in dayInLife steps — steps should be activity-based with `label` and `detail`, NOT time-based schedules
 - Mixing languages in `name_th`/`name_en` — `name_th` must be pure Thai (e.g. `นักบัญชี`), `name_en` must be pure English (e.g. `Accountant`). Never `Accountant (นักบัญชี)` in either field
+- **Writing content first, then looking for sources to back it up** — this is backwards. Find sources first, then write content shaped by what sources say.
+- **Updating one metric without checking related cards** — demand_growth (Outlook) and demand_score (Competition) MUST tell the same story. grad_employment_pct (Outlook) must not contradict hiring claims in hook/risks. Salary floor/ceiling must bracket salaryProgression range. ALWAYS run the cross-card consistency check.
