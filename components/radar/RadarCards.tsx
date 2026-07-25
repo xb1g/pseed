@@ -14,12 +14,14 @@ import { OglTrendBackground } from "@/components/radar/OglTrendBackground";
 import {
   getAiImpactLabel,
   getEntryRouteLabel,
+  getJobAccessLabel,
   getOutlookLabel,
   interpretRadarMetric,
   parseRadarListItems,
 } from "@/lib/radar/presentation";
 import { Textarea } from "@/components/ui/textarea";
 import Image from "next/image";
+import Link from "next/link";
 import { ExternalLink, ArrowRight, Check, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 import type { RadarIntentScope } from "@/lib/my-path/radar-sync";
 
@@ -132,7 +134,11 @@ export type RealPeopleContent = CardBase & {
     url?: string;
   }>;
 };
-export type CtaContent = CardBase & { body?: string; button?: string };
+export type CtaContent = CardBase & {
+  body?: string;
+  button?: string;
+  resources?: Array<{ label: string; url: string; note?: string }>;
+};
 export type FutureOutlookContent = CardBase & {
   growthRate?: string;
   growthLabel?: string;
@@ -1241,23 +1247,13 @@ function CompanyLogo({ company, logoUrl }: { company: string; logoUrl: string | 
   return <img src={logoUrl} alt={`${company} logo`} loading="lazy" onError={() => setFailed(true)} />;
 }
 
-function jobDifficultyLabel(score: number): string {
-  if (score >= 75) return "Easy";
-  if (score >= 60) return "Average/easy";
-  if (score >= 45) return "Average";
-  return "Difficult";
-}
-
 function MarketThailandCard({ c, accent }: { c: MarketThailandContent; accent: string }) {
   const access = c.job_access;
   const accessScore = access
     ? Math.max(0, Math.min(100, Math.round(access.score)))
     : null;
-  const confidenceLabel = access?.confidence === "high"
-    ? "Confidence: High"
-    : access?.confidence === "medium"
-      ? "Confidence: Medium"
-      : "Confidence: Low";
+  // `confidence` is an editorial-quality flag, not student-facing information —
+  // it stays in the data and out of the card.
   const factors = access ? [
     { key: "demand_score", label: "ความต้องการจ้าง", value: access.demand_score, positive: true },
     { key: "competition_score", label: "การแข่งขัน", value: access.competition_score, positive: false },
@@ -1284,19 +1280,29 @@ function MarketThailandCard({ c, accent }: { c: MarketThailandContent; accent: s
                 </div>
               </div>
               <div className="market-ticket__verdict">
-                <strong>Difficulty: {jobDifficultyLabel(accessScore)}</strong>
-                <span>{confidenceLabel}</span>
+                <strong>{getJobAccessLabel(accessScore)}</strong>
+                <span>ยิ่งคะแนนสูง ยิ่งหางานได้ง่าย</span>
               </div>
             </div>
 
             <div className="market-ticket__metrics">
               {factors.map((factor) => {
                 const value = Math.max(0, Math.min(10, Number(factor.value)));
+                // Three bars, two directions. Tone + fill + an always-on caption
+                // carry the polarity so "8/10" is never read as good by default.
+                const tone = factor.positive ? "good" : "caution";
                 return (
-                  <div key={factor.key} className="market-ticket__metric">
+                  <div
+                    key={factor.key}
+                    className={`market-ticket__metric market-ticket__metric--${tone}`}
+                    style={{ "--metric-fill": `${value * 10}%` } as CSSProperties}
+                  >
                     <span>{factor.label}</span>
                     <strong>{value}/10</strong>
-                    {!factor.positive && <small>ยิ่งสูงยิ่งหางานยาก</small>}
+                    <span className="market-ticket__metric-bar" aria-hidden="true" />
+                    <small>
+                      {factor.positive ? "ยิ่งสูงยิ่งดี" : "ยิ่งสูงยิ่งหางานยาก"}
+                    </small>
                   </div>
                 );
               })}
@@ -1831,18 +1837,27 @@ function SourcesCard({ c, accent }: { c: SourcesContent; accent: string }) {
 }
 
 function CtaCard({
+  c,
   accent,
   squadUrl,
+  fieldSlug,
   onIntent,
 }: {
   c: CtaContent;
   accent: string;
   squadUrl?: string | null;
+  fieldSlug?: string;
   onIntent?: RadarIntentHandler;
 }) {
   const nextStepBody =
     "ถ้าสนใจสายนี้ มาลองคุยกับพวกเรารุ่นพี่จะช่วยแนะนำเส้นทางให้ ควรเตรียมตัวยังไงบ้าง?";
   const nextStepButton = "นัดคุยกับรุ่นพี่";
+  const resources = (c.resources ?? []).filter((r) =>
+    /^https?:\/\//.test(r.url)
+  );
+  const techseedHref = fieldSlug
+    ? `/techseed?from=radar-${fieldSlug}`
+    : "/techseed";
   const [interestedRecorded, setInterestedRecorded] = useState(false);
   const [notInterestedRecorded, setNotInterestedRecorded] = useState(false);
   const [lineQrOpen, setLineQrOpen] = useState(false);
@@ -1882,6 +1897,42 @@ function CtaCard({
           className="block text-neutral-300 text-base leading-relaxed"
         />
       </p>
+      <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4">
+        <p className="text-sm font-semibold text-white">
+          อยากลองทำจริงเป็นทีม ไม่ใช่แค่อ่าน?
+        </p>
+        <p className="mt-1 text-xs leading-relaxed text-neutral-400">
+          TechSeed รุ่น 6 — ค่ายออนไลน์หลายสัปดาห์ ทำโปรเจกต์จริงในทีม
+          มีพี่ ๆ ดูแล พร้อมแผนการเรียนของเธอเอง
+        </p>
+        <Link
+          href={techseedHref}
+          className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-b from-blue-700 via-blue-600 to-blue-500 px-4 text-sm font-semibold text-white transition-transform duration-150 hover:-translate-y-0.5"
+        >
+          สมัคร TechSeed รุ่น 6 <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
+      {resources.length > 0 && (
+        <div className="mt-3">
+          <p className="text-xs font-medium text-neutral-400">
+            หรือลองเล่นด้วยตัวเองก่อน (ฟรี)
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {resources.map((r) => (
+              <a
+                key={r.url}
+                href={r.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={r.note}
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-xs text-neutral-200 transition-colors hover:bg-white/10"
+              >
+                {r.label} <ExternalLink className="h-3 w-3" />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="flex flex-col gap-2">
         <Button
           className={`mt-2 w-full font-semibold transition-all ${
@@ -2278,6 +2329,7 @@ export interface RadarCardViewProps {
   accent: string;
   fieldNameTh?: string;
   fieldNameEn?: string;
+  fieldSlug?: string;
   squadUrl?: string | null;
   fieldSources?: FieldSource[];
   reflectionSubmitted?: boolean;
@@ -2352,6 +2404,7 @@ export function RadarCardView({
   accent,
   fieldNameTh,
   fieldNameEn,
+  fieldSlug,
   squadUrl,
   fieldSources = [],
   reflectionSubmitted = false,
@@ -2419,7 +2472,7 @@ export function RadarCardView({
       cardNode = <SourcesCard c={c} accent={accent} />;
       break;
     case "cta":
-      cardNode = <CtaCard c={c} accent={accent} squadUrl={squadUrl} onIntent={onIntent} />;
+      cardNode = <CtaCard c={c} accent={accent} squadUrl={squadUrl} fieldSlug={fieldSlug} onIntent={onIntent} />;
       break;
     case "reflection":
       cardNode = (
