@@ -21,13 +21,16 @@ describe("profile dashboard utils", () => {
 
   it("counts a consecutive reflection streak across unique days", () => {
     expect(
-      calculateReflectionStreak([
-        "2026-03-29T08:00:00.000Z",
-        "2026-03-29T10:00:00.000Z",
-        "2026-03-28T09:00:00.000Z",
-        "2026-03-27T09:00:00.000Z",
-        "2026-03-25T09:00:00.000Z",
-      ])
+      calculateReflectionStreak(
+        [
+          "2026-03-29T08:00:00.000Z",
+          "2026-03-29T10:00:00.000Z",
+          "2026-03-28T09:00:00.000Z",
+          "2026-03-27T09:00:00.000Z",
+          "2026-03-25T09:00:00.000Z",
+        ],
+        new Date("2026-03-29T12:00:00.000Z")
+      )
     ).toBe(3);
   });
 

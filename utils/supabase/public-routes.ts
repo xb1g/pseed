@@ -3,6 +3,7 @@ const PUBLIC_ROUTE_PREFIXES = [
   "/auth",
   "/download",
   "/hackathon",
+  "/hackathon-old",
   "/api/hackathon",
   "/app/beta",
   "/expert-interview",
@@ -20,12 +21,18 @@ const PUBLIC_ROUTE_PREFIXES = [
   "/faculty-radar",
   "/api/cron/parent-pathlab-updates",
   "/fireball",
+  "/techseed",
+  "/api/techseed",
 ] as const;
 
 export function isPublicRoute(pathname: string): boolean {
+  // Query strings are not part of the route (e.g. "/plan?entry=...").
+  const path = pathname.split("?")[0];
   return (
-    pathname === "/" ||
-    pathname.endsWith(".md") ||
-    PUBLIC_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+    path === "/" ||
+    path.endsWith(".md") ||
+    PUBLIC_ROUTE_PREFIXES.some(
+      (prefix) => path === prefix || path.startsWith(prefix + "/")
+    )
   );
 }

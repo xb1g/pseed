@@ -623,7 +623,7 @@ summary:focus-visible .radar-expand-indicator {
 .market-ticket__metric {
   position: relative;
   display: flex;
-  min-height: 6.7rem;
+  min-height: 7.4rem;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -653,8 +653,33 @@ summary:focus-visible .radar-expand-indicator {
 }
 
 .market-ticket__metric > span { font-size: 0.72rem; opacity: 0.78; }
-.market-ticket__metric strong { margin-top: 0.3rem; font-family: var(--font-kodchasan); font-size: 1.55rem; font-weight: 500; }
+.market-ticket__metric strong { margin-top: 0.3rem; font-family: var(--font-kodchasan); font-size: 1.55rem; font-weight: 500; color: var(--metric-tone); }
 .market-ticket__metric small { margin-top: 0.15rem; font-size: 0.58rem; opacity: 0.6; }
+
+/* Metric polarity: some bars mean "higher is better", others "higher is worse".
+   Tone comes from the shared success/error tokens, mixed into the ticket ink so
+   it stays legible on cream paper. */
+.market-ticket__metric {
+  --metric-fill: 0%;
+  --metric-tone: var(--ticket-ink);
+}
+.market-ticket__metric--good { --metric-tone: color-mix(in srgb, #10b981 46%, #1d1206); }
+.market-ticket__metric--caution { --metric-tone: color-mix(in srgb, #ef4444 46%, #1d1206); }
+
+.market-ticket__metric > .market-ticket__metric-bar {
+  width: 58%;
+  height: 4px;
+  margin-top: 0.4rem;
+  border-radius: 999px;
+  opacity: 1;
+  background: linear-gradient(
+    to right,
+    var(--metric-tone) 0 var(--metric-fill),
+    color-mix(in srgb, var(--ticket-ink) 18%, transparent) var(--metric-fill) 100%
+  );
+}
+
+.market-ticket__metric small { color: var(--metric-tone); opacity: 0.82; }
 
 .market-ticket__note,
 .market-ticket__method {
@@ -725,7 +750,7 @@ summary:focus-visible .radar-expand-indicator {
   .market-ticket__score-row { align-items: start; flex-direction: column; gap: 0.75rem; }
   .market-ticket__verdict { text-align: left; }
   .market-ticket__metrics { grid-template-columns: 1fr; }
-  .market-ticket__metric { min-height: 5.6rem; }
+  .market-ticket__metric { min-height: 6.3rem; }
   .market-ticket__companies { border-top: 1px dashed rgba(83, 63, 52, 0.5); border-left: 0; }
   .market-ticket__companies::before { top: -0.45rem; right: 0; bottom: auto; left: 0; width: auto; height: 0.9rem; background-size: 2.1rem 0.9rem; background-repeat: repeat-x; }
   .market-ticket__companies > p { font-size: 1rem; }
