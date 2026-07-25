@@ -24,6 +24,7 @@ Short summary of PassionSeed products and features.
 | Feature | Route | What it does |
 |---------|-------|--------------|
 | Hackathon | `/hackathon` | Multi-day hackathon programs for health-tech products |
+| TechSeed | `/techseed` | Multi-week online tech cohort (squad + plan + community) — public batch signup with referral pricing |
 | Epic Sprint | `/epic-sprint` | Compressed sprint report and showcase |
 | Pitch | `/pitch` | Pitch practice and submission |
 
