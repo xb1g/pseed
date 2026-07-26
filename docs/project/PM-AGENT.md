@@ -18,14 +18,20 @@ Context it needs: [`PROJECTSEED-STRATEGY.md`](./PROJECTSEED-STRATEGY.md).
 
 ## Run it
 
-Schedule with `/schedule` (Claude Code cloud routine) or `/loop`. Weekday mornings,
-off the hour:
+Schedule with `/schedule` (Claude Code cloud routine), `/loop`, or a kimi CLI cron.
+Weekday mornings, off the hour, plus a midday check that stays silent when nothing moved:
 
 ```
-7 8 * * 1-5    # 08:07 local, Mon-Fri
+3 9 * * 1-5     # 09:03 local, Mon-Fri — full standup
+17 12 * * 1-5   # 12:17 local, Mon-Fri — midday check, posts only on real movement
 ```
 
 Do not run it on weekends. A standup nobody reads trains people to ignore it.
+
+The standup posts to the team Discord channel via a webhook (no bot needed — a plain
+POST with the webhook URL). The webhook URL is a secret: it lives only in the runner's
+secret store / scheduled prompt, never in this repo, and must be rotated if it ever
+appears in a shared transcript or log.
 
 ## What it does, in order
 
@@ -33,6 +39,9 @@ Do not run it on weekends. A standup nobody reads trains people to ignore it.
 
 - Linear: all issues in team `PS` and `HAC`, plus all projects. Fields: identifier, title,
   state, priority, project, assignee, parent, updatedAt, labels.
+  **`HAC` is report-only.** Its 23 open issues are historical build-tasks for a hackathon
+  that already ran, deliberately left in place. Mention them under NEEDS A HUMAN at most
+  once a week; never act on them.
 - Git: commits since the last run, on all branches.
 - `docs/project/*.md`: any doc whose status changed.
 
