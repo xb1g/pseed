@@ -6,7 +6,7 @@ This guide explains how to set up the Discord bot for sending mentor session not
 
 You have:
 - Discord Bot Client ID: `1447582299779764406`
-- Discord Bot Secret: `t4a-0c52siSjpnDAUPVd8qggEwXtj1JM`
+- Discord Bot Secret: configure this only in your local environment; never commit it
 
 ## Step 1: Configure Bot Intents
 
@@ -35,7 +35,7 @@ Add the Discord bot token to your `.env.local` file:
 
 ```bash
 # Discord Bot Configuration
-DISCORD_BOT_TOKEN=t4a-0c52siSjpnDAUPVd8qggEwXtj1JM
+DISCORD_BOT_TOKEN=your_discord_bot_token
 ```
 
 **IMPORTANT**: Never commit the `.env.local` file to git!
