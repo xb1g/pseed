@@ -10,6 +10,7 @@ Documentation index. Files are organized by purpose, not by date.
 |------|---------|
 | [PRODUCT.md](project/PRODUCT.md) | Product purpose, user segments, JTBD |
 | [FEATURES.md](project/FEATURES.md) | Short summary of all products and features |
+| [PROJECTSEED-SAFEGUARDING.md](project/PROJECTSEED-SAFEGUARDING.md) | Required conduct, communication, escalation, and launch gate for ProjectSeed mentors working with minors |
 | [VALIDATION_MASTER.md](project/VALIDATION_MASTER.md) | Master validation evidence, hypotheses, and next tests before business model canvas |
 | [BUSINESS_MODEL_CANVAS.md](project/BUSINESS_MODEL_CANVAS.md) | Business Model Canvas v0.1 with Ikigai, yearly subscription, and alumni model hypotheses |
 
