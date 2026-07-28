@@ -103,3 +103,6 @@ invitation.html
 scripts/*-local.js
 scripts/*-local.mjs
 supabase/.temp/
+
+# scratch workspace
+scratch/
