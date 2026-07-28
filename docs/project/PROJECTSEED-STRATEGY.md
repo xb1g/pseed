@@ -114,7 +114,8 @@ alumni mentors becoming real capacity — which is unproven.
 6. **"Shipped" is undefined.** Without a quality bar we become the credential factory we
    oppose. PS-191.
 7. **Safeguarding.** University-age mentors, minors, months of contact. Duty of care,
-   separate from PDPA. PS-190 is a hard prerequisite to selling a seat.
+   separate from PDPA. [The PS-190 safeguarding policy](./PROJECTSEED-SAFEGUARDING.md)
+   is a hard prerequisite to selling a seat.
 8. **A recognizable ProjectSeed format may read as coached** to admissions readers.
 9. **M4 vs M6 are different segments.** M4 has exploration time, M6 needs an artifact now.
    Deliberately deferred past batch 1.
@@ -126,7 +127,8 @@ alumni mentors becoming real capacity — which is unproven.
 - **PDPA:** talk to past students conversationally through Discord / LINE OA channels they
   opted into. No formal survey. Written release — parental if under 20 — before publishing
   any student story or project, including Kyzz's.
-- **Safeguarding:** no 1:1 private DMs with minors. Group channels, or a second adult present.
+- **Safeguarding:** no 1:1 private DMs with minors. Group channels, or a second adult
+  present. Follow the [operational safeguarding policy](./PROJECTSEED-SAFEGUARDING.md).
 - **Evidence:** conversational outreach finds engaged survivors and misses quiet failures.
   Use it to find mentors and warm leads. Never to substantiate a published impact claim.
 - **Payments:** manual PromptPay. Sufficient to ~50 seats. Build checkout after someone pays.
