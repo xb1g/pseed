@@ -7408,3 +7408,141 @@ summary:focus-visible .radar-expand-indicator {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Safeguarding policy prose (/projectseed/safeguarding)
+   Renders docs/project/PROJECTSEED-SAFEGUARDING.md. No typography plugin is
+   installed, so the long-form defaults live here. Dawn palette, Thai-safe line
+   heights (1.6 body per docs/ui-design-system.md).
+   ------------------------------------------------------------------------- */
+.safeguarding-prose {
+  color: rgb(203 213 225);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.safeguarding-prose > * + * {
+  margin-top: 1rem;
+}
+
+.safeguarding-prose h1,
+.safeguarding-prose h2,
+.safeguarding-prose h3 {
+  color: #fff;
+  font-weight: 700;
+  line-height: 1.3;
+  /* Clears the sticky site header when an anchor link jumps to a section. */
+  scroll-margin-top: 5.5rem;
+}
+
+.safeguarding-prose h1 {
+  font-size: 1.5rem;
+  margin-top: 2.5rem;
+}
+
+.safeguarding-prose h2 {
+  font-size: 1.25rem;
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.safeguarding-prose h3 {
+  font-size: 1.05rem;
+  margin-top: 1.75rem;
+}
+
+.safeguarding-prose strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+.safeguarding-prose a {
+  color: #93c5fd;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.safeguarding-prose a:hover {
+  color: #bfdbfe;
+}
+
+.safeguarding-prose ul,
+.safeguarding-prose ol {
+  padding-left: 1.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.safeguarding-prose ul {
+  list-style: disc;
+}
+
+.safeguarding-prose ol {
+  list-style: decimal;
+}
+
+/* The non-negotiable DM rule is a blockquote in the source. It should read as
+   the loudest thing on the page. */
+.safeguarding-prose blockquote {
+  border-left: 3px solid rgba(96, 165, 250, 0.7);
+  background: rgba(59, 130, 246, 0.08);
+  border-radius: 0 0.75rem 0.75rem 0;
+  padding: 0.9rem 1.1rem;
+  color: rgb(226 232 240);
+}
+
+.safeguarding-prose blockquote > * + * {
+  margin-top: 0.5rem;
+}
+
+.safeguarding-prose code {
+  background: rgba(2, 6, 23, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.35rem;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.9em;
+  word-break: break-word;
+}
+
+.safeguarding-prose pre {
+  background: rgba(2, 6, 23, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+.safeguarding-prose pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  white-space: pre;
+}
+
+.safeguarding-prose hr {
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Tables must scroll inside themselves, never push the page sideways. */
+.safeguarding-prose table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.safeguarding-prose th,
+.safeguarding-prose td {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.safeguarding-prose th {
+  color: #fff;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.03);
+}

@@ -18,7 +18,13 @@ Context it needs: [`PROJECTSEED-STRATEGY.md`](./PROJECTSEED-STRATEGY.md).
 
 ## Run it
 
-Schedule with `/schedule` (Claude Code cloud routine), `/loop`, or a kimi CLI cron.
+Runs as a cloud agent ("hermes") scheduled directly by its host, not a Cloudflare
+Worker (an earlier attempt at `~/dev/pm-agent-worker` hit a dead end — Kimi's API
+endpoint WAF-blocks Cloudflare-Worker-to-Cloudflare-origin traffic; abandoned in
+favor of a plain agent run). Copy `docs/project/PM-AGENT-HERMES.md` into the
+agent's config as its instructions — it's self-contained (curl-based, no repo
+checkout assumed).
+
 Weekday mornings, off the hour, plus a midday check that stays silent when nothing moved:
 
 ```
@@ -106,6 +112,23 @@ Three conditions raise a direct message rather than a channel post:
 - **A blocking issue idles 7+ days** while the thing it blocks is scheduled.
 - **A new strategy doc appears** while a prior one is still `APPROVED` and its assignment
   is unexecuted. This is the specific failure that produced PS-196.
+
+## Daily extra: priority + competitor pulse
+
+Full details and exact commands live in `docs/project/PM-AGENT-HERMES.md`
+(sections 2's addenda). Summary:
+
+- **TOP PRIORITY** — the single most urgent open PS issue (lowest non-zero Linear
+  priority number, tie-broken by most recently updated). Purely mechanical pick,
+  not a judgment call — it doesn't override human prioritization, it surfaces it.
+- **COMPETITOR PULSE** — one factual line per configured competitor, from the
+  competitor's own site text, no hype framing. Currently tracks:
+  - **RevisionSuccess** (revisionsuccess.com) — AI study/revision app (upload
+    notes → AI lessons, quizzes, flashcards, AI tutor), grew via IG/TikTok reels,
+    claims 30k+ students. Framing: they win on distribution, we win on depth —
+    let the facts imply that, don't assert it as a conclusion the data doesn't support.
+
+Skipped on the midday check to avoid extra work when nothing's posting anyway.
 
 ## Weekly extra (Fridays)
 
