@@ -75,8 +75,9 @@ export function PlanWizard({
 }: PlanWizardProps) {
   const [draft, setDraft] = useState<MyPathDraft | null>(initialDraft);
   const [step, setStep] = useState(0);
-  const [readinessLevel, setReadinessLevel] =
-    useState<ReadinessLevel | null>(null);
+  const [readinessLevel, setReadinessLevel] = useState<ReadinessLevel | null>(
+    (initialDraft?.answers?.["action-readiness"] as ReadinessLevel) ?? null
+  );
   const [persisted, setPersisted] = useState(hasPersistedPath);
   const [importStatus, setImportStatus] = useState<
     "idle" | "saving" | "saved" | "error"
@@ -86,12 +87,17 @@ export function PlanWizard({
   >(null);
   const [payLaterSheet, setPayLaterSheet] =
     useState<PayLaterSheetState | null>(null);
+  const draftRef = useRef<MyPathDraft | null>(draft);
   const lastSyncedAt = useRef<string | null>(initialDraft?.updatedAt ?? null);
   const missionTracked = useRef(false);
   const stepRestored = useRef(false);
   const launchGeneration = useRef(0);
   const launchInFlight = useRef(false);
   const radarInterestsDrained = useRef(false);
+
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
 
   // Restore the furthest step reached so an accidental exit (swipe-back,
   // app switch, tab close) resumes exactly where the student left off.
@@ -123,9 +129,7 @@ export function PlanWizard({
     }
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-    // trackAnalytics only reads the current draft.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft]);
+  }, []);
 
   useEffect(() => {
     if (initialDraft) return;
@@ -143,6 +147,9 @@ export function PlanWizard({
         })
       : base;
     setDraft(next);
+    if (next.answers?.["action-readiness"]) {
+      setReadinessLevel(next.answers["action-readiness"] as ReadinessLevel);
+    }
     if (isFirstEntry) {
       void fetch("/api/my-path/events", {
         method: "POST",
@@ -272,17 +279,30 @@ export function PlanWizard({
     careerSlug?: string,
     metadata: Record<string, string | number | boolean | null> = {}
   ) {
-    if (!draft) return;
+    const currentDraft = draftRef.current ?? draft;
+    if (!currentDraft) return;
     void fetch("/api/my-path/events", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        sessionId: draft.draftId,
+        sessionId: currentDraft.draftId,
         eventType: analyticsType,
         careerSlug,
-        metadata: { entry: draft.entryKey, ...metadata },
+        metadata: { entry: currentDraft.entryKey, ...metadata },
       }),
     }).catch(() => undefined);
+  }
+
+  function selectReadiness(level: ReadinessLevel) {
+    setReadinessLevel(level);
+    recordEvent(
+      {
+        type: "question_answered",
+        questionId: "action-readiness",
+        answerId: level,
+      },
+      "readiness_selected"
+    );
   }
 
   function toggleInterest(slug: string) {
@@ -471,8 +491,8 @@ export function PlanWizard({
           {step === 0 && (
             <ReadinessStep
               value={readinessLevel}
-              onChange={setReadinessLevel}
-              onSelect={setReadinessLevel}
+              onChange={selectReadiness}
+              onSelect={selectReadiness}
             />
           )}
           {step === 1 && (

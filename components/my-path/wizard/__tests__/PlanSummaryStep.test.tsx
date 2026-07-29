@@ -99,4 +99,15 @@ describe("PlanSummaryStep Component", () => {
 
     expect(onBook).toHaveBeenCalled();
   });
+
+  it("defaults safely to hands_on when readiness is null and uses clean button styling without ei-button-dawn", () => {
+    render(<PlanSummaryStep {...defaultHandsOnProps} readiness={null} />);
+
+    const ctaButton = screen.getByRole("link", {
+      name: /ส่ง Plan ให้พี่ๆ ช่วยดูฟรี บน LINE OA/i,
+    });
+    expect(ctaButton).toBeInTheDocument();
+    expect(ctaButton).not.toHaveClass("ei-button-dawn");
+    expect(ctaButton).toHaveClass("bg-[#06C755]");
+  });
 });
