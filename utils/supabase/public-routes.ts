@@ -23,6 +23,7 @@ const PUBLIC_ROUTE_PREFIXES = [
   "/fireball",
   "/techseed",
   "/api/techseed",
+  "/projectseed",
 ] as const;
 
 export function isPublicRoute(pathname: string): boolean {
