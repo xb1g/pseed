@@ -74,13 +74,16 @@ beforeEach(() => {
   });
 });
 
-test("opens on the hook step and gates the interests step behind a saved career", async () => {
+test("opens on the readiness step and gates the interests step behind a saved career", async () => {
   renderWizard();
 
   expect(
-    await screen.findByRole("heading", { name: /เข้ามหาวิทยาลัย/ })
+    await screen.findByRole("heading", {
+      name: /ตอนนี้คุณอยู่ในช่วงไหนของการเรียนรู้\?/i,
+    })
   ).toBeVisible();
 
+  fireEvent.click(screen.getByRole("radio", { name: /พร้อมลงมือทำโปรเจกต์/i }));
   fireEvent.click(screen.getByRole("button", { name: "เริ่มออกแบบชีวิต" }));
   expect(
     screen.getByRole("heading", { name: "อะไรจุดไฟในตัวคุณ" })
@@ -101,16 +104,16 @@ test("opens on the hook step and gates the interests step behind a saved career"
   );
 });
 
-test("walks from interests through the goal lock to a sign-in-gated mission plan", async () => {
+test("walks from interests through the goal lock to a plan summary step", async () => {
   renderWizard();
 
   fireEvent.click(
-    await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" })
+    await screen.findByRole("radio", { name: /พร้อมลงมือทำโปรเจกต์/i })
   );
+  fireEvent.click(screen.getByRole("button", { name: "เริ่มออกแบบชีวิต" }));
   fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
   fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
 
-  // The PathLab pick step is hidden — the goal lock follows interests directly.
   expect(
     screen.getByRole("heading", { name: "ล็อกเป้าหมายของคุณ" })
   ).toBeVisible();
@@ -129,16 +132,12 @@ test("walks from interests through the goal lock to a sign-in-gated mission plan
   fireEvent.click(screen.getByRole("button", { name: "ดูแผนของฉัน" }));
   expect(
     screen.getByRole("heading", {
-      name: "แผน 4 เดือนสู่มหาวิทยาลัยในไทม์ไลน์ของคุณ",
+      name: /พร้อมลุยสร้างโปรเจกต์ของคุณแล้ว!/i,
     })
   ).toBeVisible();
-  // The plan ends on a paid consultation, not a stock PathLab launch.
   expect(
-    screen.getByRole("link", { name: /นัดคุยกับเรา · 100 บาท/ })
+    screen.getByRole("link", { name: /ส่ง Plan ให้พี่ๆ ช่วยดูฟรี บน LINE OA/i })
   ).toBeVisible();
-  expect(
-    screen.getByRole("link", { name: /เข้าสู่ระบบเพื่อบันทึกแผนนี้/ })
-  ).toHaveAttribute("href", "/login?next=%2Fplan%3Fresume%3D1");
 });
 
 test("folds interests flagged on Radar back into the plan", async () => {
@@ -148,11 +147,13 @@ test("folds interests flagged on Radar back into the plan", async () => {
   );
   renderWizard();
 
-  fireEvent.click(await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" }));
+  fireEvent.click(
+    await screen.findByRole("radio", { name: /พร้อมลงมือทำโปรเจกต์/i })
+  );
+  fireEvent.click(screen.getByRole("button", { name: "เริ่มออกแบบชีวิต" }));
   expect(
     screen.getByRole("button", { name: /Data Scientist/ })
   ).toHaveAttribute("aria-pressed", "true");
-  // The inbox is drained so a later visit does not re-add the same slug.
   expect(
     window.localStorage.getItem("passionseed_plan_radar_interests_v1")
   ).toBeNull();
@@ -162,16 +163,15 @@ test("keeps every step in history so a swipe-back only moves one step", async ()
   renderWizard();
 
   fireEvent.click(
-    await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" })
+    await screen.findByRole("radio", { name: /พร้อมลงมือทำโปรเจกต์/i })
   );
+  fireEvent.click(screen.getByRole("button", { name: "เริ่มออกแบบชีวิต" }));
   fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
   fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
   expect(
     screen.getByRole("heading", { name: "ล็อกเป้าหมายของคุณ" })
   ).toBeVisible();
 
-  // A mobile swipe-back gesture fires popstate — it must land on the
-  // previous wizard step, not leave the page.
   act(() => {
     window.dispatchEvent(
       new PopStateEvent("popstate", { state: { wizardStep: 1 } })
@@ -191,290 +191,13 @@ test("resumes the furthest step reached after an accidental exit", async () => {
   ).toBeVisible();
 });
 
-test("links a persisted mission plan to the My Path dashboard", async () => {
+test("links a persisted mission plan to the summary step", async () => {
   window.localStorage.setItem("passionseed_my_path_wizard_step_v1", "3");
   renderWizard(true, true);
 
   expect(
-    await screen.findByRole("link", { name: "ไปดู My Path ของฉัน" })
-  ).toHaveAttribute("href", "/me#my-path");
-});
-
-test("discloses the trial terms before launch and only links to the confirmed enrollment", async () => {
-  (global.fetch as jest.Mock).mockImplementation(
-    async (input: RequestInfo | URL) => {
-      if (String(input) === "/api/trials") {
-        return {
-          ok: true,
-          json: async () => ({
-            payToken: "0123456789abcdef0123456789abcdef",
-            payUrl: "/pay/0123456789abcdef0123456789abcdef",
-            status: "active",
-            paymentDeadline: "2099-07-23T12:00:00.000Z",
-            enrollmentId: "enrollment-123",
-            enrollmentUrl: "/seeds/pathlab/enrollment-123?day=1",
-          }),
-        };
-      }
-      return { ok: true, json: async () => ({}) };
-    }
-  );
-  renderWizard(true);
-
-  fireEvent.click(
-    await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" })
-  );
-  fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
-  fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
-  fireEvent.click(screen.getByRole("radio", { name: /เข้ามหาวิทยาลัย/ }));
-  fireEvent.click(screen.getByRole("button", { name: "ดูแผนของฉัน" }));
-
-  expect(
-    screen.getByRole("button", {
-      name: "เริ่มวันแรกก่อนได้ — ยังไม่ต้องจ่ายตอนนี้",
+    await screen.findByRole("heading", {
+      name: /ค้นหาทิศทางที่เหมาะกับตัวคุณ|พร้อมลุยสร้างโปรเจกต์ของคุณแล้ว!/i,
     })
   ).toBeVisible();
-  // Trial price / parent-pay copy hidden on plan page for now
-  expect(
-    screen.queryByText(/ทดลองครบ PathLab ฿1,490/)
-  ).not.toBeInTheDocument();
-  expect(
-    screen.queryByText(/ส่งให้ผู้ปกครองชำระภายใน 24 ชม/)
-  ).not.toBeInTheDocument();
-  expect(
-    screen.queryByText("ลิงก์ชำระเงินสำหรับผู้ปกครอง")
-  ).not.toBeInTheDocument();
-
-  fireEvent.click(
-    screen.getByRole("button", {
-      name: "เริ่มวันแรกก่อนได้ — ยังไม่ต้องจ่ายตอนนี้",
-    })
-  );
-
-  expect(await screen.findByText("ลิงก์ชำระเงินสำหรับผู้ปกครอง")).toBeVisible();
-  expect(screen.getByRole("dialog")).toHaveAccessibleDescription(
-    /ไม่มีบัตรและไม่มีการตัดเงินอัตโนมัติ/
-  );
-  expect(screen.getByRole("button", { name: "ปิดหน้าต่าง" })).toHaveClass(
-    "min-h-12",
-    "min-w-12"
-  );
-  expect(screen.getByText(/แผน My Path ของคุณยังอยู่ครบ/)).toBeVisible();
-  expect(
-    screen.getByRole("link", { name: "เริ่ม PathLab เลย" })
-  ).toHaveAttribute("href", "/seeds/pathlab/enrollment-123?day=1");
 });
-
-test("persists My Path before creating a trial and enrollment", async () => {
-  (global.fetch as jest.Mock).mockImplementation(async (input: RequestInfo | URL) => {
-    const url = String(input);
-    if (url === "/api/trials") {
-      return {
-        ok: true,
-        json: async () => ({
-          payToken: "0123456789abcdef0123456789abcdef",
-          payUrl: "/pay/0123456789abcdef0123456789abcdef",
-          status: "active",
-          paymentDeadline: "2099-07-23T12:00:00.000Z",
-          enrollmentId: "enrollment-123",
-          enrollmentUrl: "/seeds/pathlab/enrollment-123?day=1",
-        }),
-      };
-    }
-    return { ok: true, json: async () => ({}) };
-  });
-  renderWizard(true);
-  fireEvent.click(await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" }));
-  fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
-  fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
-  fireEvent.click(screen.getByRole("radio", { name: /เข้ามหาวิทยาลัย/ }));
-  fireEvent.click(screen.getByRole("button", { name: "ดูแผนของฉัน" }));
-  (global.fetch as jest.Mock).mockClear();
-
-  fireEvent.click(
-    screen.getByRole("button", {
-      name: "เริ่มวันแรกก่อนได้ — ยังไม่ต้องจ่ายตอนนี้",
-    })
-  );
-  await screen.findByText("ลิงก์ชำระเงินสำหรับผู้ปกครอง");
-
-  const urls = (global.fetch as jest.Mock).mock.calls.map(([url]) => String(url));
-  const saveIndex = urls.indexOf("/api/my-path");
-  const trialIndex = urls.indexOf("/api/trials");
-  expect(saveIndex).toBeGreaterThanOrEqual(0);
-  expect(trialIndex).toBeGreaterThan(saveIndex);
-});
-
-test("blocks trial launch when the durable My Path save fails", async () => {
-  (global.fetch as jest.Mock).mockImplementation(async (input: RequestInfo | URL) => {
-    if (String(input) === "/api/my-path") return { ok: false };
-    return { ok: true, json: async () => ({}) };
-  });
-  renderWizard(true);
-  fireEvent.click(await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" }));
-  fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
-  fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
-  fireEvent.click(screen.getByRole("radio", { name: /เข้ามหาวิทยาลัย/ }));
-  fireEvent.click(screen.getByRole("button", { name: "ดูแผนของฉัน" }));
-  (global.fetch as jest.Mock).mockClear();
-
-  fireEvent.click(
-    screen.getByRole("button", {
-      name: "เริ่มวันแรกก่อนได้ — ยังไม่ต้องจ่ายตอนนี้",
-    })
-  );
-
-  expect(await screen.findByRole("heading", { name: "เปิดการทดลองไม่สำเร็จ" })).toBeVisible();
-  expect(global.fetch).not.toHaveBeenCalledWith(
-    "/api/trials",
-    expect.anything()
-  );
-});
-
-test("dismissal invalidates an in-flight launch and rapid clicks do not duplicate it", async () => {
-  let resolveTrial!: (value: {
-    ok: boolean;
-    json: () => Promise<Record<string, string>>;
-  }) => void;
-  const trialResponse = new Promise<{
-    ok: boolean;
-    json: () => Promise<Record<string, string>>;
-  }>((resolve) => {
-    resolveTrial = resolve;
-  });
-  (global.fetch as jest.Mock).mockImplementation((input: RequestInfo | URL) => {
-    if (String(input) === "/api/trials") return trialResponse;
-    return Promise.resolve({ ok: true, json: async () => ({}) });
-  });
-
-  renderWizard(true);
-  fireEvent.click(await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" }));
-  fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
-  fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
-  fireEvent.click(screen.getByRole("radio", { name: /เข้ามหาวิทยาลัย/ }));
-  fireEvent.click(screen.getByRole("button", { name: "ดูแผนของฉัน" }));
-  (global.fetch as jest.Mock).mockClear();
-
-  const launchButton = screen.getByRole("button", {
-    name: "เริ่มวันแรกก่อนได้ — ยังไม่ต้องจ่ายตอนนี้",
-  });
-  fireEvent.click(launchButton);
-  fireEvent.click(launchButton);
-
-  await waitFor(() => {
-    expect(
-      (global.fetch as jest.Mock).mock.calls.filter(
-        ([url]) => String(url) === "/api/trials"
-      )
-    ).toHaveLength(1);
-  });
-  fireEvent.click(screen.getByRole("button", { name: "ปิดหน้าต่าง" }));
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-
-  await act(async () => {
-    resolveTrial({
-      ok: true,
-      json: async () => ({
-        payToken: "0123456789abcdef0123456789abcdef",
-        payUrl: "/pay/0123456789abcdef0123456789abcdef",
-        status: "active",
-        paymentDeadline: "2099-07-23T12:00:00.000Z",
-        enrollmentId: "enrollment-123",
-        enrollmentUrl: "/seeds/pathlab/enrollment-123?day=1",
-      }),
-    });
-    await trialResponse;
-  });
-
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-});
-
-test("routes a reused expired trial to payment recovery instead of locked enrollment", async () => {
-  (global.fetch as jest.Mock).mockImplementation(
-    async (input: RequestInfo | URL) => {
-      if (String(input) === "/api/trials") {
-        return {
-          ok: true,
-          json: async () => ({
-            payToken: "0123456789abcdef0123456789abcdef",
-            payUrl: "/pay/0123456789abcdef0123456789abcdef",
-            status: "expired",
-            paymentDeadline: "2026-07-21T12:00:00.000Z",
-            enrollmentId: null,
-            enrollmentUrl: null,
-          }),
-        };
-      }
-      return { ok: true, json: async () => ({}) };
-    }
-  );
-  renderWizard(true);
-  fireEvent.click(await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" }));
-  fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
-  fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
-  fireEvent.click(screen.getByRole("radio", { name: /เข้ามหาวิทยาลัย/ }));
-  fireEvent.click(screen.getByRole("button", { name: "ดูแผนของฉัน" }));
-  fireEvent.click(
-    screen.getByRole("button", {
-      name: "เริ่มวันแรกก่อนได้ — ยังไม่ต้องจ่ายตอนนี้",
-    })
-  );
-
-  expect(
-    await screen.findByRole("heading", { name: "ช่วงทดลอง 24 ชั่วโมงครบแล้ว" })
-  ).toBeVisible();
-  expect(
-    screen.getByRole("link", { name: "ดูหน้าชำระเพื่อเปิดสิทธิ์ต่อ" })
-  ).toHaveAttribute("href", "/pay/0123456789abcdef0123456789abcdef");
-  expect(
-    screen.queryByRole("link", { name: "เริ่ม PathLab เลย" })
-  ).not.toBeInTheDocument();
-});
-
-test.each([
-  ["pending", "วันแรกพร้อมแล้ว กำลังตรวจสลิป"],
-  ["paid", "ชำระเรียบร้อย วันแรกพร้อมแล้ว"],
-] as const)(
-  "keeps %s access ready without asking the parent to pay again",
-  async (status, heading) => {
-    (global.fetch as jest.Mock).mockImplementation(
-      async (input: RequestInfo | URL) => {
-        if (String(input) === "/api/trials") {
-          return {
-            ok: true,
-            json: async () => ({
-              payToken: "0123456789abcdef0123456789abcdef",
-              payUrl: "/pay/0123456789abcdef0123456789abcdef",
-              status,
-              paymentDeadline: "2099-07-23T12:00:00.000Z",
-              enrollmentId: "enrollment-123",
-              enrollmentUrl: "/seeds/pathlab/enrollment-123?day=1",
-            }),
-          };
-        }
-        return { ok: true, json: async () => ({}) };
-      }
-    );
-    renderWizard(true);
-    fireEvent.click(
-      await screen.findByRole("button", { name: "เริ่มออกแบบชีวิต" })
-    );
-    fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
-    fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
-    fireEvent.click(screen.getByRole("radio", { name: /เข้ามหาวิทยาลัย/ }));
-    fireEvent.click(screen.getByRole("button", { name: "ดูแผนของฉัน" }));
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "เริ่มวันแรกก่อนได้ — ยังไม่ต้องจ่ายตอนนี้",
-      })
-    );
-
-    expect(await screen.findByRole("heading", { name: heading })).toBeVisible();
-    expect(
-      screen.getByRole("link", { name: "เริ่ม PathLab เลย" })
-    ).toHaveAttribute("href", "/seeds/pathlab/enrollment-123?day=1");
-    expect(
-      screen.queryByText("ลิงก์ชำระเงินสำหรับผู้ปกครอง")
-    ).not.toBeInTheDocument();
-  }
-);
