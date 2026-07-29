@@ -42,7 +42,9 @@ export function ReadinessStep({
 }: ReadinessStepProps) {
   const handleSelect = (selectedId: ReadinessLevel) => {
     onChange?.(selectedId);
-    onSelect?.(selectedId);
+    if (onSelect && onSelect !== onChange) {
+      onSelect(selectedId);
+    }
   };
 
   return (

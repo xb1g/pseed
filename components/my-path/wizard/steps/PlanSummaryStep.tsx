@@ -60,7 +60,8 @@ function buildLineOaDeepLink({
   seedTitle: string;
   timelineText: string;
 }) {
-  const isHandsOn = readiness === "hands_on";
+  const effectiveReadiness = readiness ?? "hands_on";
+  const isHandsOn = effectiveReadiness === "hands_on";
 
   let message = "";
   if (isHandsOn) {
@@ -96,19 +97,20 @@ const PROJECTSEED_FEATURES = [
 ];
 
 export function PlanSummaryStep({
-  readiness = "hands_on",
+  readiness,
   selectedCareer,
   selectedSeed,
   timeline = "3 เดือน",
   onBook,
 }: PlanSummaryStepProps) {
-  const isHandsOn = readiness === "hands_on";
+  const effectiveReadiness = readiness ?? "hands_on";
+  const isHandsOn = effectiveReadiness === "hands_on";
   const careerTitle = getCareerTitle(selectedCareer);
   const seedTitle = getSeedTitle(selectedSeed);
   const timelineText = timeline || "3 เดือน";
 
   const lineDeepLink = buildLineOaDeepLink({
-    readiness,
+    readiness: effectiveReadiness,
     careerTitle,
     seedTitle,
     timelineText,
@@ -234,7 +236,7 @@ export function PlanSummaryStep({
               target="_blank"
               rel="noopener noreferrer"
               onClick={onBook}
-              className="ei-button-dawn w-full sm:w-auto text-center inline-flex items-center justify-center gap-2 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-slate-950 font-bold px-6 py-3.5 text-base transition-all shadow-lg hover:shadow-emerald-500/25"
+              className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-slate-950 font-semibold px-6 py-3.5 text-base font-bai-jamjuree transition-all shadow-lg shadow-[#06C755]/20 hover:shadow-[#06C755]/40 hover:-translate-y-0.5"
             >
               <MessageCircle className="h-5 w-5 fill-current" />
               <span>ส่ง Plan ให้พี่ๆ ช่วยดูฟรี บน LINE OA</span>
@@ -270,7 +272,7 @@ export function PlanSummaryStep({
               target="_blank"
               rel="noopener noreferrer"
               onClick={onBook}
-              className="ei-button-dawn w-full sm:w-auto text-center inline-flex items-center justify-center gap-2 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-slate-950 font-bold px-6 py-3.5 text-base transition-all shadow-lg hover:shadow-emerald-500/25"
+              className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-slate-950 font-semibold px-6 py-3.5 text-base font-bai-jamjuree transition-all shadow-lg shadow-[#06C755]/20 hover:shadow-[#06C755]/40 hover:-translate-y-0.5"
             >
               <MessageCircle className="h-5 w-5 fill-current" />
               <span>คุยกับพี่ๆ ช่วยค้นหาทิศทางฟรี บน LINE OA</span>
