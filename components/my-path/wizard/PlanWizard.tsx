@@ -7,6 +7,8 @@ import { StepGoal } from "./StepGoal";
 import { StepHook } from "./StepHook";
 import { StepInterests } from "./StepInterests";
 import { StepMission } from "./StepMission";
+import { ReadinessStep, type ReadinessLevel } from "./steps/ReadinessStep";
+import { PlanSummaryStep } from "./steps/PlanSummaryStep";
 import { PayLaterSheet } from "./PayLaterSheet";
 import { WizardProgress } from "./WizardProgress";
 import type { TrialShareInfo } from "@/components/trials/TrialShareActions";
@@ -73,6 +75,8 @@ export function PlanWizard({
 }: PlanWizardProps) {
   const [draft, setDraft] = useState<MyPathDraft | null>(initialDraft);
   const [step, setStep] = useState(0);
+  const [readinessLevel, setReadinessLevel] =
+    useState<ReadinessLevel | null>(null);
   const [persisted, setPersisted] = useState(hasPersistedPath);
   const [importStatus, setImportStatus] = useState<
     "idle" | "saving" | "saved" | "error"
@@ -451,7 +455,7 @@ export function PlanWizard({
   }
 
   const canProceed =
-    step === 0 ||
+    (step === 0 && readinessLevel !== null) ||
     (step === 1 && savedSlugs.length > 0) ||
     (step === 2 && goal !== null);
   const isLastStep = step === TOTAL_STEPS - 1;
@@ -464,7 +468,13 @@ export function PlanWizard({
         <WizardProgress step={step} totalSteps={TOTAL_STEPS} />
 
         <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-28 pt-8 sm:px-6 sm:pt-12">
-          {step === 0 && <StepHook />}
+          {step === 0 && (
+            <ReadinessStep
+              value={readinessLevel}
+              onChange={setReadinessLevel}
+              onSelect={setReadinessLevel}
+            />
+          )}
           {step === 1 && (
             <StepInterests
               careers={careers}
@@ -482,33 +492,14 @@ export function PlanWizard({
             />
           )}
           {step === 3 && (
-            <StepMission
-              plan={plan}
-              firstAction={
-                firstActionSeed
-                  ? {
-                      href: `/seeds/${firstActionSeed.id}`,
-                      title: firstActionSeed.title,
-                      seedId: firstActionSeed.id,
-                    }
-                  : null
+            <PlanSummaryStep
+              readiness={readinessLevel}
+              selectedCareer={
+                careers.find((career) => career.slug === savedSlugs[0]) ??
+                savedSlugs[0]
               }
-              isSignedIn={isSignedIn}
-              loginHref={LOGIN_HREF}
-              importStatus={importStatus}
-              saveError={saveError}
-              persisted={persisted}
-              onSave={savePlan}
-              onLaunch={() =>
-                trackAnalytics("pathlab_handoff_clicked", undefined, {
-                  seedId: firstActionSeed?.id ?? null,
-                  title: firstActionSeed?.title ?? null,
-                  source: "mission_launch",
-                })
-              }
-              onLaunchStart={
-                isSignedIn && firstActionSeed ? startTrialLaunch : undefined
-              }
+              selectedSeed={firstActionSeed}
+              timeline={timelineMonths ? `${timelineMonths} เดือน` : "3 เดือน"}
               onBook={() =>
                 trackAnalytics("consult_booking_clicked", undefined, {
                   goal: goal ?? "none",
@@ -545,7 +536,9 @@ export function PlanWizard({
               >
                 <span>
                   {step === 0
-                    ? "เริ่มออกแบบชีวิต"
+                    ? readinessLevel === null
+                      ? "เลือกสถานะเพื่อไปต่อ"
+                      : "เริ่มออกแบบชีวิต"
                     : step === 1 && savedSlugs.length === 0
                       ? "เลือกอย่างน้อย 1 อันเพื่อไปต่อ"
                       : step === 2 && goal === null
