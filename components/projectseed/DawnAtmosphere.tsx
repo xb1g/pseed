@@ -1,0 +1,55 @@
+/**
+ * Dawn background stack — see docs/ui-design-system.md, "Dawn Theme (Students)".
+ *
+ * Layer order is fixed: gradient, three cloud blobs, horizon glow. The layers
+ * are static (no animation) because the hub is a working surface people fill in
+ * forms on, not a landing page — drifting clouds behind a text field is motion
+ * that costs attention and buys nothing.
+ */
+export function DawnAtmosphere() {
+  return (
+    <>
+      <div
+        aria-hidden="true"
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(to bottom, #020617 0%, #0f172a 28%, #1e1b4b 58%, #312e81 82%, #1e3a5f 100%)",
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="absolute -top-32 -left-32 h-[480px] w-[480px] rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, transparent 70%)",
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="absolute top-1/3 -right-40 h-[520px] w-[520px] rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(99, 102, 241, 0.20) 0%, transparent 70%)",
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="absolute bottom-0 left-1/4 h-[420px] w-[420px] rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, transparent 70%)",
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 bottom-0 h-1/2"
+        style={{
+          background:
+            "linear-gradient(to top, rgba(254, 217, 92, 0.12) 0%, transparent 60%)",
+          filter: "blur(52px)",
+        }}
+      />
+    </>
+  );
+}

@@ -4,7 +4,7 @@
 promo, and deadline. Amendments are marked inline and the reasoning lives in
 `~/.gstack/projects/passionseed-web/bunyasit-main-design-20260729-195621.md`.
 **Supersedes:** [`FIRST-DOLLAR-STRATEGY.md`](./FIRST-DOLLAR-STRATEGY.md)
-**Linear:** PS-189 … PS-198, plus PS-206 and PS-207
+**Linear:** PS-189 … PS-198, plus PS-206 and PS-207. Hub build: PS-208 … PS-215.
 
 Read this before picking up any ProjectSeed issue. It is the shared context the Linear
 issues assume.
@@ -154,6 +154,38 @@ unmeasured, delivered by alumni capacity, which risk 5 says is unproven. That is
 for a validation batch on exactly one condition, now binding: **2,990฿ is a validation price
 and batch 2 pricing is unpromised, in writing, to every batch-1 buyer.** PS-207 is what makes
 batch 2 knowable.
+
+## The hub *(added 2026-07-30 — PS-208 … PS-215)*
+
+`/projectseed/hub` is the software side of "the community is the product". An
+alumni MVP is live in code, not yet on production.
+
+**What a participant does, in order:** join with a code posted in Discord → link
+their Discord account → pick a project (eight starter options, or their own) →
+answer four questions about it → paint the hours they can be in voice chat →
+see those hours against everyone else's as a heatmap.
+
+**Why this shape.** Three of the open risks below are unmeasured because nothing
+ever recorded the answer. The hub records four things that were previously
+folklore: who actually joined, who actually chose something, what they said they
+would build, and whether anyone's hours overlap. The last one is the community
+thesis (risk 4) made falsifiable — if the heatmap is empty or scattered, there
+is no room, and we learn that before batch 1 rather than after.
+
+**Alumni first, deliberately.** Alumni are the capacity bet (risk 5) and they are
+not buyers, so shipping to them costs no revenue and tests the mechanics with
+people who will say plainly when something is broken.
+
+**Discord linking is the load-bearing part.** The snowflake stored on
+`pseed_participants.discord_user_id` is the only stable join key between a person
+in a voice channel and a row in our database. Every phase-2 idea — voice presence
+logging, slot reminders, role sync, a `/shipped` command (PS-213) — is downstream
+of it. Voice presence is also behavioural data about minors: decide retention and
+what parents are told before the first row is written.
+
+**Known gaps.** The join code and project catalog are seeded in a migration, so
+rotating a code needs a deploy (PS-214). The catalog copy was written without
+alumni input, which risk 11 says is the exact failure mode to avoid (PS-215).
 
 ## Open risks — read these before you disagree with a decision
 
