@@ -37,6 +37,12 @@ function readyHub(overrides: Partial<PseedHubState> = {}): HubLoad {
     heatmap: [],
     roster: [],
     cohortTags: [],
+    stats: {
+      recorded_seconds: 0,
+      session_count: 0,
+      last_seen_at: null,
+      kept_slot_count: 0,
+    },
     participantCount: 3,
     ...overrides,
   };

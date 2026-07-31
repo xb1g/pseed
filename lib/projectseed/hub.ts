@@ -7,6 +7,7 @@ import type {
   PseedParticipant,
   PseedProjectOption,
   PseedProjectPick,
+  PseedParticipantStats,
   PseedSlot,
   PseedSlotRosterEntry,
   PseedTagCount,
@@ -94,6 +95,7 @@ export async function loadHub(): Promise<HubLoad> {
     heatmapRes,
     rosterRes,
     tagsRes,
+    statsRes,
     countRes,
   ] = await Promise.all([
     supabase
@@ -116,6 +118,7 @@ export async function loadHub(): Promise<HubLoad> {
     // see who is in it costs nothing.
     supabase.rpc("pseed_cohort_slot_roster", { p_cohort_id: cohort.id }),
     supabase.rpc("pseed_cohort_tags", { p_cohort_id: cohort.id }),
+    supabase.rpc("pseed_participant_stats", { p_participant_id: participant.id }),
     supabase
       .from("pseed_participants")
       .select("id", { count: "exact", head: true })
@@ -144,6 +147,14 @@ export async function loadHub(): Promise<HubLoad> {
       heatmap: (heatmapRes.data as PseedHeatmapCell[]) ?? [],
       roster: (rosterRes.data as PseedSlotRosterEntry[]) ?? [],
       cohortTags: (tagsRes.data as PseedTagCount[]) ?? [],
+      // The RPC returns a single row; a missing one means the bot has never
+      // written a session for this person, which is a zero, not an error.
+      stats: (statsRes.data as PseedParticipantStats[])?.[0] ?? {
+        recorded_seconds: 0,
+        session_count: 0,
+        last_seen_at: null,
+        kept_slot_count: 0,
+      },
       participantCount: countRes.count ?? 0,
     },
   };
