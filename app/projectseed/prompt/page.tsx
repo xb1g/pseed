@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { DawnScene } from "@/components/projectseed/dawn-scene";
 import { PromptCopy } from "@/components/projectseed/prompt-copy";
 import {
   buildProjectDiscoveryGreeting,
@@ -38,7 +39,7 @@ export default function ProjectSeedPromptPage() {
 
   return (
     <div className="dawn-theme relative min-h-screen overflow-hidden">
-      <DawnAtmosphere />
+      <DawnScene />
 
       <main className="relative z-10 mx-auto flex w-full max-w-2xl flex-col px-4 py-12 sm:px-6 sm:py-16">
         <Hero />
@@ -51,78 +52,27 @@ export default function ProjectSeedPromptPage() {
   );
 }
 
-/**
- * Dawn layer stack per docs/ui-design-system.md: base gradient, three cloud
- * blobs, then the pale-gold horizon glow.
- */
-function DawnAtmosphere() {
-  return (
-    <>
-      <div
-        aria-hidden="true"
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(to bottom, #020617 0%, #0f172a 28%, #1e1b4b 58%, #312e81 82%, #1e3a5f 100%)",
-        }}
-      />
-      <div
-        aria-hidden="true"
-        className="absolute -top-32 -left-32 h-[480px] w-[480px] rounded-full"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, transparent 70%)",
-        }}
-      />
-      <div
-        aria-hidden="true"
-        className="absolute top-1/3 -right-40 h-[520px] w-[520px] rounded-full"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(99, 102, 241, 0.20) 0%, transparent 70%)",
-        }}
-      />
-      <div
-        aria-hidden="true"
-        className="absolute bottom-0 left-1/4 h-[420px] w-[420px] rounded-full"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, transparent 70%)",
-        }}
-      />
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-0 bottom-0 h-1/2"
-        style={{
-          background:
-            "linear-gradient(to top, rgba(254, 217, 92, 0.12) 0%, transparent 60%)",
-          filter: "blur(52px)",
-        }}
-      />
-    </>
-  );
-}
-
 function Hero() {
   return (
     <header className="flex flex-col gap-5">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-300/80">
-        ProjectSeed
-      </p>
+      <p className="dawn-eyebrow">ProjectSeed</p>
 
       <h1 className="text-3xl font-bold leading-tight text-white sm:text-4xl">
         หาโปรเจกต์ที่เธออยากทำจริง ๆ
       </h1>
+
+      <hr className="dawn-rule" />
 
       <p className="text-lg leading-relaxed text-slate-300">
         พรอมป์ฟรี เอาไปคุยกับ AI ตัวไหนก็ได้ มันจะถามเธอไปเรื่อย ๆ
         จนกว่าเธอจะเจอโปรเจกต์ที่เป็นของเธอเอง
       </p>
 
-      {/* The refusal is the product. Say it before anyone asks. */}
-      <div className="rounded-xl border border-blue-400/25 bg-blue-500/[0.07] p-4">
+      {/* The refusal is the product, so it gets the page's single warm accent.
+          Everything else on this page stays cool and interactive-blue. */}
+      <div className="dawn-keynote">
         <p className="text-[15px] leading-relaxed text-slate-200">
-          <span className="font-semibold text-white">AI จะไม่คิดโปรเจกต์ให้</span> — ตั้งใจให้เป็นแบบนั้น
+          <span className="font-semibold text-amber-200">AI จะไม่คิดโปรเจกต์ให้</span> — ตั้งใจให้เป็นแบบนั้น
           <br />
           โปรเจกต์ที่คนอื่นคิดให้ มันไม่ใช่ของเธอ แล้วคนอ่านพอร์ตเขาดูออก
           <br />
@@ -130,10 +80,10 @@ function Hero() {
         </p>
       </div>
 
-      <ul className="flex flex-col gap-1.5 text-[15px] text-slate-400">
-        <li>• ใช้เวลาประมาณ 20 นาที</li>
-        <li>• ไม่ต้องสมัคร ไม่ต้องกรอกอะไร ฟรี</li>
-        <li>• จบแล้วได้โปรเจกต์ 1 อัน + สิ่งที่ต้องทำภายในสัปดาห์นี้ 1 อย่าง</li>
+      <ul className="dawn-list flex flex-col gap-1.5 text-[15px] text-slate-400">
+        <li>ใช้เวลาประมาณ 20 นาที</li>
+        <li>ไม่ต้องสมัคร ไม่ต้องกรอกอะไร ฟรี</li>
+        <li>จบแล้วได้โปรเจกต์ 1 อัน + สิ่งที่ต้องทำภายในสัปดาห์นี้ 1 อย่าง</li>
       </ul>
     </header>
   );
@@ -148,10 +98,8 @@ function SafetyNotice() {
   return (
     <footer className="mt-12 flex flex-col gap-4 border-t border-white/10 pt-6">
       <div>
-        <h2 className="mb-2 text-sm font-semibold text-slate-300">
-          ก่อนเริ่ม อ่านสองข้อนี้
-        </h2>
-        <ul className="flex flex-col gap-2 text-sm leading-relaxed text-slate-400">
+        <h2 className="dawn-eyebrow mb-3">ก่อนเริ่ม อ่านสองข้อนี้</h2>
+        <ul className="dawn-list flex flex-col gap-2 text-sm leading-relaxed text-slate-400">
           <li>
             <span className="text-slate-300">อย่าใส่ข้อมูลส่วนตัว</span> — ชื่อจริง เลขบัตรประชาชน
             เบอร์โทร ที่อยู่ ทั้งของเธอและของคนอื่น ใช้ชื่อเล่นก็พอ

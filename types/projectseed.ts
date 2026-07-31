@@ -53,8 +53,32 @@ export interface PseedProjectPick {
   why_this: string | null;
   who_for: string | null;
   first_step: string | null;
+  /** Free text, lowercased, max 5. What the room searches on. */
+  tags: string[];
   status: PseedPickStatus;
   submitted_at: string | null;
+}
+
+/**
+ * One person's presence in one hour, with what they are building.
+ *
+ * Flat rather than nested per slot because that is the shape the RPC returns
+ * and the shape a heatmap cell needs after one `groupRosterBySlot` pass.
+ */
+export interface PseedSlotRosterEntry {
+  day_of_week: number;
+  hour_of_day: number;
+  participant_id: string;
+  display_name: string | null;
+  project_title: string | null;
+  tags: string[];
+  is_me: boolean;
+}
+
+/** A tag and how many people in the cohort are using it. */
+export interface PseedTagCount {
+  tag: string;
+  participant_count: number;
 }
 
 /** One occupied cell of the weekly grid, aggregated across the cohort. */
@@ -82,6 +106,10 @@ export interface PseedHubState {
   options: PseedProjectOption[];
   mySlots: PseedSlot[];
   heatmap: PseedHeatmapCell[];
+  /** Who is in each slot and what they are building. */
+  roster: PseedSlotRosterEntry[];
+  /** What the whole room is working on, most common first. */
+  cohortTags: PseedTagCount[];
   participantCount: number;
 }
 

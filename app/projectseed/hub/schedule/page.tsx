@@ -23,6 +23,8 @@ export default async function SchedulePage() {
       <AvailabilityPicker initialSlots={hub.mySlots} />
       <HeatmapGrid
         cells={hub.heatmap}
+        roster={hub.roster}
+        cohortTags={hub.cohortTags}
         participantCount={hub.participantCount}
       />
     </>

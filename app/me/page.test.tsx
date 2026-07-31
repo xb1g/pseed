@@ -4,14 +4,24 @@ import PortalPage from "./page";
 import { buildMyPathDashboard } from "@/lib/my-path/dashboard";
 import { loadMyPathDashboardSource } from "@/lib/my-path/dashboard-read";
 import { loadPersistedMyPathResult } from "@/lib/my-path/server-read";
+import { loadHub } from "@/lib/projectseed/hub";
+import { buildProjectSeedMeSummary } from "@/lib/projectseed/me-summary";
 
 jest.mock("next/navigation", () => ({
   redirect: jest.fn(),
 }));
 
 jest.mock("@/components/my-path/MyPathDashboard", () => ({
-  MyPathDashboard: ({ model }: { model: { nextAction: { title: string } } }) => (
-    <div>My Path model: {model.nextAction.title}</div>
+  MyPathDashboard: ({
+    model,
+    projectSeed,
+  }: {
+    model: { nextAction: { title: string } };
+    projectSeed: { cta: string };
+  }) => (
+    <div>
+      My Path model: {model.nextAction.title} · ProjectSeed: {projectSeed.cta}
+    </div>
   ),
 }));
 
@@ -54,11 +64,27 @@ jest.mock("@/lib/my-path/dashboard", () => ({
   }),
 }));
 
+jest.mock("@/lib/projectseed/hub", () => ({
+  loadHub: jest.fn().mockResolvedValue({ state: "no-cohort" }),
+}));
+
+jest.mock("@/lib/projectseed/me-summary", () => ({
+  buildProjectSeedMeSummary: jest.fn().mockReturnValue({
+    kind: "closed",
+    title: "ทำโปรเจกต์จริงก่อนยื่นพอร์ต",
+    detail: "ProjectSeed",
+    href: "/projectseed",
+    cta: "ดู ProjectSeed",
+  }),
+}));
+
 test("server-loads and composes the signed-in student's My Path dashboard", async () => {
   render(await PortalPage());
 
   expect(loadPersistedMyPathResult).toHaveBeenCalledWith(supabase);
   expect(loadMyPathDashboardSource).toHaveBeenCalledWith(supabase, "user-a");
+  expect(loadHub).toHaveBeenCalled();
+  expect(buildProjectSeedMeSummary).toHaveBeenCalledWith({ state: "no-cohort" });
   expect(buildMyPathDashboard).toHaveBeenCalledWith({
     persistedPath: { hasPersistedPath: true, draft: {}, evidence: [] },
     persistedPathStatus: "ready",
@@ -66,7 +92,9 @@ test("server-loads and composes the signed-in student's My Path dashboard", asyn
     trials: [],
     progress: [],
   });
-  expect(screen.getByText(/My Path model: เลือก PathLab/)).toBeInTheDocument();
+  expect(
+    screen.getByText(/My Path model: เลือก PathLab.*ProjectSeed: ดู ProjectSeed/)
+  ).toBeInTheDocument();
 });
 
 test("exposes the My Path fragment target on the page landmark", async () => {
