@@ -115,14 +115,26 @@ export function DiscordLinkCard({
           <span className="text-slate-500">· {discordUserId}</span>
         </p>
       ) : (
-        <button
-          type="button"
-          onClick={handleLink}
-          className="ei-button-dawn self-start"
-          disabled={pending}
-        >
-          <span>{pending ? "กำลังเชื่อม…" : "เชื่อมบัญชี Discord"}</span>
-        </button>
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={handleLink}
+            className="ei-button-dawn self-start"
+            disabled={pending}
+          >
+            <span>{pending ? "กำลังเชื่อม…" : "เชื่อมบัญชี Discord"}</span>
+          </button>
+
+          {/*
+            Supabase refuses to link a Discord account that already belongs to
+            another user, and offers no merge. Saying so before the click is
+            cheaper than sending someone to an error page to find out.
+          */}
+          <p className="text-xs leading-relaxed text-slate-400">
+            เคยสมัครด้วย Discord อยู่แล้ว? ออกจากระบบแล้วเข้าด้วย Discord ตรง ๆ
+            จะง่ายกว่า — ไม่ต้องเชื่อมอะไรเพิ่ม
+          </p>
+        </div>
       )}
 
       {error ? (

@@ -4,9 +4,17 @@ import { AlertCircle } from "lucide-react";
 
 function AuthCodeErrorContent({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
   const error = searchParams?.error as string;
+  const errorCode = searchParams?.error_code as string;
   const errorDescription = searchParams?.error_description as string;
   const details = searchParams?.details as string;
-  
+
+  // Linking a social account that already belongs to a different user is not a
+  // failure of the link — it is two accounts for one person, and none of the
+  // generic advice below ("your link expired", "complete your profile") applies.
+  if (errorCode === "identity_already_exists") {
+    return <IdentityAlreadyLinked />;
+  }
+
   const getErrorMessage = () => {
     switch (error) {
       case 'profile_creation_failed':
@@ -94,6 +102,55 @@ function AuthCodeErrorContent({ searchParams }: { searchParams: { [key: string]:
             contact support
           </Link>
         </p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Supabase has no account merge. If the Discord account is already an identity
+ * on another user, the only two honest routes are: sign in as that user, or
+ * have the identity removed from it first. Both are offered plainly rather than
+ * inviting a retry that will fail the same way.
+ */
+function IdentityAlreadyLinked() {
+  return (
+    <div className="w-full max-w-md space-y-8">
+      <div className="text-center">
+        <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
+        <h2 className="mt-6 text-3xl font-bold tracking-tight text-foreground">
+          This account is already connected elsewhere
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          The social account you just tried to connect already belongs to a
+          different PassionSeed account — usually because you signed up with it
+          before, then signed in another way today.
+        </p>
+      </div>
+
+      <div className="rounded-md bg-muted p-4 text-sm text-muted-foreground">
+        <p className="font-medium text-foreground">What to do</p>
+        <ul className="mt-2 list-disc space-y-1 pl-5">
+          <li>
+            Sign out, then sign in with that social account directly. Everything
+            works from there — nothing else needs connecting.
+          </li>
+          <li>
+            If you would rather keep the account you are in now, tell us in
+            Discord. Moving a social account between two PassionSeed accounts has
+            to be done on our side.
+          </li>
+        </ul>
+      </div>
+
+      <div className="space-y-4">
+        <Button asChild className="w-full">
+          <Link href="/login">Sign in with that account instead</Link>
+        </Button>
+
+        <Button variant="outline" asChild className="w-full">
+          <Link href="/projectseed/hub">Back to the hub</Link>
+        </Button>
       </div>
     </div>
   );
