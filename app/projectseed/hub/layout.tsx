@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { DawnAtmosphere } from "@/components/projectseed/DawnAtmosphere";
 import { HubNav } from "@/components/projectseed/HubNav";
+import { isProjectSeedAdmin } from "@/lib/projectseed/admin";
 
 export const metadata: Metadata = {
   title: "ProjectSeed Hub",
@@ -9,7 +10,13 @@ export const metadata: Metadata = {
     "เลือกโปรเจกต์ อธิบายมัน และบอกว่าคุณเข้าห้องเสียงได้เวลาไหน — ห้องของ ProjectSeed",
 };
 
-export default function HubLayout({ children }: { children: React.ReactNode }) {
+export default async function HubLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const isAdmin = await isProjectSeedAdmin();
+
   return (
     <div className="dawn-theme relative min-h-screen overflow-hidden">
       <DawnAtmosphere />
@@ -18,7 +25,7 @@ export default function HubLayout({ children }: { children: React.ReactNode }) {
         <header className="ps-hub-header">
           <p className="dawn-eyebrow">ProjectSeed</p>
           <hr className="dawn-rule ps-hub-header__rule" />
-          <HubNav />
+          <HubNav isAdmin={isAdmin} />
         </header>
 
         <main className="mt-8 flex flex-col gap-10">{children}</main>
