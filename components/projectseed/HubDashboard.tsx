@@ -28,14 +28,17 @@ interface HubDashboardProps {
 /**
  * A player profile, not a form.
  *
- * The audience grew up on character screens: a card with your name and rank, a
- * block of stats, a row of badges, a short quest list. That layout is legible
- * to them before they read a word of it, and it reframes the product honestly —
- * what you get out of this is a record of what you did, not a completed form.
+ * The audience grew up on character screens: a name and rank at the top, a row
+ * of numbers, a shelf of badges. That layout is legible before a word of it is
+ * read, and it reframes the product honestly — what you get out of this is a
+ * record of what you did, not a completed form.
  *
- * The discipline that keeps it from being a lie: every number here is measured,
- * and the ones that cannot be measured yet are shown as zero and marked, never
- * substituted with something easier to count.
+ * Two rules hold it together. Every number is measured, and the ones that
+ * cannot be measured yet are shown as zero and marked, never substituted with
+ * something easier to count. And the page is built from ink on a dark ground —
+ * hairlines, type weight, and a single warm accent — rather than from stacked
+ * cards. Cards on a blue field give every element the same visual weight, which
+ * is the opposite of what a stat screen is for.
  */
 export function HubDashboard({ hub, steps }: HubDashboardProps) {
   const { participant, pick, mySlots, heatmap, roster, cohortTags, stats } = hub;
@@ -57,7 +60,7 @@ export function HubDashboard({ hub, steps }: HubDashboardProps) {
   const earned = badges.filter((b) => b.earned).length;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-10">
       <PlayerCard
         name={participant.display_name}
         discordUsername={participant.discord_username}
@@ -67,7 +70,7 @@ export function HubDashboard({ hub, steps }: HubDashboardProps) {
         totalBadges={badges.length}
       />
 
-      <StatBlock
+      <StatStrip
         recordedSeconds={stats.recorded_seconds}
         sessionCount={stats.session_count}
         keptSlots={stats.kept_slot_count}
@@ -78,19 +81,29 @@ export function HubDashboard({ hub, steps }: HubDashboardProps) {
 
       {remaining.length > 0 ? <Quests steps={remaining} /> : null}
 
-      <Badges badges={badges} />
+      <BadgeShelf badges={badges} />
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <ProjectCard
+      <div className="grid gap-x-10 gap-y-8 lg:grid-cols-2">
+        <ProjectPanel
           title={projectTitle}
           tags={pick?.tags ?? []}
           submitted={pick?.status === "submitted"}
         />
-        <RoomCard slots={roomSlots} bySlot={bySlot} />
+        <RoomPanel slots={roomSlots} bySlot={bySlot} />
       </div>
 
-      {cohortTags.length > 0 ? <TopicsCard tags={cohortTags} /> : null}
+      {cohortTags.length > 0 ? <TopicsRow tags={cohortTags} /> : null}
     </div>
+  );
+}
+
+/** Section heading — small caps and one hairline. No card, no blue. */
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-500">
+      {children}
+      <span aria-hidden="true" className="h-px flex-1 bg-white/8" />
+    </h2>
   );
 }
 
@@ -114,40 +127,55 @@ function PlayerCard({
   const pct = Math.round((earnedBadges / totalBadges) * 100);
 
   return (
-    <section className="ei-card ei-card--lit flex flex-wrap items-center gap-5 p-6">
+    <section className="flex flex-wrap items-center gap-x-5 gap-y-4 border-b border-white/10 pb-7">
+      {/*
+        Warm, not blue. The page sits on a blue-violet sky, so an accent drawn
+        from the same family dissolves into it — and the avatar and the badge
+        meter are the two things that must not.
+      */}
       <span
         aria-hidden="true"
-        className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/40 to-indigo-600/30 text-2xl font-black text-white ring-1 ring-white/20"
+        className="flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center rounded-full bg-slate-950 text-3xl font-black text-amber-200 ring-2 ring-amber-300/50 shadow-[0_0_28px_rgba(252,211,77,0.18)]"
       >
         {initial}
       </span>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <h1 className="truncate text-2xl font-bold text-white">{display}</h1>
-        <p className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
-          <span className="rounded-full bg-amber-400/15 px-2 py-0.5 font-semibold uppercase tracking-wider text-amber-200">
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <h1 className="truncate text-3xl font-black leading-none tracking-tight text-white sm:text-4xl">
+          {display}
+        </h1>
+        <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-400">
+          <span className="font-bold uppercase tracking-[0.16em] text-amber-300">
             {role}
+          </span>
+          <span aria-hidden="true" className="text-slate-700">
+            /
           </span>
           <span>{cohortName}</span>
           {discordUsername ? (
-            <span className="font-mono text-slate-500">@{discordUsername}</span>
+            <>
+              <span aria-hidden="true" className="text-slate-700">
+                /
+              </span>
+              <span className="font-mono text-slate-500">@{discordUsername}</span>
+            </>
           ) : null}
         </p>
       </div>
 
-      <div className="flex shrink-0 flex-col items-end gap-1.5">
-        <span className="text-xs font-semibold uppercase tracking-[0.14em] text-blue-300/70">
-          ตราสะสม
-        </span>
-        <span className="text-lg font-bold text-white">
+      <div className="flex shrink-0 flex-col items-end gap-2">
+        <span className="text-2xl font-black leading-none tabular-nums text-white">
           {earnedBadges}
-          <span className="text-sm font-normal text-slate-500">/{totalBadges}</span>
+          <span className="text-base font-bold text-slate-600">/{totalBadges}</span>
         </span>
-        <span className="h-1.5 w-24 overflow-hidden rounded-full bg-white/10">
+        <span className="h-[3px] w-28 overflow-hidden rounded-full bg-white/10">
           <span
-            className="block h-full rounded-full bg-gradient-to-r from-blue-400 to-amber-300"
+            className="block h-full rounded-full bg-amber-300"
             style={{ width: `${pct}%` }}
           />
+        </span>
+        <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+          ตราสะสม
         </span>
       </div>
     </section>
@@ -155,13 +183,17 @@ function PlayerCard({
 }
 
 /**
- * The stat block leads with recorded hours even while that number is zero.
+ * One strip divided by hairlines rather than four cards.
  *
- * Declared hours are the easy number and the misleading one — a week of
- * promises nobody kept looks identical to a week that worked. Putting the
- * measured number first, at zero, states which one counts.
+ * Four bordered boxes give four numbers identical weight and turn the most
+ * important row on the page into a grid of grey rectangles. Dropping the
+ * borders lets type size do the ranking, which is what type size is for.
+ *
+ * Recorded hours lead even while that number is zero: declared hours are the
+ * easy number and the misleading one — a week of promises nobody kept looks
+ * identical to a week that worked.
  */
-function StatBlock({
+function StatStrip({
   recordedSeconds,
   sessionCount,
   keptSlots,
@@ -179,17 +211,16 @@ function StatBlock({
   const awaitingBot = recordedSeconds === 0 && sessionCount === 0;
 
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-300/70">
-        สถิติ
-      </h2>
+    <section className="flex flex-col gap-4">
+      <SectionLabel>สถิติ</SectionLabel>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-y-6 rounded-2xl bg-slate-950/50 p-5 ring-1 ring-white/8 sm:grid-cols-4 sm:divide-x sm:divide-white/8">
         <Stat
           label="ชั่วโมงในห้อง"
           value={formatRecordedTime(recordedSeconds)}
-          hint={awaitingBot ? "เริ่มนับเมื่อบอทออนไลน์" : `${sessionCount} ครั้ง`}
+          hint={awaitingBot ? "รอบอทดิสคอร์ด" : `${sessionCount} ครั้ง`}
           dim={awaitingBot}
+          accent
         />
         <Stat
           label="ตรงตามที่จอง"
@@ -207,9 +238,7 @@ function StatBlock({
           label="มีคนอยู่ด้วย"
           value={String(sharedSlots)}
           hint={
-            optimalSlots > 0
-              ? `${optimalSlots} ช่วงกำลังดี`
-              : `ช่วงที่มีอย่างน้อย 2 คน`
+            optimalSlots > 0 ? `${optimalSlots} ช่วงกำลังดี` : "อย่างน้อย 2 คน"
           }
           href="/projectseed/hub/schedule"
         />
@@ -231,21 +260,23 @@ function Stat({
   hint,
   href,
   dim,
+  accent,
 }: {
   label: string;
   value: string;
   hint: string;
   href?: string;
   dim?: boolean;
+  accent?: boolean;
 }) {
   const body = (
     <>
-      <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+      <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
         {label}
       </span>
       <span
-        className={`text-3xl font-black tabular-nums ${
-          dim ? "text-slate-500" : "text-white"
+        className={`text-4xl font-black leading-none tabular-nums ${
+          dim ? "text-slate-700" : accent ? "text-amber-200" : "text-white"
         }`}
       >
         {value}
@@ -254,42 +285,39 @@ function Stat({
     </>
   );
 
-  const className = "ei-card flex flex-col gap-0.5 p-4";
-
   return href ? (
-    <Link
-      href={href}
-      className={`${className} transition-transform hover:-translate-y-0.5`}
-    >
-      {body}
+    <Link href={href} className="group flex flex-col px-1 sm:px-5">
+      <span className="flex flex-col gap-1.5 transition-transform group-hover:-translate-y-0.5">
+        {body}
+      </span>
     </Link>
   ) : (
-    <div className={className}>{body}</div>
+    <div className="flex flex-col gap-1.5 px-1 sm:px-5">{body}</div>
   );
 }
 
 function Quests({ steps }: { steps: PseedStep[] }) {
   return (
-    <section className="ei-card flex flex-col gap-3 p-5">
-      <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-200/80">
-        ภารกิจที่ยังเหลือ
-      </h2>
-      <ul className="flex flex-col gap-2">
+    <section className="flex flex-col gap-4">
+      <SectionLabel>ภารกิจที่ยังเหลือ</SectionLabel>
+
+      <ul className="flex flex-col">
         {steps.map((step) => (
-          <li key={step.id}>
-            <Link
-              href={step.href}
-              className="flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-white/5"
-            >
+          <li key={step.id} className="border-b border-white/6 last:border-0">
+            <Link href={step.href} className="group flex items-center gap-3.5 py-3">
               <span
                 aria-hidden="true"
-                className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-300"
+                className="h-2 w-2 shrink-0 rotate-45 bg-amber-300"
               />
-              <span className="flex min-w-0 flex-col">
-                <span className="text-sm font-semibold text-white">
-                  {step.label}
-                </span>
-                <span className="text-xs text-slate-400">{step.hint}</span>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="text-sm font-bold text-white">{step.label}</span>
+                <span className="text-xs text-slate-500">{step.hint}</span>
+              </span>
+              <span
+                aria-hidden="true"
+                className="shrink-0 text-slate-600 transition-transform group-hover:translate-x-0.5 group-hover:text-amber-200"
+              >
+                →
               </span>
             </Link>
           </li>
@@ -299,46 +327,40 @@ function Quests({ steps }: { steps: PseedStep[] }) {
   );
 }
 
-function Badges({
-  badges,
-}: {
-  badges: ReturnType<typeof buildBadges>;
-}) {
+/**
+ * Medallions, not tiles. Round shapes on a page of rectangles are the one place
+ * the eye should catch, and an unearned badge is a dark disc rather than an
+ * outlined box — visible enough to want, quiet enough to ignore.
+ */
+function BadgeShelf({ badges }: { badges: ReturnType<typeof buildBadges> }) {
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-300/70">
-        ตราสะสม
-      </h2>
+    <section className="flex flex-col gap-4">
+      <SectionLabel>ตราสะสม</SectionLabel>
 
-      <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+      <ul className="flex flex-wrap gap-5">
         {badges.map((badge) => (
           <li
             key={badge.id}
             title={badge.hint}
-            className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center ${
-              badge.earned
-                ? "border-amber-300/30 bg-amber-400/10"
-                : "border-white/8 bg-white/[0.02]"
-            }`}
+            className="flex w-[4.5rem] flex-col items-center gap-2 text-center"
           >
             <span
               aria-hidden="true"
-              className={`text-2xl ${badge.earned ? "" : "opacity-25 grayscale"}`}
+              className={`flex h-14 w-14 items-center justify-center rounded-full text-2xl ${
+                badge.earned
+                  ? "bg-amber-300/15 shadow-[0_0_18px_rgba(252,211,77,0.15)] ring-1 ring-amber-300/50"
+                  : "bg-slate-950/60 opacity-30 ring-1 ring-white/6 grayscale"
+              }`}
             >
               {badge.icon}
             </span>
             <span
-              className={`text-[11px] font-semibold leading-tight ${
-                badge.earned ? "text-amber-100" : "text-slate-500"
+              className={`text-[10px] font-bold leading-tight ${
+                badge.earned ? "text-amber-100" : "text-slate-600"
               }`}
             >
               {badge.label}
             </span>
-            {badge.locked && !badge.earned ? (
-              <span className="text-[9px] uppercase tracking-wider text-slate-600">
-                รอบอท
-              </span>
-            ) : null}
           </li>
         ))}
       </ul>
@@ -346,7 +368,7 @@ function Badges({
   );
 }
 
-function ProjectCard({
+function ProjectPanel({
   title,
   tags,
   submitted,
@@ -356,50 +378,54 @@ function ProjectCard({
   submitted: boolean;
 }) {
   return (
-    <section className="ei-card flex flex-col gap-3 p-5">
-      <div className="flex items-start justify-between gap-3">
-        <h2 className="text-lg font-bold text-white">โปรเจกต์ของคุณ</h2>
-        <Link
-          href="/projectseed/hub/project"
-          className="shrink-0 text-xs font-semibold text-blue-200 underline underline-offset-4"
-        >
-          {title ? "แก้ไข" : "เลือกเลย"}
-        </Link>
-      </div>
+    <section className="flex flex-col gap-3">
+      <SectionLabel>โปรเจกต์ของคุณ</SectionLabel>
 
       {title ? (
         <>
-          <p className="text-base text-white">{title}</p>
+          <p className="text-xl font-bold leading-snug text-white">{title}</p>
+
           {tags.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-x-3 gap-y-1 font-mono text-xs text-blue-200/80">
               {tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full bg-blue-500/12 px-2.5 py-0.5 text-xs text-blue-200"
-                >
-                  {tag}
-                </span>
+                <span key={tag}>#{tag}</span>
               ))}
             </div>
           ) : (
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500">
               ยังไม่มีแท็ก — ใส่ไว้แล้วคนที่ทำเรื่องเดียวกันจะเจอคุณ
             </p>
           )}
-          <p className="text-xs text-slate-400">
-            {submitted ? "ส่งคำอธิบายแล้ว" : "คำอธิบายยังเป็นฉบับร่าง"}
+
+          <p className="flex items-center gap-2 text-xs">
+            <span
+              aria-hidden="true"
+              className={`h-1.5 w-1.5 rounded-full ${
+                submitted ? "bg-emerald-400" : "bg-amber-300"
+              }`}
+            />
+            <span className="text-slate-400">
+              {submitted ? "ส่งคำอธิบายแล้ว" : "คำอธิบายยังเป็นฉบับร่าง"}
+            </span>
           </p>
         </>
       ) : (
-        <p className="text-sm leading-relaxed text-slate-300">
+        <p className="text-sm leading-relaxed text-slate-400">
           ยังไม่ได้เลือก เลือกหมวด พิมพ์ชื่อโปรเจกต์ แล้วใส่แท็กสัก 2–3 คำ
         </p>
       )}
+
+      <Link
+        href="/projectseed/hub/project"
+        className="self-start text-xs font-bold uppercase tracking-[0.12em] text-amber-200 transition-colors hover:text-amber-100"
+      >
+        {title ? "แก้ไข →" : "เลือกเลย →"}
+      </Link>
     </section>
   );
 }
 
-function RoomCard({
+function RoomPanel({
   slots,
   bySlot,
 }: {
@@ -407,47 +433,43 @@ function RoomCard({
   bySlot: Map<string, PseedSlotRosterEntry[]>;
 }) {
   return (
-    <section className="ei-card flex flex-col gap-3 p-5">
-      <div className="flex items-start justify-between gap-3">
-        <h2 className="text-lg font-bold text-white">ห้องเปิดตอนไหน</h2>
-        <Link
-          href="/projectseed/hub/schedule"
-          className="shrink-0 text-xs font-semibold text-blue-200 underline underline-offset-4"
-        >
-          ดูตาราง
-        </Link>
-      </div>
+    <section className="flex flex-col gap-3">
+      <SectionLabel>ห้องเปิดตอนไหน</SectionLabel>
 
       {slots.length === 0 ? (
-        <p className="text-sm leading-relaxed text-slate-300">
+        <p className="text-sm leading-relaxed text-slate-400">
           ยังไม่มีใครเลือกเวลาเลย — เลือกของคุณก่อน แล้วคนอื่นจะเห็นว่ามาตรงไหนได้
         </p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col">
           {slots.slice(0, 3).map((cell) => {
             const key = slotKey(cell.day_of_week, cell.hour_of_day);
             const topics = slotTopics(bySlot.get(key) ?? []).slice(0, 3);
+            const quality = slotQuality(cell.participant_count);
 
             return (
-              <li key={key} className="flex flex-wrap items-baseline gap-x-2">
-                <span className="text-sm font-medium text-white">
+              <li
+                key={key}
+                className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 border-b border-white/6 py-2 last:border-0"
+              >
+                <span className="text-sm font-bold text-white">
                   {describeSlot(cell)}
                 </span>
-                <span className="text-sm text-slate-300">
-                  {cell.participant_count} คน
+                <span className="font-mono text-sm tabular-nums text-slate-400">
+                  {cell.participant_count}
                 </span>
                 <span
                   className={
-                    slotQuality(cell.participant_count) === "optimal"
-                      ? "text-[11px] font-semibold text-amber-200"
-                      : "text-[11px] text-slate-500"
+                    quality === "optimal"
+                      ? "text-[11px] font-bold text-amber-300"
+                      : "text-[11px] text-slate-600"
                   }
                 >
-                  {SLOT_QUALITY_LABEL[slotQuality(cell.participant_count)]}
+                  {SLOT_QUALITY_LABEL[quality]}
                 </span>
                 {topics.length > 0 ? (
-                  <span className="text-xs text-slate-400">
-                    · {topics.join(" · ")}
+                  <span className="font-mono text-[11px] text-slate-600">
+                    {topics.map((t) => `#${t}`).join(" ")}
                   </span>
                 ) : null}
               </li>
@@ -455,28 +477,33 @@ function RoomCard({
           })}
         </ul>
       )}
+
+      <Link
+        href="/projectseed/hub/schedule"
+        className="self-start text-xs font-bold uppercase tracking-[0.12em] text-amber-200 transition-colors hover:text-amber-100"
+      >
+        ดูตาราง →
+      </Link>
     </section>
   );
 }
 
-function TopicsCard({
+function TopicsRow({
   tags,
 }: {
   tags: { tag: string; participant_count: number }[];
 }) {
   return (
-    <section className="flex flex-col gap-2">
-      <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-300/70">
-        ห้องนี้กำลังทำอะไรอยู่
-      </h2>
-      <div className="flex flex-wrap gap-2">
+    <section className="flex flex-col gap-4">
+      <SectionLabel>ห้องนี้กำลังทำอะไรอยู่</SectionLabel>
+
+      <div className="flex flex-wrap gap-x-4 gap-y-2">
         {tags.slice(0, 16).map((t) => (
-          <span
-            key={t.tag}
-            className="rounded-full border border-white/10 px-2.5 py-1 text-xs text-slate-200"
-          >
-            {t.tag}
-            <span className="ml-1.5 text-slate-500">{t.participant_count}</span>
+          <span key={t.tag} className="font-mono text-sm text-slate-300">
+            #{t.tag}
+            <span className="ml-1 text-xs tabular-nums text-slate-600">
+              {t.participant_count}
+            </span>
           </span>
         ))}
       </div>
