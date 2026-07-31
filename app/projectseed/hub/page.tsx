@@ -4,6 +4,7 @@ import { loadHub } from "@/lib/projectseed/hub";
 import { buildSteps } from "@/lib/projectseed/steps";
 import { DiscordLinkCard } from "@/components/projectseed/DiscordLinkCard";
 import { HubDashboard } from "@/components/projectseed/HubDashboard";
+import { NotificationSettings } from "@/components/projectseed/NotificationSettings";
 import { JoinCohortForm } from "@/components/projectseed/JoinCohortForm";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +42,8 @@ export default async function HubPage() {
         discordUserId={hub.participant.discord_user_id}
         needsSync={load.needsDiscordSync}
       />
+
+      <NotificationSettings participant={hub.participant} />
     </>
   );
 }

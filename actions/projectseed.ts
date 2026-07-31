@@ -166,6 +166,52 @@ export async function unlinkDiscord(): Promise<PseedActionResult> {
   return { ok: true };
 }
 
+export interface NotificationPrefsInput {
+  notifyChannel: boolean;
+  notifyDm: boolean;
+  leadMinutes: number;
+  minPeople: number;
+}
+
+/**
+ * Saves reminder preferences.
+ *
+ * The DM opt-in is the one that matters. `PROJECTSEED-SAFEGUARDING.md` §3
+ * permits the bot to DM only as a broadcast, and warns why it is still a cost:
+ * a ProjectSeed-branded private message that feels routine is what makes a
+ * later impersonation plausible. So the default is off, and turning it on is an
+ * explicit act recorded on the participant row rather than an assumption.
+ */
+export async function saveNotificationPrefs(
+  input: NotificationPrefsInput
+): Promise<PseedActionResult> {
+  const { supabase, user, participant } = await requireParticipant();
+  if (!user) return fail("ต้องเข้าสู่ระบบก่อน");
+  if (!participant) return fail("ยังไม่ได้เข้าร่วมรุ่นนี้");
+
+  const clamp = (value: number, min: number, max: number) =>
+    Math.min(max, Math.max(min, Math.round(Number.isFinite(value) ? value : min)));
+
+  const { error } = await supabase
+    .from("pseed_participants")
+    .update({
+      notify_channel: Boolean(input.notifyChannel),
+      notify_dm: Boolean(input.notifyDm),
+      notify_lead_minutes: clamp(input.leadMinutes, 0, 120),
+      notify_min_people: clamp(input.minPeople, 1, 20),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", participant.id);
+
+  if (error) {
+    console.error("[projectseed] notification prefs failed:", error.message);
+    return fail("บันทึกการแจ้งเตือนไม่สำเร็จ");
+  }
+
+  revalidatePath(HUB_PATH);
+  return { ok: true };
+}
+
 export interface SaveProjectPickInput {
   projectOptionId?: string | null;
   customTitle?: string | null;
