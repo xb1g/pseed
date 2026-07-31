@@ -25,7 +25,10 @@
     "jobs:trigger": "tsx scripts/trigger-worker.ts",
     "jobs:trigger:loop": "tsx scripts/trigger-worker.ts --loop",
     "jobs:monitor": "tsx scripts/monitor-jobs.ts",
-    "jobs:monitor:watch": "tsx scripts/monitor-jobs.ts --watch"
+    "jobs:monitor:watch": "tsx scripts/monitor-jobs.ts --watch",
+    "bot:dev": "dotenv -e .env.local -o -- tsx watch bot/src/index.ts",
+    "bot:start": "tsx bot/src/index.ts",
+    "bot:register": "dotenv -e .env.local -o -- tsx bot/src/index.ts --register-commands"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.43",
@@ -92,6 +95,7 @@
     "core-js": "^3.48.0",
     "date-fns": "4.1.0",
     "diff": "^8.0.3",
+    "discord.js": "^14.27.0",
     "dotenv": "^17.3.0",
     "embla-carousel-react": "8.5.1",
     "esbuild": "^0.27.3",

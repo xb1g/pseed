@@ -5,13 +5,13 @@ import {
   ArrowRight,
   BookOpenCheck,
   CheckCircle2,
-  ClipboardList,
   Compass,
   FileCheck2,
   Lightbulb,
   PencilLine,
   Radar,
   Route,
+  Sprout,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -19,10 +19,14 @@ import type {
   MyPathDashboardModel,
   MyPathPathlabSummary,
 } from "@/lib/my-path/dashboard";
+import type { ProjectSeedMeSummary } from "@/lib/projectseed/me-summary";
 
 interface MyPathDashboardProps {
   model: MyPathDashboardModel;
+  projectSeed: ProjectSeedMeSummary;
 }
+
+type ModelProps = { model: MyPathDashboardModel };
 
 const GOAL_LABELS: Record<string, string> = {
   university: "เตรียมเข้ามหาวิทยาลัย",
@@ -65,7 +69,7 @@ function useTouchInView(): void {
   }, []);
 }
 
-function NextActionHero({ model }: MyPathDashboardProps) {
+function NextActionHero({ model }: ModelProps) {
   const isPaymentRecovery = model.nextAction.kind === "restore-pathlab-access";
 
   return (
@@ -138,7 +142,7 @@ function SectionHeading({
   );
 }
 
-function PlanSummary({ model }: MyPathDashboardProps) {
+function PlanSummary({ model }: ModelProps) {
   if (!model.plan) return null;
   const goal = model.plan.goal
     ? GOAL_LABELS[model.plan.goal] ?? model.plan.goal
@@ -170,7 +174,7 @@ function PlanSummary({ model }: MyPathDashboardProps) {
   );
 }
 
-function RadarShortlist({ model }: MyPathDashboardProps) {
+function RadarShortlist({ model }: ModelProps) {
   return (
     <section
       aria-labelledby="my-path-radar-heading"
@@ -223,7 +227,7 @@ function RadarShortlist({ model }: MyPathDashboardProps) {
   );
 }
 
-function PathlabExperiments({ model }: MyPathDashboardProps) {
+function PathlabExperiments({ model }: ModelProps) {
   return (
     <section
       aria-labelledby="my-path-pathlabs-heading"
@@ -297,6 +301,57 @@ function PathlabExperiments({ model }: MyPathDashboardProps) {
             และติดตามความคืบหน้าให้ที่นี่
           </p>
         )}
+      </div>
+    </section>
+  );
+}
+
+function projectSeedStatusLabel(summary: ProjectSeedMeSummary): string {
+  if (summary.kind === "closed") return "ยังไม่เปิดรุ่น";
+  if (summary.kind === "join") return "พร้อมเข้าห้อง";
+  if (summary.complete) return "พร้อมลงมือ";
+  return `${summary.doneCount}/${summary.totalCount} ข้อ`;
+}
+
+function ProjectSeedSection({
+  projectSeed,
+}: {
+  projectSeed: ProjectSeedMeSummary;
+}) {
+  return (
+    <section
+      aria-labelledby="my-path-projectseed-heading"
+      className="ei-card p-6 sm:p-8"
+    >
+      <SectionHeading
+        id="my-path-projectseed-heading"
+        eyebrow="ProjectSeed"
+        title="โปรเจกต์จริงในคอมมูนิตี้"
+        icon={Sprout}
+      />
+      <div className="mt-5">
+        <article
+          aria-label={projectSeed.title}
+          className="grid gap-4 border-y border-white/10 py-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+        >
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-kodchasan text-lg font-semibold text-white">
+                {projectSeed.title}
+              </h3>
+              <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-bai-jamjuree text-xs text-slate-300">
+                {projectSeedStatusLabel(projectSeed)}
+              </span>
+            </div>
+            <p className="mt-2 font-bai-jamjuree text-sm leading-6 text-slate-400">
+              {projectSeed.detail}
+            </p>
+          </div>
+          <Link href={projectSeed.href} className="my-path-text-link shrink-0">
+            {projectSeed.cta}
+            <ArrowRight aria-hidden="true" className="h-4 w-4" />
+          </Link>
+        </article>
       </div>
     </section>
   );
@@ -382,7 +437,7 @@ function ParentUpdateContact({ payHref }: { payHref: string }) {
   );
 }
 
-function EvidenceSection({ model }: MyPathDashboardProps) {
+function EvidenceSection({ model }: ModelProps) {
   return (
     <section
       aria-labelledby="my-path-evidence-heading"
@@ -464,7 +519,10 @@ function SupportingJourneyLinks() {
   );
 }
 
-export function MyPathDashboard({ model }: MyPathDashboardProps) {
+export function MyPathDashboard({
+  model,
+  projectSeed,
+}: MyPathDashboardProps) {
   useTouchInView();
 
   return (
@@ -474,6 +532,7 @@ export function MyPathDashboard({ model }: MyPathDashboardProps) {
         <PlanSummary model={model} />
         <RadarShortlist model={model} />
         <PathlabExperiments model={model} />
+        <ProjectSeedSection projectSeed={projectSeed} />
         <EvidenceSection model={model} />
       </div>
       <SupportingJourneyLinks />

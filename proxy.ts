@@ -1,7 +1,32 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/utils/supabase/proxy";
 
+/**
+ * Supabase Auth reports OAuth failures by redirecting to the project's Site URL
+ * with `error`, `error_code`, and `error_description` attached — not to the
+ * `redirectTo` we asked for. That drops the user on the homepage with the
+ * failure sitting invisibly in the query string, which reads as "the button did
+ * nothing".
+ *
+ * Catch it anywhere it lands and route it to the page built to explain it.
+ * Keyed on `error_code` because that parameter is GoTrue's and is not used
+ * anywhere else in the app.
+ */
+function authErrorRedirect(request: NextRequest): NextResponse | null {
+  const { searchParams, pathname } = request.nextUrl;
+
+  if (!searchParams.get("error_code")) return null;
+  if (pathname.startsWith("/auth/")) return null;
+
+  const target = request.nextUrl.clone();
+  target.pathname = "/auth/auth-code-error";
+  return NextResponse.redirect(target);
+}
+
 export default async function proxy(request: NextRequest) {
+  const authError = authErrorRedirect(request);
+  if (authError) return authError;
+
   // Add caching headers for GET API requests
   if (request.method === 'GET' && request.nextUrl.pathname.startsWith('/api/')) {
     const { pathname } = request.nextUrl
