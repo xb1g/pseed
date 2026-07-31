@@ -138,10 +138,7 @@ function GradePicker({
 }) {
   return (
     <section aria-labelledby="grade-picker-label">
-      <h2
-        id="grade-picker-label"
-        className="mb-3 text-sm font-semibold text-slate-300"
-      >
+      <h2 id="grade-picker-label" className="dawn-eyebrow mb-3">
         เธออยู่ชั้นไหน
       </h2>
       <div role="radiogroup" aria-labelledby="grade-picker-label" className="flex gap-2">
@@ -175,10 +172,7 @@ function GradePicker({
 function PasteTargets() {
   return (
     <section aria-labelledby="paste-targets-label">
-      <h2
-        id="paste-targets-label"
-        className="mb-3 text-sm font-semibold text-slate-300"
-      >
+      <h2 id="paste-targets-label" className="dawn-eyebrow mb-3">
         เอาไปวางที่ไหนก็ได้
       </h2>
       <div className="flex flex-wrap gap-2">
@@ -210,25 +204,23 @@ function HowToUse({ greeting }: { greeting: string }) {
       </h2>
       <ol className="flex flex-col gap-3 text-[15px] leading-relaxed text-slate-300">
         <li>
-          <span className="font-semibold text-white">1.</span> คัดลอกพรอมป์ด้านบน
+          <span className="font-semibold text-amber-200/90">1.</span> คัดลอกพรอมป์ด้านบน
         </li>
         <li>
-          <span className="font-semibold text-white">2.</span> เปิดแชท AI ใหม่ แล้ววางเป็นข้อความแรก
+          <span className="font-semibold text-amber-200/90">2.</span> เปิดแชท AI ใหม่ แล้ววางเป็นข้อความแรก
         </li>
         <li>
-          <span className="font-semibold text-white">3.</span> ตอบคำถามไปเรื่อย ๆ ตอบว่า
+          <span className="font-semibold text-amber-200/90">3.</span> ตอบคำถามไปเรื่อย ๆ ตอบว่า
           &ldquo;ยังไม่รู้&rdquo; ได้ ใช้เวลาประมาณ 20 นาที
         </li>
         <li>
-          <span className="font-semibold text-white">4.</span> จบแล้วได้โปรเจกต์ 1 อัน
+          <span className="font-semibold text-amber-200/90">4.</span> จบแล้วได้โปรเจกต์ 1 อัน
           + สิ่งที่ต้องทำภายในสัปดาห์นี้ 1 อย่าง — เซฟไว้ เอาไปคุยกับพี่ ๆ หรือครูแนะแนวได้
         </li>
       </ol>
 
-      <div className="mt-5 rounded-xl border border-white/10 bg-slate-950/40 p-4">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
-          AI จะเริ่มประมาณนี้
-        </p>
+      <div className="mt-5 rounded-xl border border-amber-200/15 bg-slate-950/50 p-4">
+        <p className="dawn-eyebrow mb-2 opacity-70">AI จะเริ่มประมาณนี้</p>
         <p className="whitespace-pre-line text-sm leading-relaxed text-slate-300">
           {greeting}
         </p>

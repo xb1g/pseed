@@ -5,6 +5,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 
 import { MyPathDashboard } from "../MyPathDashboard";
 import type { MyPathDashboardModel } from "@/lib/my-path/dashboard";
+import type { ProjectSeedMeSummary } from "@/lib/projectseed/me-summary";
 
 function model(
   overrides: Partial<MyPathDashboardModel> = {}
@@ -35,21 +36,41 @@ function model(
   };
 }
 
+function projectSeed(
+  overrides: Partial<ProjectSeedMeSummary> = {}
+): ProjectSeedMeSummary {
+  return {
+    kind: "closed",
+    title: "ทำโปรเจกต์จริงก่อนยื่นพอร์ต",
+    detail: "ProjectSeed — โปรเจกต์ของตัวเอง มีผู้ใช้จริง มีพี่เลี้ยงศิษย์เก่า",
+    href: "/projectseed",
+    cta: "ดู ProjectSeed",
+    ...overrides,
+  };
+}
+
+function renderDashboard(
+  dashboardModel: MyPathDashboardModel = model(),
+  seed: ProjectSeedMeSummary = projectSeed()
+) {
+  return render(
+    <MyPathDashboard model={dashboardModel} projectSeed={seed} />
+  );
+}
+
 test("empty My Path leads with the next action and keeps reflection tools below it", () => {
-  render(
-    <MyPathDashboard
-      model={model({
-        state: "empty",
-        nextAction: {
-          kind: "create-plan",
-          title: "สร้าง My Path ของฉัน",
-          detail: "เริ่มจากเป้าหมายและสิ่งที่อยากลอง",
-          href: "/plan",
-        },
-        plan: null,
-        radarDirections: [],
-      })}
-    />
+  renderDashboard(
+    model({
+      state: "empty",
+      nextAction: {
+        kind: "create-plan",
+        title: "สร้าง My Path ของฉัน",
+        detail: "เริ่มจากเป้าหมายและสิ่งที่อยากลอง",
+        href: "/plan",
+      },
+      plan: null,
+      radarDirections: [],
+    })
   );
 
   expect(screen.getAllByRole("heading")[0]).toHaveTextContent(
@@ -68,7 +89,7 @@ test("empty My Path leads with the next action and keeps reflection tools below 
 });
 
 test("planned My Path shows the plan editor and canonical Radar links", () => {
-  render(<MyPathDashboard model={model()} />);
+  renderDashboard();
 
   expect(screen.getAllByRole("heading")[0]).toHaveTextContent(
     "เลือก PathLab ที่จะทดลองจริง"
@@ -84,12 +105,13 @@ test("planned My Path shows the plan editor and canonical Radar links", () => {
 });
 
 test("journey regions take stable accessible names from their visible headings", () => {
-  render(<MyPathDashboard model={model()} />);
+  renderDashboard();
 
   for (const name of [
     "แผน 2–4 เดือนของฉัน",
     "ทิศที่กำลังอยากรู้จัก",
     "การทดลองทำงานจริง",
+    "โปรเจกต์จริงในคอมมูนิตี้",
     "หลักฐานที่ได้จากการลงมือทำ",
   ]) {
     const region = screen.getByRole("region", { name });
@@ -113,35 +135,33 @@ test("journey regions take stable accessible names from their visible headings",
 });
 
 test("active PathLab keeps learning primary and payment status secondary", () => {
-  render(
-    <MyPathDashboard
-      model={model({
-        state: "active",
-        nextAction: {
-          kind: "resume-pathlab",
-          title: "ทำ AI Builder ต่อวันนี้",
-          detail: "กลับไปทำวันที่ 2 จากจุดที่ค้างไว้",
+  renderDashboard(
+    model({
+      state: "active",
+      nextAction: {
+        kind: "resume-pathlab",
+        title: "ทำ AI Builder ต่อวันนี้",
+        detail: "กลับไปทำวันที่ 2 จากจุดที่ค้างไว้",
+        href: "/seeds/pathlab/enrollment-a?day=2",
+      },
+      pathlabs: [
+        {
+          seedId: "seed-a",
+          title: "AI Builder",
+          enrollmentId: "enrollment-a",
+          status: "active",
+          currentDay: 2,
+          completedActivities: 3,
           href: "/seeds/pathlab/enrollment-a?day=2",
-        },
-        pathlabs: [
-          {
-            seedId: "seed-a",
-            title: "AI Builder",
-            enrollmentId: "enrollment-a",
+          trial: {
             status: "active",
-            currentDay: 2,
-            completedActivities: 3,
-            href: "/seeds/pathlab/enrollment-a?day=2",
-            trial: {
-              status: "active",
-              label: "กำลังทดลอง",
-              payHref: "/pay/pay-a",
-              paymentDeadline: "2026-07-23T00:00:00.000Z",
-            },
+            label: "กำลังทดลอง",
+            payHref: "/pay/pay-a",
+            paymentDeadline: "2026-07-23T00:00:00.000Z",
           },
-        ],
-      })}
-    />
+        },
+      ],
+    })
   );
 
   const learningAction = screen.getByRole("link", {
@@ -172,29 +192,27 @@ test("shows the verified parent contact and lets the student revoke updates", as
       json: async () => ({ status: "revoked" }),
     });
 
-  render(
-    <MyPathDashboard
-      model={model({
-        state: "active",
-        pathlabs: [
-          {
-            seedId: "seed-a",
-            title: "AI Builder",
-            enrollmentId: "enrollment-a",
+  renderDashboard(
+    model({
+      state: "active",
+      pathlabs: [
+        {
+          seedId: "seed-a",
+          title: "AI Builder",
+          enrollmentId: "enrollment-a",
+          status: "active",
+          currentDay: 2,
+          completedActivities: 3,
+          href: "/seeds/pathlab/enrollment-a?day=2",
+          trial: {
             status: "active",
-            currentDay: 2,
-            completedActivities: 3,
-            href: "/seeds/pathlab/enrollment-a?day=2",
-            trial: {
-              status: "active",
-              label: "กำลังทดลอง",
-              payHref: "/pay/0123456789abcdef0123456789abcdef",
-              paymentDeadline: "2026-07-23T00:00:00.000Z",
-            },
+            label: "กำลังทดลอง",
+            payHref: "/pay/0123456789abcdef0123456789abcdef",
+            paymentDeadline: "2026-07-23T00:00:00.000Z",
           },
-        ],
-      })}
-    />
+        },
+      ],
+    })
   );
 
   expect(await screen.findByText(/p\*\*\*\*@example.com/)).toBeVisible();
@@ -220,29 +238,27 @@ test("keeps the verified contact visible and offers retry when revoke fails", as
     })
     .mockRejectedValueOnce(new Error("network unavailable"));
 
-  render(
-    <MyPathDashboard
-      model={model({
-        state: "active",
-        pathlabs: [
-          {
-            seedId: "seed-a",
-            title: "AI Builder",
-            enrollmentId: "enrollment-a",
+  renderDashboard(
+    model({
+      state: "active",
+      pathlabs: [
+        {
+          seedId: "seed-a",
+          title: "AI Builder",
+          enrollmentId: "enrollment-a",
+          status: "active",
+          currentDay: 2,
+          completedActivities: 3,
+          href: "/seeds/pathlab/enrollment-a?day=2",
+          trial: {
             status: "active",
-            currentDay: 2,
-            completedActivities: 3,
-            href: "/seeds/pathlab/enrollment-a?day=2",
-            trial: {
-              status: "active",
-              label: "กำลังทดลอง",
-              payHref: "/pay/0123456789abcdef0123456789abcdef",
-              paymentDeadline: "2026-07-23T00:00:00.000Z",
-            },
+            label: "กำลังทดลอง",
+            payHref: "/pay/0123456789abcdef0123456789abcdef",
+            paymentDeadline: "2026-07-23T00:00:00.000Z",
           },
-        ],
-      })}
-    />
+        },
+      ],
+    })
   );
 
   expect(await screen.findByText(/p\*\*\*\*@example.com/)).toBeVisible();
@@ -260,34 +276,32 @@ test("keeps the verified contact visible and offers retry when revoke fails", as
 });
 
 test("expired access explains recovery without losing the saved plan", () => {
-  render(
-    <MyPathDashboard
-      model={model({
-        nextAction: {
-          kind: "restore-pathlab-access",
-          title: "ให้ผู้ปกครองช่วยเปิดการทดลองต่อ",
-          detail: "แผนยังอยู่ ชำระเพื่อกลับไปทำ PathLab ที่เลือกไว้ต่อ",
-          href: "/pay/pay-a",
-        },
-        pathlabs: [
-          {
-            seedId: "seed-a",
-            title: "AI Builder",
-            enrollmentId: "enrollment-a",
-            status: "active",
-            currentDay: 2,
-            completedActivities: 3,
-            href: "/seeds/pathlab/enrollment-a?day=2",
-            trial: {
-              status: "expired",
-              label: "หมดเวลาทดลอง",
-              payHref: "/pay/pay-a",
-              paymentDeadline: "2026-07-21T00:00:00.000Z",
-            },
+  renderDashboard(
+    model({
+      nextAction: {
+        kind: "restore-pathlab-access",
+        title: "ให้ผู้ปกครองช่วยเปิดการทดลองต่อ",
+        detail: "แผนยังอยู่ ชำระเพื่อกลับไปทำ PathLab ที่เลือกไว้ต่อ",
+        href: "/pay/pay-a",
+      },
+      pathlabs: [
+        {
+          seedId: "seed-a",
+          title: "AI Builder",
+          enrollmentId: "enrollment-a",
+          status: "active",
+          currentDay: 2,
+          completedActivities: 3,
+          href: "/seeds/pathlab/enrollment-a?day=2",
+          trial: {
+            status: "expired",
+            label: "หมดเวลาทดลอง",
+            payHref: "/pay/pay-a",
+            paymentDeadline: "2026-07-21T00:00:00.000Z",
           },
-        ],
-      })}
-    />
+        },
+      ],
+    })
   );
 
   expect(
@@ -304,30 +318,51 @@ test("expired access explains recovery without losing the saved plan", () => {
   );
 });
 
+test("ProjectSeed section links into the hub with the next step CTA", () => {
+  renderDashboard(
+    model(),
+    projectSeed({
+      kind: "active",
+      cohortName: "Alumni MVP",
+      title: "Alumni MVP",
+      detail: "ก้าวถัดไป: เชื่อม Discord — ห้องอยู่บน Discord",
+      href: "/projectseed/hub",
+      cta: "เชื่อม Discord",
+      doneCount: 0,
+      totalCount: 4,
+      complete: false,
+    })
+  );
+
+  const region = screen.getByRole("region", { name: "โปรเจกต์จริงในคอมมูนิตี้" });
+  expect(within(region).getByText("0/4 ข้อ")).toBeInTheDocument();
+  expect(
+    within(region).getByRole("link", { name: /เชื่อม Discord/ })
+  ).toHaveAttribute("href", "/projectseed/hub");
+});
+
 test("completed My Path surfaces evidence before supporting journey tools", () => {
-  render(
-    <MyPathDashboard
-      model={model({
-        state: "completed",
-        nextAction: {
-          kind: "review-evidence",
-          title: "ทบทวนหลักฐาน แล้วปรับแผนรอบถัดไป",
-          detail: "ดูสิ่งที่ทำได้จริงก่อนเลือกก้าวต่อไป",
-          href: "/plan?resume=1",
+  renderDashboard(
+    model({
+      state: "completed",
+      nextAction: {
+        kind: "review-evidence",
+        title: "ทบทวนหลักฐาน แล้วปรับแผนรอบถัดไป",
+        detail: "ดูสิ่งที่ทำได้จริงก่อนเลือกก้าวต่อไป",
+        href: "/plan?resume=1",
+      },
+      evidence: [
+        {
+          id: "fit-a",
+          kind: "pathlab-fit",
+          seedId: "seed-a",
+          label: "สัญญาณความเหมาะสม · AI Builder",
+          detail: "ทดลองจบพร้อมกิจกรรมที่ทำสำเร็จ 3 กิจกรรม",
+          createdAt: "2026-07-22T00:00:00.000Z",
+          href: "/seeds/pathlab/enrollment-a",
         },
-        evidence: [
-          {
-            id: "fit-a",
-            kind: "pathlab-fit",
-            seedId: "seed-a",
-            label: "สัญญาณความเหมาะสม · AI Builder",
-            detail: "ทดลองจบพร้อมกิจกรรมที่ทำสำเร็จ 3 กิจกรรม",
-            createdAt: "2026-07-22T00:00:00.000Z",
-            href: "/seeds/pathlab/enrollment-a",
-          },
-        ],
-      })}
-    />
+      ],
+    })
   );
 
   const evidence = screen.getByText("สัญญาณความเหมาะสม · AI Builder");
@@ -338,7 +373,7 @@ test("completed My Path surfaces evidence before supporting journey tools", () =
 });
 
 test("the dashboard uses shared Dawn controls and the global Dawn card modifier", () => {
-  const { container } = render(<MyPathDashboard model={model()} />);
+  const { container } = renderDashboard();
   const css = fs.readFileSync(
     path.join(process.cwd(), "app/globals.css"),
     "utf8"
