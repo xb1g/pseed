@@ -16,10 +16,8 @@ import {
   groupRosterBySlot,
   heatLevel,
   keysToSlots,
-  rankedSlots,
   slotKey,
   slotQuality,
-  slotTopics,
   slotsToKeys,
 } from "@/lib/projectseed/schedule";
 import type {
@@ -86,7 +84,6 @@ export function ScheduleBoard({
 
   const heat = useMemo(() => buildHeatmapLookup(cells), [cells]);
   const bySlot = useMemo(() => groupRosterBySlot(roster), [roster]);
-  const roomSlots = useMemo(() => rankedSlots(cells), [cells]);
 
   // Paint mode lives in a ref: it is set on pointerdown and read on
   // pointerenter, and re-rendering on it would fight the drag.
@@ -146,8 +143,6 @@ export function ScheduleBoard({
           ({participantCount} คนในรุ่นนี้)
         </p>
       </header>
-
-      <RoomSummary slots={roomSlots} bySlot={bySlot} onFocus={setFocusedSlot} />
 
       <div
         className="overflow-x-auto"
@@ -287,81 +282,6 @@ export function ScheduleBoard({
 
       {cohortTags.length > 0 ? <RoomTopics tags={cohortTags} /> : null}
     </section>
-  );
-}
-
-/**
- * The grid holds the answer to "when is everyone free" but makes you scan for
- * it. This states it, and doubles as a way to jump the panel to a slot without
- * hunting for the cell.
- */
-function RoomSummary({
-  slots,
-  bySlot,
-  onFocus,
-}: {
-  slots: PseedHeatmapCell[];
-  bySlot: Map<string, PseedSlotRosterEntry[]>;
-  onFocus: (key: string) => void;
-}) {
-  if (slots.length === 0) {
-    return (
-      <div className="ei-card flex flex-col gap-2 p-5">
-        <h3 className="text-sm font-semibold text-white">
-          ยังไม่มีใครเลือกเวลาเลย
-        </h3>
-        <p className="text-sm leading-relaxed text-slate-300">
-          เลือกชั่วโมงของคุณก่อน แล้วคนที่มาทีหลังจะเห็นว่ามีคนอยู่ตรงไหน
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="ei-card flex flex-col gap-3 p-5">
-      <h3 className="text-sm font-semibold text-white">ช่วงที่มีคนอยู่</h3>
-      <ul className="flex flex-col gap-1.5">
-        {slots.slice(0, 5).map((cell) => {
-          const key = slotKey(cell.day_of_week, cell.hour_of_day);
-          const topics = slotTopics(bySlot.get(key) ?? []).slice(0, 4);
-          const quality = slotQuality(cell.participant_count);
-
-          return (
-            <li key={key}>
-              <button
-                type="button"
-                onMouseEnter={() => onFocus(key)}
-                onFocus={() => onFocus(key)}
-                onClick={() => onFocus(key)}
-                className="flex w-full flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-white/5"
-              >
-                <span className="text-sm font-medium text-white">
-                  {PSEED_DAYS[cell.day_of_week]?.long}{" "}
-                  {formatSlotRange(cell.hour_of_day)}
-                </span>
-                <span className="text-sm text-slate-300">
-                  {cell.participant_count} คน
-                </span>
-                <span
-                  className={
-                    quality === "optimal"
-                      ? "rounded-full bg-amber-400/20 px-2 py-0.5 text-[11px] font-semibold text-amber-200"
-                      : "text-[11px] text-slate-500"
-                  }
-                >
-                  {SLOT_QUALITY_LABEL[quality]}
-                </span>
-                {topics.length > 0 ? (
-                  <span className="text-xs text-slate-400">
-                    · {topics.join(" · ")}
-                  </span>
-                ) : null}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
   );
 }
 
