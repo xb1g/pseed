@@ -130,6 +130,41 @@ export async function syncDiscordLink(): Promise<PseedActionResult> {
   return { ok: true };
 }
 
+/**
+ * Clears the Discord link from the participant row.
+ *
+ * Exists because authorising the wrong Discord account is easy and invisible:
+ * the browser is signed into whichever account you last used, and the OAuth
+ * screen does not make the account obvious. Removing the identity itself is a
+ * client call (`supabase.auth.unlinkIdentity`) — this clears our side of it, so
+ * the two never disagree about who is linked.
+ */
+export async function unlinkDiscord(): Promise<PseedActionResult> {
+  const { supabase, user, participant } = await requireParticipant();
+  if (!user) return fail("ต้องเข้าสู่ระบบก่อน");
+  if (!participant) return fail("ยังไม่ได้เข้าร่วมรุ่นนี้");
+
+  const { error } = await supabase
+    .from("pseed_participants")
+    .update({
+      discord_user_id: null,
+      discord_username: null,
+      discord_linked_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", participant.id);
+
+  if (error) {
+    console.error("[projectseed] discord unlink failed:", error.message);
+    return fail("ยกเลิกการเชื่อมบัญชีไม่สำเร็จ");
+  }
+
+  await supabase.from("profiles").update({ discord_id: null }).eq("id", user.id);
+
+  revalidatePath(HUB_PATH);
+  return { ok: true };
+}
+
 export interface SaveProjectPickInput {
   projectOptionId?: string | null;
   customTitle?: string | null;
@@ -146,15 +181,15 @@ export async function saveProjectPick(
   const customTitle = input.customTitle?.trim() || null;
   const projectOptionId = input.projectOptionId || null;
 
-  if (!projectOptionId && !customTitle) {
-    return fail("เลือกโปรเจกต์ หรือพิมพ์ชื่อโปรเจกต์ของคุณ");
+  if (!customTitle && !projectOptionId) {
+    return fail("เลือกหมวดหมู่หรือพิมพ์ชื่อโปรเจกต์ของคุณ");
   }
 
   const { error } = await supabase.from("pseed_project_picks").upsert(
     {
       participant_id: participant.id,
       project_option_id: projectOptionId,
-      custom_title: projectOptionId ? null : customTitle,
+      custom_title: customTitle,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "participant_id" }

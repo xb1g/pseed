@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import { syncDiscordLink } from "@/actions/projectseed";
+import { syncDiscordLink, unlinkDiscord } from "@/actions/projectseed";
 import { createClient } from "@/utils/supabase/client";
 
 /**
@@ -64,6 +64,44 @@ export function DiscordLinkCard({
     });
   }, [needsSync, router]);
 
+  async function handleUnlink() {
+    setError(null);
+    const supabase = createClient();
+
+    const { data, error: listError } = await supabase.auth.getUserIdentities();
+    const identity = data?.identities?.find((i) => i.provider === "discord");
+
+    if (listError || !identity) {
+      setError("หาบัญชี Discord ที่เชื่อมอยู่ไม่เจอ");
+      return;
+    }
+
+    // Supabase refuses to remove the last identity on an account, which would
+    // lock the user out entirely. Say that plainly instead of showing a generic
+    // failure the user cannot act on.
+    const { error: unlinkError } = await supabase.auth.unlinkIdentity(identity);
+    if (unlinkError) {
+      console.error("[projectseed] unlinkIdentity failed:", unlinkError.message);
+      setError(
+        "ยกเลิกไม่ได้ — ถ้า Discord เป็นวิธีเดียวที่คุณใช้เข้าระบบ ต้องเพิ่มวิธีเข้าระบบอื่นก่อน"
+      );
+      return;
+    }
+
+    startTransition(async () => {
+      // Our columns are cleared only after the identity is actually gone, so a
+      // failed unlink cannot leave the hub claiming nobody is linked while
+      // Supabase still says otherwise.
+      const result = await unlinkDiscord();
+      if (result.ok) {
+        syncAttempted.current = true;
+        router.refresh();
+      } else {
+        setError(result.error ?? null);
+      }
+    });
+  }
+
   async function handleLink() {
     setError(null);
     const supabase = createClient();
@@ -110,10 +148,27 @@ export function DiscordLinkCard({
       </div>
 
       {linked ? (
-        <p className="font-mono text-sm text-blue-200">
-          {discordUsername ?? "Discord"}{" "}
-          <span className="text-slate-500">· {discordUserId}</span>
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="font-mono text-sm text-blue-200">
+            {discordUsername ?? "Discord"}{" "}
+            <span className="text-slate-500">· {discordUserId}</span>
+          </p>
+
+          {/*
+            Authorising the wrong Discord account is easy and hard to notice: the
+            OAuth screen uses whichever account the browser is already signed
+            into, and shows the handle rather than the display name people
+            recognise. An escape hatch here is cheaper than an admin request.
+          */}
+          <button
+            type="button"
+            onClick={handleUnlink}
+            className="text-xs font-semibold text-slate-400 underline underline-offset-4 transition-colors hover:text-white disabled:opacity-50"
+            disabled={pending}
+          >
+            ไม่ใช่บัญชีนี้? ยกเลิกการเชื่อม
+          </button>
+        </div>
       ) : (
         <div className="flex flex-col gap-2">
           <button
