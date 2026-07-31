@@ -19,7 +19,7 @@ export default function Loading() {
         <div className="rounded-2xl border border-white/10 bg-slate-950/30 p-5 sm:p-8">
           <div className="ei-skeleton h-5 w-52" />
           <div className="mt-7 grid gap-8">
-            {["plan", "radar", "pathlab", "evidence"].map((section) => (
+            {["plan", "radar", "pathlab", "projectseed", "evidence"].map((section) => (
               <div key={section} className="grid gap-3 border-t border-white/10 pt-6">
                 <div className="ei-skeleton h-6 w-44" />
                 <div className="ei-skeleton h-4 w-full" />

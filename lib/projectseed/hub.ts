@@ -8,6 +8,8 @@ import type {
   PseedProjectOption,
   PseedProjectPick,
   PseedSlot,
+  PseedSlotRosterEntry,
+  PseedTagCount,
 } from "@/types/projectseed";
 
 /** The only cohort the MVP serves. Batch 1 turns this into a route param. */
@@ -34,7 +36,7 @@ const COHORT_COLUMNS =
 const PARTICIPANT_COLUMNS =
   "id, cohort_id, user_id, role, status, display_name, discord_user_id, discord_username, discord_linked_at, timezone";
 const PICK_COLUMNS =
-  "id, participant_id, project_option_id, custom_title, what_build, why_this, who_for, first_step, status, submitted_at";
+  "id, participant_id, project_option_id, custom_title, what_build, why_this, who_for, first_step, tags, status, submitted_at";
 const OPTION_COLUMNS =
   "id, slug, title, summary, detail, difficulty, tags, sort_order";
 
@@ -85,7 +87,15 @@ export async function loadHub(): Promise<HubLoad> {
 
   const participant = participantRow as PseedParticipant;
 
-  const [optionsRes, pickRes, slotsRes, heatmapRes, countRes] = await Promise.all([
+  const [
+    optionsRes,
+    pickRes,
+    slotsRes,
+    heatmapRes,
+    rosterRes,
+    tagsRes,
+    countRes,
+  ] = await Promise.all([
     supabase
       .from("pseed_project_options")
       .select(OPTION_COLUMNS)
@@ -101,6 +111,11 @@ export async function loadHub(): Promise<HubLoad> {
       .select("day_of_week, hour_of_day")
       .eq("participant_id", participant.id),
     supabase.rpc("pseed_cohort_heatmap", { p_cohort_id: cohort.id }),
+    // The full roster rather than a per-cell fetch: a cohort this size produces
+    // a few hundred small rows, and having it up front means clicking a slot to
+    // see who is in it costs nothing.
+    supabase.rpc("pseed_cohort_slot_roster", { p_cohort_id: cohort.id }),
+    supabase.rpc("pseed_cohort_tags", { p_cohort_id: cohort.id }),
     supabase
       .from("pseed_participants")
       .select("id", { count: "exact", head: true })
@@ -127,6 +142,8 @@ export async function loadHub(): Promise<HubLoad> {
       options: (optionsRes.data as PseedProjectOption[]) ?? [],
       mySlots,
       heatmap: (heatmapRes.data as PseedHeatmapCell[]) ?? [],
+      roster: (rosterRes.data as PseedSlotRosterEntry[]) ?? [],
+      cohortTags: (tagsRes.data as PseedTagCount[]) ?? [],
       participantCount: countRes.count ?? 0,
     },
   };

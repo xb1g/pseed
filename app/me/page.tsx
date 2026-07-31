@@ -12,6 +12,8 @@ import {
   type MyPathReadClient,
 } from "@/lib/my-path/server-read";
 import { buildMyPathSummary } from "@/lib/my-path/summary";
+import { loadHub } from "@/lib/projectseed/hub";
+import { buildProjectSeedMeSummary } from "@/lib/projectseed/me-summary";
 import { createClient } from "@/utils/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -29,15 +31,17 @@ export default async function PortalPage() {
   const myPathReadClient = supabase as unknown as MyPathReadClient;
   const dashboardReadClient =
     supabase as unknown as MyPathDashboardReadClient;
-  const [persistedPath, dashboardSource] = await Promise.all([
+  const [persistedPath, dashboardSource, projectSeedLoad] = await Promise.all([
     loadPersistedMyPathResult(myPathReadClient),
     loadMyPathDashboardSource(dashboardReadClient, user.id),
+    loadHub(),
   ]);
   const model = buildMyPathDashboard({
     persistedPath: persistedPath.state,
     persistedPathStatus: persistedPath.status,
     ...dashboardSource,
   });
+  const projectSeed = buildProjectSeedMeSummary(projectSeedLoad);
   const persistedDraft = persistedPath.state?.draft;
   const myPathSummary =
     persistedDraft?.answers && persistedDraft.possibilities
@@ -53,7 +57,7 @@ export default async function PortalPage() {
       <main id="my-path" className="dawn-theme relative z-10 flex-1">
         <div className="container mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-10 lg:py-14">
           <MyPathSummaryCard summary={myPathSummary} />
-          <MyPathDashboard model={model} />
+          <MyPathDashboard model={model} projectSeed={projectSeed} />
         </div>
       </main>
     </div>

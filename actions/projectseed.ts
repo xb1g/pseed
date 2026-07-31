@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { extractDiscordIdentity } from "@/lib/projectseed/discord";
 import { PSEED_ACTIVE_COHORT_SLUG } from "@/lib/projectseed/hub";
+import { normalizeTags } from "@/lib/projectseed/tags";
 import type { PseedSlot } from "@/types/projectseed";
 
 export interface PseedActionResult {
@@ -168,7 +169,9 @@ export async function unlinkDiscord(): Promise<PseedActionResult> {
 export interface SaveProjectPickInput {
   projectOptionId?: string | null;
   customTitle?: string | null;
+  tags?: string[] | null;
 }
+
 
 /** Step 2 — which project. Explanation is a separate save so a pick is never lost. */
 export async function saveProjectPick(
@@ -190,6 +193,10 @@ export async function saveProjectPick(
       participant_id: participant.id,
       project_option_id: projectOptionId,
       custom_title: customTitle,
+      // Normalized here as well as in the form: the client's copy is a
+      // convenience, and a tag that reaches the database un-lowercased will
+      // never match the one someone else typed.
+      tags: normalizeTags(input.tags),
       updated_at: new Date().toISOString(),
     },
     { onConflict: "participant_id" }

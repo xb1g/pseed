@@ -344,32 +344,77 @@ module.exports = {
 
 ### Dawn Theme (Students)
 
+**Use the `<DawnScene />` component** (`components/projectseed/dawn-scene.tsx`), which renders
+all five layers from the `.dawn-scene` styles in `globals.css`. Do not hand-roll the stack
+inline — that is how pages end up with only the first three layers and read as flat blue.
+
+**Revised 2026-07-31 — night sky, not blue page.** The original gradient reached `#312e81`
+by 82% and `#1e3a5f` at the bottom, which put the lower 40% of every surface at mid-tone
+indigo. Combined with three blue blobs at 0.25/0.20/0.18 it made Dawn read as "dark blue
+page" rather than as a sky. Real dawn is near-black overhead with light confined to a narrow
+band at the horizon, so darkness is now held far longer and the lift happens in the last
+~15%. That contrast is also what finally lets the gold horizon register.
+
 ```css
 .dawn-theme {
-  /* Background stack */
+  /* Background stack — night sky dominant */
   --dawn-bg-gradient: linear-gradient(
     to bottom,
-    #020617 0%,
-    #0f172a 28%,
-    #1e1b4b 58%,
-    #312e81 82%,
-    #1e3a5f 100%
+    #000006 0%,
+    #01030e 18%,
+    #04061a 38%,
+    #080b28 58%,
+    #0d1136 74%,
+    #141a48 87%,
+    #1d2559 95%,
+    #27306a 100%
   );
 
-  /* Atmospheric layers */
-  --dawn-cloud-a: radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, transparent 70%);
-  --dawn-cloud-b: radial-gradient(circle, rgba(99, 102, 241, 0.20) 0%, transparent 70%);
-  --dawn-cloud-c: radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, transparent 70%);
-  --dawn-horizon-glow: linear-gradient(to top, rgba(254, 217, 92, 0.12) 0%, transparent 60%);
+  /* Atmospheric layers — blobs pulled well back; the third is warm so the
+     palette is not three shades of one hue. */
+  --dawn-cloud-a: radial-gradient(circle, rgba(59, 130, 246, 0.13) 0%, transparent 68%);
+  --dawn-cloud-b: radial-gradient(circle, rgba(99, 102, 241, 0.11) 0%, transparent 68%);
+  --dawn-cloud-c: radial-gradient(circle, rgba(217, 119, 87, 0.14) 0%, transparent 66%);
+
+  /* A band, not a wash — bottom 38% only. */
+  --dawn-horizon-glow: linear-gradient(
+    to top,
+    rgba(255, 196, 106, 0.24) 0%,
+    rgba(254, 217, 92, 0.11) 34%,
+    transparent 78%
+  );
 }
 ```
 
 **Layer order (same as Dusk, different palette):**
-1. Background gradient (deep blue-black → cool purple → soft rose)
-2. Three cloud blobs (blue/lavender tints)
-3. Horizon glow (pale gold, not amber)
-4. Light particles (rising, like morning mist)
-5. Star dot-grid (same as Dusk)
+1. Background gradient (near-black → deep indigo, lifting only at the very bottom)
+2. Three cloud blobs (two cool, one warm and low)
+3. Horizon glow (pale gold, not amber) — a band across the bottom 38%
+4. Light particles (rising, like morning mist) — `dawn-rise`, 61s
+5. Star dot-grid, masked to fade out before it reaches the bright horizon
+
+**The scene is `position: fixed`.** The sky stays with the viewport. On a long page an
+absolute scene puts the horizon thousands of pixels below the fold and everything above it
+reads as flat black. Cloud drift durations are prime-numbered (47s / 59s / 71s) so the layers
+never visually sync, and all motion is disabled under `prefers-reduced-motion`.
+
+### Dawn foreground accents
+
+One hue must not mean five things. Assign jobs:
+
+| Colour | Job |
+|--------|-----|
+| **Pale gold `#fed95c` / amber-200** | The single most important statement on the page. One per page. |
+| **Blue** | Interactive only — buttons, links, selected state |
+| **Slate / white** | Text hierarchy |
+| **Amber / red** | Genuine warnings only |
+
+| Class | Use |
+|-------|-----|
+| `.dawn-eyebrow` | Gold micro-caps section label. Replaces blue heading labels. |
+| `.dawn-rule` | The horizon hairline — bright gold at left, fading right, with a soft bloom. Under page titles and between major sections. |
+| `.dawn-keynote` | The one warm callout per page. Gold left bar + warm gradient. Do not use twice on one screen. |
+| `.dawn-list` | Gold dot markers. Use instead of typing `•` into copy. |
 
 ### Accent Colors
 

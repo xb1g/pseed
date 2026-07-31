@@ -16,6 +16,10 @@ export default async function ProjectPage() {
   }
 
   return (
-    <ProjectWorkspace options={load.hub.options} pick={load.hub.pick} />
+    <ProjectWorkspace
+      options={load.hub.options}
+      pick={load.hub.pick}
+      cohortTags={load.hub.cohortTags}
+    />
   );
 }

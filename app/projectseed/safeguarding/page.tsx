@@ -3,6 +3,7 @@ import path from "node:path";
 
 import type { Metadata } from "next";
 
+import { DawnScene } from "@/components/projectseed/dawn-scene";
 import { markdownToSafeHtml } from "@/lib/security/sanitize-html";
 import {
   MENTAL_HEALTH_HOTLINE_TH,
@@ -49,7 +50,7 @@ export default async function SafeguardingPage() {
 
   return (
     <div className="dawn-theme relative min-h-screen overflow-hidden">
-      <DawnAtmosphere />
+      <DawnScene />
 
       <main className="relative z-10 mx-auto flex w-full max-w-3xl flex-col px-4 py-12 sm:px-6 sm:py-16">
         <Hero />
@@ -60,64 +61,16 @@ export default async function SafeguardingPage() {
   );
 }
 
-function DawnAtmosphere() {
-  return (
-    <>
-      <div
-        aria-hidden="true"
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(to bottom, #020617 0%, #0f172a 28%, #1e1b4b 58%, #312e81 82%, #1e3a5f 100%)",
-        }}
-      />
-      <div
-        aria-hidden="true"
-        className="absolute -top-32 -left-32 h-[480px] w-[480px] rounded-full"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, transparent 70%)",
-        }}
-      />
-      <div
-        aria-hidden="true"
-        className="absolute top-1/3 -right-40 h-[520px] w-[520px] rounded-full"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(99, 102, 241, 0.20) 0%, transparent 70%)",
-        }}
-      />
-      <div
-        aria-hidden="true"
-        className="absolute bottom-0 left-1/4 h-[420px] w-[420px] rounded-full"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, transparent 70%)",
-        }}
-      />
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-0 bottom-0 h-1/2"
-        style={{
-          background:
-            "linear-gradient(to top, rgba(254, 217, 92, 0.12) 0%, transparent 60%)",
-          filter: "blur(52px)",
-        }}
-      />
-    </>
-  );
-}
-
 function Hero() {
   return (
     <header className="flex flex-col gap-5">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-300/80">
-        ProjectSeed
-      </p>
+      <p className="dawn-eyebrow">ProjectSeed</p>
 
       <h1 className="text-3xl font-bold leading-tight text-white sm:text-4xl">
         นโยบายคุ้มครองเด็ก
       </h1>
+
+      <hr className="dawn-rule" />
 
       <p className="text-lg leading-relaxed text-slate-300">
         กติกาที่พี่เลี้ยงทุกคนต้องทำตาม เพื่อให้นักเรียนปลอดภัย —
@@ -140,9 +93,9 @@ function ThaiSummary() {
         สรุปสำหรับผู้ปกครองและนักเรียน
       </h2>
 
-      <div className="rounded-xl border border-blue-400/25 bg-blue-500/[0.07] p-4">
+      <div className="dawn-keynote">
         <p className="text-[15px] leading-relaxed text-slate-200">
-          <span className="font-semibold text-white">
+          <span className="font-semibold text-amber-200">
             กติกาข้อที่ห้ามผิดเด็ดขาด: พี่เลี้ยงห้ามทักแชทส่วนตัวกับนักเรียนที่อายุต่ำกว่า 18 ปี
           </span>
           <br />
@@ -156,12 +109,12 @@ function ThaiSummary() {
         <h3 className="mb-3 text-base font-semibold text-white">
           สิ่งที่ผู้ปกครองจะได้รับก่อนเริ่ม
         </h3>
-        <ul className="flex flex-col gap-2 text-[15px] leading-relaxed text-slate-300">
-          <li>• ชื่อและบทบาทของพี่เลี้ยงที่ดูแลลูกของท่าน</li>
-          <li>• ช่องทางที่ใช้คุยกัน และรูปแบบการนัดหมาย</li>
-          <li>• นโยบายฉบับนี้ และกติกาห้ามแชทส่วนตัว</li>
-          <li>• ชื่อผู้รับผิดชอบด้านความปลอดภัย และอีเมลสำหรับแจ้งเหตุ</li>
-          <li>• ท่านขอดูบันทึกการพูดคุยที่เกี่ยวกับลูกของท่านได้ทุกเมื่อ</li>
+        <ul className="dawn-list flex flex-col gap-2 text-[15px] leading-relaxed text-slate-300">
+          <li>ชื่อและบทบาทของพี่เลี้ยงที่ดูแลลูกของท่าน</li>
+          <li>ช่องทางที่ใช้คุยกัน และรูปแบบการนัดหมาย</li>
+          <li>นโยบายฉบับนี้ และกติกาห้ามแชทส่วนตัว</li>
+          <li>ชื่อผู้รับผิดชอบด้านความปลอดภัย และอีเมลสำหรับแจ้งเหตุ</li>
+          <li>ท่านขอดูบันทึกการพูดคุยที่เกี่ยวกับลูกของท่านได้ทุกเมื่อ</li>
         </ul>
       </div>
 
