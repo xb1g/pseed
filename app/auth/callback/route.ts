@@ -100,5 +100,15 @@ export async function GET(request: Request) {
   }
 
   // return the user to an error page with instructions
-  return NextResponse.redirect(`${origin}/auth/auth-code-error`);
+  // Supabase usually reports OAuth failures against the Site URL rather than
+  // here, but when it does reach this route the reason is in the query string.
+  // Forward it, so the error page can say what actually went wrong instead of
+  // falling back to "your link may have expired".
+  const errorRedirect = new URL("/auth/auth-code-error", origin);
+  for (const key of ["error", "error_code", "error_description"]) {
+    const value = searchParams.get(key);
+    if (value) errorRedirect.searchParams.set(key, value);
+  }
+
+  return NextResponse.redirect(errorRedirect);
 }
