@@ -15,6 +15,12 @@ const NAV: NavItem[] = [
   { href: "/projectseed/hub/schedule", label: "เวลา", match: "prefix" },
 ];
 
+const ADMIN_ITEM: NavItem = {
+  href: "/projectseed/hub/admin",
+  label: "แอดมิน",
+  match: "prefix",
+};
+
 function isActive(pathname: string, item: NavItem): boolean {
   if (item.match === "exact") return pathname === item.href;
   return pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -24,13 +30,14 @@ function isActive(pathname: string, item: NavItem): boolean {
  * ProjectSeed hub section rail — ภาพรวม / โปรเจกต์ / เวลา.
  * Active state is path-driven; styles live under `.ps-hub-nav` in globals.css.
  */
-export function HubNav() {
+export function HubNav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
+  const items = isAdmin ? [...NAV, ADMIN_ITEM] : NAV;
 
   return (
     <nav aria-label="ProjectSeed hub" className="ps-hub-nav">
       <ul className="ps-hub-nav__list">
-        {NAV.map((item, index) => {
+        {items.map((item, index) => {
           const active = isActive(pathname, item);
 
           return (
