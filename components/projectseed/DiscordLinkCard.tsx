@@ -6,6 +6,26 @@ import { useRouter } from "next/navigation";
 import { syncDiscordLink } from "@/actions/projectseed";
 import { createClient } from "@/utils/supabase/client";
 
+/**
+ * Route the OAuth return through the existing `/auth/callback`, the same URL
+ * `components/login-form.tsx` uses for Discord and Google sign-in.
+ *
+ * Any other value would need its own entry in the Supabase redirect allowlist.
+ * Reusing the one route that is already registered means linking works on every
+ * environment the login page already works on — including preview deployments —
+ * with no dashboard change. The callback exchanges the code and forwards to
+ * `next`, which is what completes the identity link.
+ */
+function buildCallbackUrl(next: string): string {
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (typeof window !== "undefined" ? window.location.origin : "");
+
+  const callback = new URL("/auth/callback", siteUrl);
+  callback.searchParams.set("next", next);
+  return callback.toString();
+}
+
 interface DiscordLinkCardProps {
   discordUsername: string | null;
   discordUserId: string | null;
@@ -51,7 +71,7 @@ export function DiscordLinkCard({
     const { error: linkError } = await supabase.auth.linkIdentity({
       provider: "discord",
       options: {
-        redirectTo: `${window.location.origin}/projectseed/hub`,
+        redirectTo: buildCallbackUrl("/projectseed/hub"),
         scopes: "identify",
       },
     });
