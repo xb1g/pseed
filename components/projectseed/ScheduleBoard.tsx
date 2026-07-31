@@ -6,18 +6,19 @@ import { useRouter } from "next/navigation";
 import { saveAvailability } from "@/actions/projectseed";
 import {
   PSEED_DAYS,
-  PSEED_FULL,
   PSEED_HOURS,
-  PSEED_QUORUM,
+  PSEED_OPTIMAL_MAX,
+  PSEED_OPTIMAL_MIN,
+  SLOT_QUALITY_LABEL,
   buildHeatmapLookup,
   formatHour,
   formatSlotRange,
   groupRosterBySlot,
-  hasQuorum,
   heatLevel,
   keysToSlots,
-  quorumSlots,
+  rankedSlots,
   slotKey,
+  slotQuality,
   slotTopics,
   slotsToKeys,
 } from "@/lib/projectseed/schedule";
@@ -29,15 +30,18 @@ import type {
 } from "@/types/projectseed";
 
 /**
- * Colour = how full the hour is. The jump to amber at quorum is the only step
- * that changes hue, because it is the only step that changes the decision.
+ * Colour = how full the hour is. Blue means workable, amber means the 3-to-5
+ * band worth steering toward, orange means a crowd — still fine, just no longer
+ * the recommendation.
  */
 const HEAT_STYLES: Record<0 | 1 | 2 | 3 | 4, string> = {
   0: "bg-white/[0.03]",
-  1: "bg-blue-500/15",
-  2: "bg-blue-500/35",
-  3: "bg-amber-400/60",
-  4: "bg-amber-300/90",
+  1: "bg-blue-500/20",
+  2: "bg-blue-500/45",
+  3: "bg-amber-300/90",
+  // A crowd is still fine, so it stays warm — but it steps back from the
+  // optimal band rather than reading as "even better".
+  4: "bg-orange-500/60",
 };
 
 interface ScheduleBoardProps {
@@ -82,7 +86,7 @@ export function ScheduleBoard({
 
   const heat = useMemo(() => buildHeatmapLookup(cells), [cells]);
   const bySlot = useMemo(() => groupRosterBySlot(roster), [roster]);
-  const roomSlots = useMemo(() => quorumSlots(cells), [cells]);
+  const roomSlots = useMemo(() => rankedSlots(cells), [cells]);
 
   // Paint mode lives in a ref: it is set on pointerdown and read on
   // pointerenter, and re-rendering on it would fight the drag.
@@ -138,7 +142,7 @@ export function ScheduleBoard({
         </h2>
         <p className="text-sm leading-relaxed text-slate-300">
           ลากเพื่อเลือกชั่วโมงที่คุณเข้าห้องเสียงได้ สีของช่องคือจำนวนคนทั้งห้อง —
-          ห้องนี้อยู่บนออนไลน์ {PSEED_QUORUM} คนขึ้นไปถึงจะรู้สึกเหมือนมีห้องจริง
+          สองคนก็ทำงานด้วยกันได้แล้ว {PSEED_OPTIMAL_MIN}–{PSEED_OPTIMAL_MAX} คนกำลังดี
           ({participantCount} คนในรุ่นนี้)
         </p>
       </header>
@@ -304,11 +308,10 @@ function RoomSummary({
     return (
       <div className="ei-card flex flex-col gap-2 p-5">
         <h3 className="text-sm font-semibold text-white">
-          ยังไม่มีช่วงไหนที่มีคนถึง {PSEED_QUORUM} คน
+          ยังไม่มีใครเลือกเวลาเลย
         </h3>
         <p className="text-sm leading-relaxed text-slate-300">
-          เลือกเวลาให้ทับกับช่องที่มีคนอยู่แล้ว แทนที่จะเลือกช่องว่าง —
-          นั่นคือวิธีที่ห้องเริ่มมีจริง
+          เลือกชั่วโมงของคุณก่อน แล้วคนที่มาทีหลังจะเห็นว่ามีคนอยู่ตรงไหน
         </p>
       </div>
     );
@@ -316,11 +319,12 @@ function RoomSummary({
 
   return (
     <div className="ei-card flex flex-col gap-3 p-5">
-      <h3 className="text-sm font-semibold text-white">ช่วงที่ควรมา</h3>
+      <h3 className="text-sm font-semibold text-white">ช่วงที่มีคนอยู่</h3>
       <ul className="flex flex-col gap-1.5">
-        {slots.slice(0, 4).map((cell) => {
+        {slots.slice(0, 5).map((cell) => {
           const key = slotKey(cell.day_of_week, cell.hour_of_day);
           const topics = slotTopics(bySlot.get(key) ?? []).slice(0, 4);
+          const quality = slotQuality(cell.participant_count);
 
           return (
             <li key={key}>
@@ -335,14 +339,17 @@ function RoomSummary({
                   {PSEED_DAYS[cell.day_of_week]?.long}{" "}
                   {formatSlotRange(cell.hour_of_day)}
                 </span>
+                <span className="text-sm text-slate-300">
+                  {cell.participant_count} คน
+                </span>
                 <span
                   className={
-                    cell.participant_count >= PSEED_FULL
-                      ? "text-sm font-semibold text-amber-300"
-                      : "text-sm text-amber-200/80"
+                    quality === "optimal"
+                      ? "rounded-full bg-amber-400/20 px-2 py-0.5 text-[11px] font-semibold text-amber-200"
+                      : "text-[11px] text-slate-500"
                   }
                 >
-                  {cell.participant_count} คน
+                  {SLOT_QUALITY_LABEL[quality]}
                 </span>
                 {topics.length > 0 ? (
                   <span className="text-xs text-slate-400">
@@ -381,7 +388,7 @@ function SlotPanel({
 
   const [day, hour] = slotKeyValue.split(":").map(Number);
   const entries = bySlot.get(slotKeyValue) ?? [];
-  const quorum = hasQuorum(entries.length);
+  const quality = slotQuality(entries.length);
 
   return (
     <div className="ei-card ei-card--lit flex min-h-[7.5rem] flex-col gap-3 p-5">
@@ -391,12 +398,23 @@ function SlotPanel({
         </h3>
         <p className="text-sm text-slate-300">
           {entries.length} คน
-          {entries.length === 0 ? null : quorum ? (
-            <span className="text-amber-300"> · ถึงจำนวนแล้ว</span>
-          ) : (
-            <span className="text-slate-500">
+          {entries.length === 0 ? null : (
+            <span
+              className={
+                quality === "optimal" ? "text-amber-300" : "text-slate-500"
+              }
+            >
               {" "}
-              · อีก {PSEED_QUORUM - entries.length} คนถึงจะครบ
+              · {SLOT_QUALITY_LABEL[quality]}
+              {/*
+                Only nudge when the gap is genuinely small. Telling someone in a
+                one-person slot they need two more reads as a rejection of the
+                slot they just looked at; telling a pair they are one away reads
+                as an invitation.
+              */}
+              {quality === "works"
+                ? ` · อีก ${PSEED_OPTIMAL_MIN - entries.length} คนจะกำลังดี`
+                : ""}
             </span>
           )}
         </p>
@@ -462,18 +480,18 @@ function Legend({ mine }: { mine: number }) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-400">
       <span className="flex items-center gap-1.5">
-        <span className={`h-4 w-6 rounded ${HEAT_STYLES[1]}`} />1
+        <span className={`h-4 w-6 rounded ${HEAT_STYLES[1]}`} />1 คน
       </span>
       <span className="flex items-center gap-1.5">
-        <span className={`h-4 w-6 rounded ${HEAT_STYLES[2]}`} />2
+        <span className={`h-4 w-6 rounded ${HEAT_STYLES[2]}`} />2 คน · ได้อยู่
       </span>
       <span className="flex items-center gap-1.5">
         <span className={`h-4 w-6 rounded ${HEAT_STYLES[3]}`} />
-        {PSEED_QUORUM}–{PSEED_FULL - 1}
+        {PSEED_OPTIMAL_MIN}–{PSEED_OPTIMAL_MAX} คน · กำลังดี
       </span>
       <span className="flex items-center gap-1.5">
         <span className={`h-4 w-6 rounded ${HEAT_STYLES[4]}`} />
-        {PSEED_FULL}+
+        {PSEED_OPTIMAL_MAX + 1}+ คน
       </span>
       <span className="flex items-center gap-1.5">
         <span className="h-4 w-6 rounded bg-white/[0.03] ring-2 ring-inset ring-white" />

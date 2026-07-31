@@ -7,13 +7,15 @@ import type {
   PseedStep,
 } from "@/types/projectseed";
 import {
-  PSEED_QUORUM,
+  SLOT_QUALITY_LABEL,
   buildHeatmapLookup,
   describeSlot,
   groupRosterBySlot,
-  hasQuorum,
-  quorumSlots,
+  isOptimal,
+  isWorthJoining,
+  rankedSlots,
   slotKey,
+  slotQuality,
   slotTopics,
 } from "@/lib/projectseed/schedule";
 import { buildBadges, formatRecordedTime } from "@/lib/projectseed/badges";
@@ -40,11 +42,14 @@ export function HubDashboard({ hub, steps }: HubDashboardProps) {
 
   const heat = buildHeatmapLookup(heatmap);
   const bySlot = groupRosterBySlot(roster);
-  const roomSlots = quorumSlots(heatmap);
+  const roomSlots = rankedSlots(heatmap);
   const badges = buildBadges(hub);
 
   const sharedSlots = mySlots.filter((slot) =>
-    hasQuorum(heat.count(slot.day, slot.hour))
+    isWorthJoining(heat.count(slot.day, slot.hour))
+  );
+  const optimalSlots = mySlots.filter((slot) =>
+    isOptimal(heat.count(slot.day, slot.hour))
   );
 
   const projectTitle = pick?.custom_title?.trim() || null;
@@ -68,6 +73,7 @@ export function HubDashboard({ hub, steps }: HubDashboardProps) {
         keptSlots={stats.kept_slot_count}
         plannedSlots={mySlots.length}
         sharedSlots={sharedSlots.length}
+        optimalSlots={optimalSlots.length}
       />
 
       {remaining.length > 0 ? <Quests steps={remaining} /> : null}
@@ -161,12 +167,14 @@ function StatBlock({
   keptSlots,
   plannedSlots,
   sharedSlots,
+  optimalSlots,
 }: {
   recordedSeconds: number;
   sessionCount: number;
   keptSlots: number;
   plannedSlots: number;
   sharedSlots: number;
+  optimalSlots: number;
 }) {
   const awaitingBot = recordedSeconds === 0 && sessionCount === 0;
 
@@ -198,7 +206,11 @@ function StatBlock({
         <Stat
           label="มีคนอยู่ด้วย"
           value={String(sharedSlots)}
-          hint={`ช่วงที่ถึง ${PSEED_QUORUM} คน`}
+          hint={
+            optimalSlots > 0
+              ? `${optimalSlots} ช่วงกำลังดี`
+              : `ช่วงที่มีอย่างน้อย 2 คน`
+          }
           href="/projectseed/hub/schedule"
         />
       </div>
@@ -408,7 +420,7 @@ function RoomCard({
 
       {slots.length === 0 ? (
         <p className="text-sm leading-relaxed text-slate-300">
-          ยังไม่มีช่วงไหนที่คนถึง {PSEED_QUORUM} คน — เลือกเวลาทับกับคนอื่นแล้วมันจะเริ่มมี
+          ยังไม่มีใครเลือกเวลาเลย — เลือกของคุณก่อน แล้วคนอื่นจะเห็นว่ามาตรงไหนได้
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
@@ -421,8 +433,17 @@ function RoomCard({
                 <span className="text-sm font-medium text-white">
                   {describeSlot(cell)}
                 </span>
-                <span className="text-sm text-amber-200/80">
+                <span className="text-sm text-slate-300">
                   {cell.participant_count} คน
+                </span>
+                <span
+                  className={
+                    slotQuality(cell.participant_count) === "optimal"
+                      ? "text-[11px] font-semibold text-amber-200"
+                      : "text-[11px] text-slate-500"
+                  }
+                >
+                  {SLOT_QUALITY_LABEL[slotQuality(cell.participant_count)]}
                 </span>
                 {topics.length > 0 ? (
                   <span className="text-xs text-slate-400">
