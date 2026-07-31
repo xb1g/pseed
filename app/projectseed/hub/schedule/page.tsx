@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { loadHub } from "@/lib/projectseed/hub";
-import { AvailabilityPicker } from "@/components/projectseed/AvailabilityPicker";
-import { HeatmapGrid } from "@/components/projectseed/HeatmapGrid";
+import { ScheduleBoard } from "@/components/projectseed/ScheduleBoard";
 
 export const dynamic = "force-dynamic";
 
@@ -18,15 +17,15 @@ export default async function SchedulePage() {
 
   const { hub } = load;
 
+  // One grid, not two. Painting your hours and reading the room's are the same
+  // decision, so they are the same table.
   return (
-    <>
-      <AvailabilityPicker initialSlots={hub.mySlots} />
-      <HeatmapGrid
-        cells={hub.heatmap}
-        roster={hub.roster}
-        cohortTags={hub.cohortTags}
-        participantCount={hub.participantCount}
-      />
-    </>
+    <ScheduleBoard
+      initialSlots={hub.mySlots}
+      cells={hub.heatmap}
+      roster={hub.roster}
+      cohortTags={hub.cohortTags}
+      participantCount={hub.participantCount}
+    />
   );
 }

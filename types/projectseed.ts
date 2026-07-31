@@ -75,6 +75,22 @@ export interface PseedSlotRosterEntry {
   is_me: boolean;
 }
 
+/**
+ * What actually happened, as opposed to what was declared.
+ *
+ * Every field is zero until the Discord bot (PS-213) starts writing voice
+ * sessions. Shown as a real zero rather than hidden, because "0 hours recorded"
+ * is the honest state and hiding it would make declared hours look like
+ * attendance.
+ */
+export interface PseedParticipantStats {
+  recorded_seconds: number;
+  session_count: number;
+  last_seen_at: string | null;
+  /** Sessions that started inside an hour the participant had declared. */
+  kept_slot_count: number;
+}
+
 /** A tag and how many people in the cohort are using it. */
 export interface PseedTagCount {
   tag: string;
@@ -110,6 +126,8 @@ export interface PseedHubState {
   roster: PseedSlotRosterEntry[];
   /** What the whole room is working on, most common first. */
   cohortTags: PseedTagCount[];
+  /** Recorded attendance for the current participant. */
+  stats: PseedParticipantStats;
   participantCount: number;
 }
 
