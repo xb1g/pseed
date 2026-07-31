@@ -130,10 +130,6 @@ export function NotificationSettings({ participant }: NotificationSettingsProps)
         </p>
       ) : null}
       {notice ? <p className="text-xs text-emerald-300">{notice}</p> : null}
-
-      <p className="text-xs leading-relaxed text-slate-500">
-        ยังไม่มีบอทคอยส่ง — ตั้งค่าไว้ก่อนได้ แล้วมันจะทำงานทันทีที่บอทออนไลน์
-      </p>
     </section>
   );
 }
