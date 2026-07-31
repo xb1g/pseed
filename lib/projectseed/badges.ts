@@ -1,5 +1,11 @@
 import type { PseedHubState } from "@/types/projectseed";
-import { buildHeatmapLookup, hasQuorum } from "@/lib/projectseed/schedule";
+import {
+  PSEED_OPTIMAL_MAX,
+  PSEED_OPTIMAL_MIN,
+  buildHeatmapLookup,
+  isOptimal,
+  isWorthJoining,
+} from "@/lib/projectseed/schedule";
 
 export interface PseedBadge {
   id: string;
@@ -29,8 +35,14 @@ export function buildBadges(hub: PseedHubState): PseedBadge[] {
   const heat = buildHeatmapLookup(heatmap);
 
   const hasProject = Boolean(pick?.custom_title?.trim() || pick?.project_option_id);
+  // Two people is enough to not be alone. The optimal band is a separate,
+  // higher badge — conflating them would mean a pair working together every
+  // week earns nothing.
   const sharedSlot = mySlots.some((slot) =>
-    hasQuorum(heat.count(slot.day, slot.hour))
+    isWorthJoining(heat.count(slot.day, slot.hour))
+  );
+  const optimalSlot = mySlots.some((slot) =>
+    isOptimal(heat.count(slot.day, slot.hour))
   );
 
   return [
@@ -79,9 +91,16 @@ export function buildBadges(hub: PseedHubState): PseedBadge[] {
     {
       id: "not-alone",
       label: "ไม่ได้อยู่คนเดียว",
-      hint: "มีชั่วโมงที่ทับกับคนอื่นพอเป็นห้อง",
+      hint: "มีชั่วโมงที่ทับกับคนอื่นอย่างน้อยหนึ่งคน",
       icon: "🤝",
       earned: sharedSlot,
+    },
+    {
+      id: "full-room",
+      label: "ห้องกำลังดี",
+      hint: `มีชั่วโมงที่คนถึง ${PSEED_OPTIMAL_MIN}–${PSEED_OPTIMAL_MAX} คน`,
+      icon: "✨",
+      earned: optimalSlot,
     },
     {
       id: "first-hour",
