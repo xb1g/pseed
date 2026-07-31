@@ -35,7 +35,7 @@ export type HubLoad =
 const COHORT_COLUMNS =
   "id, slug, name, audience, discord_guild_id, starts_on, ends_on, is_active";
 const PARTICIPANT_COLUMNS =
-  "id, cohort_id, user_id, role, status, display_name, discord_user_id, discord_username, discord_linked_at, timezone";
+  "id, cohort_id, user_id, role, status, display_name, discord_user_id, discord_username, discord_linked_at, timezone, notify_channel, notify_dm, notify_lead_minutes, notify_min_people";
 const PICK_COLUMNS =
   "id, participant_id, project_option_id, custom_title, what_build, why_this, who_for, first_step, tags, status, submitted_at";
 const OPTION_COLUMNS =

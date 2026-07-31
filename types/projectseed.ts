@@ -31,6 +31,12 @@ export interface PseedParticipant {
   discord_username: string | null;
   discord_linked_at: string | null;
   timezone: string;
+  /** Channel ping is opt-out, DM is opt-in — see PROJECTSEED-SAFEGUARDING §3. */
+  notify_channel: boolean;
+  notify_dm: boolean;
+  notify_lead_minutes: number;
+  /** Do not ping me into a room this empty. */
+  notify_min_people: number;
 }
 
 export interface PseedProjectOption {
