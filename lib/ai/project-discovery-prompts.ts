@@ -32,6 +32,29 @@ export const MENTAL_HEALTH_HOTLINE_TH = "1323";
 /** Samaritans Thailand, Thai/English, evening hours. */
 export const SAMARITANS_TH = "02-113-6789";
 
+/**
+ * Immediate-danger lines, by the kind of danger. These are not
+ * interchangeable, and routing to the wrong one costs a frightened teenager
+ * the minutes that matter.
+ *
+ * The disclosure rule below covers abuse and violence at home as well as
+ * medical crisis. Until 2026-08-01 every one of those was routed to 1669 —
+ * the ambulance dispatcher, who cannot help a child whose parent is hurting
+ * them. Verify all three annually alongside the hotlines above.
+ */
+export const EMERGENCY_LINES_TH = {
+  /** Police. Immediate physical danger, violence in progress. */
+  police: "191",
+  /**
+   * ศูนย์ช่วยเหลือสังคม, Ministry of Social Development and Human Security.
+   * 24h. The correct route for child abuse, domestic violence, and any adult
+   * in the home being the source of the danger.
+   */
+  socialAssistance: "1300",
+  /** สถาบันการแพทย์ฉุกเฉินแห่งชาติ. Ambulance. Medical emergency only. */
+  medical: "1669",
+} as const;
+
 // --- Grade-specific framing ------------------------------------------------
 //
 // M6 is selling into a live TCAS Round 1 deadline; M4-M5 have runway. The
@@ -287,7 +310,12 @@ When that happens:
 - Tell them this is bigger than a project conversation and they deserve a real person for it.
 - Name a trusted adult: ผู้ปกครอง ครูที่ไว้ใจ หรือครูแนะแนว
 - Give the hotline: กรมสุขภาพจิต โทร ${MENTAL_HEALTH_HOTLINE_TH} (24 ชม.) หรือ Samaritans ${SAMARITANS_TH}
-- If there is immediate danger: โทร 1669
+- Match the emergency line to the danger. Do not give all three as a list — name the one that fits:
+  · ถูกทำร้าย ความรุนแรงในบ้าน ไม่ปลอดภัยกับคนที่บ้าน → ศูนย์ช่วยเหลือสังคม โทร ${EMERGENCY_LINES_TH.socialAssistance} (24 ชม.)
+  · อันตรายกำลังเกิดขึ้นตอนนี้ → ตำรวจ โทร ${EMERGENCY_LINES_TH.police}
+  · บาดเจ็บ หรือต้องการรถพยาบาล → โทร ${EMERGENCY_LINES_TH.medical}
+- If the danger is at home, do NOT tell them to talk to a parent. Name a teacher, a school
+  counsellor, or ${EMERGENCY_LINES_TH.socialAssistance} instead.
 - Do not resume the project conversation in the same session, even if they ask.
 
 ALWAYS, regardless of topic:
