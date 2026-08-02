@@ -5,6 +5,7 @@ import { PromptCopy } from "@/components/projectseed/prompt-copy";
 import {
   buildProjectDiscoveryGreeting,
   buildProjectDiscoverySystemPrompt,
+  EMERGENCY_LINES_TH,
   MENTAL_HEALTH_HOTLINE_TH,
   SAMARITANS_TH,
   type GradeLevel,
@@ -43,10 +44,15 @@ export default function ProjectSeedPromptPage() {
 
       <main className="relative z-10 mx-auto flex w-full max-w-2xl flex-col px-4 py-12 sm:px-6 sm:py-16">
         <Hero />
+        {/* Above the copy button on purpose. PromptCopy holds both the copy
+            action and the deep links out to ChatGPT/Claude/Gemini, so a
+            student who lands here copies and leaves. A safety notice whose
+            own header says "read these two before starting" cannot sit below
+            the control that ends the visit. */}
+        <SafetyNotice />
         <div className="mt-10">
           <PromptCopy prompts={prompts} greeting={greeting} />
         </div>
-        <SafetyNotice />
       </main>
     </div>
   );
@@ -118,7 +124,21 @@ function SafetyNotice() {
           <span className="font-semibold text-slate-200">
             กรมสุขภาพจิต {MENTAL_HEALTH_HOTLINE_TH}
           </span>{" "}
-          (24 ชม.) หรือ Samaritans {SAMARITANS_TH} · ฉุกเฉิน โทร 1669
+          (24 ชม.) หรือ Samaritans {SAMARITANS_TH}
+        </p>
+        {/* Split from the line above deliberately. A student who is unsafe at
+            home must not be pointed at an ambulance dispatcher, and must not
+            be told to go talk to a parent. */}
+        <p className="mt-3 text-sm leading-relaxed text-slate-400">
+          ถ้าไม่ปลอดภัย หรือมีคนทำร้าย — โทร{" "}
+          <span className="font-semibold text-slate-200">
+            ศูนย์ช่วยเหลือสังคม {EMERGENCY_LINES_TH.socialAssistance}
+          </span>{" "}
+          (24 ชม. ไม่ต้องบอกชื่อก็ได้) · กำลังเกิดขึ้นตอนนี้ โทร{" "}
+          <span className="font-semibold text-slate-200">
+            ตำรวจ {EMERGENCY_LINES_TH.police}
+          </span>{" "}
+          · บาดเจ็บ ต้องการรถพยาบาล โทร {EMERGENCY_LINES_TH.medical}
         </p>
       </div>
 
