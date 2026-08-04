@@ -81,6 +81,22 @@ export function TalentHero() {
     return () => timers.forEach(clearTimeout);
   }, []);
 
+  // Lock page scroll while the intro animation is still playing.
+  useEffect(() => {
+    if (showRest) return;
+
+    const html = document.documentElement;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = document.body.style.overflow;
+    html.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      html.style.overflow = prevHtmlOverflow;
+      document.body.style.overflow = prevBodyOverflow;
+    };
+  }, [showRest]);
+
   const titleDone = titleLen === TITLE.length;
   const subDone = subLen === SUBTITLE.length;
 
