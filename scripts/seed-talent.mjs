@@ -153,11 +153,10 @@ function readCSV(filePath) {
       age: fields[columnMap['Age (อายุ)']] || null,
       school: fields[columnMap['School / University (สถานศึกษา & ชั้นปี)']] || null,
       line_id: fields[columnMap['LINE ID']] || null,
-      phone_number: fields[columnMap['Phone Number (เบอร์โทรศัพท์)']] || null,
+      phone: fields[columnMap['Phone Number (เบอร์โทรศัพท์)']] || null,
       track: normalizeTrack(fields[columnMap['Primary Skill Track (สายงานหลักที่ถนัด)']] || ''),
       tools: parseTools(fields[columnMap['Tools & Frameworks (เครื่องมือที่ใช้เป็นประจำ)']] || ''),
-      portfolio_links: parsePortfolioLinks(fields[columnMap['Portfolio / GitHub / TikTok Links']] || ''),
-      comments: fields[columnMap['Anything. Suggestions/ ideas/ comments']] || null
+      portfolio_links: parsePortfolioLinks(fields[columnMap['Portfolio / GitHub / TikTok Links']] || '')
     });
   }
 
@@ -177,31 +176,28 @@ async function upsertTalents(rows) {
     console.log(`  Tools: ${row.tools.length} items`);
     console.log(`  Portfolio: ${row.portfolio_links.length} links`);
 
-    const { data, error } = await supabase
+    const payload = {
+      full_name: row.full_name,
+      nickname: row.nickname,
+      age: row.age ? parseInt(row.age, 10) : null,
+      school: row.school,
+      line_id: row.line_id,
+      phone: row.phone,
+      track: row.track,
+      tools: row.tools,
+      portfolio_links: row.portfolio_links
+    };
+
+    const res = await supabase
       .from('talent_profiles')
-      .upsert(
-        {
-          full_name: row.full_name,
-          nickname: row.nickname,
-          age: row.age ? parseInt(row.age, 10) : null,
-          school: row.school,
-          line_id: row.line_id,
-          phone_number: row.phone_number,
-          track: row.track,
-          tools: row.tools,
-          portfolio_links: row.portfolio_links,
-          comments: row.comments
-        },
-        {
-          onConflict: 'full_name,nickname'
-        }
-      )
+      .upsert(payload, { onConflict: 'full_name,nickname' })
       .select();
 
-    if (error) {
-      console.error(`  ❌ Upsert failed: ${error.message}`);
+    if (res.error) {
+      console.error(`  ❌ Upsert failed:`, res.error);
+      console.error(`  Status:`, res.status, res.statusText);
     } else {
-      console.log(`  ✅ Upserted successfully (ID: ${data[0]?.id})`);
+      console.log(`  ✅ Upserted successfully (ID: ${res.data?.[0]?.id})`);
     }
   }
 }
