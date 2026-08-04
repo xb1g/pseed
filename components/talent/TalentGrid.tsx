@@ -5,7 +5,7 @@ import type { TalentProfile } from "@/lib/talent";
 import { TalentCard } from "./TalentCard";
 
 const TRACKS = [
-  { key: "all", label: "ทั้งหมด" },
+  { key: "all", label: "All" },
   { key: "dev", label: "Developer" },
   { key: "video", label: "Video" },
   { key: "strategy", label: "Strategy" },
