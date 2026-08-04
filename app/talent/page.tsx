@@ -9,7 +9,7 @@ import {
 import { getTalentProfiles } from "@/lib/talent";
 import { TalentHero } from "@/components/talent/TalentHero";
 import { TalentGrid } from "@/components/talent/TalentGrid";
-import { ProjectBriefForm, TalentProfileForm } from "@/components/talent/TalentForms";
+import { ProjectBriefForm } from "@/components/talent/TalentForms";
 
 export const metadata: Metadata = {
   title: "Youth Talent — Pre-Vetted Thai Builders",
@@ -17,7 +17,12 @@ export const metadata: Metadata = {
     "Access skilled Gen-Z creators and developers for high-impact, 48-hour turnaround projects.",
 };
 
-const MARQUEE_PHRASES = ["Empower student", "Connect word"] as const;
+const MARQUEE_PHRASES = [
+  "Empower student",
+  "Enable Growth",
+  "Inspire Confidence",
+  "Fuel Ambition",
+] as const;
 
 const TALENT_CATEGORIES = [
   { label: "/Design", Icon: PencilRuler },
@@ -97,12 +102,6 @@ export default async function TalentPage() {
         <div className="mt-8">
           <TalentGrid profiles={profiles} />
         </div>
-
-        <p className="mt-16 mb-8 text-lg" style={{ color: "#524746" }}>
-          Are you a student builder? Leave your profile — we&apos;ll reach out when a
-          project matches you.
-        </p>
-        <TalentProfileForm />
       </section>
 
       {/* ── Project brief intake ── */}
