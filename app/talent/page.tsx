@@ -1,15 +1,12 @@
 import type { Metadata } from "next";
-import {
-  AppWindow,
-  Briefcase,
-  PencilRuler,
-  ShieldPlus,
-  Video,
-} from "lucide-react";
 import { getTalentProfiles } from "@/lib/talent";
+import { TalentCategories } from "@/components/talent/TalentCategories";
 import { TalentHero } from "@/components/talent/TalentHero";
 import { TalentGrid } from "@/components/talent/TalentGrid";
 import { ProjectBriefForm } from "@/components/talent/TalentForms";
+import { TalentWorkShowcase } from "@/components/talent/TalentWork";
+import { TalentWhy } from "@/components/talent/TalentWhy";
+import { TalentLegal } from "@/components/talent/TalentLegal";
 
 export const metadata: Metadata = {
   title: "Youth Talent — Pre-Vetted Thai Builders",
@@ -22,14 +19,6 @@ const MARQUEE_PHRASES = [
   "Enable Growth",
   "Inspire Confidence",
   "Fuel Ambition",
-] as const;
-
-const TALENT_CATEGORIES = [
-  { label: "/Design", Icon: PencilRuler },
-  { label: "/Software-Developer", Icon: AppWindow },
-  { label: "/Video-Editor", Icon: Video },
-  { label: "/Pen-Test", Icon: ShieldPlus },
-  { label: "/Business-Strategy", Icon: Briefcase },
 ] as const;
 
 export default async function TalentPage() {
@@ -66,27 +55,65 @@ export default async function TalentPage() {
           Our Student Talents
         </h2>
         <p className="mt-1 text-lg" style={{ color: "#524746" }}>
-          [for now]
+          Five tracks so far — more as students turn up
         </p>
 
-        <div className="mt-12 flex flex-wrap justify-center gap-x-14 gap-y-10 sm:mt-16">
-          {TALENT_CATEGORIES.map(({ label, Icon }) => (
-            <div key={label} className="flex flex-col items-center gap-4">
-              <div
-                className="flex h-52 w-40 items-center justify-center rounded-2xl sm:h-60 sm:w-48"
-                style={{ backgroundColor: "#524746" }}
-              >
-                <Icon
-                  className="h-16 w-16 sm:h-20 sm:w-20"
-                  style={{ color: "#FDF3E6" }}
-                  strokeWidth={1.5}
-                />
-              </div>
-              <p className="text-lg sm:text-xl" style={{ color: "#524746" }}>
-                {label}
-              </p>
-            </div>
-          ))}
+        <div className="mt-12 sm:mt-16">
+          <TalentCategories profiles={profiles} />
+        </div>
+      </section>
+
+      {/* ── Actual work already shipped ── */}
+      <section
+        id="actual-work"
+        className="talent-anchor mx-auto max-w-7xl px-4 pb-20 sm:px-6 sm:pb-28 lg:px-8"
+      >
+        <h2
+          className="font-radar-title text-4xl sm:text-5xl md:text-6xl"
+          style={{ color: "#C43E1D" }}
+        >
+          Actual Work
+        </h2>
+        <p className="mt-1 text-lg" style={{ color: "#524746" }}>
+          Shipped, public, and theirs — not mockups
+        </p>
+
+        <div className="mt-12 sm:mt-16">
+          <TalentWorkShowcase profiles={profiles} />
+        </div>
+      </section>
+
+      {/* ── Why we do this ── */}
+      <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 sm:pb-28 lg:px-8">
+        <h2
+          className="font-radar-title text-4xl sm:text-5xl md:text-6xl"
+          style={{ color: "#C43E1D" }}
+        >
+          Why We Do This
+        </h2>
+        <p className="mt-1 text-lg" style={{ color: "#524746" }}>
+          What students keep asking us for
+        </p>
+
+        <div className="mt-12 sm:mt-16">
+          <TalentWhy />
+        </div>
+      </section>
+
+      {/* ── Legal footing ── */}
+      <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 sm:pb-28 lg:px-8">
+        <h2
+          className="font-radar-title text-4xl sm:text-5xl md:text-6xl"
+          style={{ color: "#C43E1D" }}
+        >
+          Legal Footing
+        </h2>
+        <p className="mt-1 text-lg" style={{ color: "#524746" }}>
+          Prize awards, not employment — so age 12 can start
+        </p>
+
+        <div className="mt-12 sm:mt-16">
+          <TalentLegal />
         </div>
       </section>
 

@@ -13,20 +13,24 @@ const ACCENT_END = ACCENT_START + ACCENT.length;
 const TITLE_CHAR_MS = 110;
 const SUBTITLE_CHAR_MS = 35;
 
+/** Real pieces from the Actual Work section — clicking any card jumps there. */
 const FAN_CARDS = [
   {
-    src: "/talent/student-radar.jpg",
-    alt: "Student-built career radar project",
+    src: "/talent/student-drone.jpg",
+    alt: "Quadcopter built by Nutt",
+    caption: "Nutt · drone build",
     className: "talent-fan__card talent-fan__card--left",
   },
   {
     src: "/talent/student-video.jpg",
-    alt: "Student-produced short video",
+    alt: "Short-form video edited by Bing",
+    caption: "Bing · reel edit",
     className: "talent-fan__card talent-fan__card--right",
   },
   {
-    src: "/talent/student-drone.jpg",
-    alt: "Student-built DIY drone",
+    src: "/talent/work/gloya-chibi-dev.webp",
+    alt: "Chibi developer mascot illustrated by Gloya",
+    caption: "Gloya · mascot art",
     className: "talent-fan__card talent-fan__card--front",
   },
 ] as const;
@@ -137,7 +141,12 @@ export function TalentHero() {
         >
           <div className="talent-fan">
             {FAN_CARDS.map((card) => (
-              <div key={card.src} className={card.className}>
+              <a
+                key={card.src}
+                href="#actual-work"
+                className={card.className}
+                aria-label={`${card.caption} — jump to Actual Work`}
+              >
                 <Image
                   src={card.src}
                   alt={card.alt}
@@ -145,13 +154,15 @@ export function TalentHero() {
                   sizes="(max-width: 768px) 45vw, 240px"
                   className="object-cover"
                 />
-              </div>
+              </a>
             ))}
           </div>
-          <div className="text-center">
+          <a href="#actual-work" className="talent-fan__cta">
             <p className="talent-fan__label">View student work</p>
-            <p className="talent-fan__hint">[can&apos;t click yet]</p>
-          </div>
+            <p className="talent-fan__hint">
+              Real, shipped pieces — tap any card
+            </p>
+          </a>
         </div>
       </div>
 
