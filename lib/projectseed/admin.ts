@@ -52,6 +52,7 @@ export async function isProjectSeedAdmin(): Promise<boolean> {
 export type AdminRosterLoad =
   | { state: "forbidden" }
   | { state: "no-cohort" }
+  | { state: "error"; cohortName: string }
   | { state: "ready"; cohortName: string; rows: PseedAdminRosterRow[] };
 
 export async function loadAdminRoster(): Promise<AdminRosterLoad> {
@@ -69,7 +70,7 @@ export async function loadAdminRoster(): Promise<AdminRosterLoad> {
 
   if (error) {
     console.error("[projectseed] roster failed:", error.message);
-    return { state: "ready", cohortName: cohort.name, rows: [] };
+    return { state: "error", cohortName: cohort.name };
   }
 
   return {
