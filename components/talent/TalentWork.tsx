@@ -76,7 +76,9 @@ function WorkCard({ work, builder, school, verified }: WorkCardProps) {
               aria-label="Verified builder"
             />
           )}
-          <span className="talent-work__track">{TRACK_LABEL[work.track]}</span>
+          <span className="talent-work__track">
+            {work.trackLabel ?? TRACK_LABEL[work.track]}
+          </span>
         </div>
         <p className="talent-work__builder">
           {builder}
