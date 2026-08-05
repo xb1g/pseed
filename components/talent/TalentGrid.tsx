@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import type { TalentProfile } from "@/lib/talent";
 import { TalentCard } from "./TalentCard";
+import { TalentJoinCard } from "./TalentJoinCard";
 
 const TRACKS = [
   { key: "all", label: "All" },
@@ -61,19 +62,18 @@ export function TalentGrid({ profiles }: TalentGridProps) {
       </div>
 
       {/* Card grid — radar layout */}
-      {filtered.length === 0 ? (
-        <div className="text-center py-20">
-          <p className="text-lg" style={{ color: "rgba(82,71,70,0.45)" }}>
-            ยังไม่มีนักสร้างในสายนี้
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {filtered.map((profile) => (
-            <TalentCard key={profile.id} profile={profile} />
-          ))}
-        </div>
+      {filtered.length === 0 && (
+        <p className="text-center text-lg" style={{ color: "rgba(82,71,70,0.45)" }}>
+          ยังไม่มีนักสร้างในสายนี้
+        </p>
       )}
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+        {filtered.map((profile) => (
+          <TalentCard key={profile.id} profile={profile} />
+        ))}
+        <TalentJoinCard />
+      </div>
     </div>
   );
 }
