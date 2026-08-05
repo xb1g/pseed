@@ -8036,3 +8036,200 @@ summary:focus-visible .radar-expand-indicator {
     clip-path: inset(10% 8% 10% 8% round 14px);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Talent Showcase — cream editorial layout with #C43E1D / #524746 / #FDF3E6
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.talent-page {
+  background: #FDF3E6;
+  color: #524746;
+}
+
+/* ── Marquee strip ── */
+
+.talent-marquee {
+  overflow: hidden;
+  background: #524746;
+  border-block: 1px solid rgba(0, 0, 0, 0.18);
+}
+
+.talent-marquee__track {
+  display: flex;
+  width: max-content;
+  animation: talent-marquee 37s linear infinite;
+}
+
+.talent-marquee__group {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.talent-marquee__item {
+  flex-shrink: 0;
+  padding: 0.85rem 4.5rem;
+  font-family: var(--font-instrument-serif), Georgia, serif;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: #FDF3E6;
+  white-space: nowrap;
+}
+
+@keyframes talent-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* ── Hero ── */
+
+.talent-hero {
+  background: transparent;
+}
+
+.talent-hero__title {
+  font-size: clamp(3.5rem, 9vw, 7rem);
+  line-height: 1;
+  font-weight: 400;
+  color: #C43E1D;
+}
+
+.talent-hero__subtitle {
+  margin-top: 0.75rem;
+  font-size: clamp(1.35rem, 3vw, 2rem);
+  font-weight: 500;
+  line-height: 1.35;
+  color: #524746;
+}
+
+.talent-hero__accent {
+  color: #C43E1D;
+}
+
+.talent-caret {
+  display: inline-block;
+  width: 0.07em;
+  height: 0.85em;
+  margin-left: 0.06em;
+  background: currentColor;
+  vertical-align: -0.08em;
+  animation: talent-caret-blink 1.1s steps(1) infinite;
+}
+
+@keyframes talent-caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ── Fanned example-work cards ── */
+
+.talent-fan {
+  position: relative;
+  width: min(100%, 30rem);
+  aspect-ratio: 5 / 4;
+}
+
+.talent-fan__card {
+  position: absolute;
+  width: 48%;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: #524746;
+  box-shadow: 0 24px 60px rgba(82, 71, 70, 0.35);
+}
+
+.talent-fan__card--left {
+  left: 2%;
+  top: 14%;
+  transform: rotate(-14deg);
+}
+
+.talent-fan__card--right {
+  right: 0%;
+  top: 4%;
+  transform: rotate(12deg);
+}
+
+.talent-fan__card--front {
+  left: 50%;
+  top: 16%;
+  z-index: 2;
+  width: 54%;
+  transform: translateX(-50%) rotate(-2deg);
+}
+
+.talent-fan__label {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: #524746;
+}
+
+.talent-fan__hint {
+  margin-top: 0.25rem;
+  font-size: 0.95rem;
+  color: #C43E1D;
+}
+
+/* ── Scroll cue ── */
+
+.talent-scroll-cue {
+  position: absolute;
+  left: 50%;
+  bottom: 1.25rem;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  transform: translateX(-50%);
+  color: #C43E1D;
+  font-size: 1rem;
+}
+
+.talent-scroll-cue__arrow {
+  animation: talent-scroll-bounce 1.7s ease-in-out infinite;
+}
+
+@keyframes talent-scroll-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .talent-marquee__track {
+    animation: none;
+  }
+
+  .talent-scroll-cue__arrow {
+    animation: none;
+  }
+}
+
+.talent-card {
+  transform: translate3d(0, 0, 0) scale(1);
+  transition: transform 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  isolation: isolate;
+  contain: layout style;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .talent-card:hover {
+    z-index: 80;
+    transform: translate3d(0, -5px, 0) scale(1.025);
+    will-change: transform;
+  }
+}
+
+@media (hover: none) {
+  .talent-card:active {
+    z-index: 80;
+    transform: translate3d(0, -4px, 0) scale(1.02);
+  }
+}
