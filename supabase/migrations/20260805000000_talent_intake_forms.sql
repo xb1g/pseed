@@ -4,6 +4,8 @@
 -- 3. Project briefs from potential clients
 
 -- Public insert: submissions are forced to verified = false
+DROP POLICY IF EXISTS "talent_profiles_anon_insert" ON public.talent_profiles;
+
 CREATE POLICY "talent_profiles_anon_insert"
   ON public.talent_profiles
   FOR INSERT
@@ -28,6 +30,8 @@ CREATE TABLE IF NOT EXISTS public.talent_project_briefs (
 );
 
 ALTER TABLE public.talent_project_briefs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "talent_project_briefs_anon_insert" ON public.talent_project_briefs;
 
 CREATE POLICY "talent_project_briefs_anon_insert"
   ON public.talent_project_briefs
