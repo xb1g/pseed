@@ -25,6 +25,8 @@ export interface TalentWork {
    *  truth for the builder's name and school. */
   nickname: string;
   track: TalentProfile["track"];
+  /** Overrides the track label when the piece is a different discipline. */
+  trackLabel?: string;
   /** What the piece is. */
   title: string;
   /** One or two sentences on what it does / what shipped. */
@@ -93,6 +95,7 @@ export const TALENT_WORKS: readonly TalentWork[] = [
   {
     nickname: "Tiny",
     track: "dev",
+    trackLabel: "Pen-Test",
     title: "how i could reset anyone's password on a school management platform",
     summary:
       "Security writeup on a platform used by international schools in Thailand: a password-reset flow that returned the auth token in the API response body chained into full staff-admin account takeover in four requests, no victim interaction.",

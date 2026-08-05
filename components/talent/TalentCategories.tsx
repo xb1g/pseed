@@ -13,6 +13,12 @@ interface Category {
   Icon: LucideIcon;
   /** Track in `talent_profiles` this category counts, when there is one. */
   track?: TalentProfile["track"];
+  /**
+   * Nicknames to count for categories with no matching track. The `track` enum
+   * predates these skills, so someone can be filed under `dev` and still be the
+   * person who does the pen-testing.
+   */
+  nicknames?: readonly string[];
   blurb: string;
 }
 
@@ -38,6 +44,7 @@ const CATEGORIES: readonly Category[] = [
   {
     label: "Pen-Test",
     Icon: ShieldPlus,
+    nicknames: ["Tiny"],
     blurb: "Recon, disclosure writeups",
   },
   {
@@ -55,10 +62,12 @@ interface TalentCategoriesProps {
 export function TalentCategories({ profiles }: TalentCategoriesProps) {
   return (
     <div className="talent-cats">
-      {CATEGORIES.map(({ label, Icon, track, blurb }) => {
-        const count = track
-          ? profiles.filter((p) => p.track === track).length
-          : 0;
+      {CATEGORIES.map(({ label, Icon, track, nicknames, blurb }) => {
+        const count = profiles.filter(
+          (p) =>
+            (track !== undefined && p.track === track) ||
+            (nicknames?.includes(p.nickname) ?? false),
+        ).length;
 
         return (
           <article key={label} className="talent-cats__card">
