@@ -1,5 +1,6 @@
 import { Github, Linkedin, Globe, ExternalLink, CheckCircle2 } from "lucide-react";
 import type { TalentProfile } from "@/lib/talent";
+import { safeExternalUrl } from "@/lib/talent-url";
 
 const TRACK_STYLE: Record<
   TalentProfile["track"],
@@ -158,10 +159,14 @@ export function TalentCard({ profile }: TalentCardProps) {
         {/* Portfolio links */}
         {portfolio_links.length > 0 && (
           <div className="mt-1 flex flex-wrap gap-1.5">
-            {portfolio_links.slice(0, 2).map((url) => (
+            {portfolio_links
+              .map((url) => ({ url, safe: safeExternalUrl(url) }))
+              .filter((link) => link.safe !== null)
+              .slice(0, 2)
+              .map(({ url, safe }) => (
               <a
                 key={url}
-                href={url}
+                href={safe!}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 rounded-md px-2 py-0.5 text-xs transition-opacity hover:opacity-80"

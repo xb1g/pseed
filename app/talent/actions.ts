@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { safeExternalUrl } from "@/lib/talent-url";
 
 export interface TalentFormState {
   ok: boolean;
@@ -32,7 +33,12 @@ export async function submitTalentProfile(
   const line_id = text(formData.get("line_id"), 60);
   const track = text(formData.get("track"), 20);
   const tools = splitList(formData.get("tools"), 10);
-  const portfolio_links = splitList(formData.get("portfolio_links"), 5);
+
+  // This form inserts as anon, so treat every link as hostile: drop anything
+  // that is not http(s) before it reaches the table.
+  const portfolio_links = splitList(formData.get("portfolio_links"), 5)
+    .map((link) => safeExternalUrl(link))
+    .filter((link): link is string => link !== null);
 
   const ageRaw = text(formData.get("age"), 3);
   const age = ageRaw === "" ? null : Number(ageRaw);
