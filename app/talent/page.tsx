@@ -7,6 +7,7 @@ import { ProjectBriefForm } from "@/components/talent/TalentForms";
 import { TalentWorkShowcase } from "@/components/talent/TalentWork";
 import { TalentWhy } from "@/components/talent/TalentWhy";
 import { TalentLegal } from "@/components/talent/TalentLegal";
+import { TalentHiring } from "@/components/talent/TalentHiring";
 
 export const metadata: Metadata = {
   title: "Youth Talent — Pre-Vetted Thai Builders",
@@ -83,6 +84,23 @@ export default async function TalentPage() {
         </div>
       </section>
 
+      {/* ── Hiring interns: the vetting pitch ── */}
+      <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 sm:pb-28 lg:px-8">
+        <h2
+          className="font-radar-title text-4xl sm:text-5xl md:text-6xl"
+          style={{ color: "#C43E1D" }}
+        >
+          Hiring an Intern?
+        </h2>
+        <p className="mt-1 text-lg" style={{ color: "#524746" }}>
+          We verify the skills before you ever see the name
+        </p>
+
+        <div className="mt-12 sm:mt-16">
+          <TalentHiring />
+        </div>
+      </section>
+
       {/* ── Why we do this ── */}
       <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 sm:pb-28 lg:px-8">
         <h2
@@ -132,7 +150,10 @@ export default async function TalentPage() {
       </section>
 
       {/* ── Project brief intake ── */}
-      <section className="mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8">
+      <section
+        id="interest"
+        className="talent-anchor mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8"
+      >
         <h2
           className="font-radar-title text-4xl sm:text-5xl md:text-6xl"
           style={{ color: "#C43E1D" }}

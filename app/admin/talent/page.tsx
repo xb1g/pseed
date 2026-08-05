@@ -16,6 +16,7 @@ import {
   type TalentSignup,
 } from "@/lib/talent-admin";
 import { TRACK_LABEL } from "@/lib/talent-work";
+import { safeExternalUrl } from "@/lib/talent-url";
 
 export const dynamic = "force-dynamic";
 
@@ -123,17 +124,35 @@ function SignupsTable({ signups }: { signups: TalentSignup[] }) {
             </TableCell>
             <TableCell className="text-sm">
               {s.tools.length > 0 && <p>{s.tools.join(", ")}</p>}
-              {s.portfolio_links.map((url) => (
-                <a
-                  key={url}
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block break-all text-xs text-primary hover:underline"
-                >
-                  {url}
-                </a>
-              ))}
+              {s.portfolio_links.map((url) => {
+                const safe = safeExternalUrl(url);
+
+                // Never linkify a scheme we did not vet — show it as inert
+                // text so the row still reveals what was submitted.
+                if (!safe) {
+                  return (
+                    <p
+                      key={url}
+                      className="block break-all text-xs text-destructive"
+                      title="Blocked: not an http(s) URL"
+                    >
+                      ⚠ {url}
+                    </p>
+                  );
+                }
+
+                return (
+                  <a
+                    key={url}
+                    href={safe}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block break-all text-xs text-primary hover:underline"
+                  >
+                    {url}
+                  </a>
+                );
+              })}
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-2">
