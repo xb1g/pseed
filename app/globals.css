@@ -8160,6 +8160,22 @@ summary:focus-visible .radar-expand-indicator {
   transform: translateX(-50%) rotate(-2deg);
 }
 
+.talent-anchor {
+  scroll-margin-top: 5rem;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .talent-fan__card:hover {
+    z-index: 5;
+    box-shadow: 0 28px 70px rgba(82, 71, 70, 0.45);
+  }
+}
+
+.talent-fan__cta {
+  display: block;
+  text-align: center;
+}
+
 .talent-fan__label {
   font-size: 1.5rem;
   font-weight: 500;
@@ -8210,6 +8226,427 @@ summary:focus-visible .radar-expand-indicator {
   .talent-scroll-cue__arrow {
     animation: none;
   }
+}
+
+/* ── Talent categories ── */
+
+.talent-cats {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 768px) {
+  .talent-cats {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.talent-cats__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.25rem;
+  border: 1px solid rgba(82, 71, 70, 0.16);
+  border-radius: 1rem;
+  background: #fffaf2;
+  transition: border-color 180ms ease, transform 180ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .talent-cats__card:hover {
+    border-color: rgba(196, 62, 29, 0.5);
+    transform: translateY(-3px);
+  }
+}
+
+.talent-cats__icon {
+  color: #c43e1d;
+}
+
+.talent-cats__label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #524746;
+}
+
+.talent-cats__blurb {
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: rgba(82, 71, 70, 0.65);
+}
+
+.talent-cats__count {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  font-family: var(--font-space-mono), ui-monospace, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #c43e1d;
+}
+
+/* ── Actual work showcase ── */
+
+.talent-work__grid {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: 1fr;
+  /* Cards size to their own content — media heights differ per medium. */
+  align-items: start;
+}
+
+@media (min-width: 768px) {
+  .talent-work__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Three across only once a column is wide enough for Instagram's 326px
+   minimum embed width. */
+@media (min-width: 1024px) {
+  .talent-work__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.talent-work__card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(82, 71, 70, 0.16);
+  border-radius: 1.25rem;
+  background: #fffaf2;
+  box-shadow: 0 18px 44px rgba(82, 71, 70, 0.12);
+}
+
+.talent-work__media {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(82, 71, 70, 0.14);
+  background: #ffffff;
+}
+
+.talent-work__media--embed {
+  /* Instagram's embed card is portrait plus a caption strip. */
+  aspect-ratio: 9 / 15;
+  background: #524746;
+}
+
+.talent-work__media--embed iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.talent-work__media--notes {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 1.75rem;
+  background: #524746;
+  color: #fdf3e6;
+}
+
+.talent-work__stats {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(253, 243, 230, 0.18);
+}
+
+.talent-work__stats-headline {
+  font-family: var(--font-instrument-serif), Georgia, serif;
+  font-size: 3.25rem;
+  line-height: 1;
+  color: #ff8a63;
+}
+
+.talent-work__stats-caption {
+  margin-top: 0.4rem;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  color: rgba(253, 243, 230, 0.9);
+}
+
+.talent-work__stats-breakdown {
+  margin-top: 0.35rem;
+  font-family: var(--font-space-mono), ui-monospace, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  color: rgba(253, 243, 230, 0.55);
+}
+
+.talent-work__media--notes ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  font-family: var(--font-space-mono), ui-monospace, monospace;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.talent-work__media--notes li {
+  padding-left: 1.1rem;
+  text-indent: -1.1rem;
+}
+
+.talent-work__media--notes li::before {
+  content: "→ ";
+  color: #ff8a63;
+}
+
+.talent-work__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.5rem;
+}
+
+.talent-work__byline {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.talent-work__nickname {
+  font-family: var(--font-instrument-serif), Georgia, serif;
+  font-size: 1.75rem;
+  font-style: italic;
+  line-height: 1;
+  color: #c43e1d;
+}
+
+.talent-work__verified {
+  align-self: center;
+  color: #c43e1d;
+}
+
+.talent-work__track {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(82, 71, 70, 0.6);
+}
+
+.talent-work__builder {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: rgba(82, 71, 70, 0.65);
+}
+
+.talent-work__title {
+  margin-top: 0.35rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #524746;
+}
+
+.talent-work__summary {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: rgba(82, 71, 70, 0.85);
+}
+
+.talent-work__meta {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: rgba(82, 71, 70, 0.55);
+}
+
+.talent-work__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: auto;
+  padding-top: 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #c43e1d;
+  transition: opacity 160ms ease;
+}
+
+.talent-work__link:hover {
+  opacity: 0.72;
+}
+
+/* ── Why we do this ── */
+
+.talent-why__grid {
+  display: grid;
+  gap: 1.75rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .talent-why__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.talent-why__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.75rem;
+  border-top: 2px solid #c43e1d;
+  background: rgba(82, 71, 70, 0.04);
+  border-radius: 0 0 1rem 1rem;
+}
+
+.talent-why__icon {
+  color: #c43e1d;
+}
+
+.talent-why__heading {
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #524746;
+}
+
+.talent-why__body {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: rgba(82, 71, 70, 0.75);
+}
+
+/* ── Legal footing ── */
+
+.talent-legal__lead {
+  max-width: 46rem;
+  font-size: 1.15rem;
+  line-height: 1.6;
+  color: #524746;
+}
+
+.talent-legal__grid {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .talent-legal__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .talent-legal__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.talent-legal__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: #524746;
+  color: #fdf3e6;
+}
+
+.talent-legal__icon {
+  color: #ffc9b6;
+}
+
+.talent-legal__line {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.talent-legal__ref {
+  margin-top: auto;
+  font-family: var(--font-space-mono), ui-monospace, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(253, 243, 230, 0.55);
+}
+
+.talent-legal__note {
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
+  color: rgba(82, 71, 70, 0.55);
+}
+
+/* ── Recruiting card at the end of the profile grid ── */
+
+.talent-join {
+  display: flex;
+  aspect-ratio: 4 / 5;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 1.25rem;
+  border: 2px dashed rgba(196, 62, 29, 0.45);
+  border-radius: 0.5rem;
+  background: rgba(196, 62, 29, 0.05);
+  text-align: left;
+  transition: background 180ms ease, border-color 180ms ease;
+}
+
+@media (min-width: 640px) {
+  .talent-join {
+    aspect-ratio: 3 / 5;
+    padding: 1.5rem;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .talent-join:hover {
+    border-color: #c43e1d;
+    background: rgba(196, 62, 29, 0.1);
+  }
+}
+
+@media (hover: none) {
+  .talent-join:active {
+    border-color: #c43e1d;
+    background: rgba(196, 62, 29, 0.1);
+  }
+}
+
+.talent-join__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  background: #c43e1d;
+  color: #fdf3e6;
+}
+
+.talent-join__title {
+  font-family: var(--font-instrument-serif), Georgia, serif;
+  font-size: 1.75rem;
+  font-style: italic;
+  line-height: 1.05;
+  color: #c43e1d;
+}
+
+.talent-join__body {
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: rgba(82, 71, 70, 0.75);
+}
+
+.talent-join__cta {
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #c43e1d;
 }
 
 .talent-card {
