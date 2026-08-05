@@ -8603,9 +8603,18 @@ summary:focus-visible .radar-expand-indicator {
   }
 }
 
-.talent-join:hover {
-  border-color: #c43e1d;
-  background: rgba(196, 62, 29, 0.1);
+@media (hover: hover) and (pointer: fine) {
+  .talent-join:hover {
+    border-color: #c43e1d;
+    background: rgba(196, 62, 29, 0.1);
+  }
+}
+
+@media (hover: none) {
+  .talent-join:active {
+    border-color: #c43e1d;
+    background: rgba(196, 62, 29, 0.1);
+  }
 }
 
 .talent-join__mark {
