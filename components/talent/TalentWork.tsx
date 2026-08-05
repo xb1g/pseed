@@ -30,7 +30,7 @@ function WorkMedia({ media }: { media: TalentWorkMedia }) {
           src={media.src}
           title={media.title}
           loading="lazy"
-          allow="encrypted-media; picture-in-picture; web-share"
+          allow="encrypted-media; picture-in-picture"
           allowFullScreen
         />
       </div>
