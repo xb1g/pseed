@@ -14,6 +14,7 @@ const ADMIN_NAV_ITEMS = [
   { href: "/admin/beta", label: "Beta" },
   { href: "/admin/event-tracker", label: "Event Tracker" },
   { href: "/admin/experts", label: "Experts" },
+  { href: "/admin/talent", label: "Talent" },
   { href: "/admin/trials", label: "Trials" },
   { href: "/admin/radar", label: "Radar" },
   { href: "/admin/radar-interview", label: "Radar Interview" },
