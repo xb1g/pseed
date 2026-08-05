@@ -24,6 +24,7 @@ const PUBLIC_ROUTE_PREFIXES = [
   "/techseed",
   "/api/techseed",
   "/projectseed",
+  "/talent",
 ] as const;
 
 export function isPublicRoute(pathname: string): boolean {
