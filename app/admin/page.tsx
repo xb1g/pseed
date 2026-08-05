@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminStatsOverview } from "@/components/admin/AdminStatsOverview";
 import {
   Activity,
+  Briefcase,
   Compass,
   TestTube,
   Trophy,
@@ -49,6 +50,12 @@ export default function AdminPage() {
       title: "Event Tracker",
       description: "Analyze key event activity on the platform.",
       icon: Zap,
+    },
+    {
+      href: "/admin/talent",
+      title: "Talent",
+      description: "Review hirer project briefs and publish student signups.",
+      icon: Briefcase,
     },
   ];
 
