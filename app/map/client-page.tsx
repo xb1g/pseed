@@ -10,7 +10,6 @@ import { HeroHeader } from "@/components/map/HeroHeader";
 import { EmptyMapsState } from "@/components/map/EmptyMapsState";
 import { MapSection } from "@/components/map/MapSection";
 import { LoadMoreButton } from "@/components/map/LoadMoreButton";
-import { CreateMapCTA } from "@/components/map/CreateMapCTA";
 import Loading from "./loading";
 
 interface MapsClientPageProps {
@@ -108,11 +107,6 @@ export function MapsClientPage({ initialData }: MapsClientPageProps) {
       {/* Maps by Category */}
       <div className="container mx-auto px-6 py-8 space-y-8">
         {(loading || authLoading) ? <Loading /> : renderMapsSections()}
-
-        <CreateMapCTA
-          isAuthenticated={isAuthenticated}
-          onCreateMap={handleCreateNewMap}
-        />
 
         <AnimatedMapPreview
           map={selectedMapForPreview}

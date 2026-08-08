@@ -30,10 +30,8 @@ export function TextAnswerEditor({ assessment, onAssessmentChange }: TextAnswerE
         question: newQuestion,
       };
 
-      // Only update in database if this is not a temporary assessment
-      if (!assessment.id.startsWith('temp_')) {
-        await updateAssessmentMetadata(assessment.id, updatedMetadata);
-      }
+      // Save to database
+      await updateAssessmentMetadata(assessment.id, updatedMetadata);
 
       // Update local state
       const updatedAssessment = {

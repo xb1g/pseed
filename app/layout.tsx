@@ -22,6 +22,7 @@ import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { createClient } from "@/utils/supabase/server";
 import { Layout } from "@/components/layout";
 import ServiceWorkerRegistration from "@/components/service-worker";
+import ServiceWorkerCleanup from "@/components/service-worker-cleanup";
 import ErrorBoundary from "@/components/error-boundary";
 import { DevHealthCheck } from "@/components/dev-health-check";
 import { TOSAcceptanceModal } from "@/components/TOSAcceptanceModal";
@@ -198,6 +199,8 @@ export default async function RootLayout({
                 <TOSAcceptanceModal />
                 {/* ServiceWorker temporarily disabled to fix localhost errors */}
                 {/* <ServiceWorkerRegistration /> */}
+                {/* Removes stale service workers left over from when it was enabled */}
+                <ServiceWorkerCleanup />
               </ErrorBoundary>
             </DirectionFinderProvider>
           </LanguageProvider>

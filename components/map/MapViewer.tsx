@@ -57,8 +57,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Trophy,
+  X,
 } from "lucide-react";
 import FloatingEdge from "@/components/map/FloatingEdge";
+import { getNodeDepthMap } from "@/components/map/v2/layout";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { SeedCompletionModal } from "@/components/seeds/SeedCompletionModal";
 import { SeedLeaderboard } from "@/components/seeds/SeedLeaderboard";
 import {
@@ -74,6 +77,97 @@ interface MapViewerProps {
   seedTitle?: string;
   seedId?: string;
   roomSettingsComponent?: React.ReactNode;
+  // When true, NodeViewPanel always renders the plain student view
+  // (no "Student View | Grading" tab bar), used by the editor preview.
+  forceStudentView?: boolean;
+  // Prototype "trail" mode (Duolingo-style bottom-to-top path): derives node
+  // positions from the node_paths graph, opens centered on the current node,
+  // and uses a mobile bottom sheet instead of the resizable side panel.
+  trailMode?: boolean;
+}
+
+// ---- Trail mode layout (prototype) ----
+// Vertical distance between depth levels and horizontal zigzag amplitude.
+const TRAIL_LEVEL_GAP = 190;
+const TRAIL_ZIGZAG_AMPLITUDE = 140;
+// Zigzag sequence around the center column: center → right → left → center …
+const TRAIL_ZIGZAG = [0, TRAIL_ZIGZAG_AMPLITUDE, -TRAIL_ZIGZAG_AMPLITUDE];
+
+interface TrailLayout {
+  positions: Map<string, { x: number; y: number }>;
+  // Trail node ids ordered bottom-to-top (depth ascending, then zigzag order).
+  orderedIds: string[];
+}
+
+// Only learning/end nodes join the trail; text/comment nodes are annotations
+// and keep their stored metadata.position.
+function isTrailStepNode(node: MapNode): boolean {
+  const nodeType = (node as any)?.node_type;
+  return nodeType !== "text" && nodeType !== "comment";
+}
+
+function compareTrailNodes(a: MapNode, b: MapNode): number {
+  return (
+    (a.difficulty ?? 0) - (b.difficulty ?? 0) ||
+    (a.title ?? "").localeCompare(b.title ?? "")
+  );
+}
+
+function computeTrailLayout(map: FullLearningMap): TrailLayout {
+  const trailNodes = map.map_nodes.filter(isTrailStepNode);
+  const positions = new Map<string, { x: number; y: number }>();
+  const orderedIds: string[] = [];
+  if (trailNodes.length === 0) return { positions, orderedIds };
+
+  const edges = trailNodes.flatMap((node) =>
+    (node.node_paths_source ?? [])
+      .filter((path) => path.destination_node_id)
+      .map((path) => ({
+        source: path.source_node_id,
+        target: path.destination_node_id!,
+      })),
+  );
+
+  let depth: Map<string, number>;
+  if (edges.length === 0) {
+    // No prerequisite graph at all (e.g. single-path or single-node maps):
+    // fall back to a straight trail ordered by difficulty, then title.
+    const sorted = [...trailNodes].sort(compareTrailNodes);
+    depth = new Map(sorted.map((node, index) => [node.id, index]));
+  } else {
+    depth = getNodeDepthMap(
+      trailNodes.map((node) => ({ id: node.id, data: node })),
+      edges,
+    );
+  }
+
+  // Group nodes by depth level.
+  const levels = new Map<number, MapNode[]>();
+  for (const node of trailNodes) {
+    const d = depth.get(node.id) ?? 0;
+    if (!levels.has(d)) levels.set(d, []);
+    levels.get(d)!.push(node);
+  }
+
+  // Depth 0 (start nodes) sits at the BOTTOM; increasing depth goes UP by
+  // inverting the y axis. Nodes consume one shared zigzag sequence so a
+  // single-path map winds around the center column and nodes sharing a depth
+  // spread along that same sequence.
+  let step = 0;
+  const sortedDepths = [...levels.keys()].sort((a, b) => a - b);
+  for (const d of sortedDepths) {
+    const levelNodes = levels.get(d)!.sort(compareTrailNodes);
+    for (const node of levelNodes) {
+      positions.set(node.id, {
+        x: TRAIL_ZIGZAG[step % TRAIL_ZIGZAG.length],
+        y: -d * TRAIL_LEVEL_GAP,
+      });
+      orderedIds.push(node.id);
+      step++;
+    }
+  }
+
+  return { positions, orderedIds };
 }
 
 const edgeTypes = {
@@ -122,6 +216,8 @@ export function MapViewer({
   seedTitle,
   seedId,
   roomSettingsComponent,
+  forceStudentView = false,
+  trailMode = false,
 }: MapViewerProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<any>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<any>([]);
@@ -151,6 +247,16 @@ export function MapViewer({
   } | null>(null);
 
   const [isMounted, setIsMounted] = useState(false);
+
+  // Trail mode (prototype): layout derived from the node_paths graph,
+  // viewport centered on the student's current node once progress settles.
+  const isMobile = useIsMobile();
+  const trailLayout = useMemo(
+    () => (trailMode ? computeTrailLayout(map) : null),
+    [trailMode, map],
+  );
+  const [progressReady, setProgressReady] = useState(false);
+  const trailCenteredRef = useRef(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -308,6 +414,8 @@ export function MapViewer({
         data: { user },
       } = await supabase.auth.getUser();
       setCurrentUser(user);
+      // Anonymous users never load progress, so trail mode can center immediately
+      if (!user) setProgressReady(true);
     };
     getUser();
   }, []);
@@ -415,6 +523,8 @@ export function MapViewer({
     } catch (error) {
       console.error("❌ [MapViewer] Error loading progress:", error);
       setProgressMap({}); // Fallback to empty progress
+    } finally {
+      setProgressReady(true);
     }
   }, [currentUser, map.id, isTeamMap, isInstructorOrTA, teamId]);
 
@@ -928,10 +1038,11 @@ export function MapViewer({
         id: node.id,
         type: nodeType,
         data: { ...node, progress: progressMap[node.id] },
-        position: (node.metadata as any)?.position || {
-          x: Math.random() * 400,
-          y: Math.random() * 400,
-        },
+        position: (trailMode && trailLayout?.positions.get(node.id)) ||
+          (node.metadata as any)?.position || {
+            x: Math.random() * 400,
+            y: Math.random() * 400,
+          },
         draggable: false, // Disable dragging in viewer mode
         connectable: false,
         selectable: true,
@@ -972,7 +1083,46 @@ export function MapViewer({
 
     setNodes(transformedNodes as any);
     setEdges(transformedEdges);
-  }, [map, progressMap, setNodes, setEdges]);
+  }, [map, progressMap, setNodes, setEdges, trailMode, trailLayout]);
+
+  // Trail mode: skip fitView and, once progress has settled, center the
+  // viewport on the student's "current" node — the first unlocked node that
+  // is not passed/submitted (walking the trail bottom-to-top). If everything
+  // unlocked is done, use the deepest unlocked node; fall back to the
+  // bottom-most trail node. Runs exactly once so it never fights the user.
+  useEffect(() => {
+    if (!trailMode || !progressReady || trailCenteredRef.current) return;
+    if (!trailLayout || trailLayout.orderedIds.length === 0) return;
+
+    const isNotDone = (id: string) => {
+      const status = progressMap[id]?.status;
+      return status !== "passed" && status !== "submitted";
+    };
+
+    const targetId =
+      trailLayout.orderedIds.find((id) => isNodeUnlocked(id) && isNotDone(id)) ??
+      [...trailLayout.orderedIds].reverse().find((id) => isNodeUnlocked(id)) ??
+      trailLayout.orderedIds[0];
+
+    const position = trailLayout.positions.get(targetId);
+    if (!position) return;
+
+    trailCenteredRef.current = true;
+    const internal = reactFlowInstance.getNode(targetId);
+    const width = internal?.measured?.width ?? 80;
+    const height = internal?.measured?.height ?? 80;
+    reactFlowInstance.setCenter(position.x + width / 2, position.y + height / 2, {
+      zoom: 1.1,
+      duration: 0,
+    });
+  }, [
+    trailMode,
+    progressReady,
+    trailLayout,
+    progressMap,
+    isNodeUnlocked,
+    reactFlowInstance,
+  ]);
 
   const onSelectionChange = useCallback(
     (params: OnSelectionChangeParams) => {
@@ -1042,6 +1192,103 @@ export function MapViewer({
     );
   }
 
+  // Trail mode on narrow screens swaps the 70/30 resizable split for a
+  // full-width map plus a bottom sheet for the node panel.
+  const useMobileBottomSheet = trailMode && isMobile;
+
+  const mapCanvas = (
+    <div className="flex-1">
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onSelectionChange={onSelectionChange}
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        fitView={!trailMode}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        elementsSelectable={true}
+        panOnScroll
+        panOnDrag={[0, 1, 2]}
+        attributionPosition="bottom-left"
+        aria-label="Interactive learning map"
+      >
+        <Background gap={20} size={1} color="#94a3b8" />
+        {(!trailMode || !isMobile) && (
+          <MiniMap
+            {...miniMapConfig}
+            style={{
+              ...miniMapConfig.style,
+              background: "rgba(255, 255, 255, 0.9)",
+              border: "1px solid #e2e8f0",
+              borderRadius: "8px",
+            }}
+          />
+        )}
+      </ReactFlow>
+    </div>
+  );
+
+  // Mobile bottom sheet (trail mode only): hidden until a node is tapped,
+  // closes via backdrop tap or the X button.
+  const bottomSheet = selectedNode ? (
+    <div className="fixed inset-0 z-40">
+      <div
+        className="absolute inset-0 bg-black/50 animate-in fade-in duration-200"
+        onClick={() => setSelectedNode(null)}
+        aria-hidden="true"
+      />
+      <div className="absolute inset-x-0 bottom-0 max-h-[70vh] overflow-y-auto rounded-t-2xl border-t bg-background shadow-2xl animate-in slide-in-from-bottom duration-300">
+        <button
+          onClick={() => setSelectedNode(null)}
+          className="absolute top-2 right-2 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border rounded-lg p-2 shadow-lg hover:bg-muted/50 transition-colors"
+          aria-label="Close node panel"
+        >
+          <X className="h-4 w-4" />
+        </button>
+        <NodeViewPanel
+          key={selectedNode.id}
+          selectedNode={selectedNode}
+          mapId={map.id}
+          onProgressUpdate={loadAllProgress}
+          isNodeUnlocked={isNodeUnlocked(selectedNode.id)}
+          userRole={userRole}
+          isInstructorOrTA={isInstructorOrTA && !forceStudentView}
+        />
+      </div>
+    </div>
+  ) : null;
+
+  const completionModal = showCompletionModal &&
+    seedTitle &&
+    seedRoomId &&
+    completionData &&
+    currentUser && (
+      <SeedCompletionModal
+        open={showCompletionModal}
+        onOpenChange={(open) => {
+          setShowCompletionModal(open);
+          // Show banner when modal is closed
+          if (!open && hasCompletedSeed) {
+            setShowCompletionBanner(true);
+          }
+        }}
+        seedTitle={seedTitle}
+        seedId={seedId || ""}
+        roomId={seedRoomId}
+        completionId={completionData.completionId}
+        userId={currentUser.id}
+        userName={
+          currentUser.user_metadata?.full_name ||
+          currentUser.email ||
+          "Student"
+        }
+        completionDate={completionData.completionDate}
+      />
+    );
+
   return (
     <div className="h-full flex flex-col">
       {/* Completion Banner */}
@@ -1065,6 +1312,32 @@ export function MapViewer({
         </div>
       )}
 
+      {useMobileBottomSheet ? (
+        <div className="flex-1 relative flex flex-col min-h-0">
+          {/* Instructor View Indicator */}
+          {isInstructorOrTA && (
+            <div className="absolute bottom-0 left-0 z-10 bg-gray-800 text-muted-foreground px-4 py-2 rounded-tr-lg shadow-lg flex items-center gap-2 ">
+              <Info className="h-4 w-4" />
+              <span className="text-xs font-medium">
+                Instructor View - All Nodes Unlocked
+              </span>
+            </div>
+          )}
+
+          {/* Seed Leaderboard - Only show in seed rooms */}
+          {seedRoomId && authUser?.id && (
+            <SeedLeaderboard roomId={seedRoomId} userId={authUser.id} />
+          )}
+
+          {mapCanvas}
+
+          {/* Room Settings Component - Rendered LAST to ensure z-index stacking above map */}
+          {roomSettingsComponent}
+
+          {bottomSheet}
+          {completionModal}
+        </div>
+      ) : (
       <ResizablePanelGroup
         id="map-viewer-panels"
         direction="horizontal"
@@ -1094,36 +1367,7 @@ export function MapViewer({
           )}
 
           {/* Map Container - Takes up full space */}
-          <div className="flex-1">
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onSelectionChange={onSelectionChange}
-              nodeTypes={nodeTypes}
-              edgeTypes={edgeTypes}
-              fitView
-              nodesDraggable={false}
-              nodesConnectable={false}
-              elementsSelectable={true}
-              panOnScroll
-              panOnDrag={[0, 1, 2]}
-              attributionPosition="bottom-left"
-              aria-label="Interactive learning map"
-            >
-              <Background gap={20} size={1} color="#94a3b8" />
-              <MiniMap
-                {...miniMapConfig}
-                style={{
-                  ...miniMapConfig.style,
-                  background: "rgba(255, 255, 255, 0.9)",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "8px",
-                }}
-              />
-            </ReactFlow>
-          </div>
+          {mapCanvas}
 
           {/* Navigation Guide & Progress Stats - Bottom */}
           {isNavigationExpanded && (
@@ -1318,41 +1562,16 @@ export function MapViewer({
                   selectedNode ? isNodeUnlocked(selectedNode.id) : true
                 }
                 userRole={userRole}
-                isInstructorOrTA={isInstructorOrTA}
+                isInstructorOrTA={isInstructorOrTA && !forceStudentView}
               />
             )}
           </div>
         </ResizablePanel>
 
         {/* Seed Completion Modal */}
-        {showCompletionModal &&
-          seedTitle &&
-          seedRoomId &&
-          completionData &&
-          currentUser && (
-            <SeedCompletionModal
-              open={showCompletionModal}
-              onOpenChange={(open) => {
-                setShowCompletionModal(open);
-                // Show banner when modal is closed
-                if (!open && hasCompletedSeed) {
-                  setShowCompletionBanner(true);
-                }
-              }}
-              seedTitle={seedTitle}
-              seedId={seedId || ""}
-              roomId={seedRoomId}
-              completionId={completionData.completionId}
-              userId={currentUser.id}
-              userName={
-                currentUser.user_metadata?.full_name ||
-                currentUser.email ||
-                "Student"
-              }
-              completionDate={completionData.completionDate}
-            />
-          )}
+        {completionModal}
       </ResizablePanelGroup>
+      )}
     </div>
   );
 }
@@ -1364,6 +1583,8 @@ export function MapViewerWithProvider({
   seedTitle,
   seedId,
   roomSettingsComponent,
+  forceStudentView,
+  trailMode,
 }: MapViewerProps) {
   return (
     <ReactFlowProvider>
@@ -1585,6 +1806,8 @@ export function MapViewerWithProvider({
         seedTitle={seedTitle}
         seedId={seedId}
         roomSettingsComponent={roomSettingsComponent}
+        forceStudentView={forceStudentView}
+        trailMode={trailMode}
       />
     </ReactFlowProvider>
   );

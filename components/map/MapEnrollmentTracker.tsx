@@ -45,12 +45,21 @@ export function MapEnrollmentTracker({
           if (enrollmentSuccess) {
             console.log("✅ [MapEnrollmentTracker] Auto-enrollment successful");
             setJustEnrolled(true);
-            setShowWelcomeDialog(true);
 
-            toast({
-              title: "🎉 Welcome to Your Adventure!",
-              description: `You've been enrolled in ${map.title}. Let the learning begin!`,
-            });
+            // Don't show the tour again if the user already skipped/finished it
+            const tourSeenKey = `map-welcome-tour-seen:${map.id}`;
+            const tourSeen =
+              typeof window !== "undefined" &&
+              window.localStorage.getItem(tourSeenKey) === "true";
+
+            if (!tourSeen) {
+              setShowWelcomeDialog(true);
+
+              toast({
+                title: "🎉 Welcome to Your Adventure!",
+                description: `You've been enrolled in ${map.title}. Let the learning begin!`,
+              });
+            }
           } else {
             console.warn("⚠️ [MapEnrollmentTracker] Auto-enrollment failed, but continuing");
             // Don't show error to user, just continue - they can still view the map
@@ -98,7 +107,16 @@ export function MapEnrollmentTracker({
       {/* Welcome dialog for first-time visitors */}
       <MapWelcomeDialog
         isOpen={showWelcomeDialog}
-        onOpenChange={setShowWelcomeDialog}
+        onOpenChange={(open) => {
+          if (!open && typeof window !== "undefined") {
+            // Remember that the user skipped/finished the tour
+            window.localStorage.setItem(
+              `map-welcome-tour-seen:${map.id}`,
+              "true"
+            );
+          }
+          setShowWelcomeDialog(open);
+        }}
         map={map}
       />
     </>

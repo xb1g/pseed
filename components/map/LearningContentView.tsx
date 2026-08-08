@@ -4,7 +4,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FileText } from "lucide-react";
 import { NodeContent } from "@/types/map";
 import { renderContent } from "./nodeViewHelpers";
-import { Badge } from "@/components/ui/badge";
 
 interface LearningContentViewProps {
   nodeContent: NodeContent[];
@@ -17,14 +16,6 @@ const LearningContentView = memo(({ nodeContent }: LearningContentViewProps) => 
     <>
       {nodeContent?.length > 0 ? (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-foreground">
-              Learning Materials
-            </h3>
-            <Badge variant="outline" className="text-xs">
-              {nodeContent.length} item{nodeContent.length !== 1 ? "s" : ""}
-            </Badge>
-          </div>
           {nodeContent.map((content) => (
             <Card key={content.id} className="shadow-sm">
               <CardContent className="p-4">
