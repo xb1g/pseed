@@ -124,6 +124,7 @@ export default function EditMapPage({
   const [isSavingAll, setIsSavingAll] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [mapResetKey, setMapResetKey] = useState(0); // Key to force MapEditor remount on reset
+  const [activeTab, setActiveTab] = useState("editor");
   const [pathDays, setPathDays] = useState<any[]>([]);
   const [initialPathDays, setInitialPathDays] = useState<any[]>([]);
   const [pathId, setPathId] = useState<string | null>(null);
@@ -440,7 +441,12 @@ export default function EditMapPage({
           const { id, ...contentData } = cc;
 
           if (!ic) {
-            // For new content, always exclude the id field and let the database generate it
+            // If content has a real DB id (not temp), it was already saved
+            // by ContentEditor inline — skip to avoid duplicates
+            if (id && !id.startsWith('temp_')) {
+              return;
+            }
+            // For genuinely new content, exclude the id field and let the database generate it
             batchUpdate.content.create.push(contentData);
           } else if (
             cc.content_type !== ic.content_type ||
@@ -471,7 +477,12 @@ export default function EditMapPage({
           const { quiz_questions, id, ...assessmentData } = ca;
 
           if (!ia) {
-            // For new assessments, preserve temp_id for mapping and remove the id field
+            // If assessment has a real DB id (not temp), it was already saved
+            // by AssessmentEditor inline — skip to avoid duplicates
+            if (id && !id.startsWith('temp_')) {
+              return;
+            }
+            // For genuinely new assessments with temp IDs, preserve temp_id for mapping
             if (id?.startsWith('temp_')) {
               batchUpdate.assessments.create.push({
                 ...assessmentData,
@@ -1027,8 +1038,9 @@ export default function EditMapPage({
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      {/* Top Navigation Bar */}
-      <div className="flex-none border-b bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
+      {/* Top Navigation Bar - hidden in student preview (view) mode */}
+      {activeTab !== "view" && (
+        <div className="flex-none border-b bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
         <div className="container max-w-none px-6 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
@@ -1114,11 +1126,17 @@ export default function EditMapPage({
           </div>
         </div>
       </div>
+      )}
 
       {/* Main Content Area */}
       <div className="flex-1 overflow-hidden">
-        <Tabs defaultValue="editor" className="h-full flex flex-col">
-          {/* Tab Navigation */}
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="h-full flex flex-col"
+        >
+          {/* Tab Navigation - hidden in student preview (view) mode */}
+          {activeTab !== "view" && (
           <div className="flex-none border-b bg-muted/30">
             <div className="container max-w-none px-6">
               <TabsList className="h-12 bg-transparent">
@@ -1152,6 +1170,7 @@ export default function EditMapPage({
               </TabsList>
             </div>
           </div>
+          )}
 
           {/* Tab Content */}
           <div className="flex-1 overflow-hidden">
@@ -1214,8 +1233,18 @@ export default function EditMapPage({
               value="view"
               className="h-full m-0 p-0 overflow-hidden relative"
             >
+              {/* Floating exit button - the only editor chrome in preview mode */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setActiveTab("editor")}
+                className="absolute top-4 left-4 z-10 shadow-lg"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Map Editor
+              </Button>
               <div className="h-full w-full bg-slate-950">
-                {map && <MapViewerWithProvider map={map} />}
+                {map && <MapViewerWithProvider map={map} forceStudentView />}
               </div>
             </TabsContent>
 

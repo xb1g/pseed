@@ -8773,3 +8773,17 @@ summary:focus-visible .radar-expand-indicator {
     transform: translate3d(0, -4px, 0) scale(1.02);
   }
 }
+
+/* Remove default ReactFlow node selection outline — CustomNode has its own indicator */
+.react-flow__node.selected,
+.react-flow__node:focus,
+.react-flow__node:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.react-flow__node.selected > div {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}

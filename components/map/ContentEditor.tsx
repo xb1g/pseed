@@ -1244,25 +1244,7 @@ export function ContentEditor({
   );
 
   return (
-    <div className="p-4 w-full overflow-x-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-2">
-        <h4 className="font-medium text-sm">
-          Learning Content ({content.length})
-        </h4>
-        {!isFormActive && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsAdding(true)}
-            className="h-8"
-          >
-            <PlusCircle className="h-3 w-3 mr-1 my-2" />
-            Add Content
-          </Button>
-        )}
-      </div>
-
+    <div className="w-full overflow-x-hidden">
       {/* Add new content form */}
       {isAdding && (
         <div className="border-2 border-dashed border-blue-300 rounded-lg p-1 max-h-[70vh] overflow-hidden w-full">
@@ -1404,6 +1386,18 @@ export function ContentEditor({
 
       {/* Empty state */}
       {content.length === 0 && !isAdding && EmptyState}
+
+      {/* Add content entry point */}
+      {!isFormActive && content.length > 0 && (
+        <Button
+          variant="outline"
+          onClick={() => setIsAdding(true)}
+          className="w-full h-11 border-2 border-dashed bg-transparent hover:bg-muted/50"
+        >
+          <PlusCircle className="h-4 w-4 mr-2" />
+          Add content
+        </Button>
+      )}
 
       {/* Help text */}
       {content.length > 0 && HelpText}
