@@ -10,6 +10,13 @@ const PUBLIC_ROUTE_PREFIXES = [
   "/api/expert-interview",
   "/epic-sprint",
   "/about",
+  // App Store / legal pages must be reachable without sign-in (Guideline 1.5)
+  "/support",
+  "/contact",
+  "/privacy",
+  "/terms",
+  "/tos",
+  "/cookies",
   "/link",
   "/experimental-graphic",
   "/experimental-wall",
