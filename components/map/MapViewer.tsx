@@ -10,6 +10,7 @@ import {
   useEdgesState,
   Node,
   Edge,
+  CoordinateExtent,
   OnSelectionChangeParams,
   Handle,
   Position,
@@ -90,8 +91,19 @@ interface MapViewerProps {
 // Vertical distance between depth levels and horizontal zigzag amplitude.
 const TRAIL_LEVEL_GAP = 190;
 const TRAIL_ZIGZAG_AMPLITUDE = 140;
+// Estimated rendered size of a trail node (island sprite + label). React Flow
+// positions anchor a node's TOP-LEFT corner, so clamp/centering math must add
+// the node width — otherwise right-zigzag nodes overflow narrow screens.
+// (Measured: the island node box renders ~150 flow units wide/tall.)
+const TRAIL_NODE_W = 150;
+const TRAIL_NODE_H = 200;
 // Zigzag sequence around the center column: center → right → left → center …
-const TRAIL_ZIGZAG = [0, TRAIL_ZIGZAG_AMPLITUDE, -TRAIL_ZIGZAG_AMPLITUDE];
+// The amplitude is responsive: narrow viewports get a tighter wiggle.
+const trailZigzag = (amplitude: number) => [0, amplitude, -amplitude];
+// Opening/auto-advance zoom level and pan clamp padding for the trail view.
+const TRAIL_ZOOM = 1.1;
+const TRAIL_X_PAD_MAX = 240; // max horizontal padding around the trail column
+const TRAIL_Y_PAD = 350; // vertical padding above the top / below the bottom
 
 interface TrailLayout {
   positions: Map<string, { x: number; y: number }>;
@@ -113,11 +125,16 @@ function compareTrailNodes(a: MapNode, b: MapNode): number {
   );
 }
 
-function computeTrailLayout(map: FullLearningMap): TrailLayout {
+function computeTrailLayout(
+  map: FullLearningMap,
+  amplitude: number = TRAIL_ZIGZAG_AMPLITUDE,
+): TrailLayout {
   const trailNodes = map.map_nodes.filter(isTrailStepNode);
   const positions = new Map<string, { x: number; y: number }>();
   const orderedIds: string[] = [];
   if (trailNodes.length === 0) return { positions, orderedIds };
+
+  const zigzag = trailZigzag(amplitude);
 
   const edges = trailNodes.flatMap((node) =>
     (node.node_paths_source ?? [])
@@ -159,7 +176,7 @@ function computeTrailLayout(map: FullLearningMap): TrailLayout {
     const levelNodes = levels.get(d)!.sort(compareTrailNodes);
     for (const node of levelNodes) {
       positions.set(node.id, {
-        x: TRAIL_ZIGZAG[step % TRAIL_ZIGZAG.length],
+        x: zigzag[step % zigzag.length],
         y: -d * TRAIL_LEVEL_GAP,
       });
       orderedIds.push(node.id);
@@ -251,12 +268,81 @@ export function MapViewer({
   // Trail mode (prototype): layout derived from the node_paths graph,
   // viewport centered on the student's current node once progress settles.
   const isMobile = useIsMobile();
+
+  // Measure the map container width so the zigzag and pan clamp can keep the
+  // trail column filling (but never exceeding) the screen on any viewport.
+  const [flowWidth, setFlowWidth] = useState(0);
+  useEffect(() => {
+    if (!trailMode || typeof window === "undefined") return;
+    const update = () => {
+      const el = document.querySelector(".react-flow");
+      if (el) setFlowWidth(el.getBoundingClientRect().width);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [trailMode, isMounted, isMobile]);
+
+  // Responsive zigzag: the whole node (anchor + width) must fit the viewport
+  // at trail zoom, so narrow phones get a tighter wiggle.
+  const trailAmplitude = useMemo(() => {
+    if (flowWidth <= 0) return TRAIL_ZIGZAG_AMPLITUDE;
+    const viewportFlowWidth = flowWidth / TRAIL_ZOOM;
+    return Math.max(
+      60,
+      Math.min(TRAIL_ZIGZAG_AMPLITUDE, (viewportFlowWidth - TRAIL_NODE_W) / 2 - 16),
+    );
+  }, [flowWidth]);
   const trailLayout = useMemo(
-    () => (trailMode ? computeTrailLayout(map) : null),
-    [trailMode, map],
+    () => (trailMode ? computeTrailLayout(map, trailAmplitude) : null),
+    [trailMode, map, trailAmplitude],
   );
   const [progressReady, setProgressReady] = useState(false);
   const trailCenteredRef = useRef(false);
+
+  // Pan clamp for trail mode. d3-zoom (used by React Flow) centers the
+  // viewport on the extent whenever the extent is narrower than the
+  // viewport, so keeping the x extent ≤ the viewport width (in flow units)
+  // locks horizontal panning entirely while vertically the user can only pan
+  // TRAIL_Y_PAD past the top/bottom of the trail.
+  const trailTranslateExtent = useMemo((): CoordinateExtent | undefined => {
+    if (!trailMode || !trailLayout || trailLayout.orderedIds.length === 0) {
+      return undefined;
+    }
+    let minX = Infinity,
+      maxX = -Infinity,
+      minY = Infinity,
+      maxY = -Infinity;
+    for (const id of trailLayout.orderedIds) {
+      const p = trailLayout.positions.get(id);
+      if (!p) continue;
+      minX = Math.min(minX, p.x);
+      maxX = Math.max(maxX, p.x);
+      minY = Math.min(minY, p.y);
+      maxY = Math.max(maxY, p.y);
+    }
+    if (!isFinite(minX)) return undefined;
+
+    // Positions anchor the node's top-left corner; the visible node extends
+    // TRAIL_NODE_W/H to the right/down, so the extent must cover that too.
+    const spanX = maxX + TRAIL_NODE_W - minX;
+    const viewportFlowWidth = flowWidth > 0 ? flowWidth / TRAIL_ZOOM : 0;
+    // Keep the extent a few units NARROWER than the viewport (not exactly
+    // equal) — exact equality leaves sub-pixel rounding slack that lets the
+    // map wiggle left/right a little on touchscreens.
+    const xPad =
+      viewportFlowWidth > 0
+        ? Math.max(
+            0,
+            Math.min(TRAIL_X_PAD_MAX, (viewportFlowWidth - spanX) / 2 - 4),
+          )
+        : TRAIL_X_PAD_MAX;
+
+    return [
+      [minX - xPad, minY - TRAIL_Y_PAD],
+      [maxX + TRAIL_NODE_W + xPad, maxY + TRAIL_NODE_H + TRAIL_Y_PAD],
+    ];
+  }, [trailMode, trailLayout, flowWidth]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -1109,10 +1195,10 @@ export function MapViewer({
 
     trailCenteredRef.current = true;
     const internal = reactFlowInstance.getNode(targetId);
-    const width = internal?.measured?.width ?? 80;
-    const height = internal?.measured?.height ?? 80;
+    const width = internal?.measured?.width ?? TRAIL_NODE_W;
+    const height = internal?.measured?.height ?? TRAIL_NODE_H;
     reactFlowInstance.setCenter(position.x + width / 2, position.y + height / 2, {
-      zoom: 1.1,
+      zoom: TRAIL_ZOOM,
       duration: 0,
     });
   }, [
@@ -1121,6 +1207,59 @@ export function MapViewer({
     trailLayout,
     progressMap,
     isNodeUnlocked,
+    reactFlowInstance,
+  ]);
+
+  // Trail mode: after a node is completed/submitted, advance Duolingo-style
+  // to the next node in trail order (orderedIds already excludes text/comment
+  // nodes) — select it and slide the viewport to it.
+  const handleTrailNodeCompleted = useCallback(() => {
+    if (!trailMode || !trailLayout) return;
+    const currentId = selectedNode?.id;
+    if (!currentId) return;
+
+    const currentIndex = trailLayout.orderedIds.indexOf(currentId);
+    const nextId =
+      currentIndex >= 0 ? trailLayout.orderedIds[currentIndex + 1] : undefined;
+    if (!nextId) return;
+
+    // Only advance when the next node is actually unlocked. progressMap may
+    // not have refreshed yet, so treat the just-completed node as passed.
+    const prerequisites = prerequisitesByNodeId.get(nextId) || [];
+    const nextUnlocked =
+      isInstructorOrTA ||
+      prerequisites.length === 0 ||
+      prerequisites.every((prereq) => {
+        if (prereq.id === currentId) return true;
+        const status = progressMap[prereq.id]?.status;
+        return status === "passed" || status === "submitted";
+      });
+    if (!nextUnlocked) return;
+
+    const position = trailLayout.positions.get(nextId);
+    if (!position) return;
+
+    setSelectedNode({
+      id: nextId,
+      data: { ...nodesById.get(nextId), progress: progressMap[nextId] },
+      position,
+    });
+
+    const internal = reactFlowInstance.getNode(nextId);
+    const width = internal?.measured?.width ?? TRAIL_NODE_W;
+    const height = internal?.measured?.height ?? TRAIL_NODE_H;
+    reactFlowInstance.setCenter(position.x + width / 2, position.y + height / 2, {
+      zoom: TRAIL_ZOOM,
+      duration: 400,
+    });
+  }, [
+    trailMode,
+    trailLayout,
+    selectedNode,
+    prerequisitesByNodeId,
+    isInstructorOrTA,
+    progressMap,
+    nodesById,
     reactFlowInstance,
   ]);
 
@@ -1207,6 +1346,7 @@ export function MapViewer({
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView={!trailMode}
+        translateExtent={trailMode ? trailTranslateExtent : undefined}
         nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable={true}
@@ -1253,6 +1393,7 @@ export function MapViewer({
           selectedNode={selectedNode}
           mapId={map.id}
           onProgressUpdate={loadAllProgress}
+          onNodeCompleted={trailMode ? handleTrailNodeCompleted : undefined}
           isNodeUnlocked={isNodeUnlocked(selectedNode.id)}
           userRole={userRole}
           isInstructorOrTA={isInstructorOrTA && !forceStudentView}
@@ -1558,6 +1699,7 @@ export function MapViewer({
                 selectedNode={selectedNode}
                 mapId={map.id}
                 onProgressUpdate={loadAllProgress}
+                onNodeCompleted={trailMode ? handleTrailNodeCompleted : undefined}
                 isNodeUnlocked={
                   selectedNode ? isNodeUnlocked(selectedNode.id) : true
                 }

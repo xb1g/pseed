@@ -47,6 +47,9 @@ interface NodeViewPanelProps {
   selectedNode: Node<Record<string, unknown> & MapNode> | null;
   mapId: string;
   onProgressUpdate?: () => void;
+  // Fired only when a node is successfully completed/submitted (passed or
+  // pending grade) — used by the trail view to auto-advance to the next node.
+  onNodeCompleted?: () => void;
   isNodeUnlocked?: boolean;
   userRole?: "instructor" | "TA" | "student" | "admin";
   isInstructorOrTA?: boolean;
@@ -61,6 +64,7 @@ export function NodeViewPanel({
   selectedNode,
   mapId,
   onProgressUpdate,
+  onNodeCompleted,
   isNodeUnlocked = true,
   userRole = "student",
   isInstructorOrTA = false,
@@ -511,6 +515,7 @@ export function NodeViewPanel({
 
       setProgress(updatedProgress);
       onProgressUpdate?.();
+      onNodeCompleted?.();
 
       toast({
         title: "Node completed!",
@@ -731,6 +736,7 @@ export function NodeViewPanel({
       // Refresh progress and submissions
       await loadProgress();
       onProgressUpdate?.();
+      onNodeCompleted?.();
 
       // Different success messages based on assessment type
       if (assessment.assessment_type === "quiz") {

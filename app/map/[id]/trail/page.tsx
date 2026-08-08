@@ -97,7 +97,7 @@ export default async function MapTrailPage(props: {
           </span>
         )}
       </div>
-      <MapViewer map={map} trailMode />
+      <MapViewer map={map} trailMode forceStudentView />
     </div>
   );
 }
