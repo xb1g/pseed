@@ -490,6 +490,13 @@ export default function ProfilePage() {
                     Open dashboard
                     <ArrowRight className="h-4 w-4" />
                   </Link>
+                  <Link
+                    href={`/u/${profile.username}`}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                  >
+                    View portfolio
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
                   <button
                     type="button"
                     onClick={openAccountEditor}

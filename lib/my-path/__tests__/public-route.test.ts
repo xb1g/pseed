@@ -31,3 +31,12 @@ test("Parent payment surfaces stay public", () => {
     true
   );
 });
+
+test("App Store support and legal pages stay public without login", () => {
+  assert.equal(isPublicRoute("/support"), true);
+  assert.equal(isPublicRoute("/contact"), true);
+  assert.equal(isPublicRoute("/privacy"), true);
+  assert.equal(isPublicRoute("/terms"), true);
+  assert.equal(isPublicRoute("/tos"), true);
+  assert.equal(isPublicRoute("/cookies"), true);
+});
