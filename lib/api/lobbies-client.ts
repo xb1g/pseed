@@ -25,10 +25,12 @@ export const joinLobbyByCode = async (
     throw new Error(JOIN_LOBBY_ERROR);
   }
 
+  // The RPC's OUT params are named out_* to avoid a plpgsql name collision with
+  // the underlying columns; map them back to the domain names here.
   const row = Array.isArray(data) ? data[0] : data;
-  if (!row?.lobby_id || !row?.map_id) {
+  if (!row?.out_lobby_id || !row?.out_map_id) {
     throw new Error(JOIN_LOBBY_ERROR);
   }
 
-  return { lobby_id: row.lobby_id, map_id: row.map_id };
+  return { lobby_id: row.out_lobby_id, map_id: row.out_map_id };
 };
