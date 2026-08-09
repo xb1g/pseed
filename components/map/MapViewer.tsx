@@ -405,6 +405,16 @@ export function MapViewer({
     }
   }, [isPanelMinimized, selectedNode]);
 
+  // Close the node panel/sheet. Must also clear the React Flow selection —
+  // otherwise the RF node stays `selected` and tapping the same node again
+  // fires no selection change, so the panel never reopens.
+  const closeNodePanel = useCallback(() => {
+    setSelectedNode(null);
+    setNodes((nds) =>
+      nds.map((n) => (n.selected ? { ...n, selected: false } : n)),
+    );
+  }, [setNodes]);
+
   // Keyboard navigation (scoped to non-editable contexts)
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -424,7 +434,7 @@ export function MapViewer({
 
       // Escape to clear selection
       if (key === "escape") {
-        setSelectedNode(null);
+        closeNodePanel();
         if (rightPanelRef.current && leftPanelRef.current) {
           leftPanelRef.current.resize(70);
           rightPanelRef.current.resize(30);
@@ -449,7 +459,7 @@ export function MapViewer({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [reactFlowInstance, selectedNode]);
+  }, [reactFlowInstance, selectedNode, closeNodePanel]);
 
   // Function to navigate to adjacent unlocked nodes
   const navigateToAdjacentNode = (direction: 1 | -1) => {
@@ -1171,6 +1181,47 @@ export function MapViewer({
     setEdges(transformedEdges);
   }, [map, progressMap, setNodes, setEdges, trailMode, trailLayout]);
 
+  // Trail mode: pan the camera to a node, but clamp the destination to the
+  // legal pan area (trailTranslateExtent) BEFORE animating. Raw setCenter can
+  // aim past the border for nodes near the trail's top/bottom — d3 then snaps
+  // the viewport back at the end of the animation, which reads as a glitch.
+  const panToTrailNode = useCallback(
+    (
+      nodeId: string,
+      position: { x: number; y: number },
+      duration: number,
+    ) => {
+      const k = TRAIL_ZOOM;
+      const el = document.querySelector(".react-flow");
+      const vw = el?.clientWidth ?? window.innerWidth;
+      const vh = el?.clientHeight ?? window.innerHeight;
+
+      const internal = reactFlowInstance.getNode(nodeId);
+      const w = internal?.measured?.width ?? TRAIL_NODE_W;
+      const h = internal?.measured?.height ?? TRAIL_NODE_H;
+
+      // Raw target: node centered in the viewport.
+      let tx = vw / 2 - (position.x + w / 2) * k;
+      let ty = vh / 2 - (position.y + h / 2) * k;
+
+      if (trailTranslateExtent) {
+        // Mirror d3-zoom's constrain(): allowed translate range per axis;
+        // when the extent is narrower than the viewport, d3 centers it.
+        const clampAxis = (t: number, e0: number, e1: number, v: number) => {
+          const min = v - e1 * k;
+          const max = -e0 * k;
+          if (min > max) return (min + max) / 2;
+          return Math.min(max, Math.max(min, t));
+        };
+        tx = clampAxis(tx, trailTranslateExtent[0][0], trailTranslateExtent[1][0], vw);
+        ty = clampAxis(ty, trailTranslateExtent[0][1], trailTranslateExtent[1][1], vh);
+      }
+
+      reactFlowInstance.setViewport({ x: tx, y: ty, zoom: k }, { duration });
+    },
+    [reactFlowInstance, trailTranslateExtent],
+  );
+
   // Trail mode: skip fitView and, once progress has settled, center the
   // viewport on the student's "current" node — the first unlocked node that
   // is not passed/submitted (walking the trail bottom-to-top). If everything
@@ -1194,25 +1245,20 @@ export function MapViewer({
     if (!position) return;
 
     trailCenteredRef.current = true;
-    const internal = reactFlowInstance.getNode(targetId);
-    const width = internal?.measured?.width ?? TRAIL_NODE_W;
-    const height = internal?.measured?.height ?? TRAIL_NODE_H;
-    reactFlowInstance.setCenter(position.x + width / 2, position.y + height / 2, {
-      zoom: TRAIL_ZOOM,
-      duration: 0,
-    });
+    panToTrailNode(targetId, position, 0);
   }, [
     trailMode,
     progressReady,
     trailLayout,
     progressMap,
     isNodeUnlocked,
-    reactFlowInstance,
+    panToTrailNode,
   ]);
 
   // Trail mode: after a node is completed/submitted, advance Duolingo-style
-  // to the next node in trail order (orderedIds already excludes text/comment
-  // nodes) — select it and slide the viewport to it.
+  // toward the next node in trail order (orderedIds already excludes
+  // text/comment nodes) — dismiss the panel first, then pan the camera to the
+  // next node WITHOUT opening it; the user taps it manually.
   const handleTrailNodeCompleted = useCallback(() => {
     if (!trailMode || !trailLayout) return;
     const currentId = selectedNode?.id;
@@ -1221,7 +1267,11 @@ export function MapViewer({
     const currentIndex = trailLayout.orderedIds.indexOf(currentId);
     const nextId =
       currentIndex >= 0 ? trailLayout.orderedIds[currentIndex + 1] : undefined;
-    if (!nextId) return;
+    if (!nextId) {
+      // Last node completed — just close the panel.
+      closeNodePanel();
+      return;
+    }
 
     // Only advance when the next node is actually unlocked. progressMap may
     // not have refreshed yet, so treat the just-completed node as passed.
@@ -1239,28 +1289,23 @@ export function MapViewer({
     const position = trailLayout.positions.get(nextId);
     if (!position) return;
 
-    setSelectedNode({
-      id: nextId,
-      data: { ...nodesById.get(nextId), progress: progressMap[nextId] },
-      position,
-    });
+    // 1. Slide the node panel/sheet away first…
+    closeNodePanel();
 
-    const internal = reactFlowInstance.getNode(nextId);
-    const width = internal?.measured?.width ?? TRAIL_NODE_W;
-    const height = internal?.measured?.height ?? TRAIL_NODE_H;
-    reactFlowInstance.setCenter(position.x + width / 2, position.y + height / 2, {
-      zoom: TRAIL_ZOOM,
-      duration: 400,
-    });
+    // 2. …then pan the camera to the next node (after the sheet animation),
+    // clamped to the legal pan area so it never snaps back.
+    window.setTimeout(() => {
+      panToTrailNode(nextId, position, 600);
+    }, 300);
   }, [
     trailMode,
     trailLayout,
     selectedNode,
     prerequisitesByNodeId,
     isInstructorOrTA,
+    closeNodePanel,
     progressMap,
-    nodesById,
-    reactFlowInstance,
+    panToTrailNode,
   ]);
 
   const onSelectionChange = useCallback(
@@ -1336,7 +1381,7 @@ export function MapViewer({
   const useMobileBottomSheet = trailMode && isMobile;
 
   const mapCanvas = (
-    <div className="flex-1">
+    <div className={trailMode ? "flex-1 trail-mode" : "flex-1"}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -1374,15 +1419,15 @@ export function MapViewer({
   // Mobile bottom sheet (trail mode only): hidden until a node is tapped,
   // closes via backdrop tap or the X button.
   const bottomSheet = selectedNode ? (
-    <div className="fixed inset-0 z-40">
+    <div className="fixed inset-0 z-[60]">
       <div
         className="absolute inset-0 bg-black/50 animate-in fade-in duration-200"
-        onClick={() => setSelectedNode(null)}
+        onClick={closeNodePanel}
         aria-hidden="true"
       />
-      <div className="absolute inset-x-0 bottom-0 max-h-[70vh] overflow-y-auto rounded-t-2xl border-t bg-background shadow-2xl animate-in slide-in-from-bottom duration-300">
+      <div className="absolute inset-0 overflow-y-auto bg-background shadow-2xl animate-in slide-in-from-bottom duration-300">
         <button
-          onClick={() => setSelectedNode(null)}
+          onClick={closeNodePanel}
           className="absolute top-2 right-2 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border rounded-lg p-2 shadow-lg hover:bg-muted/50 transition-colors"
           aria-label="Close node panel"
         >
@@ -1731,6 +1776,13 @@ export function MapViewerWithProvider({
   return (
     <ReactFlowProvider>
       <style jsx global>{`
+        /* Trail mode: one-finger touch pan. The pane must own the touch
+           gesture — without this, mobile browsers treat a one-finger drag as
+           a page scroll and users need two fingers to move the map. */
+        .trail-mode .react-flow__pane {
+          touch-action: none;
+        }
+
         /* ================================
      Tunables
      ================================ */
