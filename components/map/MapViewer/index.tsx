@@ -35,11 +35,19 @@ import { useMapProgress } from "./hooks/useMapProgress";
 import { useMapNavigation } from "./hooks/useMapNavigation";
 import { usePanelManagement } from "./hooks/usePanelManagement";
 import { useSubmissionData } from "./hooks/useSubmissionData";
+import { useLobbyPresence } from "@/hooks/use-lobby-presence";
 import { getProgressStats, getNodeStatus } from "./utils/mapProgressUtils";
 import { SeedCompletionModal } from "@/components/seeds/SeedCompletionModal";
 import { markSeedRoomCompleted, checkSeedRoomCompletion, isEndNode } from "@/lib/supabase/seed-completion";
+import type { LobbyPresenceEntry } from "@/types/lobby";
 
-function MapViewer({ map, seedRoomId, seedTitle, seedId }: MapViewerProps) {
+function MapViewer({
+  map,
+  seedRoomId,
+  seedTitle,
+  seedId,
+  initialPresence = [],
+}: MapViewerProps & { initialPresence?: LobbyPresenceEntry[] }) {
   // Basic state
   const [selectedNode, setSelectedNode] = useState<MapViewerNode | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -97,6 +105,8 @@ function MapViewer({ map, seedRoomId, seedTitle, seedId }: MapViewerProps) {
     isInstructorOrTA,
     teamId
   );
+
+  const { presenceByNode } = useLobbyPresence(map.id, initialPresence);
 
   const { isPanelMinimized, togglePanelSize, handleSelectionChange } = usePanelManagement(panelRefs);
 
@@ -168,7 +178,11 @@ function MapViewer({ map, seedRoomId, seedTitle, seedId }: MapViewerProps) {
       return {
         id: node.id,
         type: nodeType,
-        data: { ...node, progress: progressMap[node.id] },
+        data: {
+          ...node,
+          progress: progressMap[node.id],
+          presenceEntries: presenceByNode[node.id],
+        },
         position: (node.metadata as any)?.position || {
           x: Math.random() * 400,
           y: Math.random() * 400,
@@ -213,7 +227,7 @@ function MapViewer({ map, seedRoomId, seedTitle, seedId }: MapViewerProps) {
 
     setNodes(transformedNodes);
     setEdges(transformedEdges);
-  }, [map, progressMap, selectedNode?.id, setNodes, setEdges]);
+  }, [map, progressMap, selectedNode?.id, presenceByNode, setNodes, setEdges]);
 
   const { navigateToAdjacentNode } = useMapNavigation(
     map,
@@ -561,10 +575,22 @@ function MapViewer({ map, seedRoomId, seedTitle, seedId }: MapViewerProps) {
 }
 
 // Wrapper component that provides ReactFlow context and includes CSS
-export function MapViewerWithProvider({ map, seedRoomId, seedTitle }: MapViewerProps) {
+export function MapViewerWithProvider({
+  map,
+  seedRoomId,
+  seedTitle,
+  seedId,
+  initialPresence,
+}: MapViewerProps & { initialPresence?: LobbyPresenceEntry[] }) {
   return (
     <ReactFlowProvider>
-      <MapViewer map={map} seedRoomId={seedRoomId} seedTitle={seedTitle} />
+      <MapViewer
+        map={map}
+        seedRoomId={seedRoomId}
+        seedTitle={seedTitle}
+        seedId={seedId}
+        initialPresence={initialPresence}
+      />
       <style jsx global>{`
         /* ================================
      Tunables
