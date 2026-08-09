@@ -1229,14 +1229,28 @@ export function MapViewer({
         for (const entry of entries) {
           const isSelf = entry.user_id === currentUser?.id;
 
-          // Your own avatar follows the highlight ring rather than the
-          // server-computed position. The server can only see progress rows, so
-          // after finishing a node it parks you on that finished node -- while
-          // the ring has already advanced to the next unlocked one. Anchoring
-          // self to currentTrailNodeId keeps the two in step; lobbymates keep
-          // their server position, since the client cannot compute their ring.
-          const targetNodeId =
-            isSelf && currentTrailNodeId ? currentTrailNodeId : nodeId;
+          // Where an avatar stands.
+          //
+          // Self follows the highlight ring, which already accounts for unlock
+          // state. For everyone else the client must derive the equivalent: a
+          // lobbymate who finished a node has no progress row for the next one
+          // until they open it, so their server position is the node they just
+          // completed. Left alone, their avatar sits a step behind what their
+          // own screen shows. Advancing one place along the trail keeps the two
+          // views in agreement.
+          let targetNodeId = nodeId;
+          if (isSelf && currentTrailNodeId) {
+            targetNodeId = currentTrailNodeId;
+          } else if (
+            !isSelf &&
+            (entry.status === "passed" || entry.status === "submitted") &&
+            trailLayout
+          ) {
+            const idx = trailLayout.orderedIds.indexOf(nodeId);
+            const next =
+              idx >= 0 ? trailLayout.orderedIds[idx + 1] : undefined;
+            if (next) targetNodeId = next;
+          }
 
           trailPresence.set(targetNodeId, [
             ...(trailPresence.get(targetNodeId) ?? []),
