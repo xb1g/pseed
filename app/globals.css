@@ -4,6 +4,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme transition: smooth background/text crossfade when toggling Dawn/Dusk themes */
+html, body {
+  transition: background-color 420ms cubic-bezier(0.05, 0.7, 0.35, 0.99),
+              color 360ms cubic-bezier(0.05, 0.7, 0.35, 0.99),
+              border-color 360ms ease,
+              box-shadow 420ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html, body {
+    transition: none !important;
+  }
+}
+
+/* Ensure body uses the theme tokens so transitions animate cleanly. */
+body {
+  background: var(--bloom-bg);
+  color: var(--bloom-text-primary);
+}
+
+
 /* ── Expert Interview: Dusk Theme ──────────────────────────────────────── */
 
 /* Cloud drifts — large movement + opacity shift so they're actually visible */
@@ -5250,11 +5271,11 @@ summary:focus-visible .radar-expand-indicator {
 }
 
 .salary-chess-level--rook .salary-chess-piece {
-  height: min(32vh, 14rem);
+  height: min(34vh, 15rem);
 }
 
 .salary-chess-level--knight .salary-chess-piece {
-  height: min(34vh, 15rem);
+  height: min(32vh, 14rem);
 }
 
 .salary-chess-level--knight .salary-chess-piece-image {
@@ -5284,7 +5305,9 @@ summary:focus-visible .radar-expand-indicator {
 .salary-chess-board:not(.salary-chess-board--intro-complete):not(.salary-chess-board--visited-detail)
   .salary-chess-level--knight .salary-chess-piece::after,
 .salary-chess-board:not(.salary-chess-board--intro-complete):not(.salary-chess-board--visited-detail)
-  .salary-chess-level--queen .salary-chess-piece::after {
+  .salary-chess-level--queen .salary-chess-piece::after,
+.salary-chess-board:not(.salary-chess-board--intro-complete):not(.salary-chess-board--visited-detail)
+  .salary-chess-level--queen .salary-chess-piece::before {
   opacity: 0;
 }
 
@@ -5341,6 +5364,13 @@ summary:focus-visible .radar-expand-indicator {
   background-size: 230% 230%;
   opacity: 0.82;
   mix-blend-mode: screen;
+}
+
+/* The infinite gradient pulse must not run pre-intro: its opacity keyframes
+   would override the rule that keeps the queen hidden until her turn. The
+   board queen gets this animation from the in-view / intro-complete /
+   visited-detail rules instead. */
+.salary-chess-detail-piece--queen::after {
   animation: salary-queen-gradient 7s cubic-bezier(0.05, 0.7, 0.35, 0.99) infinite alternate;
 }
 
@@ -5366,31 +5396,49 @@ summary:focus-visible .radar-expand-indicator {
   opacity: 0.38;
   mix-blend-mode: overlay;
   pointer-events: none;
+}
+
+.salary-chess-detail-piece--queen::before {
   animation: salary-queen-shine 11s cubic-bezier(0.05, 0.7, 0.35, 0.99) infinite;
 }
 
+/* Promote intro-animated layers ahead of the choreography so the first
+   frames do not pay the layer-creation cost mid-animation. All intro
+   keyframes animate only transform/opacity; filters stay static. */
+.radar-card-section.in-view .salary-chess-piece-image,
+.radar-card-section.in-view .salary-chess-intro-pawn,
+.radar-card-section.in-view .salary-chess-piece::before,
+.radar-card-section.in-view .salary-chess-piece::after {
+  will-change: transform, opacity;
+}
+
+.radar-card-section.in-view .salary-chess-board--intro-complete .salary-chess-piece-image,
+.radar-card-section.in-view .salary-chess-board--intro-complete .salary-chess-intro-pawn {
+  will-change: auto;
+}
+
 .radar-card-section.in-view .salary-chess-level--rook .salary-chess-intro-pawn {
-  animation: salary-rook-pawn-crushed 1250ms cubic-bezier(0.05, 0.7, 0.35, 0.99) both;
+  animation: salary-rook-pawn-crushed 1250ms cubic-bezier(0.05, 0.7, 0.35, 0.99) 1250ms both;
 }
 
 .radar-card-section.in-view .salary-chess-level--rook .salary-chess-piece-image {
-  animation: salary-rook-crash-image 1250ms cubic-bezier(0.05, 0.7, 0.35, 0.99) both;
+  animation: salary-rook-crash-image 1250ms cubic-bezier(0.05, 0.7, 0.35, 0.99) 1250ms both;
 }
 
 .radar-card-section.in-view .salary-chess-level--rook .salary-chess-piece::after {
-  animation: salary-rook-crash-tint 1250ms cubic-bezier(0.05, 0.7, 0.35, 0.99) both;
+  animation: salary-rook-crash-tint 1250ms cubic-bezier(0.05, 0.7, 0.35, 0.99) 1250ms both;
 }
 
 .radar-card-section.in-view .salary-chess-level--knight .salary-chess-intro-pawn {
-  animation: salary-knight-pawn-knockout 1350ms cubic-bezier(0.05, 0.7, 0.35, 0.99) 1250ms both;
+  animation: salary-knight-pawn-knockout 1350ms cubic-bezier(0.05, 0.7, 0.35, 0.99) both;
 }
 
 .radar-card-section.in-view .salary-chess-level--knight .salary-chess-piece-image {
-  animation: salary-knight-l-image 1350ms cubic-bezier(0.05, 0.7, 0.35, 0.99) 1250ms both;
+  animation: salary-knight-l-image 1350ms cubic-bezier(0.05, 0.7, 0.35, 0.99) both;
 }
 
 .radar-card-section.in-view .salary-chess-level--knight .salary-chess-piece::after {
-  animation: salary-knight-l-tint 1350ms cubic-bezier(0.05, 0.7, 0.35, 0.99) 1250ms both;
+  animation: salary-knight-l-tint 1350ms cubic-bezier(0.05, 0.7, 0.35, 0.99) both;
 }
 
 .radar-card-section.in-view .salary-chess-level--queen .salary-chess-intro-pawn {
@@ -5417,16 +5465,16 @@ summary:focus-visible .radar-expand-indicator {
     salary-queen-shine 11s cubic-bezier(0.05, 0.7, 0.35, 0.99) 4050ms infinite;
 }
 
-.radar-card-section.in-view .salary-chess-board--3 .salary-chess-level--knight .salary-chess-intro-pawn {
-  animation: salary-knight-pawn-knockout 1350ms cubic-bezier(0.05, 0.7, 0.35, 0.99) both;
+.radar-card-section.in-view .salary-chess-board--3 .salary-chess-level--rook .salary-chess-intro-pawn {
+  animation: salary-rook-pawn-crushed 1250ms cubic-bezier(0.05, 0.7, 0.35, 0.99) both;
 }
 
-.radar-card-section.in-view .salary-chess-board--3 .salary-chess-level--knight .salary-chess-piece-image {
-  animation: salary-knight-l-image 1350ms cubic-bezier(0.05, 0.7, 0.35, 0.99) both;
+.radar-card-section.in-view .salary-chess-board--3 .salary-chess-level--rook .salary-chess-piece-image {
+  animation: salary-rook-crash-image 1250ms cubic-bezier(0.05, 0.7, 0.35, 0.99) both;
 }
 
-.radar-card-section.in-view .salary-chess-board--3 .salary-chess-level--knight .salary-chess-piece::after {
-  animation: salary-knight-l-tint 1350ms cubic-bezier(0.05, 0.7, 0.35, 0.99) both;
+.radar-card-section.in-view .salary-chess-board--3 .salary-chess-level--rook .salary-chess-piece::after {
+  animation: salary-rook-crash-tint 1250ms cubic-bezier(0.05, 0.7, 0.35, 0.99) both;
 }
 
 .radar-card-section.in-view .salary-chess-board--3 .salary-chess-level--queen .salary-chess-intro-pawn {
@@ -5542,43 +5590,15 @@ summary:focus-visible .radar-expand-indicator {
   animation: salary-queen-shine 11s cubic-bezier(0.05, 0.7, 0.35, 0.99) -6200ms infinite !important;
 }
 
-@keyframes salary-rook-crash-down {
-  0% {
-    opacity: 0;
-    transform: translateY(-140%) scale(0.92);
-    filter: blur(2px);
-  }
-  45% {
-    opacity: 1;
-    transform: translateY(-140%) scale(0.92);
-    filter: blur(2px);
-  }
-  68% {
-    opacity: 1;
-    transform: translateY(7%) scaleY(0.96) scaleX(1.04);
-    filter: blur(0);
-  }
-  78% {
-    transform: translateY(-5%) scaleY(1.03) scaleX(0.98);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-  }
-}
-
 @keyframes salary-rook-crash-image {
   0%,
   45% {
     opacity: 0;
     transform: translateY(-140%) scale(0.92);
-    filter: grayscale(1) contrast(1.02) brightness(0.64) blur(2px);
   }
   68% {
     opacity: 0.74;
     transform: translateY(7%) scaleY(0.96) scaleX(1.04);
-    filter: grayscale(1) contrast(1.02) brightness(0.64) blur(0);
   }
   78% {
     transform: translateY(-5%) scaleY(1.03) scaleX(0.98);
@@ -5586,25 +5606,22 @@ summary:focus-visible .radar-expand-indicator {
   100% {
     opacity: 0.74;
     transform: translateY(0) scale(1);
-    filter: grayscale(1) contrast(1.02) brightness(0.64) blur(0);
   }
 }
 
 @keyframes salary-rook-crash-tint {
-  0% {
-    opacity: 0.88;
-    transform: translateY(-140%) scale(0.92);
-    filter: blur(2px);
-  }
+  0%,
   45% {
-    opacity: 0.88;
+    opacity: 0;
     transform: translateY(-140%) scale(0.92);
-    filter: blur(2px);
+  }
+  56% {
+    opacity: 0.88;
+    transform: translateY(-70%) scale(0.95);
   }
   68% {
     opacity: 0.9;
     transform: translateY(7%) scaleY(0.96) scaleX(1.04);
-    filter: blur(0);
   }
   78% {
     transform: translateY(-5%) scaleY(1.03) scaleX(0.98);
@@ -5612,7 +5629,6 @@ summary:focus-visible .radar-expand-indicator {
   100% {
     opacity: 0.9;
     transform: translateY(0) scale(1);
-    filter: blur(0);
   }
 }
 
@@ -5621,17 +5637,14 @@ summary:focus-visible .radar-expand-indicator {
   42% {
     opacity: 1;
     transform: translateX(-50%) translateY(0) scale(1);
-    filter: blur(0);
   }
   66% {
     opacity: 0.9;
     transform: translateX(-50%) translateY(9%) scaleX(1.18) scaleY(0.36);
-    filter: blur(0.5px);
   }
   100% {
     opacity: 0;
     transform: translateX(-50%) translateY(16%) scaleX(1.28) scaleY(0.18);
-    filter: blur(2px);
   }
 }
 
@@ -5664,17 +5677,14 @@ summary:focus-visible .radar-expand-indicator {
   0% {
     opacity: 0;
     transform: translate(-82%, -48%) scale(0.88) rotate(-8deg);
-    filter: grayscale(1) contrast(1.03) brightness(0.78);
   }
   16% {
     opacity: 0.76;
     transform: translate(-82%, -48%) scale(0.88) rotate(-8deg);
-    filter: grayscale(1) contrast(1.03) brightness(0.78);
   }
   34% {
     opacity: 0.76;
     transform: translate(-82%, -48%) scale(0.88) rotate(-8deg);
-    filter: grayscale(1) contrast(1.03) brightness(0.78);
   }
   56% {
     transform: translate(12%, -48%) scale(0.96) rotate(-4deg);
@@ -5685,7 +5695,6 @@ summary:focus-visible .radar-expand-indicator {
   100% {
     opacity: 0.76;
     transform: translate(0, 0) scale(1) rotate(0deg);
-    filter: grayscale(1) contrast(1.03) brightness(0.78);
   }
 }
 
@@ -5719,17 +5728,14 @@ summary:focus-visible .radar-expand-indicator {
   58% {
     opacity: 1;
     transform: translateX(-50%) translateY(0) rotate(0deg);
-    filter: blur(0);
   }
   78% {
     opacity: 0.8;
     transform: translateX(-155%) translateY(-22%) rotate(-22deg);
-    filter: blur(0.6px);
   }
   100% {
     opacity: 0;
     transform: translateX(-235%) translateY(6%) rotate(-42deg);
-    filter: blur(2px);
   }
 }
 
@@ -5738,17 +5744,14 @@ summary:focus-visible .radar-expand-indicator {
   52% {
     opacity: 0;
     transform: scale(0.78);
-    filter: blur(5px);
   }
   68% {
     opacity: 1;
     transform: scale(1.08);
-    filter: blur(0);
   }
   100% {
     opacity: 1;
     transform: scale(1);
-    filter: blur(0);
   }
 }
 
@@ -5757,17 +5760,14 @@ summary:focus-visible .radar-expand-indicator {
   52% {
     opacity: 0;
     transform: scale(0.78);
-    filter: grayscale(1) contrast(1.02) brightness(0.64) blur(5px);
   }
   68% {
     opacity: 0.78;
     transform: scale(1.08);
-    filter: grayscale(1) contrast(1.02) brightness(0.64) blur(0);
   }
   100% {
     opacity: 0.74;
     transform: scale(1);
-    filter: grayscale(1) contrast(1.02) brightness(0.64) blur(0);
   }
 }
 
@@ -5787,7 +5787,7 @@ summary:focus-visible .radar-expand-indicator {
   100% {
     opacity: 0;
     transform: translateX(-50%) scale(1.2);
-    filter: brightness(2) blur(2px);
+    filter: brightness(2);
   }
 }
 
@@ -5814,53 +5814,110 @@ summary:focus-visible .radar-expand-indicator {
   42% {
     opacity: 0;
     transform: scale(0.7);
-    filter: blur(20px) saturate(0.8);
   }
   58% {
     opacity: 0.96;
     transform: scale(1.18);
-    filter: blur(2px) saturate(1.5);
   }
   82% {
     opacity: 0.25;
     transform: scale(1.04);
-    filter: blur(0) saturate(1);
   }
   100% {
     opacity: 0.38;
     transform: scale(1);
-    filter: blur(0) saturate(1);
   }
 }
 
+/* Compositor-friendly shimmer: opacity pulse only. The moving gradient sweep
+   used to repaint a masked, screen-blended layer every frame; the visible
+   sweep now lives on .salary-chess-piece-sheen as a transform animation. */
 @keyframes salary-queen-gradient {
   0% {
-    background-position: 0% 18%;
-    filter: hue-rotate(0deg) saturate(1);
+    opacity: 0.86;
   }
   45% {
-    background-position: 72% 52%;
-    filter: hue-rotate(9deg) saturate(1.16);
+    opacity: 1;
   }
   100% {
-    background-position: 100% 86%;
-    filter: hue-rotate(-7deg) saturate(1.08);
+    opacity: 0.92;
   }
 }
 
 @keyframes salary-queen-shine {
   0%,
   18% {
-    background-position: center, 130% center;
     opacity: 0.22;
   }
   46% {
-    background-position: center, 18% center;
     opacity: 0.54;
   }
   100% {
-    background-position: center, -40% center;
     opacity: 0.28;
+  }
+}
+
+/* Statically-masked sheen layer; only the inner stripe moves, via transform,
+   so the queen's sweep stays on the compositor instead of repainting a
+   masked layer every frame. */
+.salary-chess-piece-sheen {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  opacity: 0;
+  mask-image: var(--salary-chess-piece-src);
+  mask-repeat: no-repeat;
+  mask-position: center bottom;
+  mask-size: contain;
+  -webkit-mask-image: var(--salary-chess-piece-src);
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center bottom;
+  -webkit-mask-size: contain;
+  pointer-events: none;
+}
+
+.salary-chess-piece-sheen::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 45%;
+  background: linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 0.5) 50%, transparent 100%);
+  opacity: 0;
+  transform: translateX(-120%);
+  will-change: transform, opacity;
+}
+
+.salary-chess-level--queen .salary-chess-piece-sheen,
+.salary-chess-detail-piece--queen .salary-chess-piece-sheen {
+  opacity: 1;
+  mix-blend-mode: overlay;
+}
+
+.salary-chess-board--intro-complete .salary-chess-level--queen .salary-chess-piece-sheen::before,
+.salary-chess-board--visited-detail .salary-chess-level--queen .salary-chess-piece-sheen::before,
+.salary-chess-detail-piece--queen .salary-chess-piece-sheen::before {
+  animation: salary-queen-sheen-sweep 11s cubic-bezier(0.05, 0.7, 0.35, 0.99) infinite;
+}
+
+@keyframes salary-queen-sheen-sweep {
+  0%,
+  15% {
+    opacity: 0;
+    transform: translateX(-120%);
+  }
+  30% {
+    opacity: 0.85;
+  }
+  55% {
+    opacity: 0.85;
+    transform: translateX(340%);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: translateX(340%);
   }
 }
 
@@ -6135,8 +6192,10 @@ summary:focus-visible .radar-expand-indicator {
      longer repaint forever on low-powered mobile GPUs after the reveal. */
   .radar-card-section.in-view .salary-chess-board--intro-complete .salary-chess-level--queen .salary-chess-piece::before,
   .radar-card-section.in-view .salary-chess-board--intro-complete .salary-chess-level--queen .salary-chess-piece::after,
+  .radar-card-section.in-view .salary-chess-board--intro-complete .salary-chess-level--queen .salary-chess-piece-sheen::before,
   .radar-card-section.in-view .salary-chess-board--visited-detail .salary-chess-level--queen .salary-chess-piece::before,
-  .radar-card-section.in-view .salary-chess-board--visited-detail .salary-chess-level--queen .salary-chess-piece::after {
+  .radar-card-section.in-view .salary-chess-board--visited-detail .salary-chess-level--queen .salary-chess-piece::after,
+  .radar-card-section.in-view .salary-chess-board--visited-detail .salary-chess-level--queen .salary-chess-piece-sheen::before {
     animation: none !important;
   }
 }
@@ -7027,7 +7086,8 @@ summary:focus-visible .radar-expand-indicator {
 .radar-field-page--safari .salary-chess-piece::after,
 .radar-field-page--safari .salary-chess-detail-piece::before,
 .radar-field-page--safari .salary-chess-detail-piece::after,
-.radar-field-page--safari .salary-chess-intro-pawn::after {
+.radar-field-page--safari .salary-chess-intro-pawn::after,
+.radar-field-page--safari .salary-chess-piece-sheen::before {
   animation: none !important;
 }
 
@@ -7096,6 +7156,11 @@ summary:focus-visible .radar-expand-indicator {
     opacity: 1;
     transform: none !important;
     filter: none;
+  }
+  .salary-chess-piece-sheen,
+  .salary-chess-piece-sheen::before {
+    animation: none !important;
+    opacity: 0 !important;
   }
   .ai-pixel-title-ai,
   .ai-pixel-title-ai::before,

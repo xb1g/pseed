@@ -17,9 +17,8 @@ type RadarCollection = Database["public"]["Tables"]["radar_collections"]["Row"];
 type RadarCardStyle = CSSProperties & Record<`--radar-${string}`, string>;
 
 const CAREER_FIGURES = [
-  "/images/radar/jojo-dio-hirose.png",
-  "/images/radar/jojo-full-body-blue.png",
-  "/images/radar/jojo-full-body-dark.webp",
+  "/images/radar/chardev.webp",
+  "/images/radar/data.webp",
 ] as const;
 
 const CAREER_SEARCH_TAGS = [
@@ -450,9 +449,13 @@ export function getCareerCardVisual(field: RadarField) {
   return {
     background: template.background,
     dotStyle,
-    figure: (field.slug ?? "").toLowerCase().includes("cyber")
-      ? "/images/radar/cybersec.webp"
-      : CAREER_FIGURES[seed % CAREER_FIGURES.length],
+    figure: (() => {
+      const slug = (field.slug ?? "").toLowerCase();
+      if (slug.includes("cyber")) return "/images/radar/cybersec.webp";
+      if (slug.includes("software")) return "/images/radar/chardev.webp";
+      if (slug.includes("ai-engineer")) return "/images/radar/chardev-orange.webp";
+      return CAREER_FIGURES[seed % CAREER_FIGURES.length];
+    })(),
     scrim:
       "linear-gradient(to top, rgb(0 0 0 / 0.92) 0%, rgb(0 0 0 / 0.74) 28%, rgb(0 0 0 / 0.38) 56%, rgb(0 0 0 / 0.08) 78%, transparent 100%)",
     tagBackground: "rgb(0 0 0 / 0.18)",

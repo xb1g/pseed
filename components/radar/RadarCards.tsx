@@ -766,7 +766,7 @@ function SalaryProgressionCard({ c, accent }: { c: SalaryProgressionContent; acc
   const selectedIndex = selectedLevel ?? 0;
   const chessPieces =
     displayedLevels.length === 3
-      ? SALARY_CHESS_PIECES.filter((piece) => piece.key !== "rook")
+      ? SALARY_CHESS_PIECES.filter((piece) => piece.key !== "knight")
       : SALARY_CHESS_PIECES;
   const completionAnimationName = chessPieces.some((piece) => piece.key === "queen")
     ? "salary-queen-image-reveal"
@@ -945,8 +945,8 @@ function SalaryProgressionCard({ c, accent }: { c: SalaryProgressionContent; acc
 
 const SALARY_CHESS_PIECES = [
   { key: "pawn", src: "/images/experimental-pawn.svg" },
-  { key: "rook", src: "/images/experimental-piece-130.png" },
   { key: "knight", src: "/images/experimental-piece-131.svg" },
+  { key: "rook", src: "/images/experimental-piece-130.png" },
   { key: "queen", src: "/images/experimental-piece-129.svg" },
 ] as const;
 
@@ -999,6 +999,7 @@ function SalaryChessPieceImage({ className, src }: { className: string; src: str
       <span className="salary-chess-intro-pawn" aria-hidden="true">
         <img src={SALARY_CHESS_PIECES[0].src} alt="" draggable={false} />
       </span>
+      <span className="salary-chess-piece-sheen" aria-hidden="true" />
       <img className="salary-chess-piece-image" src={src} alt="" draggable={false} />
     </span>
   );
