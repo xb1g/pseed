@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { NodeAssessment, AssessmentType, QuizQuestion } from "@/types/map";
-import { Trash2 } from "lucide-react";
+import { Trash2, PlusCircle } from "lucide-react";
 import {
   createNodeAssessment,
   deleteNodeAssessment,
@@ -38,39 +38,48 @@ export function AssessmentEditor({
 }: AssessmentEditorProps) {
   const { toast } = useToast();
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+  // Controls visibility of the assessment type picker behind the "Add assessment" entry point
+  const [showTypePicker, setShowTypePicker] = useState(false);
 
   // The useEffect causing the infinite loop has been removed.
 
   const handleAddAssessment = useCallback(
-    (type: AssessmentType) => {
-      console.log("➕ Creating temporary assessment for node:", nodeId);
+    async (type: AssessmentType) => {
+      console.log("➕ Creating assessment in database for node:", nodeId);
 
-      // Create temporary assessment that will be saved during batch save
-      const tempAssessmentId = `temp_assessment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      try {
+        const savedAssessment = await createNodeAssessment({
+          node_id: nodeId,
+          assessment_type: type,
+          points_possible: 10,
+          is_graded: false,
+          metadata: {},
+        });
 
-      const newAssessment: NodeAssessment = {
-        id: tempAssessmentId,
-        node_id: nodeId,
-        assessment_type: type,
-        points_possible: 10,
-        is_graded: false,
-        quiz_questions: [],
-        metadata: {},
-        group_formation_method: "manual",
-        target_group_size: 3,
-        allow_uneven_groups: true,
-        group_submission_mode: "all_members",
-        is_group_assessment: false,
-      };
+        console.log("✅ Assessment created in database:", savedAssessment);
 
-      console.log("✅ Temporary assessment created:", newAssessment);
+        // Ensure quiz_questions array exists
+        const assessmentWithDefaults: NodeAssessment = {
+          ...savedAssessment,
+          quiz_questions: savedAssessment.quiz_questions || [],
+          group_formation_method: "manual",
+          target_group_size: 3,
+          allow_uneven_groups: true,
+          group_submission_mode: "all_members",
+          is_group_assessment: false,
+        };
 
-      onAssessmentChange(newAssessment, "add");
+        onAssessmentChange(assessmentWithDefaults, "add");
 
-      toast({
-        title: "Assessment added ✓",
-        description: "Assessment will be saved when you click 'Save All'",
-      });
+        toast({ title: "Assessment added ✓" });
+      } catch (error) {
+        console.error("❌ Failed to create assessment:", error);
+        toast({
+          title: "Failed to create assessment",
+          description: (error as Error).message || "Unknown error",
+          variant: "destructive",
+        });
+      }
     },
     [nodeId, onAssessmentChange, toast]
   );
@@ -145,7 +154,6 @@ export function AssessmentEditor({
         console.log(`⚙️ Updating assessment setting ${field}:`, value);
 
         let updatedAssessment: NodeAssessment;
-        const isTemporaryAssessment = assessment.id.startsWith("temp_");
 
         // Handle metadata fields (randomization and attempt settings)
         if (
@@ -168,37 +176,30 @@ export function AssessmentEditor({
           updatedAssessment = savedAssessment;
         } else {
           // Handle group assessment fields
-          if (isTemporaryAssessment) {
-            console.log(
-              "📝 Temporary assessment - updating group settings locally"
-            );
-            updatedAssessment = { ...assessment, [field]: value };
-          } else {
-            await updateAssessmentGroupSettings(assessment.id, {
-              is_group_assessment:
-                field === "is_group_assessment"
-                  ? value
-                  : assessment.is_group_assessment || false,
-              group_formation_method:
-                field === "group_formation_method"
-                  ? value
-                  : assessment.group_formation_method || "manual",
-              group_submission_mode:
-                field === "group_submission_mode"
-                  ? value
-                  : assessment.group_submission_mode || "all_members",
-              target_group_size:
-                field === "target_group_size"
-                  ? value
-                  : assessment.target_group_size || 3,
-              allow_uneven_groups:
-                field === "allow_uneven_groups"
-                  ? value
-                  : assessment.allow_uneven_groups || true,
-            });
+          await updateAssessmentGroupSettings(assessment.id, {
+            is_group_assessment:
+              field === "is_group_assessment"
+                ? value
+                : assessment.is_group_assessment || false,
+            group_formation_method:
+              field === "group_formation_method"
+                ? value
+                : assessment.group_formation_method || "manual",
+            group_submission_mode:
+              field === "group_submission_mode"
+                ? value
+                : assessment.group_submission_mode || "all_members",
+            target_group_size:
+              field === "target_group_size"
+                ? value
+                : assessment.target_group_size || 3,
+            allow_uneven_groups:
+              field === "allow_uneven_groups"
+                ? value
+                : assessment.allow_uneven_groups || true,
+          });
 
-            updatedAssessment = { ...assessment, [field]: value };
-          }
+          updatedAssessment = { ...assessment, [field]: value };
         }
 
         // Update local state
@@ -208,11 +209,7 @@ export function AssessmentEditor({
         );
         onAssessmentChange(updatedAssessment, "update");
 
-        if (isTemporaryAssessment) {
-          toast({ title: "Settings updated (will save with node) ✓" });
-        } else {
-          toast({ title: "Settings updated ✓" });
-        }
+        toast({ title: "Settings updated ✓" });
       } catch (error) {
         console.error("❌ Failed to update settings:", error);
         toast({
@@ -242,32 +239,18 @@ export function AssessmentEditor({
         let updatedQuestion: QuizQuestion;
 
         if (action === "add") {
-          // For temporary assessments, create question with temp ID instead of database
-          if (assessment.id.startsWith("temp_")) {
-            console.log(
-              "➕ Creating temporary quiz question for temporary assessment..."
-            );
-            const tempQuestionId = `temp_question_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            updatedQuestion = {
-              ...changedQuestion,
-              id: tempQuestionId,
-              assessment_id: assessment.id,
-            };
-            console.log("✅ Temporary quiz question created:", updatedQuestion);
-          } else {
-            // Create question in database for real assessments
-            console.log("➕ Creating quiz question in database...");
-            updatedQuestion = await createQuizQuestion({
-              assessment_id: assessment.id,
-              question_text: changedQuestion.question_text,
-              options: changedQuestion.options,
-              correct_option: changedQuestion.correct_option,
-            });
-            console.log(
-              "✅ Quiz question created in database:",
-              updatedQuestion
-            );
-          }
+          // Create question in database
+          console.log("➕ Creating quiz question in database...");
+          updatedQuestion = await createQuizQuestion({
+            assessment_id: assessment.id,
+            question_text: changedQuestion.question_text,
+            options: changedQuestion.options,
+            correct_option: changedQuestion.correct_option,
+          });
+          console.log(
+            "✅ Quiz question created in database:",
+            updatedQuestion
+          );
         } else if (action === "update") {
           // Update question in database if it's not a temp ID
           if (!changedQuestion.id.startsWith("temp_")) {
@@ -360,42 +343,43 @@ export function AssessmentEditor({
       console.log(`📁 Batch importing ${questionDataList.length} questions`);
 
       try {
-        // Convert all QuestionFormData to QuizQuestion format with temporary IDs
-        const questionsToCreate = questionDataList.map((questionData) => {
+        // Convert all QuestionFormData and save to database
+        const savedQuestions: QuizQuestion[] = [];
+        for (const questionData of questionDataList) {
           const question = convertFormDataToQuestion(
             questionData,
             assessment.id
           );
-          // Create temporary ID for the question
-          const tempQuestionId = `temp_question_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          return {
-            ...question,
-            id: tempQuestionId,
-          };
-        });
+          const saved = await createQuizQuestion({
+            assessment_id: assessment.id,
+            question_text: question.question_text,
+            options: question.options,
+            correct_option: question.correct_option,
+          });
+          savedQuestions.push(saved);
+        }
 
         console.log(
-          "🔧 Created temporary questions for batch import:",
-          questionsToCreate.length
+          "✅ Batch imported questions to database:",
+          savedQuestions.length
         );
 
-        // Update local state with all new temporary questions at once
+        // Update local state with saved questions
         const currentQuestions = assessment.quiz_questions || [];
-        const newQuestions = [...currentQuestions, ...questionsToCreate];
+        const newQuestions = [...currentQuestions, ...savedQuestions];
         const updatedAssessment = {
           ...assessment,
           quiz_questions: newQuestions,
         };
 
         console.log(
-          "📊 Updated assessment with batch temporary questions:",
+          "📊 Updated assessment with saved questions:",
           updatedAssessment
         );
         onAssessmentChange(updatedAssessment, "update");
 
         toast({
           title: `${questionDataList.length} questions imported ✓`,
-          description: "Questions will be saved when you click 'Save All'",
         });
       } catch (error) {
         console.error("❌ Failed to batch import questions:", error);
@@ -410,6 +394,19 @@ export function AssessmentEditor({
   );
 
   if (!assessment) {
+    if (!showTypePicker) {
+      return (
+        <Button
+          variant="outline"
+          onClick={() => setShowTypePicker(true)}
+          className="w-full h-11 border-2 border-dashed bg-transparent hover:bg-muted/50"
+        >
+          <PlusCircle className="h-4 w-4 mr-2" />
+          Add assessment
+        </Button>
+      );
+    }
+
     return (
       <div className="p-4 space-y-4 text-center">
         <div className="space-y-2">
@@ -437,6 +434,15 @@ export function AssessmentEditor({
             </Button>
           ))}
         </div>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full"
+          onClick={() => setShowTypePicker(false)}
+        >
+          Cancel
+        </Button>
       </div>
     );
   }

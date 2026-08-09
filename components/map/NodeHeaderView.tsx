@@ -82,9 +82,43 @@ export function NodeHeaderView({
     <div className="p-4 border-b bg-gradient-to-r from-primary/5 to-secondary/5">
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
-          <h2 className="text-xl font-bold text-foreground mb-1">
-            {nodeData.title}
-          </h2>
+          <div className="flex items-center flex-wrap gap-2 mb-1">
+            <h2 className="text-xl font-bold text-foreground">
+              {nodeData.title}
+            </h2>
+            <Badge variant="outline" className="font-medium">
+              <Star className="h-3 w-3 mr-1" />
+              Level {nodeData.difficulty}
+            </Badge>
+            {nodeData.sprite_url && (
+              <Badge
+                variant="secondary"
+                className="bg-purple-100 text-purple-700 border-purple-200"
+              >
+                <Trophy className="h-3 w-3 mr-1" />
+                Boss Node
+              </Badge>
+            )}
+            {progress && (
+              <Badge
+                variant={getStatusBadgeVariant(progress.status)}
+                className={`font-medium ${
+                  progress.status === "passed"
+                    ? "bg-green-100 text-green-700 border-green-200"
+                    : progress.status === "failed"
+                      ? "bg-red-100 text-red-700 border-red-200"
+                      : progress.status === "submitted"
+                        ? "bg-yellow-100 text-yellow-800 border-yellow-200"
+                        : progress.status === "in_progress"
+                          ? "bg-blue-100 text-blue-700 border-blue-200"
+                          : ""
+                }`}
+              >
+                {getStatusIcon(progress.status)}
+                {progress.status.replace("_", " ").toUpperCase()}
+              </Badge>
+            )}
+          </div>
           {nodeData.instructions && (
             <p className="text-sm text-muted-foreground leading-relaxed">
               {nodeData.instructions}
@@ -99,66 +133,6 @@ export function NodeHeaderView({
           />
         )}
       </div>
-      <div className="flex flex-wrap gap-2 mb-4">
-        <Badge variant="outline" className="font-medium">
-          <Star className="h-3 w-3 mr-1" />
-          Level {nodeData.difficulty}
-        </Badge>
-        {nodeData.sprite_url && (
-          <Badge
-            variant="secondary"
-            className="bg-purple-100 text-purple-700 border-purple-200"
-          >
-            <Trophy className="h-3 w-3 mr-1" />
-            Boss Node
-          </Badge>
-        )}
-        {progress && (
-          <Badge
-            variant={getStatusBadgeVariant(progress.status)}
-            className={`font-medium ${
-              progress.status === "passed"
-                ? "bg-green-100 text-green-700 border-green-200"
-                : progress.status === "failed"
-                  ? "bg-red-100 text-red-700 border-red-200"
-                  : progress.status === "submitted"
-                    ? "bg-yellow-100 text-yellow-800 border-yellow-200"
-                    : progress.status === "in_progress"
-                      ? "bg-blue-100 text-blue-700 border-blue-200"
-                      : ""
-            }`}
-          >
-            {getStatusIcon(progress.status)}
-            {progress.status.replace("_", " ").toUpperCase()}
-          </Badge>
-        )}
-      </div>
-
-      {/* Remove the start button from header - it will be shown in the main content area */}
-
-      {progress && hasStarted && (
-        <div className="mt-3 p-3 bg-muted/50 rounded-lg border">
-          <div className="text-xs font-medium text-muted-foreground mb-1">
-            Progress Timeline
-          </div>
-          <div className="space-y-1 text-xs">
-            <div className="flex justify-between">
-              <span>Started:</span>
-              <span className="font-mono">
-                {new Date(progress.started_at!).toLocaleString()}
-              </span>
-            </div>
-            {progress.submitted_at && (
-              <div className="flex justify-between">
-                <span>Submitted:</span>
-                <span className="font-mono">
-                  {new Date(progress.submitted_at).toLocaleString()}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

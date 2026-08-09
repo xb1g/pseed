@@ -45,7 +45,9 @@ export function Layout({ children }: LayoutProps) {
     pathname?.includes("complete-profile") ||
     isPublicHackathonRoute ||
     pathname?.includes("/app/beta") ||
-    pathname?.startsWith("/expert-interview");
+    pathname?.startsWith("/expert-interview") ||
+    // Map editor is a fixed full-page workspace
+    (pathname?.startsWith("/map/") && pathname?.endsWith("/edit"));
 
   useEffect(() => {
     async function getUser() {
