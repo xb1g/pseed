@@ -6,6 +6,8 @@ import { createClient } from "@/utils/supabase/server";
 import { isInstructor } from "@/lib/supabase/roles";
 import { MapViewerWithProvider as MapViewer } from "@/components/map/MapViewer";
 import { MapEnrollmentTracker } from "@/components/map/MapEnrollmentTracker";
+import { LobbyCodeGateWrapper } from "@/components/map/LobbyCodeGate";
+import { getUserLobbyForMap } from "@/lib/supabase/lobbies";
 import { ArrowLeft, Pencil, ClipboardCheck } from "lucide-react";
 
 export default async function MapViewerPage(props: {
@@ -66,6 +68,26 @@ export default async function MapViewerPage(props: {
 
   // User can grade if they're creator OR editor OR instructor OR admin
   const userCanGrade = user && (userIsCreator || userIsEditor || userIsInstructor || userIsAdmin);
+
+  // Lobby gate: check if user is in a lobby for this map
+  const userLobby = user ? await getUserLobbyForMap(params.id) : null;
+  const canBypassGate = userIsAdmin || userIsInstructor || map.creator_id === user?.id;
+
+  if (!userLobby && !canBypassGate) {
+    return (
+      <LobbyCodeGateWrapper
+        map={{
+          id: map.id,
+          title: map.title,
+          description: map.description,
+          cover_image_url: map.cover_image_url ?? null,
+          node_count: map.nodes?.length ?? 0,
+          avg_difficulty: map.difficulty ?? 0,
+          category: map.category ?? null,
+        }}
+      />
+    );
+  }
 
   return (
     <MapEnrollmentTracker map={map}>
