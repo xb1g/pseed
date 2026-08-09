@@ -3,7 +3,6 @@
  */
 
 import { FullLearningMap } from "@/lib/supabase/maps";
-import { LobbyPresenceEntry } from "@/types/lobby";
 import { PROGRESS_COLORS } from "../constants";
 import { ProgressMap, MapViewerNode, MapViewerEdge, EnhancedProgress } from "../types";
 
@@ -14,8 +13,7 @@ export function transformMapNodes(
   map: FullLearningMap,
   progressMap: ProgressMap,
   selectedNodeId: string | null,
-  nodeTypes: any,
-  presenceByNode?: Record<string, LobbyPresenceEntry[]>
+  nodeTypes: any
 ): MapViewerNode[] {
   return map.map_nodes.map((node) => {
     // Determine node type - check for node_type property
@@ -29,11 +27,7 @@ export function transformMapNodes(
     return {
       id: node.id,
       type: nodeType,
-      data: {
-        ...node,
-        progress: progressMap[node.id],
-        presenceEntries: presenceByNode?.[node.id],
-      },
+      data: { ...node, progress: progressMap[node.id] },
       position: (node.metadata as any)?.position || {
         x: Math.random() * 400,
         y: Math.random() * 400,

@@ -7,7 +7,7 @@ import { isInstructor } from "@/lib/supabase/roles";
 import { MapViewerWithProvider as MapViewer } from "@/components/map/MapViewer";
 import { MapEnrollmentTracker } from "@/components/map/MapEnrollmentTracker";
 import { LobbyCodeGateWrapper } from "@/components/map/LobbyCodeGate";
-import { getUserLobbyForMap } from "@/lib/supabase/lobbies";
+import { getUserLobbyForMap, getLobbyPresence } from "@/lib/supabase/lobbies";
 import { ArrowLeft, Pencil, ClipboardCheck } from "lucide-react";
 
 export default async function MapViewerPage(props: {
@@ -73,6 +73,10 @@ export default async function MapViewerPage(props: {
   const userLobby = user ? await getUserLobbyForMap(params.id) : null;
   const canBypassGate = userIsAdmin || userIsInstructor || map.creator_id === user?.id;
 
+  // Lobbymates' starting positions. Empty for gate-bypassers with no lobby of
+  // their own; the canvas then simply renders no avatars.
+  const initialPresence = userLobby ? await getLobbyPresence(params.id) : [];
+
   if (!userLobby && !canBypassGate) {
     return (
       <LobbyCodeGateWrapper
@@ -123,7 +127,7 @@ export default async function MapViewerPage(props: {
             </Button>
           )}
         </div>
-        <MapViewer map={map} trailMode />
+        <MapViewer map={map} trailMode initialPresence={initialPresence} />
       </div>
     </MapEnrollmentTracker>
   );

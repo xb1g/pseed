@@ -7,7 +7,6 @@ import { ImperativePanelHandle } from "react-resizable-panels";
 import { FullLearningMap, MapNode } from "@/lib/supabase/maps";
 import { StudentProgress } from "@/lib/supabase/progresses";
 import { TeamNodeProgress, TeamMemberProgress } from "@/lib/supabase/team-progress";
-import { LobbyPresenceEntry } from "@/types/lobby";
 
 // Main component props
 export interface MapViewerProps {
@@ -64,7 +63,6 @@ export interface MapViewerNode extends Node {
   data: MapNode & {
     progress?: EnhancedProgress;
     node_type?: string;
-    presenceEntries?: LobbyPresenceEntry[];
   };
 }
 
@@ -122,7 +120,7 @@ export interface UseMapDataReturn {
 
 // Node component props
 export interface GameNodeProps {
-  data: MapNode & { progress?: EnhancedProgress; presenceEntries?: LobbyPresenceEntry[] };
+  data: MapNode & { progress?: EnhancedProgress };
   selected?: boolean;
   isUnlocked: boolean;
   isCompleted: boolean;

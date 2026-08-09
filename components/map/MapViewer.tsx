@@ -71,6 +71,8 @@ import {
   isEndNode,
 } from "@/lib/supabase/seed-completion";
 import { isEditable } from "@/lib/dom/is-editable";
+import { useLobbyPresence } from "@/hooks/use-lobby-presence";
+import type { LobbyPresenceEntry } from "@/types/lobby";
 
 interface MapViewerProps {
   map: FullLearningMap;
@@ -85,6 +87,33 @@ interface MapViewerProps {
   // positions from the node_paths graph, opens centered on the current node,
   // and uses a mobile bottom sheet instead of the resizable side panel.
   trailMode?: boolean;
+  // Lobbymates' starting positions, fetched server-side. Live movement after
+  // mount comes from the realtime subscription in useLobbyPresence. When this
+  // is non-empty it replaces the mock presence avatars.
+  initialPresence?: LobbyPresenceEntry[];
+}
+
+// Deterministic avatar color per user, so a given lobbymate always shows in
+// the same color across sessions and devices.
+const LOBBY_AVATAR_COLORS = [
+  "#ef4444",
+  "#f97316",
+  "#f59e0b",
+  "#84cc16",
+  "#10b981",
+  "#06b6d4",
+  "#3b82f6",
+  "#8b5cf6",
+  "#d946ef",
+  "#f43f5e",
+];
+
+function lobbyAvatarColor(userId: string): string {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return LOBBY_AVATAR_COLORS[Math.abs(hash) % LOBBY_AVATAR_COLORS.length];
 }
 
 // ---- Trail mode layout (prototype) ----
@@ -235,7 +264,9 @@ export function MapViewer({
   roomSettingsComponent,
   forceStudentView = false,
   trailMode = false,
+  initialPresence = [],
 }: MapViewerProps) {
+  const { presenceByNode } = useLobbyPresence(map.id, initialPresence);
   const [nodes, setNodes, onNodesChange] = useNodesState<any>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<any>([]);
   const [selectedNode, setSelectedNode] = useState<any | null>(null);
@@ -1179,14 +1210,29 @@ export function MapViewer({
   }, [trailMode, trailLayout, progressMap, isNodeUnlocked]);
 
   useEffect(() => {
-    // Trail mode (prototype): mock multiplayer presence — UI ONLY, no real
-    // data. The current user stands (bigger) on their current node; a few
-    // fake learners are scattered at fixed offsets along the trail.
+    // Multiplayer presence: one avatar per lobbymate, on the node they are
+    // working. Real lobby data when the viewer is in a lobby; otherwise trail
+    // mode falls back to the original mock learners so the prototype still
+    // demos standalone.
     const trailPresence = new Map<
       string,
       { id: string; label: string; color: string; isSelf: boolean }[]
     >();
-    if (trailMode && trailLayout && trailLayout.orderedIds.length > 0) {
+    const hasRealPresence = Object.keys(presenceByNode).length > 0;
+
+    if (hasRealPresence) {
+      for (const [nodeId, entries] of Object.entries(presenceByNode)) {
+        trailPresence.set(
+          nodeId,
+          entries.map((entry) => ({
+            id: entry.user_id,
+            label: (entry.full_name?.[0] ?? "?").toUpperCase(),
+            color: lobbyAvatarColor(entry.user_id),
+            isSelf: entry.user_id === currentUser?.id,
+          })),
+        );
+      }
+    } else if (trailMode && trailLayout && trailLayout.orderedIds.length > 0) {
       const currentIdx = currentTrailNodeId
         ? trailLayout.orderedIds.indexOf(currentTrailNodeId)
         : 0;
@@ -1238,7 +1284,12 @@ export function MapViewer({
           ...node,
           progress: progressMap[node.id],
           isCurrent: trailMode && node.id === currentTrailNodeId,
-          trailAvatars: trailMode ? trailPresence.get(node.id) : undefined,
+          // Real lobby presence shows in any mode; the mock fallback is
+          // trail-mode only.
+          trailAvatars:
+            hasRealPresence || trailMode
+              ? trailPresence.get(node.id)
+              : undefined,
         },
         position: (trailMode && trailLayout?.positions.get(node.id)) ||
           (node.metadata as any)?.position || {
@@ -1298,7 +1349,7 @@ export function MapViewer({
 
     setNodes(transformedNodes as any);
     setEdges(transformedEdges);
-  }, [map, progressMap, setNodes, setEdges, trailMode, trailLayout, currentTrailNodeId, currentUser]);
+  }, [map, progressMap, setNodes, setEdges, trailMode, trailLayout, currentTrailNodeId, currentUser, presenceByNode]);
 
   // Trail mode: pan the camera to a node, but clamp the destination to the
   // legal pan area (trailTranslateExtent) BEFORE animating. Raw setCenter can
@@ -1891,6 +1942,7 @@ export function MapViewerWithProvider({
   roomSettingsComponent,
   forceStudentView,
   trailMode,
+  initialPresence,
 }: MapViewerProps) {
   return (
     <ReactFlowProvider>
@@ -2128,6 +2180,7 @@ export function MapViewerWithProvider({
         roomSettingsComponent={roomSettingsComponent}
         forceStudentView={forceStudentView}
         trailMode={trailMode}
+        initialPresence={initialPresence}
       />
     </ReactFlowProvider>
   );
