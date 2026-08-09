@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   description: "Let our whale mascot help you find the perfect health product from the hackathon.",
 };
 
+export const dynamic = "force-dynamic";
 export const revalidate = 60;
 
 export default async function MatchPage() {
