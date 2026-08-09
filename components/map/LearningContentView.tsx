@@ -17,11 +17,7 @@ const LearningContentView = memo(({ nodeContent }: LearningContentViewProps) => 
       {nodeContent?.length > 0 ? (
         <div className="space-y-6">
           {nodeContent.map((content) => (
-            <Card key={content.id} className="shadow-sm">
-              <CardContent className="p-4">
-                {renderContent(content)} {/* Moved to helpers */}
-              </CardContent>
-            </Card>
+            <div key={content.id}>{renderContent(content)}</div>
           ))}
         </div>
       ) : (
