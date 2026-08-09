@@ -1003,13 +1003,17 @@ export function MapViewer({
                   const avatars = [...(data as any).trailAvatars].sort(
                     (a: any, b: any) => Number(a.isSelf) - Number(b.isSelf),
                   );
-                  const radius = 85; // px from node center, hugging the island
                   return avatars.map((a: any) => {
                     const nonSelfIdx = avatars
                       .filter((x: any) => !x.isSelf)
                       .indexOf(a);
-                    // Self tops the arc; friends spread down the right side
-                    const angle = a.isSelf ? -50 : -5 + nonSelfIdx * 45;
+                    // Self tops the arc; friends spread down the right side.
+                    // Friends sit slightly tighter: they render at 24px against
+                    // self's 36px, so an identical radius pushes their smaller
+                    // circle past the island edge and it reads as floating in
+                    // empty space rather than standing on the node.
+                    const angle = a.isSelf ? -50 : -12 + nonSelfIdx * 38;
+                    const radius = a.isSelf ? 85 : 72;
                     return (
                       <div
                         key={a.id}
