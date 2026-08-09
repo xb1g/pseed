@@ -423,34 +423,19 @@ export function AssessmentSection({
   };
 
   return (
-    <Card className="border-l-4 border-l-primary">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <CheckSquare className="h-5 w-5 text-primary" />
-            Assessment
-          </CardTitle>
-          <div className="flex gap-2">
-            <Badge variant="outline" className="capitalize">
-              {assessment.assessment_type.replace(/_/g, " ")}
-            </Badge>
-            {assessment.assessment_type === "quiz" && (
-              <Badge variant="secondary">
-                {displayQuestions.length} Question
-                {displayQuestions.length !== 1 ? "s" : ""}
-                {assessment.metadata?.randomize_questions &&
-                  displayQuestions.length !==
-                    (assessment.quiz_questions?.length || 0) && (
-                    <span className="text-xs ml-1">
-                      (of {assessment.quiz_questions?.length || 0})
-                    </span>
-                  )}
-              </Badge>
-            )}
-          </div>
+    <section className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+          <CheckSquare className="h-5 w-5 text-primary" />
+          Assessment
+        </h3>
+        <div className="flex gap-2">
+          <Badge variant="outline" className="capitalize">
+            {assessment.assessment_type.replace(/_/g, " ")}
+          </Badge>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      </div>
+      <div className="space-y-4">
         {/* Group Members Section */}
         {assessment.is_group_assessment && (
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -700,10 +685,11 @@ export function AssessmentSection({
             groupHasSubmission
           ) && (
             <div className="space-y-4">
-              {/* Assessment Prompt - Always show at the top */}
+              {/* Assessment Prompt - only when the instructor actually wrote
+                  one; the generic quiz filler adds nothing for students */}
               {(assessment.metadata?.question ||
                 assessment.metadata?.prompt ||
-                assessment.assessment_type === "quiz") && (
+                assessment.metadata?.quiz_description) && (
                 <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg">
                   <div className="flex gap-3">
                     <div className="flex-shrink-0">
@@ -725,15 +711,6 @@ export function AssessmentSection({
                         {assessment.assessment_type === "quiz" &&
                           assessment.metadata?.quiz_description && (
                             <p>{assessment.metadata.quiz_description}</p>
-                          )}
-                        {assessment.assessment_type === "quiz" &&
-                          !assessment.metadata?.question &&
-                          !assessment.metadata?.prompt &&
-                          !assessment.metadata?.quiz_description && (
-                            <p>
-                              Complete the quiz below. Answer all questions to
-                              the best of your ability.
-                            </p>
                           )}
                       </div>
                     </div>
@@ -987,13 +964,7 @@ export function AssessmentSection({
 
         {/* Submissions Section */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h4 className="font-semibold text-foreground">Your Submissions</h4>
-            <Badge variant="outline" className="text-xs">
-              {submissionsWithGrades.length} submission
-              {submissionsWithGrades.length !== 1 ? "s" : ""}
-            </Badge>
-          </div>
+          <h4 className="font-semibold text-foreground">Your Submissions</h4>
           {submissionsWithGrades.length > 0 ? (
             <div className="space-y-3">
               {submissionsWithGrades.map(({ submission, grade }, index) => (
@@ -1021,7 +992,7 @@ export function AssessmentSection({
             </Card>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

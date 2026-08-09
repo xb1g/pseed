@@ -1,6 +1,5 @@
 // app/components/NodeViewPanel/SubmissionItem.tsx
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,13 +12,9 @@ import {
   CheckCircle,
   AlertCircle,
   Clock,
-  Star,
-  MessageCircle,
   FileText,
   Image as ImageIcon,
   X,
-  User,
-  Bot,
 } from "lucide-react";
 import { AssessmentSubmission, SubmissionGrade } from "@/types/map";
 
@@ -70,23 +65,12 @@ export function SubmissionItem({
 
   // Determine if this was auto-graded (system) or manually graded
   const isAutoGraded = grade && grade.graded_by === null;
-  const graderInfo = grade
-    ? isAutoGraded
-      ? {
-          name: "System (Auto-graded)",
-          icon: <Bot className="h-4 w-4 text-purple-600" />,
-        }
-      : {
-          name: grade.profiles?.username || "Instructor",
-          icon: <User className="h-4 w-4 text-blue-600" />,
-        }
-    : null;
 
   return (
     <>
-      <Card className={`${index === 0 ? "ring-2 ring-primary/20" : ""}`}>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-3">
+      <div className={index === 0 ? "" : "opacity-90"}>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-primary"></div>
               <span className="text-sm font-medium">
@@ -98,9 +82,6 @@ export function SubmissionItem({
                 </Badge>
               )}
             </div>
-            <span className="text-xs text-muted-foreground font-mono">
-              {new Date(submission.submitted_at).toLocaleString()}
-            </span>
           </div>
 
           {submission.text_answer && (
@@ -150,83 +131,65 @@ export function SubmissionItem({
           )}
 
           {grade ? (
-            <div
-              className={`mt-4 p-4 rounded-lg border ${
-                isAutoGraded
-                  ? "bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800"
-                  : "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800"
-              }`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <MessageCircle
-                    className={`h-4 w-4 ${isAutoGraded ? "text-purple-600 dark:text-purple-400" : "text-blue-600 dark:text-blue-400"}`}
-                  />
-                  <span
-                    className={`text-sm font-semibold ${isAutoGraded ? "text-purple-900 dark:text-purple-100" : "text-blue-900 dark:text-blue-100"}`}
-                  >
-                    {isAutoGraded ? "System Feedback" : "Instructor Feedback"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant={grade.grade === "pass" ? "default" : "destructive"}
-                    className="font-medium"
-                  >
-                    {grade.grade === "pass" ? "PASSED" : "NEEDS IMPROVEMENT"}
-                  </Badge>
-                  {isAutoGraded && (
-                    <Badge variant="secondary" className="text-xs">
-                      🤖 Auto
-                    </Badge>
-                  )}
-                </div>
-              </div>
+            (() => {
+              const passed = grade.grade === "pass";
+              // Auto-graded quizzes: show just the score ("2/2"), pulled from
+              // the system comment; fall back to points for manual grades.
+              const scoreMatch = isAutoGraded
+                ? grade.comments?.match(/(\d+)\s*\/\s*(\d+)\s*correct/)
+                : null;
+              const scoreText = scoreMatch
+                ? `${scoreMatch[1]}/${scoreMatch[2]}`
+                : grade.points_awarded != null && assessment?.points_possible
+                  ? `${grade.points_awarded}/${assessment.points_possible}`
+                  : grade.points_awarded != null
+                    ? `${grade.points_awarded} pts`
+                    : null;
 
-              {grade.comments && (
-                <div className="mb-3">
-                  <p
-                    className={`text-sm leading-relaxed ${isAutoGraded ? "text-purple-800 dark:text-purple-200" : "text-blue-800 dark:text-blue-200"}`}
-                  >
-                    "{grade.comments}"
-                  </p>
-                </div>
-              )}
-
-              <div
-                className={`flex items-center justify-between text-xs ${isAutoGraded ? "text-purple-700 dark:text-purple-300" : "text-blue-700 dark:text-blue-300"}`}
-              >
-                <div className="flex items-center gap-4">
-                  <span>
-                    Graded: {new Date(grade.graded_at).toLocaleString()}
-                  </span>
+              return (
+                <div
+                  className={`mt-3 p-3 rounded-lg border ${
+                    passed
+                      ? "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800"
+                      : "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800"
+                  }`}
+                >
                   <div className="flex items-center gap-2">
-                    {graderInfo?.icon}
-                    <span className="font-medium">by {graderInfo?.name}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  {(grade.points_awarded !== null &&
-                    grade.points_awarded !== undefined) ||
-                  assessment?.points_possible ? (
-                    <div className="flex items-center gap-1">
-                      <span className="font-medium">
-                        {grade.points_awarded ?? 0}
-                        {assessment?.points_possible &&
-                          ` / ${assessment.points_possible}`}{" "}
-                        points
+                    {passed ? (
+                      <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    ) : (
+                      <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    )}
+                    <span
+                      className={`text-sm font-semibold ${
+                        passed
+                          ? "text-green-800 dark:text-green-200"
+                          : "text-amber-800 dark:text-amber-200"
+                      }`}
+                    >
+                      {passed ? "Passed" : "Not quite — try again"}
+                    </span>
+                    {scoreText && (
+                      <span
+                        className={`text-sm font-bold ${
+                          passed
+                            ? "text-green-700 dark:text-green-300"
+                            : "text-amber-700 dark:text-amber-300"
+                        }`}
+                      >
+                        {scoreText}
                       </span>
-                    </div>
-                  ) : null}
-                  {grade.rating && (
-                    <div className="flex items-center gap-1">
-                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                      <span className="font-medium">{grade.rating}/5</span>
-                    </div>
+                    )}
+                  </div>
+                  {/* Human feedback is worth showing; system chatter is not */}
+                  {!isAutoGraded && grade.comments && (
+                    <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                      "{grade.comments}"
+                    </p>
                   )}
                 </div>
-              </div>
-            </div>
+              );
+            })()
           ) : progressStatus === "passed" ? (
             <div className="mt-4 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
               <div className="flex items-center gap-2">
@@ -252,8 +215,8 @@ export function SubmissionItem({
               </p>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Image Expansion Modal */}
       {expandedImage && (
