@@ -219,6 +219,34 @@ export function NodeViewPanel({
     }
   }, [selectedNode?.id, currentUser?.id]); // Use specific ID instead of whole object
 
+  // Opening an unlocked node starts it automatically -- students should land on
+  // the content, not on a "Ready to Begin?" gate. Starting still creates the
+  // in_progress record (that is what begins time tracking), it just no longer
+  // needs a click. Guarded on !isLoading so it runs only after loadProgress has
+  // resolved; firing earlier would race and create a duplicate record.
+  useEffect(() => {
+    if (
+      !selectedNode ||
+      !currentUser ||
+      isLoading ||
+      isStarting ||
+      hasStarted ||
+      !isNodeUnlocked ||
+      isInstructorOrTA // instructors are reviewing, not taking the node
+    ) {
+      return;
+    }
+    void handleStartNode({ silent: true });
+  }, [
+    selectedNode?.id,
+    currentUser?.id,
+    isLoading,
+    isStarting,
+    hasStarted,
+    isNodeUnlocked,
+    isInstructorOrTA,
+  ]);
+
   // Separate effect to clear state when no node is selected - optimize to only fire when needed
   useEffect(() => {
     if (!selectedNode) {
@@ -404,7 +432,8 @@ export function NodeViewPanel({
     }
   };
 
-  const handleStartNode = async () => {
+  const handleStartNode = async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
     if (!selectedNode || !currentUser) {
       console.error("Cannot start node: missing selectedNode or currentUser");
       toast({
@@ -441,11 +470,13 @@ export function NodeViewPanel({
       setProgress(newProgress);
       onProgressUpdate?.();
 
-      toast({
-        title: "Node started successfully!",
-        description:
-          "Time tracking has begun. Good luck on your learning journey!",
-      });
+      if (!silent) {
+        toast({
+          title: "Node started successfully!",
+          description:
+            "Time tracking has begun. Good luck on your learning journey!",
+        });
+      }
     } catch (error) {
       console.error("❌ Error starting node:", error);
 
@@ -1156,7 +1187,7 @@ export function NodeViewPanel({
                 </p>
                 {currentUser && (
                   <Button
-                    onClick={handleStartNode}
+                    onClick={() => handleStartNode()}
                     disabled={isStarting}
                     className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-md"
                     size="lg"
