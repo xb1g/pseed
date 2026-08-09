@@ -16,7 +16,6 @@ import {
 import { GameNodeProps } from "../types";
 import { getNodeStyling } from "../utils/mapAnimations";
 import { NODE_STYLES } from "../constants";
-import { NodePresenceAvatars } from "./NodePresenceAvatars";
 
 export function GameNode({
   data,
@@ -270,9 +269,6 @@ export function GameNode({
 
         {/* End Node Badge */}
         {endNodeBadge}
-
-        {/* Live Presence Avatars */}
-        <NodePresenceAvatars entries={data.presenceEntries ?? []} />
 
         {/* Sprite Image */}
         <img
