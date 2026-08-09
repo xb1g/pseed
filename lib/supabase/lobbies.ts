@@ -171,20 +171,25 @@ export const getUserLobbyForMap = async (
   } = await supabase.auth.getUser();
   if (!user) return null;
 
+  // Not maybeSingle(): nothing in the schema stops a user being a member of two
+  // lobbies for one map (the UNIQUE constraint is on enrollments, not
+  // memberships), and maybeSingle() throws on multiple rows -- which would
+  // silently drop the user back to the code gate. Take the earliest join.
   const { data, error } = await supabase
     .from("map_lobbies")
-    .select("*, lobby_members!inner(user_id)")
+    .select("*, lobby_members!inner(user_id, joined_at)")
     .eq("map_id", mapId)
     .eq("lobby_members.user_id", user.id)
-    .maybeSingle();
+    .order("created_at", { ascending: true })
+    .limit(1);
 
   if (error) {
     console.error("Error checking lobby membership:", error);
     return null;
   }
-  if (!data) return null;
+  if (!data || data.length === 0) return null;
 
-  const { lobby_members: _members, ...lobby } = data as MapLobby & {
+  const { lobby_members: _members, ...lobby } = data[0] as MapLobby & {
     lobby_members: unknown;
   };
   return lobby;
@@ -289,11 +294,15 @@ const fetchProgressForUsers = async (
 const fetchFirstNodeId = async (mapId: string): Promise<string | null> => {
   const supabase = await createClient();
 
+  // Nodes created in one batch share an identical created_at, so ordering by it
+  // alone is non-deterministic and can pick an arbitrary node as "first". The id
+  // tiebreaker makes the fallback stable across requests.
   const { data } = await supabase
     .from("map_nodes")
     .select("id")
     .eq("map_id", mapId)
     .order("created_at", { ascending: true })
+    .order("id", { ascending: true })
     .limit(1)
     .maybeSingle();
 
