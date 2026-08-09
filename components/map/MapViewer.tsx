@@ -1222,15 +1222,28 @@ export function MapViewer({
 
     if (hasRealPresence) {
       for (const [nodeId, entries] of Object.entries(presenceByNode)) {
-        trailPresence.set(
-          nodeId,
-          entries.map((entry) => ({
-            id: entry.user_id,
-            label: (entry.full_name?.[0] ?? "?").toUpperCase(),
-            color: lobbyAvatarColor(entry.user_id),
-            isSelf: entry.user_id === currentUser?.id,
-          })),
-        );
+        for (const entry of entries) {
+          const isSelf = entry.user_id === currentUser?.id;
+
+          // Your own avatar follows the highlight ring rather than the
+          // server-computed position. The server can only see progress rows, so
+          // after finishing a node it parks you on that finished node -- while
+          // the ring has already advanced to the next unlocked one. Anchoring
+          // self to currentTrailNodeId keeps the two in step; lobbymates keep
+          // their server position, since the client cannot compute their ring.
+          const targetNodeId =
+            isSelf && currentTrailNodeId ? currentTrailNodeId : nodeId;
+
+          trailPresence.set(targetNodeId, [
+            ...(trailPresence.get(targetNodeId) ?? []),
+            {
+              id: entry.user_id,
+              label: (entry.full_name?.[0] ?? "?").toUpperCase(),
+              color: lobbyAvatarColor(entry.user_id),
+              isSelf,
+            },
+          ]);
+        }
       }
     } else if (trailMode && trailLayout && trailLayout.orderedIds.length > 0) {
       const currentIdx = currentTrailNodeId

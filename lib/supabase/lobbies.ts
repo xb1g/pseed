@@ -316,15 +316,19 @@ const fetchFirstNodeId = async (mapId: string): Promise<string | null> => {
 const pickCurrentNode = (rows: ProgressRow[]): ProgressRow | null => {
   if (rows.length === 0) return null;
 
+  // A node the student is actively working is where they are.
   const inProgress = rows.find((r) => r.status === "in_progress");
   if (inProgress) return inProgress;
 
-  const submitted = rows.find((r) => r.status === "submitted");
-  if (submitted) return submitted;
-
-  const passed = rows
-    .filter((r) => r.status === "passed")
+  // Otherwise they have finished everything they have touched, so they belong
+  // on the furthest one. `submitted` counts as finished here -- awaiting a
+  // grade is not the same as still working, and this matches the trail ring,
+  // which skips both `passed` and `submitted` when picking the current node.
+  // Treating `submitted` as the current position would strand a student's
+  // avatar on a node the ring has already advanced past.
+  const finished = rows
+    .filter((r) => r.status === "passed" || r.status === "submitted")
     .sort((a, b) => (b.arrived_at ?? "").localeCompare(a.arrived_at ?? ""));
 
-  return passed[0] ?? null;
+  return finished[0] ?? null;
 };
