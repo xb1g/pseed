@@ -111,16 +111,6 @@ export function GroupManagementModal({
   const loadData = useCallback(async () => {
     if (!assessment.id) return;
 
-    // Don't try to load data for temporary assessments (not yet saved)
-    if (assessment.id.startsWith('temp_')) {
-      console.log('⏭️ Skipping group data load for temporary assessment');
-      setGroups([]);
-      setStudents([]);
-      setUnassignedStudents([]);
-      setMapContext(null);
-      return;
-    }
-
     setLoading(true);
     try {
       console.log("📊 Loading group management data...");

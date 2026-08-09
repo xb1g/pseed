@@ -126,14 +126,15 @@ export const CanvaEmbed = memo(({ contentUrl }: CanvaEmbedProps) => {
   }, [contentUrl]);
 
   const canvaProviders = useMemo(() => [
+    ...defaultProviders,
     {
       provider_name: "Canva",
       provider_url: "https://www.canva.com",
       endpoints: [
         {
           schemes: [
-            ...defaultProviders,
             "https://www.canva.com/design/*/view",
+            "https://www.canva.com/design/*",
           ],
           url: "https://www.canva.com/_oembed",
           discovery: true,

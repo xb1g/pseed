@@ -198,7 +198,7 @@ export function OptimizedImage({
 
       {/* Actual image */}
       <div
-        className={`transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+        className={`relative w-full h-full transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
       >
         {fill ? (
           <Image

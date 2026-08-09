@@ -19,7 +19,7 @@ try {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  allowedDevOrigins: ["big.lion-yo.ts.net", "*.lion-yo.ts.net", "*.ts.net"],
+  allowedDevOrigins: ["big.lion-yo.ts.net", "*.lion-yo.ts.net", "*.ts.net", "127.0.0.1"],
   turbopack: {
     root: process.cwd(),
   },
