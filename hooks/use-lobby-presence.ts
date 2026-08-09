@@ -30,10 +30,25 @@ export function useLobbyPresence(
 ): { presenceByNode: Record<string, LobbyPresenceEntry[]> } {
   const [presence, setPresence] = useState<LobbyPresenceEntry[]>(initial);
 
-  // Re-seed when the server sends a fresh roster (e.g. after a navigation).
+  // Re-seed only when the roster's *contents* change, not its identity. The
+  // server component hands down a fresh array on every render, so depending on
+  // `initial` directly reset state on each one -- overwriting every realtime
+  // update the moment anything else re-rendered, which froze lobbymates on
+  // their page-load positions.
+  const initialKey = initial
+    .map((e) => `${e.user_id}:${e.node_id}:${e.status}`)
+    .sort()
+    .join("|");
+  // Seeded with the mount-time key: useState(initial) has already applied it.
+  const seededKeyRef = useRef<string>(initialKey);
+
   useEffect(() => {
+    // A realtime update legitimately diverges from the server snapshot, so only
+    // re-seed when the server itself reports something new.
+    if (seededKeyRef.current === initialKey) return;
+    seededKeyRef.current = initialKey;
     setPresence(initial);
-  }, [initial]);
+  }, [initialKey]);
 
   // Ref so the realtime callback tests membership against current state
   // without closing over a stale value or resubscribing on every change.
