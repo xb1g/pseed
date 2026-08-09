@@ -316,9 +316,14 @@ const fetchFirstNodeId = async (mapId: string): Promise<string | null> => {
 const pickCurrentNode = (rows: ProgressRow[]): ProgressRow | null => {
   if (rows.length === 0) return null;
 
-  // A node the student is actively working is where they are.
-  const inProgress = rows.find((r) => r.status === "in_progress");
-  if (inProgress) return inProgress;
+  // A node the student is actively working is where they are. A student can
+  // hold several in_progress rows at once (opening a node starts it, and they
+  // may leave without finishing), so take the most recently arrived rather than
+  // whichever row the database happened to return first.
+  const inProgress = rows
+    .filter((r) => r.status === "in_progress")
+    .sort((a, b) => (b.arrived_at ?? "").localeCompare(a.arrived_at ?? ""));
+  if (inProgress.length > 0) return inProgress[0];
 
   // Otherwise they have finished everything they have touched, so they belong
   // on the furthest one. `submitted` counts as finished here -- awaiting a
