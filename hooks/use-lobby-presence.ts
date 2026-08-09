@@ -8,6 +8,7 @@ interface ProgressChangeRow {
   user_id?: string;
   node_id?: string;
   status?: NodeProgressStatus;
+  arrived_at?: string | null;
 }
 
 /**
@@ -55,15 +56,27 @@ export function useLobbyPresence(
       if (!knownUserIdsRef.current.has(row.user_id)) return;
 
       setPresence((prev) =>
-        prev.map((entry) =>
-          entry.user_id === row.user_id
-            ? {
-                ...entry,
-                node_id: row.node_id as string,
-                status: row.status ?? entry.status,
-              }
-            : entry
-        )
+        prev.map((entry) => {
+          if (entry.user_id !== row.user_id) return entry;
+
+          const status = row.status ?? entry.status;
+
+          // A node someone is actively working is where they are.
+          if (status === "in_progress") {
+            return { ...entry, node_id: row.node_id as string, status };
+          }
+
+          // Finishing a node (passed/submitted/failed) fires an event on the
+          // node just completed, not on the next one -- no row exists for the
+          // next node until they open it. Moving the avatar onto the finished
+          // node would walk it backwards, so hold position and let the next
+          // in_progress event advance it. Only the status is refreshed.
+          if (entry.node_id === row.node_id) {
+            return { ...entry, status };
+          }
+
+          return entry;
+        })
       );
     };
 
