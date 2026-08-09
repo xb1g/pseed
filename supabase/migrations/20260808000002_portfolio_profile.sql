@@ -2,6 +2,61 @@
 -- public_profiles is PII-free by construction; the new columns follow that rule
 -- (no email, no discord, no birthdate — only things a user would put on a resume).
 
+-- Ensure public_profiles table exists (idempotent — the original migration
+-- 20260612233000 is recorded as applied but the table may be missing).
+CREATE TABLE IF NOT EXISTS public.public_profiles (
+  user_id         uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  handle          text,
+  class_slug      text CHECK (class_slug IN ('builder','strategist','creator','analyst','healer','producer')),
+  subclass_slug   text,
+  current_path    text,
+  evolution_stage integer NOT NULL DEFAULT 0 CHECK (evolution_stage >= 0),
+  growth_count    integer NOT NULL DEFAULT 0 CHECK (growth_count >= 0),
+  is_public       boolean NOT NULL DEFAULT false,
+  published_sections text[] NOT NULL DEFAULT '{}',
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  updated_at      timestamptz NOT NULL DEFAULT now()
+);
+
+-- Handle format constraint (skip if already exists)
+DO $$ BEGIN
+  ALTER TABLE public.public_profiles ADD CONSTRAINT handle_format
+    CHECK (handle IS NULL OR handle ~ '^[a-z0-9_-]{3,30}$');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE UNIQUE INDEX IF NOT EXISTS public_profiles_handle_idx
+  ON public.public_profiles(handle) WHERE handle IS NOT NULL;
+
+-- Auto-touch updated_at
+CREATE OR REPLACE FUNCTION touch_updated_at()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN NEW.updated_at = now(); RETURN NEW; END; $$;
+
+DO $$ BEGIN
+  CREATE TRIGGER public_profiles_updated_at
+    BEFORE UPDATE ON public.public_profiles
+    FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- RLS
+ALTER TABLE public.public_profiles ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  CREATE POLICY "owner_all" ON public.public_profiles
+    FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "public_read" ON public.public_profiles
+    FOR SELECT USING (is_public = true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- Now add portfolio columns
+
 ALTER TABLE public.public_profiles
   ADD COLUMN IF NOT EXISTS headline text,
   ADD COLUMN IF NOT EXISTS track text,
@@ -9,21 +64,33 @@ ALTER TABLE public.public_profiles
   ADD COLUMN IF NOT EXISTS portfolio_links text[] NOT NULL DEFAULT '{}',
   ADD COLUMN IF NOT EXISTS seeking text;
 
-ALTER TABLE public.public_profiles
-  ADD CONSTRAINT public_profiles_track_check
-  CHECK (track IS NULL OR track IN ('dev', 'video', 'strategy', 'design', 'other'));
+DO $$ BEGIN
+  ALTER TABLE public.public_profiles
+    ADD CONSTRAINT public_profiles_track_check
+    CHECK (track IS NULL OR track IN ('dev', 'video', 'strategy', 'design', 'other'));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-ALTER TABLE public.public_profiles
-  ADD CONSTRAINT public_profiles_seeking_check
-  CHECK (seeking IS NULL OR seeking IN ('internship', 'freelance', 'collaboration', 'not-looking'));
+DO $$ BEGIN
+  ALTER TABLE public.public_profiles
+    ADD CONSTRAINT public_profiles_seeking_check
+    CHECK (seeking IS NULL OR seeking IN ('internship', 'freelance', 'collaboration', 'not-looking'));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-ALTER TABLE public.public_profiles
-  ADD CONSTRAINT public_profiles_tools_max
-  CHECK (array_length(tools, 1) IS NULL OR array_length(tools, 1) <= 20);
+DO $$ BEGIN
+  ALTER TABLE public.public_profiles
+    ADD CONSTRAINT public_profiles_tools_max
+    CHECK (array_length(tools, 1) IS NULL OR array_length(tools, 1) <= 20);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-ALTER TABLE public.public_profiles
-  ADD CONSTRAINT public_profiles_links_max
-  CHECK (array_length(portfolio_links, 1) IS NULL OR array_length(portfolio_links, 1) <= 10);
+DO $$ BEGIN
+  ALTER TABLE public.public_profiles
+    ADD CONSTRAINT public_profiles_links_max
+    CHECK (array_length(portfolio_links, 1) IS NULL OR array_length(portfolio_links, 1) <= 10);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- The my-path visibility RPC gains 'portfolio' as a valid section so the
 -- portfolio page can reuse the same publish flow.

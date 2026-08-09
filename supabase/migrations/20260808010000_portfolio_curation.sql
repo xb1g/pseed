@@ -7,13 +7,19 @@ ALTER TABLE public.public_profiles
   ADD COLUMN IF NOT EXISTS portfolio_notes jsonb NOT NULL DEFAULT '{}'::jsonb,
   ADD COLUMN IF NOT EXISTS portfolio_order text[] NOT NULL DEFAULT '{}';
 
-ALTER TABLE public.public_profiles
-  ADD CONSTRAINT public_profiles_hero_project_format
-  CHECK (hero_project IS NULL OR hero_project ~ '^(pathlab|projectseed):[0-9a-fA-F-]{36}$');
+DO $$ BEGIN
+  ALTER TABLE public.public_profiles
+    ADD CONSTRAINT public_profiles_hero_project_format
+    CHECK (hero_project IS NULL OR hero_project ~ '^(pathlab|projectseed):[0-9a-fA-F-]{36}$');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-ALTER TABLE public.public_profiles
-  ADD CONSTRAINT public_profiles_notes_size
-  CHECK (octet_length(portfolio_notes::text) <= 8192);
+DO $$ BEGIN
+  ALTER TABLE public.public_profiles
+    ADD CONSTRAINT public_profiles_notes_size
+    CHECK (octet_length(portfolio_notes::text) <= 8192);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Public read must expose the curation too, so rebuild the RPC with the
 -- extra fields in the profile payload.

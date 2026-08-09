@@ -958,6 +958,13 @@ export function MapViewer({
 
             {/* Core Node Visuals */}
             <div className="relative min-w-[64px] min-h-[64px] w-fit h-fit flex items-center justify-center">
+              {/* Trail mode: pulsing ring marking the student's current node */}
+              {(data as any).isCurrent && (
+                <>
+                  <div className="absolute -inset-3 rounded-full trail-current-ring pointer-events-none z-10" />
+                  <div className="absolute -inset-3 rounded-full trail-current-ring trail-current-ring--b pointer-events-none z-10" />
+                </>
+              )}
               {/* Background Atmosphere/Glow */}
               {isUnlocked && (
                 <div className="absolute inset-0 -z-10">
@@ -1120,6 +1127,21 @@ export function MapViewer({
     [progressMap, isInstructorOrTA, isTeamMap, isNodeUnlocked, isNodeCompleted, getSubmissionRequirement],
   );
 
+  // Trail mode: the student's "current" node — first unlocked node that is
+  // not passed/submitted, walking the trail bottom-to-top. Drives the pulsing
+  // highlight ring so students can see where they are at a glance.
+  const currentTrailNodeId = useMemo(() => {
+    if (!trailMode || !trailLayout) return null;
+    return (
+      trailLayout.orderedIds.find((id) => {
+        const status = progressMap[id]?.status;
+        return (
+          isNodeUnlocked(id) && status !== "passed" && status !== "submitted"
+        );
+      }) ?? null
+    );
+  }, [trailMode, trailLayout, progressMap, isNodeUnlocked]);
+
   useEffect(() => {
     const transformedNodes = map.map_nodes.map((node) => {
       // Determine node type - check for node_type property
@@ -1133,7 +1155,11 @@ export function MapViewer({
       return {
         id: node.id,
         type: nodeType,
-        data: { ...node, progress: progressMap[node.id] },
+        data: {
+          ...node,
+          progress: progressMap[node.id],
+          isCurrent: trailMode && node.id === currentTrailNodeId,
+        },
         position: (trailMode && trailLayout?.positions.get(node.id)) ||
           (node.metadata as any)?.position || {
             x: Math.random() * 400,
@@ -1155,12 +1181,16 @@ export function MapViewer({
     const transformedEdges: Edge[] = [];
     map.map_nodes.forEach((node) => {
       node.node_paths_source.forEach((path) => {
-        // Add visual indicators for path states
+        // Add visual indicators for path states. Trail mode: only PASSED
+        // sources get the active (green) path; in-progress/submitted stay
+        // dim so completed progress reads at a glance.
         const sourceProgress = progressMap[path.source_node_id];
-        const isPathActive =
-          sourceProgress?.status === "passed" ||
-          sourceProgress?.status === "in_progress" ||
-          sourceProgress?.status === "submitted";
+        const isPassed = sourceProgress?.status === "passed";
+        const isPathActive = trailMode
+          ? isPassed
+          : isPassed ||
+            sourceProgress?.status === "in_progress" ||
+            sourceProgress?.status === "submitted";
 
         transformedEdges.push({
           id: path.id,
@@ -1179,7 +1209,7 @@ export function MapViewer({
 
     setNodes(transformedNodes as any);
     setEdges(transformedEdges);
-  }, [map, progressMap, setNodes, setEdges, trailMode, trailLayout]);
+  }, [map, progressMap, setNodes, setEdges, trailMode, trailLayout, currentTrailNodeId]);
 
   // Trail mode: pan the camera to a node, but clamp the destination to the
   // legal pan area (trailTranslateExtent) BEFORE animating. Raw setCenter can
@@ -1781,6 +1811,41 @@ export function MapViewerWithProvider({
            a page scroll and users need two fingers to move the map. */
         .trail-mode .react-flow__pane {
           touch-action: none;
+        }
+
+        /* Trail mode: pulsing ring on the student's current node. Two
+           layers with prime-number durations so they never visually sync. */
+        .trail-current-ring {
+          box-shadow:
+            0 0 0 3px rgba(96, 165, 250, 0.9),
+            0 0 22px 6px rgba(59, 130, 246, 0.45);
+          animation: trail-current-pulse 4253ms ease-in-out infinite;
+        }
+        .trail-current-ring--b {
+          box-shadow:
+            0 0 0 2px rgba(147, 197, 253, 0.6),
+            0 0 34px 10px rgba(59, 130, 246, 0.25);
+          animation-duration: 5711ms;
+          animation-delay: 1409ms;
+        }
+        @keyframes trail-current-pulse {
+          0%,
+          100% {
+            opacity: 0.55;
+            transform: scale(1);
+            filter: blur(0.5px);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.08);
+            filter: blur(0px);
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .trail-current-ring,
+          .trail-current-ring--b {
+            animation: none;
+          }
         }
 
         /* ================================
