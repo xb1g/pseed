@@ -108,8 +108,15 @@ CREATE POLICY "Lobbymates can view progress" ON public.student_node_progress
 
 -- Creates the membership row and the enrollment row in one transaction, so
 -- there is no window where a student is a member without an enrollment.
+-- CREATE OR REPLACE cannot change a function's return type, so drop first to
+-- keep this migration re-runnable.
+DROP FUNCTION IF EXISTS public.join_lobby_by_code(text);
+
+-- The OUT parameters are named out_* rather than lobby_id/map_id: plpgsql puts
+-- output parameter names in scope for the whole body, so bare `lobby_id` inside
+-- the INSERTs below would be ambiguous between the parameter and the column.
 CREATE OR REPLACE FUNCTION public.join_lobby_by_code(code text)
-RETURNS TABLE(lobby_id uuid, map_id uuid)
+RETURNS TABLE(out_lobby_id uuid, out_map_id uuid)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
