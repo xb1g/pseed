@@ -1,12 +1,8 @@
 import Link from "next/link";
-import {
-  ArrowUpRight,
-  Calendar,
-  Link2,
-  Wrench,
-} from "lucide-react";
+import { ArrowUpRight, Calendar, Link2, Wrench } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { safeExternalUrl } from "@/lib/talent-url";
 import type {
   OwnerPortfolio,
   PortfolioIdentity,
@@ -87,9 +83,7 @@ export function PortfolioView({
                 )}
               </div>
 
-              {cards.length === 0 ? (
-                <EmptyProjects isOwner={isOwner} />
-              ) : null}
+              {cards.length === 0 ? <EmptyProjects isOwner={isOwner} /> : null}
             </section>
           </main>
         </div>
@@ -109,7 +103,10 @@ function IdentityCard({
     <section className="ei-card rounded-[28px] border border-white/10 p-6">
       <div className="flex flex-col items-start gap-4">
         <Avatar className="h-24 w-24 border border-white/15 bg-white/5 shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
-          <AvatarImage src={identity.avatarUrl ?? undefined} alt="Profile picture" />
+          <AvatarImage
+            src={identity.avatarUrl ?? undefined}
+            alt="Profile picture"
+          />
           <AvatarFallback className="bg-white/10 text-2xl text-white">
             {identity.fullName?.charAt(0) || identity.username.charAt(0)}
           </AvatarFallback>
@@ -125,7 +122,9 @@ function IdentityCard({
         </div>
 
         {identity.headline ? (
-          <p className="text-sm leading-7 text-slate-300">{identity.headline}</p>
+          <p className="text-sm leading-7 text-slate-300">
+            {identity.headline}
+          </p>
         ) : null}
 
         <div className="flex flex-wrap gap-2">
@@ -158,7 +157,14 @@ function IdentityCard({
 
 function TalentCard({ identity }: { identity: PortfolioIdentity }) {
   const hasTools = identity.tools.length > 0;
-  const hasLinks = identity.portfolioLinks.length > 0;
+  // Links are user-controlled and reach this component straight from the table,
+  // so drop anything that is not http(s) before it can become an href.
+  const links = identity.portfolioLinks
+    .map((link) => ({ link, safe: safeExternalUrl(link) }))
+    .filter(
+      (entry): entry is { link: string; safe: string } => entry.safe !== null
+    );
+  const hasLinks = links.length > 0;
   if (!hasTools && !hasLinks) {
     return null;
   }
@@ -186,16 +192,18 @@ function TalentCard({ identity }: { identity: PortfolioIdentity }) {
             Links
           </p>
           <div className="mt-3 space-y-2">
-            {identity.portfolioLinks.map((link) => (
+            {links.map(({ link, safe }) => (
               <a
                 key={link}
-                href={link}
+                href={safe}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 truncate rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-blue-200 transition-colors hover:bg-white/[0.06]"
               >
                 <ArrowUpRight className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">{link.replace(/^https?:\/\//, "")}</span>
+                <span className="truncate">
+                  {link.replace(/^https?:\/\//, "")}
+                </span>
               </a>
             ))}
           </div>
@@ -211,11 +219,17 @@ function EmptyProjects({ isOwner }: { isOwner: boolean }) {
       {isOwner ? (
         <>
           Nothing here yet. Start a{" "}
-          <Link href="/seeds" className="font-semibold text-white hover:opacity-80">
+          <Link
+            href="/seeds"
+            className="font-semibold text-white hover:opacity-80"
+          >
             PathLab journey
           </Link>{" "}
           or build with{" "}
-          <Link href="/projectseed" className="font-semibold text-white hover:opacity-80">
+          <Link
+            href="/projectseed"
+            className="font-semibold text-white hover:opacity-80"
+          >
             ProjectSeed
           </Link>{" "}
           and your work will show up on this page.
