@@ -33,7 +33,9 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  DoorOpen,
 } from "lucide-react";
+import { LobbyManagerDialog } from "./lobbies/LobbyManagerDialog";
 
 interface AdminMap {
   id: string;
@@ -82,6 +84,8 @@ export function AdminMapsManagement({ onDataReload }: AdminMapsManagementProps) 
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [bulkDeleteProgress, setBulkDeleteProgress] = useState<{current: number, total: number, currentMap: string} | null>(null);
+  const [lobbyDialogOpen, setLobbyDialogOpen] = useState(false);
+  const [lobbyDialogMap, setLobbyDialogMap] = useState<AdminMap | null>(null);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 50,
@@ -409,6 +413,16 @@ export function AdminMapsManagement({ onDataReload }: AdminMapsManagementProps) 
       setBulkDeleteDialogOpen(false);
       setBulkDeleteProgress(null);
     }
+  };
+
+  const handleOpenLobbies = (map: AdminMap) => {
+    setLobbyDialogMap(map);
+    setLobbyDialogOpen(true);
+  };
+
+  const handleCloseLobbies = () => {
+    setLobbyDialogOpen(false);
+    setLobbyDialogMap(null);
   };
 
   const getVisibilityBadgeVariant = (visibility: string) => {
@@ -857,6 +871,15 @@ export function AdminMapsManagement({ onDataReload }: AdminMapsManagementProps) 
                         <Button
                           variant="outline"
                           size="sm"
+                          className="hover:bg-amber-500/10 text-amber-400 hover:text-amber-300 border-amber-500/20"
+                          onClick={() => handleOpenLobbies(map)}
+                        >
+                          <DoorOpen className="h-3 w-3 mr-1" />
+                          Lobbies
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           className="hover:bg-destructive/10 text-destructive hover:text-destructive"
                           onClick={() => handleDeleteMap(map)}
                           disabled={deleting === map.id}
@@ -883,6 +906,19 @@ export function AdminMapsManagement({ onDataReload }: AdminMapsManagementProps) 
           {renderPaginationControls()}
         </CardContent>
       </Card>
+
+      {/* Lobby Manager Dialog */}
+      {lobbyDialogMap && (
+        <LobbyManagerDialog
+          mapId={lobbyDialogMap.id}
+          mapTitle={lobbyDialogMap.title}
+          open={lobbyDialogOpen}
+          onOpenChange={(o) => {
+            if (!o) handleCloseLobbies();
+            else setLobbyDialogOpen(o);
+          }}
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
