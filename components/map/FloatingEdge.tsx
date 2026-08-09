@@ -9,6 +9,7 @@ function FloatingEdge({
   target,
   markerEnd,
   style,
+  data,
   edit,
   selected,
 }: EdgeProps & { edit?: boolean }) {
@@ -24,6 +25,13 @@ function FloatingEdge({
   }
 
   const { sx, sy, tx, ty, sourcePos, targetPos } = getEdgeParams(sourceNode, targetNode);
+
+  // Trail mode: passed sources show the wooden/orange bridge, upcoming stays
+  // green (colors swapped per UX feedback).
+  const isPassed = (data as any)?.passed === true;
+  const bridgeMain = selected ? "#3b82f6" : isPassed ? "#D2691E" : "#10b981";
+  const bridgePlanks = selected ? "#1e40af" : isPassed ? "#8B4513" : "#059669";
+  const bridgeRails = selected ? "#1e3a8a" : isPassed ? "#654321" : "#047857";
 
   const [edgePath] = getBezierPath({
     sourceX: sx,
@@ -122,14 +130,16 @@ function FloatingEdge({
         d={edgePath}
         style={{
           ...style,
-          stroke: selected ? "#3b82f6" : "#D2691E", // Blue when selected, sandy brown otherwise
+          stroke: bridgeMain,
           strokeWidth: selected ? 10 : 8,
           fill: "none",
           strokeLinecap: "round",
           transition: "all 300ms ease-in-out",
           filter: selected
             ? "drop-shadow(0 0 8px rgba(59, 130, 246, 0.8))"
-            : "none",
+            : isPassed
+              ? "drop-shadow(0 0 6px rgba(210, 105, 30, 0.5))"
+              : "none",
           pointerEvents: "none",
         }}
       />
@@ -139,7 +149,7 @@ function FloatingEdge({
         className="sky-bridge-planks animate-float-bridge"
         d={edgePath}
         style={{
-          stroke: selected ? "#1e40af" : "#8B4513", // Blue when selected, saddle brown otherwise
+          stroke: bridgePlanks,
           strokeWidth: selected ? 7 : 6,
           fill: "none",
           strokeDasharray: "12,3",
@@ -155,7 +165,7 @@ function FloatingEdge({
         className="sky-bridge-rail-top animate-float-bridge"
         d={edgePath}
         style={{
-          stroke: selected ? "#1e3a8a" : "#654321", // Dark blue when selected, dark brown otherwise
+          stroke: bridgeRails,
           strokeWidth: selected ? 3 : 2,
           fill: "none",
           transform: "translateY(-4px)",
@@ -168,7 +178,7 @@ function FloatingEdge({
         className="sky-bridge-rail-bottom animate-float-bridge"
         d={edgePath}
         style={{
-          stroke: selected ? "#1e3a8a" : "#654321",
+          stroke: bridgeRails,
           strokeWidth: selected ? 3 : 2,
           fill: "none",
           transform: "translateY(4px)",

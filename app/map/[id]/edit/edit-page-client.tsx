@@ -1244,7 +1244,7 @@ export default function EditMapPage({
                 Back to Map Editor
               </Button>
               <div className="h-full w-full bg-slate-950">
-                {map && <MapViewerWithProvider map={map} forceStudentView />}
+                {map && <MapViewerWithProvider map={map} forceStudentView trailMode />}
               </div>
             </TabsContent>
 

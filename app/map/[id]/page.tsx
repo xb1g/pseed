@@ -101,7 +101,7 @@ export default async function MapViewerPage(props: {
             </Button>
           )}
         </div>
-        <MapViewer map={map} />
+        <MapViewer map={map} trailMode />
       </div>
     </MapEnrollmentTracker>
   );

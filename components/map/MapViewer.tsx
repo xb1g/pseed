@@ -958,13 +958,49 @@ export function MapViewer({
 
             {/* Core Node Visuals */}
             <div className="relative min-w-[64px] min-h-[64px] w-fit h-fit flex items-center justify-center">
-              {/* Trail mode: pulsing ring marking the student's current node */}
+              {/* Trail mode: soft static ring marking the student's current node */}
               {(data as any).isCurrent && (
-                <>
-                  <div className="absolute -inset-3 rounded-full trail-current-ring pointer-events-none z-10" />
-                  <div className="absolute -inset-3 rounded-full trail-current-ring trail-current-ring--b pointer-events-none z-10" />
-                </>
+                <div className="absolute -inset-4 rounded-full trail-current-ring pointer-events-none z-10" />
               )}
+
+              {/* Trail mode (prototype): mock multiplayer presence — avatar
+                  circles fanned out along the node's right-side arc; the
+                  current user is bigger and sits highest. */}
+              {Array.isArray((data as any).trailAvatars) &&
+                (data as any).trailAvatars.length > 0 &&
+                (() => {
+                  const avatars = [...(data as any).trailAvatars].sort(
+                    (a: any, b: any) => Number(a.isSelf) - Number(b.isSelf),
+                  );
+                  const radius = 85; // px from node center, hugging the island
+                  return avatars.map((a: any) => {
+                    const nonSelfIdx = avatars
+                      .filter((x: any) => !x.isSelf)
+                      .indexOf(a);
+                    // Self tops the arc; friends spread down the right side
+                    const angle = a.isSelf ? -50 : -5 + nonSelfIdx * 45;
+                    return (
+                      <div
+                        key={a.id}
+                        className="absolute left-1/2 top-1/2 z-30 pointer-events-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.6)]"
+                        style={{
+                          transform: `translate(-50%, -50%) rotate(${angle}deg) translateX(${radius}px) rotate(${-angle}deg)`,
+                        }}
+                      >
+                        <div
+                          className={`rounded-full flex items-center justify-center font-bold text-white border-2 border-background ${
+                            a.isSelf
+                              ? "w-9 h-9 text-sm ring-2 ring-blue-400 shadow-lg"
+                              : "w-6 h-6 text-[10px]"
+                          }`}
+                          style={{ backgroundColor: a.color }}
+                        >
+                          {a.label}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
               {/* Background Atmosphere/Glow */}
               {isUnlocked && (
                 <div className="absolute inset-0 -z-10">
@@ -1143,6 +1179,49 @@ export function MapViewer({
   }, [trailMode, trailLayout, progressMap, isNodeUnlocked]);
 
   useEffect(() => {
+    // Trail mode (prototype): mock multiplayer presence — UI ONLY, no real
+    // data. The current user stands (bigger) on their current node; a few
+    // fake learners are scattered at fixed offsets along the trail.
+    const trailPresence = new Map<
+      string,
+      { id: string; label: string; color: string; isSelf: boolean }[]
+    >();
+    if (trailMode && trailLayout && trailLayout.orderedIds.length > 0) {
+      const currentIdx = currentTrailNodeId
+        ? trailLayout.orderedIds.indexOf(currentTrailNodeId)
+        : 0;
+      const mockLearners = [
+        { id: "mock-1", label: "M", color: "#f59e0b", offset: 0 },
+        { id: "mock-2", label: "K", color: "#8b5cf6", offset: 1 },
+        { id: "mock-3", label: "A", color: "#ec4899", offset: 3 },
+      ];
+      for (const m of mockLearners) {
+        const idx = currentIdx + m.offset;
+        if (idx < 0 || idx >= trailLayout.orderedIds.length) continue;
+        const nodeId = trailLayout.orderedIds[idx];
+        trailPresence.set(nodeId, [
+          ...(trailPresence.get(nodeId) ?? []),
+          { id: m.id, label: m.label, color: m.color, isSelf: false },
+        ]);
+      }
+      if (currentTrailNodeId) {
+        const selfName =
+          currentUser?.user_metadata?.username ||
+          currentUser?.user_metadata?.full_name ||
+          currentUser?.email ||
+          "You";
+        trailPresence.set(currentTrailNodeId, [
+          ...(trailPresence.get(currentTrailNodeId) ?? []),
+          {
+            id: "self",
+            label: (selfName[0] || "Y").toUpperCase(),
+            color: "#3b82f6",
+            isSelf: true,
+          },
+        ]);
+      }
+    }
+
     const transformedNodes = map.map_nodes.map((node) => {
       // Determine node type - check for node_type property
       let nodeType = "default"; // learning node
@@ -1159,6 +1238,7 @@ export function MapViewer({
           ...node,
           progress: progressMap[node.id],
           isCurrent: trailMode && node.id === currentTrailNodeId,
+          trailAvatars: trailMode ? trailPresence.get(node.id) : undefined,
         },
         position: (trailMode && trailLayout?.positions.get(node.id)) ||
           (node.metadata as any)?.position || {
@@ -1198,8 +1278,17 @@ export function MapViewer({
           source: path.source_node_id,
           target: path.destination_node_id,
           animated: isPathActive,
+          // FloatingEdge draws its own rope-bridge colors; tell it when the
+          // source node is passed so the bridge turns green (trail mode).
+          data: { passed: trailMode && isPassed },
           style: {
-            stroke: isPathActive ? "#10b981" : "#6b7280",
+            stroke: isPathActive
+              ? trailMode
+                ? "#D2691E" // passed = orange/wood in trail mode
+                : "#10b981"
+              : trailMode
+                ? "#10b981" // upcoming = green in trail mode
+                : "#6b7280",
             strokeWidth: isPathActive ? 3 : 2,
             opacity: isPathActive ? 1 : 0.6,
           },
@@ -1209,7 +1298,7 @@ export function MapViewer({
 
     setNodes(transformedNodes as any);
     setEdges(transformedEdges);
-  }, [map, progressMap, setNodes, setEdges, trailMode, trailLayout, currentTrailNodeId]);
+  }, [map, progressMap, setNodes, setEdges, trailMode, trailLayout, currentTrailNodeId, currentUser]);
 
   // Trail mode: pan the camera to a node, but clamp the destination to the
   // legal pan area (trailTranslateExtent) BEFORE animating. Raw setCenter can
@@ -1813,39 +1902,11 @@ export function MapViewerWithProvider({
           touch-action: none;
         }
 
-        /* Trail mode: pulsing ring on the student's current node. Two
-           layers with prime-number durations so they never visually sync. */
+        /* Trail mode: soft static ring on the student's current node. */
         .trail-current-ring {
           box-shadow:
-            0 0 0 3px rgba(96, 165, 250, 0.9),
-            0 0 22px 6px rgba(59, 130, 246, 0.45);
-          animation: trail-current-pulse 4253ms ease-in-out infinite;
-        }
-        .trail-current-ring--b {
-          box-shadow:
-            0 0 0 2px rgba(147, 197, 253, 0.6),
-            0 0 34px 10px rgba(59, 130, 246, 0.25);
-          animation-duration: 5711ms;
-          animation-delay: 1409ms;
-        }
-        @keyframes trail-current-pulse {
-          0%,
-          100% {
-            opacity: 0.55;
-            transform: scale(1);
-            filter: blur(0.5px);
-          }
-          50% {
-            opacity: 1;
-            transform: scale(1.08);
-            filter: blur(0px);
-          }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .trail-current-ring,
-          .trail-current-ring--b {
-            animation: none;
-          }
+            0 0 0 2px rgba(96, 165, 250, 0.75),
+            0 0 18px 4px rgba(59, 130, 246, 0.3);
         }
 
         /* ================================
