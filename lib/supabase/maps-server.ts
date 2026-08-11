@@ -42,6 +42,38 @@ export const canUserEditMapServer = async (
   }
 };
 
+/**
+ * Fetch a map's preview fields only -- no nodes, content, or assessments.
+ *
+ * `anon` is granted SELECT on learning_maps (migration 20260808000000) but NOT
+ * on map_nodes, node_content, node_paths, or quiz_questions. So the joined
+ * query in getMapWithNodesServer fails with "permission denied for table
+ * map_nodes" for signed-out visitors. The public preview only needs the map
+ * row itself, so it reads that table alone.
+ */
+export const getMapPreviewServer = async (
+  id: string
+): Promise<LearningMap | null> => {
+  const cacheKey = createCacheKey("map-preview", id);
+
+  return dedupeRequest(cacheKey, async () => {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("learning_maps")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") return null;
+      console.error("Error fetching map preview:", error);
+      return null;
+    }
+
+    return data as LearningMap;
+  });
+};
+
 export const getMapWithNodesServer = async (
   id: string
 ): Promise<FullLearningMap | null> => {
