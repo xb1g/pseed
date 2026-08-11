@@ -80,20 +80,16 @@ export function LobbyCodeGate({ map, onJoined }: LobbyCodeGateProps) {
       {/* Backdrop: grainy crimson/violet gradient, styles in globals.css */}
       <div className="lobby-backdrop" aria-hidden="true" />
       <div className="lobby-backdrop__grain" aria-hidden="true" />
-      {/* Reading scrim. A centred vertical band darkens the column the text
-          sits in while leaving the gradient bright at the left and right
-          edges, so the colour survives without costing contrast. Measured:
-          worst case is secondary text at 6.4:1, over the 4.5:1 floor. */}
+      {/* One light scrim, not two. Stacking a vertical and a radial pass
+          compounded to ~77% opacity and turned the gradient black. A single
+          soft vertical wash keeps the colour visible; contrast is carried by
+          the text plate behind the content column instead. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 -z-[8] bg-[linear-gradient(180deg,rgba(17,4,24,0.66)_0%,rgba(17,4,24,0.46)_40%,rgba(17,4,24,0.58)_100%)]"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none fixed inset-0 -z-[8] bg-[radial-gradient(ellipse_58%_92%_at_50%_50%,rgba(14,3,20,0.58)_0%,rgba(14,3,20,0.28)_52%,transparent_82%)]"
+        className="pointer-events-none fixed inset-0 -z-[8] bg-[linear-gradient(180deg,rgba(24,6,32,0.34)_0%,rgba(24,6,32,0.12)_42%,rgba(24,6,32,0.3)_100%)]"
       />
 
-      <main className="relative z-10 mx-auto w-full max-w-xl px-5 pt-12 pb-20 sm:pt-16">
+      <main className="lobby-plate relative z-10 mx-auto w-full max-w-xl px-5 pt-12 pb-20 sm:pt-16">
         <div className="lobby-rise">
           <PathHeader map={map} />
         </div>
