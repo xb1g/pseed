@@ -12,6 +12,7 @@ import {
   type StudentProgress,
 } from "@/lib/api/progress-client";
 import { dedupeRequest, createCacheKey } from "@/lib/utils/request-deduplication";
+import { createClient } from "@/utils/supabase/client";
 
 import {
   LearningMap,
@@ -63,8 +64,16 @@ export async function getStudentProgress(
 export async function loadAllProgress(
   mapId: string
 ): Promise<Record<string, StudentProgress>> {
-  const cacheKey = createCacheKey('map-progress', mapId);
-  
+  // The cache key MUST include the viewer's id. Keyed on mapId alone, the
+  // module-level cache serves one account's progress to another whenever two
+  // users view the same map in one browser session -- which shows another
+  // student's nodes as unlocked and in-progress.
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const cacheKey = createCacheKey('map-progress', mapId, user?.id ?? 'anon');
+
   return dedupeRequest(cacheKey, async () => {
     try {
       const result = await getMapProgress(mapId);
