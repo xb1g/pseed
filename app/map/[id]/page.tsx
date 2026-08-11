@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { getMapWithNodesServer } from "@/lib/supabase/maps-server";
+import {
+  getMapWithNodesServer,
+  getMapPreviewServer,
+} from "@/lib/supabase/maps-server";
 import { createClient } from "@/utils/supabase/server";
 import { isInstructor } from "@/lib/supabase/roles";
 import { MapViewerWithProvider as MapViewer } from "@/components/map/MapViewer";
@@ -16,13 +19,34 @@ export default async function MapViewerPage(props: {
   const params = await props.params;
   const supabase = await createClient();
 
-  // OPTIMIZATION: Execute auth and data fetching concurrently
-  const [userResult, map] = await Promise.all([
-    supabase.auth.getUser(),
-    getMapWithNodesServer(params.id),
-  ]);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const { data: { user } } = userResult;
+  // Signed-out visitors get the public preview and nothing else. They cannot
+  // run the node query at all: `anon` has SELECT on learning_maps but not on
+  // map_nodes / node_content / node_paths / quiz_questions, so attempting it
+  // fails the whole page with "permission denied for table map_nodes".
+  if (!user) {
+    const preview = await getMapPreviewServer(params.id);
+    if (!preview) notFound();
+
+    return (
+      <LobbyCodeGateWrapper
+        map={{
+          id: preview.id,
+          title: preview.title,
+          description: preview.description,
+          cover_image_url: preview.cover_image_url ?? null,
+          node_count: 0,
+          avg_difficulty: preview.difficulty ?? 0,
+          category: preview.category ?? null,
+        }}
+      />
+    );
+  }
+
+  const map = await getMapWithNodesServer(params.id);
 
   if (!map) {
     notFound();
