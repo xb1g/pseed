@@ -175,10 +175,35 @@ state was being reverted underneath them. Suspect state management earlier next 
 
 ---
 
-## 7. ⚠️ UNRESOLVED — live presence updates (realtime)
+## 7. ✅ RESOLVED (2026-08-11) — live presence updates (realtime)
 
-**Current behaviour:** avatars are correct **on page load and after refresh**. They do
-**not** move live. A lobbymate's position updates only when the page is reloaded.
+**Fixed by `supabase db reset`.** The rebuilt `realtime` schema created the unique index
+the server actually expects — `(subscription_id, entity, filters, action_filter)`,
+without the stale `COALESCE(selected_columns, ...)` column. Verified end-to-end:
+
+```
+state: SUBSCRIBED
+realtime.subscription rows: 1     <- was permanently 0
+>>> EVENT UPDATE status=passed
+RESULT: WORKING -- 1 event(s) delivered.
+```
+
+The reset also repaired the `realtime` schema I dropped while diagnosing (see below),
+and replayed all migrations cleanly. Local data was backed up and restored: 2 maps,
+12 nodes, 4 enrollments, 3 lobbies, 4 members, 12 progress rows, 11 profiles.
+
+**Still unverified:** live avatar movement in two real browsers. The transport is proven,
+but the full UI path has not been watched end-to-end.
+
+**Note for future resets:** restore order matters. `auth.users` must come before
+`profiles` (FK), and `profiles` before lobbies/enrollments. A `COPY` block aborts
+wholesale on the first duplicate key, so filter to only-missing rows rather than
+re-running the whole dump.
+
+### Original diagnosis (kept for reference)
+
+**Behaviour before the fix:** avatars were correct on page load and after refresh, but
+did **not** move live.
 
 ### Root cause (local)
 
@@ -286,7 +311,8 @@ the client.
 | Cross-lobby RLS isolation | ✅ verified as the real `authenticated` role |
 | Code gate / join / admin UI | ✅ verified in two live browsers |
 | Avatars render for both lobbymates | ✅ verified in two live browsers |
-| **Live avatar movement** | ❌ **never worked; see §7** |
+| Realtime event delivery (local) | ✅ **fixed 2026-08-11 by `supabase db reset`; see §7** |
+| **Live avatar movement in two browsers** | ❓ transport proven, full UI path unwatched |
 | Production realtime | ❓ **untested** |
 
 ---
