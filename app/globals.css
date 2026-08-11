@@ -830,6 +830,140 @@ summary:focus-visible .radar-expand-indicator {
   }
 }
 
+/* Lobby gate — section entrances. `both` fill so staggered delays start hidden.
+   Wrapped in no-preference so reduced-motion users see content instantly. */
+@keyframes lobby-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lobby-rise {
+    animation: lobby-rise 700ms
+      var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99)) both;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Lobby gate backdrop — crimson/violet grainy gradient
+ *
+ * Same construction as the radar field cards: wide radial masses over a
+ * linear base, then grain on top. Damped ~25% from the reference so the
+ * card surfaces and body text keep their contrast; the reference is a
+ * poster, this is a page someone reads.
+ *
+ * Blob positions are deliberately irregular and their falloffs overlap.
+ * Evenly spaced blobs with tight stops are what make a gradient read as
+ * "blocky": you see the shapes instead of the atmosphere.
+ * ------------------------------------------------------------------ */
+.lobby-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  background-color: #2b0a20;
+  background-image:
+    /* Dusty rose, lower left. Pushed off-canvas (negative x) and darkened from
+       the reference: at full brightness it lifted the surface under the content
+       column to 1.9:1 for secondary text. It now reads as a warm glow at the
+       edge rather than a light mass behind the words. */
+    radial-gradient(
+      circle at -8% 88%,
+      rgba(176, 116, 116, 0.42) 0%,
+      rgba(140, 82, 90, 0.2) 28%,
+      transparent 56%
+    ),
+    /* bridging mass: melts crimson into violet so they never meet at an edge */
+      radial-gradient(
+        ellipse 90% 70% at 52% 46%,
+        rgba(128, 46, 106, 0.5) 0%,
+        transparent 62%
+      ),
+    /* indigo-violet body, lower right */
+      radial-gradient(
+        ellipse 78% 62% at 74% 88%,
+        rgba(66, 30, 150, 0.82) 0%,
+        rgba(58, 28, 128, 0.4) 34%,
+        transparent 70%
+      ),
+    /* crimson mass, upper right */
+      radial-gradient(
+        ellipse 86% 58% at 88% 2%,
+        rgba(178, 40, 34, 0.88) 0%,
+        rgba(150, 34, 40, 0.42) 38%,
+        transparent 72%
+      ),
+    /* base wash, top-left to bottom-right */
+      linear-gradient(
+        152deg,
+        #6d2130 0%,
+        #7a2430 24%,
+        #4a1a4e 58%,
+        #35156b 82%,
+        #2a1053 100%
+      );
+  pointer-events: none;
+}
+
+/* Grain sits in its own layer so it can blend without tinting the gradient.
+   feTurbulence noise plus two fine dot lattices: the lattices keep the grain
+   visible on large flat areas where the SVG noise alone reads as mush. */
+.lobby-backdrop__grain {
+  position: fixed;
+  inset: 0;
+  z-index: -9;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.16) 0 0.7px, transparent 0.95px),
+    radial-gradient(circle, rgba(0, 0, 0, 0.14) 0 0.8px, transparent 1.1px),
+    var(--bloom-grain-svg);
+  background-position: 0 0, 4px 5px, 0 0;
+  background-repeat: repeat;
+  background-size: 9px 9px, 12px 12px, 200px 200px;
+  mix-blend-mode: overlay;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Safari renders feTurbulence at a different scale and blows the grain out.
+   Drop the SVG layer and lean on the dot lattices, matching the radar page's
+   existing Safari path. */
+@supports (-webkit-hyphens: none) {
+  .lobby-backdrop__grain {
+    background-image:
+      radial-gradient(circle, rgba(255, 255, 255, 0.15) 0 0.65px, transparent 0.95px),
+      radial-gradient(circle, rgba(0, 0, 0, 0.13) 0 0.75px, transparent 1.05px);
+    background-position: 0 0, 4px 5px;
+    background-size: 10px 10px, 13px 13px;
+    opacity: 0.26;
+  }
+}
+
+/* A slow bloom keeps the surface from feeling like a static JPEG. Scale only,
+   no position change, so nothing shifts under the text. */
+@keyframes lobby-backdrop-drift {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lobby-backdrop {
+    /* Oversized so the scale never exposes an edge. */
+    inset: -8%;
+    animation: lobby-backdrop-drift 46s ease-in-out infinite;
+    will-change: transform;
+  }
+}
+
 /* Embers — rise from bottom, drift, fade */
 @keyframes ember-rise {
   0% {
