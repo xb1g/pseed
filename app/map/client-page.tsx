@@ -36,11 +36,6 @@ export function MapsClientPage({ initialData }: MapsClientPageProps) {
     closePreviewDialog,
   } = useMapOperations({ initialData });
 
-  console.log(
-    "list image_url",
-    maps.map((m) => m.cover_image_url)
-  );
-
   // Filter maps based on search query
   const filteredMaps = useMemo(() => {
     if (!searchQuery.trim()) return maps;
