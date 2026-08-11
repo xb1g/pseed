@@ -146,7 +146,7 @@ export default function MarketResearchPage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild>
-                <Link href="/map">Back to market maps</Link>
+                <Link href="/map">Back to Pathlabs</Link>
               </Button>
               <Button asChild variant="outline" className="bg-white/95 text-slate-900">
                 <Link href="/contact">Request founder summary</Link>

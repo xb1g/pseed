@@ -18,7 +18,7 @@ export function LoadMoreButton({ onLoadMore, loading, hasMore }: LoadMoreButtonP
         variant="outline"
         className="border-slate-600 hover:bg-slate-700 text-gray-200 hover:text-gray-100"
       >
-        {loading ? "Loading..." : "Load More Maps"}
+        {loading ? "Loading..." : "Load More Pathlabs"}
       </Button>
     </div>
   );

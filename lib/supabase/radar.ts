@@ -384,6 +384,8 @@ export interface RadarPathIntentData {
   buttonLabel?: string;
 }
 
+export type RadarAnalyticsWriteResult = "recorded" | "skipped" | "failed";
+
 export async function recordRadarFieldView(
   fieldSlug: string,
   fieldId?: string
@@ -409,8 +411,10 @@ export async function recordRadarFieldView(
 
 export async function recordRadarPathIntent(
   data: RadarPathIntentData
-): Promise<void> {
-  if (typeof window === "undefined" || shouldSkipRadarAnalytics()) return;
+): Promise<RadarAnalyticsWriteResult> {
+  if (typeof window === "undefined" || shouldSkipRadarAnalytics()) {
+    return "skipped";
+  }
 
   const supabase = createClient();
   const {
@@ -428,7 +432,10 @@ export async function recordRadarPathIntent(
 
   if (error) {
     console.error("Error recording radar path intent:", error);
+    return "failed";
   }
+
+  return "recorded";
 }
 
 export async function recordRadarStartOptionInterest(

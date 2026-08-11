@@ -13,12 +13,12 @@ import {
   VisuallyHidden,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, Globe, X, Compass, Sprout, User, Wrench, Target } from "lucide-react";
+import { Menu, Globe, X, Compass, Beaker, User, Wrench, Target } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 
 const navItems = [
   { href: "/about", label: { en: "About", th: "เกี่ยวกับ" }, icon: Compass },
-  { href: "/seeds", label: { en: "Seeds", th: "Seeds" }, icon: Sprout },
+  { href: "/map", label: { en: "Pathlab", th: "Pathlab" }, icon: Beaker },
   { href: "/me", label: { en: "My Path", th: "เส้นทางของฉัน" }, icon: User },
   { href: "/radar", label: { en: "Radar", th: "เรดาร์" }, icon: Target },
 ];
@@ -44,19 +44,6 @@ export function MainNav({ isAuthenticated = false }: { isAuthenticated?: boolean
     };
     checkAccess();
   }, []);
-
-  const handleSeedsClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (typeof window !== "undefined") {
-      const activeRoom = localStorage.getItem("activeSeedRoom");
-      if (activeRoom) {
-        router.push(`/seeds/room/${activeRoom}`);
-      } else {
-        router.push("/seeds");
-      }
-    }
-    setMenuOpen(false);
-  };
 
   const toggleLanguage = () => {
     setLanguage(language === "en" ? "th" : "en");
@@ -150,36 +137,18 @@ export function MainNav({ isAuthenticated = false }: { isAuthenticated?: boolean
                         ease: EASE_TENSION 
                       }}
                     >
-                      {item.href === "/seeds" ? (
-                        <a
-                          href="/seeds"
-                          onClick={(e) => {
-                            handleSeedsClick(e);
-                            handleNavClick();
-                          }}
-                          className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/[0.06] transition-all duration-200"
-                        >
-                          <div className="w-8 h-8 rounded-lg bg-white/[0.05] border border-white/[0.08] flex items-center justify-center group-hover:border-white/[0.12] group-hover:bg-white/[0.08] transition-all duration-200">
-                            <item.icon className="w-4 h-4 text-amber-400" />
-                          </div>
-                          <span className="text-sm font-medium">
-                            {item.label[language]}
-                          </span>
-                        </a>
-                      ) : (
-                        <Link
-                          href={item.href}
-                          onClick={handleNavClick}
-                          className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/[0.06] transition-all duration-200"
-                        >
-                          <div className="w-8 h-8 rounded-lg bg-white/[0.05] border border-white/[0.08] flex items-center justify-center group-hover:border-white/[0.12] group-hover:bg-white/[0.08] transition-all duration-200">
-                            <item.icon className="w-4 h-4 text-amber-400" />
-                          </div>
-                          <span className="text-sm font-medium">
-                            {item.label[language]}
-                          </span>
-                        </Link>
-                      )}
+                      <Link
+                        href={item.href}
+                        onClick={handleNavClick}
+                        className="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-white/70 hover:text-white hover:bg-white/[0.06] transition-all duration-200"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-white/[0.05] border border-white/[0.08] flex items-center justify-center group-hover:border-white/[0.12] group-hover:bg-white/[0.08] transition-all duration-200">
+                          <item.icon className="w-4 h-4 text-amber-400" />
+                        </div>
+                        <span className="text-sm font-medium">
+                          {item.label[language]}
+                        </span>
+                      </Link>
                     </motion.div>
                   ))}
 
@@ -284,13 +253,12 @@ export function MainNav({ isAuthenticated = false }: { isAuthenticated?: boolean
             >
               About
             </Link>
-            <a
-              href="/seeds"
-              className="text-sm font-medium transition-colors hover:text-white whitespace-nowrap px-3 py-2 text-gray-400 cursor-pointer"
-              onClick={handleSeedsClick}
+            <Link
+              href="/map"
+              className="text-sm font-medium transition-colors hover:text-white whitespace-nowrap px-3 py-2 text-gray-400"
             >
-              Seeds
-            </a>
+              Pathlab
+            </Link>
             <Link
               href="/me"
               className="text-sm font-medium transition-colors hover:text-white whitespace-nowrap px-3 py-2 text-gray-400"

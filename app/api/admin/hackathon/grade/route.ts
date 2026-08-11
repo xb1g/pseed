@@ -76,7 +76,7 @@ export async function POST(req: Request) {
                const localPath = path.join(os.tmpdir(), `generic_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`);
                const dest = fs.createWriteStream(localPath);
                
-               // @ts-ignore
+               // @ts-expect-error - Readable.fromWeb expects web stream
                const readable = Readable.fromWeb(response.body as any);
                readable.pipe(dest);
                

@@ -1059,7 +1059,7 @@ export default function EditMapPage({
                     ? "Back to Seed"
                     : map?.category === "journey"
                       ? "Back to Portal"
-                      : "Back to Map"}
+                      : "Back to Pathlab"}
                 </Link>
               </Button>
               {seedInfo?.seed_type === "pathlab" && seedInfo.id && (

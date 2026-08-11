@@ -1876,7 +1876,7 @@ export function MapViewer({
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span>Pan Map</span>
+                    <span>Pan Pathlab</span>
                     <span className="text-muted-foreground">Drag</span>
                   </div>
                   <div className="flex justify-between">

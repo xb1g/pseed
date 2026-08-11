@@ -78,6 +78,9 @@ export function PlanWizard({
   const [readinessLevel, setReadinessLevel] = useState<ReadinessLevel | null>(
     (initialDraft?.answers?.["action-readiness"] as ReadinessLevel) ?? null
   );
+  const [customInterest, setCustomInterest] = useState(
+    () => initialDraft?.answers?.["custom-interest"] ?? ""
+  );
   const [persisted, setPersisted] = useState(hasPersistedPath);
   const [importStatus, setImportStatus] = useState<
     "idle" | "saving" | "saved" | "error"
@@ -150,6 +153,7 @@ export function PlanWizard({
     if (next.answers?.["action-readiness"]) {
       setReadinessLevel(next.answers["action-readiness"] as ReadinessLevel);
     }
+    setCustomInterest(next.answers?.["custom-interest"] ?? "");
     if (isFirstEntry) {
       void fetch("/api/my-path/events", {
         method: "POST",
@@ -317,6 +321,25 @@ export function PlanWizard({
     }
   }
 
+  // Free-text interests live in draft.answers (not the event log) so clearing
+  // the field also clears the answer. Capped at 80 chars by the input itself,
+  // matching the draft schema's answer limit.
+  function commitCustomInterest(raw?: string) {
+    const value = (raw ?? customInterest).trim();
+    setDraft((current) => {
+      if (!current) return current;
+      const existing = current.answers["custom-interest"] ?? "";
+      if (existing === value) return current;
+      const answers = { ...current.answers };
+      if (value) {
+        answers["custom-interest"] = value;
+      } else {
+        delete answers["custom-interest"];
+      }
+      return { ...current, answers, updatedAt: new Date().toISOString() };
+    });
+  }
+
   function selectGoal(nextGoal: MissionGoal) {
     recordEvent(
       {
@@ -337,6 +360,7 @@ export function PlanWizard({
   }
 
   function goTo(nextStep: number) {
+    if (step === 1 && nextStep !== 1) commitCustomInterest();
     window.history.pushState({ wizardStep: nextStep }, "");
     setStep(nextStep);
     window.localStorage.setItem(WIZARD_STEP_STORAGE_KEY, String(nextStep));
@@ -476,7 +500,8 @@ export function PlanWizard({
 
   const canProceed =
     (step === 0 && readinessLevel !== null) ||
-    (step === 1 && savedSlugs.length > 0) ||
+    (step === 1 &&
+      (savedSlugs.length > 0 || customInterest.trim().length > 0)) ||
     (step === 2 && goal !== null);
   const isLastStep = step === TOTAL_STEPS - 1;
 
@@ -501,6 +526,9 @@ export function PlanWizard({
               savedSlugs={savedSlugs}
               maxSelections={MAX_ACTIVE_SAVED_PATHS}
               onToggle={toggleInterest}
+              customInterest={customInterest}
+              onCustomInterestChange={setCustomInterest}
+              onCustomInterestCommit={commitCustomInterest}
             />
           )}
           {step === 2 && (
@@ -515,8 +543,9 @@ export function PlanWizard({
             <PlanSummaryStep
               readiness={readinessLevel}
               selectedCareer={
-                careers.find((career) => career.slug === savedSlugs[0]) ??
-                savedSlugs[0]
+                customInterest.trim() ||
+                (careers.find((career) => career.slug === savedSlugs[0]) ??
+                  savedSlugs[0])
               }
               selectedSeed={firstActionSeed}
               timeline={timelineMonths ? `${timelineMonths} เดือน` : "3 เดือน"}
@@ -559,8 +588,10 @@ export function PlanWizard({
                     ? readinessLevel === null
                       ? "เลือกสถานะเพื่อไปต่อ"
                       : "เริ่มออกแบบชีวิต"
-                    : step === 1 && savedSlugs.length === 0
-                      ? "เลือกอย่างน้อย 1 อันเพื่อไปต่อ"
+                    : step === 1 &&
+                        savedSlugs.length === 0 &&
+                        !customInterest.trim()
+                      ? "เลือกหรือเขียนอย่างน้อย 1 อย่าง"
                       : step === 2 && goal === null
                         ? "เลือกเป้าหมายเพื่อดูแผน"
                         : step === 2

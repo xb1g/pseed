@@ -70,7 +70,8 @@ describe("PlanWizard Integration", () => {
     ).toBeInTheDocument();
 
     expect(screen.getByText("ค้นหาทิศทางก่อน")).toBeInTheDocument();
-    expect(screen.getByText("พร้อมลงมือทำโปรเจกต์")).toBeInTheDocument();
+    expect(screen.getByText("เริ่มทำโปรเจคลงลึก")).toBeInTheDocument();
+    expect(screen.getByText("รับงานจริงจากพาร์ตเนอร์")).toBeInTheDocument();
   });
 
   it("disables progression until a readiness option is selected, then enables proceeding", async () => {
@@ -86,7 +87,7 @@ describe("PlanWizard Integration", () => {
     expect(nextButton).toBeDisabled();
 
     const handsOnOption = screen.getByRole("radio", {
-      name: /พร้อมลงมือทำโปรเจกต์/i,
+      name: /เริ่มทำโปรเจคลงลึก/i,
     });
     fireEvent.click(handsOnOption);
 
@@ -106,7 +107,7 @@ describe("PlanWizard Integration", () => {
     });
 
     // Step 0: Select hands_on
-    fireEvent.click(screen.getByRole("radio", { name: /พร้อมลงมือทำโปรเจกต์/i }));
+    fireEvent.click(screen.getByRole("radio", { name: /เริ่มทำโปรเจคลงลึก/i }));
     fireEvent.click(screen.getByRole("button", { name: /เริ่มออกแบบชีวิต|ถัดไป/i }));
 
     // Step 1: Select career
@@ -117,12 +118,14 @@ describe("PlanWizard Integration", () => {
     fireEvent.click(screen.getByRole("radio", { name: /เข้ามหาวิทยาลัย/i }));
     fireEvent.click(screen.getByRole("button", { name: "ดูแผนของฉัน" }));
 
-    // Step 3: PlanSummaryStep with ProjectSeed 2,990฿ offer
-    expect(screen.getByText(/ProjectSeed Program|ProjectSeed/i)).toBeInTheDocument();
-    expect(screen.getByText(/2,990฿/i)).toBeInTheDocument();
+    // Step 3: PlanSummaryStep with ProjectSeed free consult offer
     expect(
-      screen.getByRole("link", { name: /ส่ง Plan ให้พี่ๆ ช่วยดูฟรี บน LINE OA/i })
+      screen.getByRole("heading", { name: "ProjectSeed Program" })
     ).toBeInTheDocument();
+    expect(screen.queryByText(/2,990฿/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /จองคิวปรึกษาฟรี 30 นาที/i })
+    ).toHaveAttribute("href", "https://calendly.com/seedpassion/30min");
   });
 
   it("passes readiness='exploration' to PlanSummaryStep at final step, displaying Exploration card", async () => {
@@ -148,5 +151,33 @@ describe("PlanWizard Integration", () => {
     expect(
       screen.getByRole("link", { name: /คุยกับพี่ๆ ช่วยค้นหาทิศทางฟรี บน LINE OA/i })
     ).toBeInTheDocument();
+  });
+
+  it("passes readiness='talent' to PlanSummaryStep at final step, displaying Talent signup card", async () => {
+    renderWizard();
+
+    await screen.findByRole("heading", {
+      name: /ตอนนี้คุณอยู่ในช่วงไหนของการเรียนรู้\?/i,
+    });
+
+    // Step 0: Select talent
+    fireEvent.click(screen.getByRole("radio", { name: /รับงานจริงจากพาร์ตเนอร์/i }));
+    fireEvent.click(screen.getByRole("button", { name: /เริ่มออกแบบชีวิต|ถัดไป/i }));
+
+    // Step 1: Select career
+    fireEvent.click(screen.getByRole("button", { name: /AI Engineer/i }));
+    fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
+
+    // Step 2: Select goal
+    fireEvent.click(screen.getByRole("radio", { name: /เข้ามหาวิทยาลัย/i }));
+    fireEvent.click(screen.getByRole("button", { name: "ดูแผนของฉัน" }));
+
+    // Step 3: PlanSummaryStep with Talent signup card
+    expect(
+      screen.getByRole("heading", { name: "สร้างโปรไฟล์ Talent ของคุณ" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /สมัครเป็น Talent สร้างโปรไฟล์/i })
+    ).toHaveAttribute("href", "https://forms.gle/14EZbYpz9qqDXwTs5");
   });
 });

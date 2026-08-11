@@ -131,7 +131,7 @@ export async function GET(req: NextRequest) {
       submitted_by_name: s.hackathon_participants?.name ?? null,
     }));
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const individualSubmissions = memberIds.flatMap((pid: string) =>
       (individualSubsByParticipantId.get(pid) ?? []).map((s: any) => ({
         id: s.id,

@@ -13,7 +13,7 @@ export default function Loading() {
                 <Compass className="h-5 w-5 text-blue-300" />
               </div>
               <h1 className="text-3xl font-bold tracking-tight">
-                Learning Maps
+                Pathlabs
               </h1>
             </div>
             <Skeleton className="h-10 w-32 bg-blue-800/30" />

@@ -2,6 +2,8 @@
 
 import React from "react";
 import {
+  Briefcase,
+  CalendarCheck,
   CheckCircle2,
   Compass,
   MessageCircle,
@@ -14,6 +16,7 @@ import {
   FolderKanban,
   ArrowRight,
 } from "lucide-react";
+import { TALENT_SIGNUP_FORM_URL } from "@/components/talent/TalentJoinCard";
 import type { ReadinessLevel } from "./ReadinessStep";
 
 export interface SelectedCareerInfo {
@@ -49,26 +52,10 @@ function getSeedTitle(seed?: SelectedSeedInfo | string | null): string {
   return seed.title || seed.name || "ยังไม่ได้เลือก";
 }
 
-function buildLineOaDeepLink({
-  readiness,
-  careerTitle,
-  seedTitle,
-  timelineText,
-}: {
-  readiness?: ReadinessLevel | null;
-  careerTitle: string;
-  seedTitle: string;
-  timelineText: string;
-}) {
-  const effectiveReadiness = readiness ?? "hands_on";
-  const isHandsOn = effectiveReadiness === "hands_on";
+const CALENDLY_URL = "https://calendly.com/seedpassion/30min";
 
-  let message = "";
-  if (isHandsOn) {
-    message = `สวัสดีครับ/ค่ะ! ได้วางแผนโปรเจกต์บน PassionSeed อยากให้พี่ๆ ช่วยรีวิวแผนนี้ครับ:\n🎯 สายงาน: ${careerTitle}\n🚀 โปรเจกต์: ${seedTitle}\n⏱️ ไทม์ไลน์: ${timelineText}\nอยากสอบถามเรื่องเข้าร่วม ProjectSeed (2,990฿) ครับ`;
-  } else {
-    message = `สวัสดีครับ/ค่ะ! ได้ลองค้นหาทิศทางบน PassionSeed อยากปรึกษาพี่ๆ เพิ่มเติมครับ:\n🎯 สายงาน: ${careerTitle}\nอยากสอบถามเกี่ยวกับ Career Exploration ครับ`;
-  }
+function buildLineOaDeepLink({ careerTitle }: { careerTitle: string }) {
+  const message = `สวัสดีครับ/ค่ะ! ได้ลองค้นหาทิศทางบน PassionSeed อยากปรึกษาพี่ๆ เพิ่มเติมครับ:\n🎯 สายงาน: ${careerTitle}\nอยากสอบถามเกี่ยวกับ Career Exploration ครับ`;
 
   return `https://line.me/R/oaMessage/@passionseed/?${encodeURIComponent(message)}`;
 }
@@ -105,16 +92,12 @@ export function PlanSummaryStep({
 }: PlanSummaryStepProps) {
   const effectiveReadiness = readiness ?? "hands_on";
   const isHandsOn = effectiveReadiness === "hands_on";
+  const isTalent = effectiveReadiness === "talent";
   const careerTitle = getCareerTitle(selectedCareer);
   const seedTitle = getSeedTitle(selectedSeed);
   const timelineText = timeline || "3 เดือน";
 
-  const lineDeepLink = buildLineOaDeepLink({
-    readiness: effectiveReadiness,
-    careerTitle,
-    seedTitle,
-    timelineText,
-  });
+  const lineDeepLink = buildLineOaDeepLink({ careerTitle });
 
   return (
     <section
@@ -130,12 +113,18 @@ export function PlanSummaryStep({
           id="summary-heading"
           className="mt-2 font-kodchasan text-2xl font-semibold text-slate-50 sm:text-3xl"
         >
-          {isHandsOn
-            ? "พร้อมลุยสร้างโปรเจกต์ของคุณแล้ว!"
-            : "เริ่มต้นค้นหาทิศทางสายอาชีพที่ใช่"}
+          {isTalent
+            ? "พร้อมลุยงานจริงกับพาร์ตเนอร์แล้ว!"
+            : isHandsOn
+              ? "พร้อมลุยสร้างโปรเจกต์ของคุณแล้ว!"
+              : "เริ่มต้นค้นหาทิศทางสายอาชีพที่ใช่"}
         </h2>
         <p className="mt-2 text-sm leading-6 text-slate-400">
-          ทบทวนพิมพ์เขียวโปรเจกต์ และรับคำแนะนำ 1-on-1 จากเมนทอร์พี่ๆ บน LINE OA
+          {isTalent
+            ? "ทบทวนพิมพ์เขียว แล้วสมัครเป็น Talent เพื่อสร้างโปรไฟล์และรับงานจริง"
+            : isHandsOn
+              ? "ทบทวนพิมพ์เขียวโปรเจกต์ แล้วจองคิวปรึกษาฟรี 30 นาทีกับพี่ๆ เพื่อดูว่า ProjectSeed เหมาะกับคุณไหม"
+              : "ทบทวนพิมพ์เขียวโปรเจกต์ และรับคำแนะนำ 1-on-1 จากเมนทอร์พี่ๆ บน LINE OA"}
         </p>
       </div>
 
@@ -180,13 +169,90 @@ export function PlanSummaryStep({
       </div>
 
       {/* Main Recommendation / Offer Card */}
-      {isHandsOn ? (
+      {isTalent ? (
+        <div className="ei-card ei-card--lit w-full p-6 sm:p-8 rounded-2xl border border-emerald-400/30 bg-gradient-to-b from-emerald-950/30 via-slate-900/60 to-slate-950 space-y-6 relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-emerald-500/20 pb-6">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-200 mb-2">
+                <Sparkles className="h-3.5 w-3.5" />
+                งานจริงจากพาร์ตเนอร์ในอุตสาหกรรม
+              </div>
+              <h3 className="font-kodchasan text-2xl sm:text-3xl font-bold text-slate-50">
+                สร้างโปรไฟล์ Talent ของคุณ
+              </h3>
+              <p className="text-sm text-slate-300 mt-1">
+                รับงานฟรีแลนซ์และงานจริงจากพาร์ตเนอร์ พร้อมพี่ๆ คอยซัพพอร์ต
+              </p>
+            </div>
+
+            <div className="sm:text-right">
+              <span className="text-xs uppercase tracking-wider text-slate-400 block">
+                สมัครง่าย ไม่มีค่าใช้จ่าย
+              </span>
+              <span className="font-kodchasan text-3xl sm:text-4xl font-extrabold text-emerald-300">
+                สมัครฟรี
+              </span>
+            </div>
+          </div>
+
+          {/* Features Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              {
+                subtitle: "งานจริงจากพาร์ตเนอร์",
+                desc: "รับงานฟรีแลนซ์และงานสั้นจากบริษัทพาร์ตเนอร์จริง",
+              },
+              {
+                subtitle: "โปรไฟล์โชว์ผลงานจริง",
+                desc: "สร้างโปรไฟล์ Talent ที่รวมผลงานและทักษะของคุณ",
+              },
+              {
+                subtitle: "พี่ๆ คัดงานให้เหมาะกับคุณ",
+                desc: "ทีม PassionSeed ช่วยจับคู่งานและดูแลตลอดการทำงาน",
+              },
+            ].map((feat, idx) => (
+              <div
+                key={idx}
+                className="flex items-start gap-3 p-3.5 rounded-xl border border-white/5 bg-slate-900/40"
+              >
+                <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-kodchasan text-sm font-bold text-slate-100">
+                    {feat.subtitle}
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-0.5">{feat.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Primary CTA Button */}
+          <div className="pt-2 flex flex-col sm:flex-row items-center gap-4 justify-between">
+            <p className="text-xs text-slate-400 flex items-center gap-1.5">
+              <ShieldCheck className="h-4 w-4 text-emerald-400" />
+              สมัครฟรี · พี่ๆ ติดต่อกลับเพื่อช่วยสร้างโปรไฟล์และจับคู่งาน
+            </p>
+
+            <a
+              href={TALENT_SIGNUP_FORM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={onBook}
+              className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-semibold px-6 py-3.5 text-base font-bai-jamjuree transition-all shadow-lg shadow-emerald-400/20 hover:shadow-emerald-400/40 hover:-translate-y-0.5"
+            >
+              <Briefcase className="h-5 w-5" />
+              <span>สมัครเป็น Talent สร้างโปรไฟล์</span>
+              <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
+        </div>
+      ) : isHandsOn ? (
         <div className="ei-card ei-card--lit w-full p-6 sm:p-8 rounded-2xl border border-amber-300/30 bg-gradient-to-b from-amber-950/30 via-slate-900/60 to-slate-950 space-y-6 relative overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-amber-500/20 pb-6">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-200 mb-2">
                 <Sparkles className="h-3.5 w-3.5" />
-                ข้อเสนอพิเศษสำหรับคุณ
+                ปรึกษาฟรีก่อนตัดสินใจ
               </div>
               <h3 className="font-kodchasan text-2xl sm:text-3xl font-bold text-slate-50">
                 ProjectSeed Program
@@ -198,10 +264,10 @@ export function PlanSummaryStep({
 
             <div className="sm:text-right">
               <span className="text-xs uppercase tracking-wider text-slate-400 block">
-                ราคาเดียวจบ All-inclusive
+                คุยกับพี่ๆ ก่อน ไม่เสียเงิน
               </span>
               <span className="font-kodchasan text-3xl sm:text-4xl font-extrabold text-amber-300">
-                2,990฿
+                ปรึกษาฟรี
               </span>
             </div>
           </div>
@@ -228,18 +294,18 @@ export function PlanSummaryStep({
           <div className="pt-2 flex flex-col sm:flex-row items-center gap-4 justify-between">
             <p className="text-xs text-slate-400 flex items-center gap-1.5">
               <ShieldCheck className="h-4 w-4 text-emerald-400" />
-              ไม่มีค่าใช้จ่ายแอบแฝง · ปรึกษาและวางแผนฟรีกับพี่ๆ ก่อนตัดสินใจ
+              คุยกับพี่ๆ ฟรี 30 นาที · ช่วยประเมินว่า ProjectSeed เหมาะกับคุณไหม
             </p>
 
             <a
-              href={lineDeepLink}
+              href={CALENDLY_URL}
               target="_blank"
               rel="noopener noreferrer"
               onClick={onBook}
-              className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-slate-950 font-semibold px-6 py-3.5 text-base font-bai-jamjuree transition-all shadow-lg shadow-[#06C755]/20 hover:shadow-[#06C755]/40 hover:-translate-y-0.5"
+              className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-semibold px-6 py-3.5 text-base font-bai-jamjuree transition-all shadow-lg shadow-amber-400/20 hover:shadow-amber-400/40 hover:-translate-y-0.5"
             >
-              <MessageCircle className="h-5 w-5 fill-current" />
-              <span>ส่ง Plan ให้พี่ๆ ช่วยดูฟรี บน LINE OA</span>
+              <CalendarCheck className="h-5 w-5" />
+              <span>จองคิวปรึกษาฟรี 30 นาที</span>
               <ArrowRight className="h-4 w-4" />
             </a>
           </div>

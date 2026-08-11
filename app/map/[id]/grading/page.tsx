@@ -122,7 +122,7 @@ export default async function GradingPage({
         >
           <ArrowLeft className="h-4 w-4" />
           <Map className="h-4 w-4" />
-          Back to Map
+          Back to Pathlab
         </Link>
         <div className="h-4 w-px bg-border" />
         <div className="flex items-center gap-2 text-sm text-muted-foreground">

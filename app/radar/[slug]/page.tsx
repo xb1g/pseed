@@ -1,12 +1,40 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { RadarFieldPageClient } from "@/components/radar/RadarFieldPageClient";
+import type { RadarSkillSummary } from "@/components/radar/RadarSkillExperience";
 import type { Database } from "@/lib/supabase/database.types";
 import { getCachedPublishedRadarField } from "@/lib/radar/server";
+import {
+  isTerritoryIndex,
+  loadSkillsByField,
+  loadStartOptionsBySkill,
+  territoryKeyOf,
+} from "@/lib/radar/territory";
 
 type RadarField = Database["public"]["Tables"]["radar_fields"]["Row"];
 type RadarCard = Database["public"]["Tables"]["radar_cards"]["Row"];
 
 export const revalidate = 300;
+
+/**
+ * Skill rail for a legacy field page. Both loads fail soft, so a field whose
+ * skills are unmapped renders exactly as it did before.
+ */
+async function loadFieldSkills(fieldId: string): Promise<RadarSkillSummary[]> {
+  const skills = (await loadSkillsByField([fieldId])).get(fieldId) ?? [];
+  if (skills.length === 0) return [];
+
+  const startOptions = await loadStartOptionsBySkill(skills.map((skill) => skill.id));
+
+  return skills.map((skill) => ({
+    id: skill.id,
+    slug: skill.slug,
+    name_th: skill.name_th,
+    name_en: skill.name_en,
+    description_th: skill.description_th,
+    is_primary: skill.is_primary,
+    start_options: startOptions.get(skill.id) ?? [],
+  }));
+}
 
 export default async function RadarFieldPage({
   params,
@@ -28,8 +56,15 @@ export default async function RadarFieldPage({
     ...field
   } = fieldResult;
 
-  // TODO: Enable when radar_skills FK relationship is set up
-  const initialSkills: never[] = [];
+  // Two routes into a territory: its grid tile, and any profession deep-linked
+  // from outside. Professions are 30-second discovery units with no cards of
+  // their own, so both land on the deck that can actually render them.
+  const territoryKey = territoryKeyOf(field.research);
+  if (territoryKey && (isTerritoryIndex(field.research) || (cards ?? []).length === 0)) {
+    redirect(`/radar/territory/${territoryKey}`);
+  }
+
+  const initialSkills = await loadFieldSkills(field.id);
 
   // Inject score card at position 2 from field-level score/tier + research metrics
   const allCards = [...(cards || [])] as RadarCard[];
@@ -68,7 +103,7 @@ export default async function RadarFieldPage({
       initialField={field as RadarField}
       initialCards={allCards}
       fieldSources={sources ?? []}
-      initialSkills={initialSkills as never}
+      initialSkills={initialSkills}
       fromPlan={from === "plan"}
     />
   );

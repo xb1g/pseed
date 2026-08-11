@@ -253,7 +253,7 @@ function CertificateSender() {
             </span>
             <input
               type="file"
-              // @ts-ignore — webkitdirectory is valid
+              // @ts-expect-error — webkitdirectory is a valid HTML attribute
               webkitdirectory=""
               multiple
               accept=".png"

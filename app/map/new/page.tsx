@@ -223,7 +223,7 @@ export default function NewMapPage() {
     <div className="container max-w-2xl py-8">
       <Card>
         <CardHeader>
-          <CardTitle>Create a New Learning Map</CardTitle>
+          <CardTitle>Create a New Pathlab</CardTitle>
           <CardDescription>
             Fill in the details below to start a new map for your students.
           </CardDescription>

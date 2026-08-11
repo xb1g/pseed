@@ -16,10 +16,17 @@ describe("ReadinessStep Component", () => {
       screen.getByText("ยังไม่แน่ใจ อยากลองค้นหาสำรวจสายอาชีพก่อน")
     ).toBeInTheDocument();
 
-    expect(screen.getByText("พร้อมลงมือทำโปรเจกต์")).toBeInTheDocument();
+    expect(screen.getByText("เริ่มทำโปรเจคลงลึก")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "มีเป้าหมายชัดเจน อยากทำโปรเจกต์จริงพร้อมส่งพอร์ต TCAS - ProjectSeed 2,990฿"
+        "มีเป้าหมายชัดเจน อยากทำโปรเจกต์จริงลงลึก พร้อมส่งพอร์ต TCAS"
+      )
+    ).toBeInTheDocument();
+
+    expect(screen.getByText("รับงานจริงจากพาร์ตเนอร์")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "สมัครเป็น Talent สร้างโปรไฟล์ รับงานฟรีแลนซ์/งานจริงจากพาร์ตเนอร์ในอุตสาหกรรม"
       )
     ).toBeInTheDocument();
   });
@@ -35,10 +42,16 @@ describe("ReadinessStep Component", () => {
     expect(handleChange).toHaveBeenCalledWith("exploration");
 
     const handsOnRadio = screen.getByRole("radio", {
-      name: /พร้อมลงมือทำโปรเจกต์/i,
+      name: /เริ่มทำโปรเจคลงลึก/i,
     });
     fireEvent.click(handsOnRadio);
     expect(handleChange).toHaveBeenCalledWith("hands_on");
+
+    const talentRadio = screen.getByRole("radio", {
+      name: /รับงานจริงจากพาร์ตเนอร์/i,
+    });
+    fireEvent.click(talentRadio);
+    expect(handleChange).toHaveBeenCalledWith("talent");
   });
 
   it("marks the selected option correctly with aria-checked", () => {
@@ -50,7 +63,7 @@ describe("ReadinessStep Component", () => {
       name: /ค้นหาทิศทางก่อน/i,
     });
     const handsOnRadio = screen.getByRole("radio", {
-      name: /พร้อมลงมือทำโปรเจกต์/i,
+      name: /เริ่มทำโปรเจคลงลึก/i,
     });
 
     expect(explorationRadio).toHaveAttribute("aria-checked", "true");

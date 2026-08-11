@@ -311,7 +311,6 @@ Include an "evidence_used" object in each vector showing you used data from Q1-Q
       console.error("Error name:", error.name);
       console.error("Error message:", error.message);
       console.error("Error stack:", error.stack);
-      // @ts-ignore - check if it's a zod validation error
       if (error.cause) {
         console.error("Error cause:", JSON.stringify(error.cause, null, 2));
       }
