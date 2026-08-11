@@ -5,6 +5,8 @@ import {
   getMapWithNodesServer,
   getMapPreviewServer,
 } from "@/lib/supabase/maps-server";
+import { buildJourneyDays } from "@/lib/utils/map-journey";
+import { getLobbyJourneyOverride } from "@/lib/lobby-journeys";
 import { createClient } from "@/utils/supabase/server";
 import { isInstructor } from "@/lib/supabase/roles";
 import { MapViewerWithProvider as MapViewer } from "@/components/map/MapViewer";
@@ -31,6 +33,15 @@ export default async function MapViewerPage(props: {
     const preview = await getMapPreviewServer(params.id);
     if (!preview) notFound();
 
+    // Teaser-only journey (public maps) so signed-out visitors see what they
+    // will learn before they enter a code. Null on non-public maps -- but
+    // those fail getMapPreviewServer above anyway.
+    const journey = await getMapJourneyPreviewServer(params.id);
+    const journeyDays = buildJourneyDays(
+      journey?.nodes ?? [],
+      journey?.edges ?? []
+    );
+
     return (
       <LobbyCodeGateWrapper
         map={{
@@ -38,9 +49,10 @@ export default async function MapViewerPage(props: {
           title: preview.title,
           description: preview.description,
           cover_image_url: preview.cover_image_url ?? null,
-          node_count: 0,
+          node_count: journeyDays.reduce((sum, d) => sum + d.stops.length, 0),
           avg_difficulty: preview.difficulty ?? 0,
           category: preview.category ?? null,
+          journey: journeyDays,
         }}
       />
     );
@@ -102,6 +114,18 @@ export default async function MapViewerPage(props: {
   const initialPresence = userLobby ? await getLobbyPresence(params.id) : [];
 
   if (!userLobby && !canBypassGate) {
+    // Signed-in visitors already have the full map above (RLS allows reading
+    // nodes of public maps), so the journey is derived without a new query.
+    const journeyDays = buildJourneyDays(
+      map.map_nodes ?? [],
+      (map.map_nodes ?? []).flatMap((n) =>
+        (n.node_paths_source ?? []).map((p) => ({
+          source: p.source_node_id,
+          destination: p.destination_node_id,
+        }))
+      )
+    );
+
     return (
       <LobbyCodeGateWrapper
         map={{
@@ -109,9 +133,10 @@ export default async function MapViewerPage(props: {
           title: map.title,
           description: map.description,
           cover_image_url: map.cover_image_url ?? null,
-          node_count: map.nodes?.length ?? 0,
+          node_count: map.map_nodes?.length ?? 0,
           avg_difficulty: map.difficulty ?? 0,
           category: map.category ?? null,
+          journey: journeyDays,
         }}
       />
     );

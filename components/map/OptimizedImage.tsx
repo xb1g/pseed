@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import { decode } from "blurhash";
 
@@ -105,6 +105,7 @@ export function OptimizedImage({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [currentSrc, setCurrentSrc] = useState(src);
+  const imgRef = useRef<HTMLImageElement | null>(null);
 
   // Reset state when src changes
   useEffect(() => {
@@ -117,6 +118,28 @@ export function OptimizedImage({
     setImageLoaded(true);
     onLoad?.();
   }, [onLoad]);
+
+  // Safari (and any browser serving from cache) can finish decoding before React
+  // attaches onLoad, so the event fires into the void and the image stays hidden
+  // behind opacity-0 forever. Checking `complete` on ref attach catches that case.
+  const attachImgRef = useCallback(
+    (node: HTMLImageElement | null) => {
+      imgRef.current = node;
+      if (node?.complete && node.naturalWidth > 0) {
+        handleImageLoad();
+      }
+    },
+    [handleImageLoad]
+  );
+
+  // `complete` is only reliable once currentSrc is actually applied to the DOM
+  // node, so re-check after each src swap (including the reset effect above).
+  useEffect(() => {
+    const node = imgRef.current;
+    if (node?.complete && node.naturalWidth > 0) {
+      handleImageLoad();
+    }
+  }, [currentSrc, handleImageLoad]);
 
   const handleImageError = useCallback(() => {
     setImageError(true);
@@ -202,10 +225,11 @@ export function OptimizedImage({
       >
         {fill ? (
           <Image
+            ref={attachImgRef}
             src={currentSrc}
             alt={alt}
             fill
-            sizes={sizes}
+            sizes={sizes || "(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"}
             priority={priority}
             className="object-cover"
             onLoad={handleImageLoad}
@@ -213,6 +237,7 @@ export function OptimizedImage({
           />
         ) : (
           <Image
+            ref={attachImgRef}
             src={currentSrc}
             alt={alt}
             width={width}

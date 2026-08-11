@@ -71,7 +71,6 @@ export function MapCard({ map }: MapCardProps) {
             };
 
             setVinylColors(vinylScheme);
-            console.log("Using blurhash colors:", vinylScheme);
             return;
           } catch (error) {
             console.warn("Failed to extract blurhash color:", error);

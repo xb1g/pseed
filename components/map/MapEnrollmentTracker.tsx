@@ -16,11 +16,19 @@ interface MapEnrollmentTrackerProps {
     total_assessments?: number;
   };
   children: React.ReactNode;
+  /**
+   * Skip auto-enrollment. Set for viewers who reached the map by bypassing the
+   * lobby gate (admins, instructors, the creator): enrolling them would write a
+   * row with a null lobby_id, breaking the "every enrollment belongs to exactly
+   * one lobby" invariant the lobby feature depends on.
+   */
+  skipAutoEnroll?: boolean;
 }
 
 export function MapEnrollmentTracker({
   map,
   children,
+  skipAutoEnroll = false,
 }: MapEnrollmentTrackerProps) {
   const [isCheckingEnrollment, setIsCheckingEnrollment] = useState(true);
   const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
