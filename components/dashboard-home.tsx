@@ -216,7 +216,7 @@ export function DashboardHome({ user }: DashboardHomeProps) {
       {/* Learning Maps Section */}
       <div className="mb-12">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold tracking-tight">Learning Maps</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Pathlabs</h2>
           <Button variant="ghost" asChild>
             <Link href="/map" className="flex items-center gap-2">
               View All
@@ -395,14 +395,14 @@ export function DashboardHome({ user }: DashboardHomeProps) {
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Map className="h-12 w-12 text-gray-400 mb-4" />
               <h3 className="text-lg font-semibold mb-2">
-                No Learning Maps Yet
+                No Pathlabs Yet
               </h3>
               <p className="text-sm text-muted-foreground text-center mb-4 max-w-sm">
                 Discover interactive learning adventures with gamified islands
                 and quests.
               </p>
               <Button asChild>
-                <Link href="/map">Explore Maps</Link>
+                <Link href="/map">Explore Pathlabs</Link>
               </Button>
             </CardContent>
           </Card>

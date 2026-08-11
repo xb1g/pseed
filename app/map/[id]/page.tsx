@@ -106,7 +106,7 @@ export default async function MapViewerPage(props: {
             ) : (
               <Link href="/map">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Maps
+                Back to Pathlabs
               </Link>
             )}
           </Button>

@@ -164,7 +164,7 @@ export function JourneyPageClientWrapper({
                 }}
               >
                 <Trash2 className="h-4 w-4" />
-                <span className="hidden sm:inline">Reset Map</span>
+                <span className="hidden sm:inline">Reset Pathlab</span>
               </Button>
             )}
           </div>

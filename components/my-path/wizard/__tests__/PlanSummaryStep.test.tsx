@@ -9,12 +9,15 @@ describe("PlanSummaryStep Component", () => {
     timeline: "3 เดือน",
   };
 
-  it("renders ProjectSeed offer card and LINE OA button for hands_on readiness", () => {
+  it("renders ProjectSeed offer card and Calendly free consult button for hands_on readiness", () => {
     render(<PlanSummaryStep {...defaultHandsOnProps} />);
 
-    // Renders ProjectSeed heading & price
-    expect(screen.getByText(/ProjectSeed/i)).toBeInTheDocument();
-    expect(screen.getByText(/2,990฿/i)).toBeInTheDocument();
+    // Renders ProjectSeed heading & free consult messaging (no price shown)
+    expect(
+      screen.getByRole("heading", { name: "ProjectSeed Program" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("ปรึกษาฟรี")).toBeInTheDocument();
+    expect(screen.queryByText(/2,990฿/i)).not.toBeInTheDocument();
 
     // Renders key features
     expect(
@@ -32,28 +35,45 @@ describe("PlanSummaryStep Component", () => {
 
     // Primary CTA button text
     const ctaButton = screen.getByRole("link", {
-      name: /ส่ง Plan ให้พี่ๆ ช่วยดูฟรี บน LINE OA/i,
+      name: /จองคิวปรึกษาฟรี 30 นาที/i,
     });
     expect(ctaButton).toBeInTheDocument();
   });
 
-  it("generates correct pre-filled LINE OA deep link for hands_on readiness", () => {
+  it("links the hands_on CTA to the Calendly free consult booking page", () => {
     render(<PlanSummaryStep {...defaultHandsOnProps} />);
 
     const ctaLink = screen.getByRole("link", {
-      name: /ส่ง Plan ให้พี่ๆ ช่วยดูฟรี บน LINE OA/i,
+      name: /จองคิวปรึกษาฟรี 30 นาที/i,
     });
-    const href = ctaLink.getAttribute("href");
 
-    expect(href).toContain("https://line.me/R/oaMessage/@passionseed/?");
-    
-    // Decoded message assertions
-    const decodedMessage = decodeURIComponent(href || "");
-    expect(decodedMessage).toContain("สวัสดีครับ/ค่ะ!");
-    expect(decodedMessage).toContain("🎯 สายงาน: ซอฟต์แวร์แรร์");
-    expect(decodedMessage).toContain("🚀 โปรเจกต์: App Prototyping");
-    expect(decodedMessage).toContain("⏱️ ไทม์ไลน์: 3 เดือน");
-    expect(decodedMessage).toContain("อยากสอบถามเรื่องเข้าร่วม ProjectSeed (2,990฿) ครับ");
+    expect(ctaLink.getAttribute("href")).toBe(
+      "https://calendly.com/seedpassion/30min"
+    );
+  });
+
+  it("renders Talent signup card for talent readiness", () => {
+    render(
+      <PlanSummaryStep
+        readiness="talent"
+        selectedCareer={{ titleTh: "ซอฟต์แวร์แรร์", slug: "tech" }}
+        selectedSeed={{ title: "App Prototyping" }}
+      />
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "สร้างโปรไฟล์ Talent ของคุณ" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("สมัครฟรี")).toBeInTheDocument();
+    expect(screen.queryByText(/2,990฿/i)).not.toBeInTheDocument();
+
+    const ctaLink = screen.getByRole("link", {
+      name: /สมัครเป็น Talent สร้างโปรไฟล์/i,
+    });
+    expect(ctaLink).toHaveAttribute(
+      "href",
+      "https://forms.gle/14EZbYpz9qqDXwTs5"
+    );
   });
 
   it("renders Career Exploration CTA card for exploration readiness", () => {
@@ -93,7 +113,7 @@ describe("PlanSummaryStep Component", () => {
     render(<PlanSummaryStep {...defaultHandsOnProps} onBook={onBook} />);
 
     const ctaLink = screen.getByRole("link", {
-      name: /ส่ง Plan ให้พี่ๆ ช่วยดูฟรี บน LINE OA/i,
+      name: /จองคิวปรึกษาฟรี 30 นาที/i,
     });
     fireEvent.click(ctaLink);
 
@@ -104,10 +124,10 @@ describe("PlanSummaryStep Component", () => {
     render(<PlanSummaryStep {...defaultHandsOnProps} readiness={null} />);
 
     const ctaButton = screen.getByRole("link", {
-      name: /ส่ง Plan ให้พี่ๆ ช่วยดูฟรี บน LINE OA/i,
+      name: /จองคิวปรึกษาฟรี 30 นาที/i,
     });
     expect(ctaButton).toBeInTheDocument();
     expect(ctaButton).not.toHaveClass("ei-button-dawn");
-    expect(ctaButton).toHaveClass("bg-[#06C755]");
+    expect(ctaButton).toHaveClass("bg-amber-400");
   });
 });

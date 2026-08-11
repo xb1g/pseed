@@ -12,7 +12,7 @@ export function EmptyMapsState({ onCreateMap }: EmptyMapsStateProps) {
         <Map className="h-12 w-12 text-blue-400" />
       </div>
       <h3 className="text-2xl font-bold mb-4 text-gray-100">
-        No Learning Maps Available
+        No Pathlabs Available
       </h3>
       <p className="text-gray-400 mb-8 max-w-md mx-auto">
         Start your learning adventure by creating your first interactive map.

@@ -29,8 +29,8 @@ export default function AdminPage() {
     },
     {
       href: "/admin/maps",
-      title: "Maps Management",
-      description: "Inspect and maintain learning maps.",
+      title: "Pathlabs Management",
+      description: "Inspect and maintain pathlabs.",
       icon: Compass,
     },
     {

@@ -36,7 +36,7 @@ export function HeroHeader({ isAuthenticated, onCreateMap, searchQuery = "", onS
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent">
-                Learning Maps
+                Pathlabs
               </h1>
               <p className="text-xs text-gray-400 mt-0.5 tracking-wide">
                 Discover • Learn • Master

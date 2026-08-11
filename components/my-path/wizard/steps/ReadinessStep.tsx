@@ -1,8 +1,8 @@
 "use client";
 
-import { Check, Compass, Rocket } from "lucide-react";
+import { Briefcase, Check, Compass, Rocket } from "lucide-react";
 
-export type ReadinessLevel = "exploration" | "hands_on";
+export type ReadinessLevel = "exploration" | "hands_on" | "talent";
 
 export interface ReadinessStepProps {
   value?: ReadinessLevel | null;
@@ -27,11 +27,19 @@ const READINESS_OPTIONS: ReadinessOption[] = [
   },
   {
     id: "hands_on",
-    title: "พร้อมลงมือทำโปรเจกต์",
+    title: "เริ่มทำโปรเจคลงลึก",
     description:
-      "มีเป้าหมายชัดเจน อยากทำโปรเจกต์จริงพร้อมส่งพอร์ต TCAS - ProjectSeed 2,990฿",
+      "มีเป้าหมายชัดเจน อยากทำโปรเจกต์จริงลงลึก พร้อมส่งพอร์ต TCAS",
     icon: Rocket,
-    badge: "ProjectSeed 2,990฿",
+    badge: "ปรึกษาฟรี",
+  },
+  {
+    id: "talent",
+    title: "รับงานจริงจากพาร์ตเนอร์",
+    description:
+      "สมัครเป็น Talent สร้างโปรไฟล์ รับงานฟรีแลนซ์/งานจริงจากพาร์ตเนอร์ในอุตสาหกรรม",
+    icon: Briefcase,
+    badge: "Talent",
   },
 ];
 
@@ -67,7 +75,7 @@ export function ReadinessStep({
       </p>
 
       <div
-        className="mt-6 grid w-full gap-4 sm:grid-cols-2"
+        className="mt-6 grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-3"
         role="radiogroup"
         aria-label="ตอนนี้คุณอยู่ในช่วงไหนของการเรียนรู้?"
       >

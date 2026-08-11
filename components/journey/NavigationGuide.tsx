@@ -95,7 +95,7 @@ export function NavigationGuide({
               <span className="text-slate-500">Click</span>
             </div>
             <div className="flex justify-between text-slate-300">
-              <span>Pan Map</span>
+              <span>Pan Pathlab</span>
               <span className="text-slate-500">Drag</span>
             </div>
           </div>

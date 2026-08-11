@@ -8,7 +8,7 @@ const ADMIN_NAV_ITEMS = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/users", label: "Users" },
-  { href: "/admin/maps", label: "Maps" },
+  { href: "/admin/maps", label: "Pathlabs" },
   { href: "/admin/direction-finder", label: "Direction Finder" },
   { href: "/admin/hackathon", label: "Hackathon" },
   { href: "/admin/beta", label: "Beta" },

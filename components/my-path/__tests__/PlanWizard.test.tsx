@@ -83,13 +83,13 @@ test("opens on the readiness step and gates the interests step behind a saved ca
     })
   ).toBeVisible();
 
-  fireEvent.click(screen.getByRole("radio", { name: /พร้อมลงมือทำโปรเจกต์/i }));
+  fireEvent.click(screen.getByRole("radio", { name: /เริ่มทำโปรเจคลงลึก/i }));
   fireEvent.click(screen.getByRole("button", { name: "เริ่มออกแบบชีวิต" }));
   expect(
     screen.getByRole("heading", { name: "อะไรจุดไฟในตัวคุณ" })
   ).toBeVisible();
   expect(
-    screen.getByRole("button", { name: "เลือกอย่างน้อย 1 อันเพื่อไปต่อ" })
+    screen.getByRole("button", { name: "เลือกหรือเขียนอย่างน้อย 1 อย่าง" })
   ).toBeDisabled();
 
   fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
@@ -108,7 +108,7 @@ test("walks from interests through the goal lock to a plan summary step", async 
   renderWizard();
 
   fireEvent.click(
-    await screen.findByRole("radio", { name: /พร้อมลงมือทำโปรเจกต์/i })
+    await screen.findByRole("radio", { name: /เริ่มทำโปรเจคลงลึก/i })
   );
   fireEvent.click(screen.getByRole("button", { name: "เริ่มออกแบบชีวิต" }));
   fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));
@@ -136,8 +136,49 @@ test("walks from interests through the goal lock to a plan summary step", async 
     })
   ).toBeVisible();
   expect(
-    screen.getByRole("link", { name: /ส่ง Plan ให้พี่ๆ ช่วยดูฟรี บน LINE OA/i })
+    screen.getByRole("link", { name: /จองคิวปรึกษาฟรี 30 นาที/i })
   ).toBeVisible();
+});
+
+test("lets the student write their own interest instead of picking a career", async () => {
+  renderWizard();
+
+  fireEvent.click(
+    await screen.findByRole("radio", { name: /เริ่มทำโปรเจคลงลึก/i })
+  );
+  fireEvent.click(screen.getByRole("button", { name: "เริ่มออกแบบชีวิต" }));
+
+  // No career picked — writing free text via the + chip unlocks the next step
+  expect(
+    screen.getByRole("button", { name: "เลือกหรือเขียนอย่างน้อย 1 อย่าง" })
+  ).toBeDisabled();
+
+  fireEvent.click(screen.getByRole("button", { name: /เขียนเอง/i }));
+  fireEvent.change(
+    screen.getByRole("textbox", { name: "เขียนสิ่งที่จุดไฟในตัวคุณเอง" }),
+    { target: { value: "อยากทำเกมของตัวเอง" } }
+  );
+  fireEvent.keyDown(
+    screen.getByRole("textbox", { name: "เขียนสิ่งที่จุดไฟในตัวคุณเอง" }),
+    { key: "Enter" }
+  );
+
+  // The written interest becomes a chip in the row
+  expect(
+    screen.getByRole("button", { name: /อยากทำเกมของตัวเอง/ })
+  ).toBeVisible();
+  expect(screen.getByRole("button", { name: "ถัดไป" })).toBeEnabled();
+
+  fireEvent.click(screen.getByRole("button", { name: "ถัดไป" }));
+  fireEvent.click(screen.getByRole("radio", { name: /เข้ามหาวิทยาลัย/ }));
+  fireEvent.click(screen.getByRole("button", { name: "ดูแผนของฉัน" }));
+
+  // The written interest shows up as the plan's target career
+  expect(screen.getByText("อยากทำเกมของตัวเอง")).toBeVisible();
+
+  // …and is stored in the draft so it survives reloads/sync
+  const stored = window.localStorage.getItem("passionseed_my_path_draft_v1");
+  expect(stored).toContain("อยากทำเกมของตัวเอง");
 });
 
 test("folds interests flagged on Radar back into the plan", async () => {
@@ -148,7 +189,7 @@ test("folds interests flagged on Radar back into the plan", async () => {
   renderWizard();
 
   fireEvent.click(
-    await screen.findByRole("radio", { name: /พร้อมลงมือทำโปรเจกต์/i })
+    await screen.findByRole("radio", { name: /เริ่มทำโปรเจคลงลึก/i })
   );
   fireEvent.click(screen.getByRole("button", { name: "เริ่มออกแบบชีวิต" }));
   expect(
@@ -163,7 +204,7 @@ test("keeps every step in history so a swipe-back only moves one step", async ()
   renderWizard();
 
   fireEvent.click(
-    await screen.findByRole("radio", { name: /พร้อมลงมือทำโปรเจกต์/i })
+    await screen.findByRole("radio", { name: /เริ่มทำโปรเจคลงลึก/i })
   );
   fireEvent.click(screen.getByRole("button", { name: "เริ่มออกแบบชีวิต" }));
   fireEvent.click(screen.getByRole("button", { name: /AI Engineer/ }));

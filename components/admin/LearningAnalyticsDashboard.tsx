@@ -129,6 +129,7 @@ export function LearningAnalyticsDashboard() {
           <Stat title="Median Learning" value={data.medians.learning.toFixed(1)} />
           <Stat title="Med R1 / R2" value={`${data.medians.round1.toFixed(1)} / ${data.medians.semifinal.toFixed(1)}`} />
         </div>
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a
           href="/api/admin/hackathon/learning/export"
           className="ml-4 shrink-0 rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"

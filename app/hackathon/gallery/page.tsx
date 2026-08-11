@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { Metadata } from "next";
 import { getGalleryProducts, getAllTags } from "@/lib/hackathon/gallery";
 import { PLACEHOLDER_PRODUCTS } from "@/lib/hackathon/gallery-placeholders";
@@ -56,13 +57,13 @@ export default async function GalleryPage({
             height: "64px",
           }}
         >
-          <a href="/hackathon" style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}>
+          <Link href="/hackathon" style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}>
             <img
               src="/hackathon/HackLogo.png"
               alt="The Next Decade Hackathon"
               style={{ height: "36px", width: "auto", objectFit: "contain", filter: "drop-shadow(0 1px 8px rgba(20,40,80,0.30))" }}
             />
-          </a>
+          </Link>
 
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             <LangToggle onHero />
@@ -108,7 +109,7 @@ export default async function GalleryPage({
             Student teams spent 3 months building solutions to real healthcare problems.
             If something here could help you, reach out directly to the team.
           </p>
-          <a
+          <Link
             href="/hackathon/gallery/match"
             className="bloom-button"
             style={{
@@ -123,7 +124,7 @@ export default async function GalleryPage({
             <span className="bloom-button__grain" aria-hidden="true" />
             <span aria-hidden="true">🐋</span>
             Not sure which product is for you?
-          </a>
+          </Link>
         </header>
       </div>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import GalleryMascot from "./GalleryMascot";
 import ProductCard from "./ProductCard";
@@ -67,14 +68,14 @@ export default function MatchReveal({ answers, results, unmatched, onRetake }: M
             ? "คุณสนใจหลายเรื่องเลย! ลองดูผลงานทั้งหมดได้เลย"
             : "You're interested in everything! Go explore all the products."}
         </p>
-        <a
+        <Link
           href="/hackathon/gallery"
           className="bloom-button"
           style={{ fontSize: "0.9375rem" }}
         >
           <span className="bloom-button__grain" aria-hidden="true" />
           {lang === "th" ? "ดูผลงานทั้งหมด" : "Browse all products"}
-        </a>
+        </Link>
       </div>
     );
   }

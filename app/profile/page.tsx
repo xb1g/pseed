@@ -509,7 +509,7 @@ export default function ProfilePage() {
                     href={isInstructorView ? '/classrooms' : '/map'}
                     className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
                   >
-                    {isInstructorView ? 'Go to classrooms' : 'Explore maps'}
+                    {isInstructorView ? 'Go to classrooms' : 'Explore Pathlabs'}
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
@@ -524,7 +524,7 @@ export default function ProfilePage() {
                       : 'You have not configured mentor availability yet.'
                     : dashboard?.learningJourney.nextNodes.length
                       ? `Your next unlocked step is ${dashboard.learningJourney.nextNodes[0].node.title} in ${dashboard.learningJourney.nextNodes[0].map.title}.`
-                      : 'You do not have an unlocked next step yet. Enroll in a map to start building momentum.'}
+                      : 'You do not have an unlocked next step yet. Enroll in a pathlab to start building momentum.'}
                 </p>
               </div>
             </div>
@@ -628,10 +628,10 @@ export default function ProfilePage() {
                       subtitle: `${nextNode.map.title} • ${formatStatus(nextNode.status)}`,
                       href: `/map/${nextNode.map.id}`,
                     }))}
-                    emptyText="No unlocked steps yet. Explore a map to get started."
+                    emptyText="No unlocked steps yet. Explore a pathlab to get started."
                   />
                   <div className="space-y-3">
-                    <p className="text-sm font-semibold text-white">Active maps</p>
+                    <p className="text-sm font-semibold text-white">Active Pathlabs</p>
                     {(dashboard?.learningJourney.mapSummaries || []).slice(0, 4).map((map) => (
                       <div
                         key={map.mapId}
@@ -664,9 +664,9 @@ export default function ProfilePage() {
 
                     {!dashboard?.learningJourney.mapSummaries.length ? (
                       <EmptyPanel
-                        text="No map enrollments yet. Once you start a learning map, this section will reflect your real progress."
+                        text="No pathlab enrollments yet. Once you start a pathlab, this section will reflect your real progress."
                         href="/map"
-                        cta="Browse maps"
+                        cta="Browse Pathlabs"
                       />
                     ) : null}
                   </div>

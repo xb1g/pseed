@@ -88,7 +88,7 @@ export default async function MapTrailPage(props: {
         <Button asChild variant="outline" size="sm">
           <Link href={`/map/${params.id}`}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Map
+            Back to Pathlab
           </Link>
         </Button>
         {isDemo && (

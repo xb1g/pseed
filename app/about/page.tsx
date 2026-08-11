@@ -24,7 +24,7 @@ const translations = {
     title: "Empowering students to find their path.",
     subtitle: "We help students discover their purpose through real-world experiences, guided reflection, and meaningful connections.",
     getStarted: "Start exploring",
-    exploreMaps: "Explore Learning Maps",
+    exploreMaps: "Explore Pathlabs",
     
     // Vision & Mission
     visionEyebrow: "Our Vision",
@@ -72,7 +72,7 @@ const translations = {
     title: "เสริมพลังนักเรียนให้ค้นพบเส้นทางของตนเอง",
     subtitle: "เราช่วยนักเรียนค้นพบจุดประสงค์ผ่านประสบการณ์จริง การไตร่ตรอง และการเชื่อมต่อที่มีความหมาย",
     getStarted: "เริ่มสำรวจ",
-    exploreMaps: "สำรวจแผนที่การเรียนรู้",
+    exploreMaps: "สำรวจ Pathlabs",
     
     // Vision & Mission
     visionEyebrow: "วิสัยทัศน์",

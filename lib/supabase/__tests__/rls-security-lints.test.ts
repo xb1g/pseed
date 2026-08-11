@@ -97,7 +97,7 @@ let dbAvailable = false;
 beforeAll(async () => {
   dbAvailable = await dbReachable();
   if (!dbAvailable) {
-    // eslint-disable-next-line no-console
+     
     console.warn(
       `[rls-security-lints] Local Postgres not reachable at ${DB_URL} — skipping integration suite.`
     );
@@ -149,7 +149,7 @@ describe("RLS security-lint remediation (local Postgres catalog)", () => {
   const itDb = (name: string, fn: () => Promise<void>) =>
     it(name, async () => {
       if (!dbAvailable) {
-        // eslint-disable-next-line no-console
+         
         console.warn(`[skip:no-db] ${name}`);
         return;
       }

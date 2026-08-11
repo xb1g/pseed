@@ -44,7 +44,7 @@ export default function MapError({
               variant="outline" 
               onClick={() => window.location.href = "/map"}
             >
-              Browse Maps
+              Browse Pathlabs
             </Button>
             <Button 
               variant="outline" 
