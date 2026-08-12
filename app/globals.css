@@ -9583,3 +9583,134 @@ summary:focus-visible .radar-expand-indicator {
   text-align: center;
   white-space: nowrap;
 }
+
+/* ── Price ── */
+
+.pathlab-price {
+  padding: 0 clamp(1.25rem, 5vw, 4rem) clamp(5rem, 12vw, 9rem);
+  max-width: 52rem;
+  margin-inline: auto;
+}
+
+.pathlab-price__heading {
+  font-family: var(--font-athiti), var(--font-noto-sans-thai), sans-serif;
+  font-size: clamp(1.9rem, 5vw, 3.25rem);
+  line-height: 1.35;
+  font-weight: 600;
+  color: #c43e1d;
+  text-align: left;
+}
+
+/* Two label/value pairs. A definition list, not a table: there are no
+   meaningful columns here, just terms and their prices. */
+.pathlab-price__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: clamp(1.75rem, 4vw, 2.75rem) 0 0;
+  /* Indented from the heading, as in the reference, but flush left on phones
+     where the extra inset costs more than it gives. */
+  padding-inline-start: 0;
+}
+
+@media (min-width: 640px) {
+  .pathlab-price__rows {
+    padding-inline-start: clamp(2rem, 8vw, 6rem);
+  }
+}
+
+.pathlab-price__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem clamp(1.5rem, 5vw, 3.5rem);
+  font-family: var(--font-athiti), var(--font-noto-sans-thai), sans-serif;
+  font-size: clamp(1.15rem, 3vw, 1.65rem);
+  line-height: 1.9;
+  color: #524746;
+}
+
+/* Fixed basis so the two amounts line up under each other. */
+.pathlab-price__label {
+  flex: 0 0 auto;
+  min-width: 7.5rem;
+}
+
+.pathlab-price__value {
+  margin: 0;
+}
+
+/* The figure carries the emphasis; the unit stays in body colour. */
+.pathlab-price__amount {
+  color: #c43e1d;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dark panel: the logistics are a footnote to the prices above, and inverting
+   separates them without another heading. */
+.pathlab-price__notes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: clamp(1.75rem, 4vw, 2.5rem);
+  padding: clamp(1.25rem, 3vw, 1.75rem) clamp(1.25rem, 3vw, 2rem);
+  border-radius: 1.25rem;
+  background: #524746;
+  font-family: var(--font-athiti), var(--font-noto-sans-thai), sans-serif;
+  font-size: clamp(0.95rem, 2vw, 1.05rem);
+  /* Thai stacks marks above and below the line. */
+  line-height: 1.9;
+  color: rgba(253, 243, 230, 0.92);
+  text-wrap: pretty;
+}
+
+.pathlab-price__notes p {
+  margin: 0;
+}
+
+/* ── Contact: closing call to action ── */
+
+.pathlab-contact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 clamp(1.25rem, 5vw, 4rem) clamp(6rem, 14vw, 10rem);
+  text-align: center;
+}
+
+.pathlab-contact__line {
+  font-family: var(--font-athiti), var(--font-noto-sans-thai), sans-serif;
+  font-size: clamp(1.15rem, 3vw, 1.6rem);
+  line-height: 1.8;
+  color: #c43e1d;
+  margin: 0;
+}
+
+/* The handle is the page's only action, so it gets link affordance: an
+   underline that thickens on hover, not a colour change alone. */
+.pathlab-contact__handle {
+  font-family: var(--font-athiti), var(--font-noto-sans-thai), sans-serif;
+  font-size: clamp(1.15rem, 3vw, 1.6rem);
+  line-height: 1.8;
+  color: #c43e1d;
+  text-decoration: underline;
+  text-decoration-color: rgba(196, 62, 29, 0.35);
+  text-underline-offset: 0.28em;
+  text-decoration-thickness: 1px;
+  transition: text-decoration-color 180ms ease-out,
+    text-decoration-thickness 180ms ease-out;
+}
+
+.pathlab-contact__handle:hover,
+.pathlab-contact__handle:focus-visible {
+  text-decoration-color: #c43e1d;
+  text-decoration-thickness: 2px;
+}
+
+.pathlab-contact__handle:focus-visible {
+  outline: 2px solid #c43e1d;
+  outline-offset: 4px;
+  border-radius: 4px;
+}
