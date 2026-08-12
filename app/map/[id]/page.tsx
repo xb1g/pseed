@@ -6,7 +6,6 @@ import {
   getMapPreviewServer,
 } from "@/lib/supabase/maps-server";
 import { buildJourneyDays } from "@/lib/utils/map-journey";
-import { getLobbyJourneyOverride } from "@/lib/lobby-journeys";
 import { createClient } from "@/utils/supabase/server";
 import { isInstructor } from "@/lib/supabase/roles";
 import { MapViewerWithProvider as MapViewer } from "@/components/map/MapViewer";
@@ -33,15 +32,9 @@ export default async function MapViewerPage(props: {
     const preview = await getMapPreviewServer(params.id);
     if (!preview) notFound();
 
-    // Teaser-only journey (public maps) so signed-out visitors see what they
-    // will learn before they enter a code. Null on non-public maps -- but
-    // those fail getMapPreviewServer above anyway.
-    const journey = await getMapJourneyPreviewServer(params.id);
-    const journeyDays = buildJourneyDays(
-      journey?.nodes ?? [],
-      journey?.edges ?? []
-    );
-
+    // No journey fetch here: `anon` has no SELECT on map_nodes or node_paths,
+    // so any query would return empty regardless. The gate renders authored
+    // curriculum content rather than the path graph, so it needs neither.
     return (
       <LobbyCodeGateWrapper
         map={{
@@ -49,10 +42,10 @@ export default async function MapViewerPage(props: {
           title: preview.title,
           description: preview.description,
           cover_image_url: preview.cover_image_url ?? null,
-          node_count: journeyDays.reduce((sum, d) => sum + d.stops.length, 0),
+          node_count: 0,
           avg_difficulty: preview.difficulty ?? 0,
           category: preview.category ?? null,
-          journey: journeyDays,
+          journey: [],
         }}
       />
     );
