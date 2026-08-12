@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { DawnScene } from "@/components/projectseed/dawn-scene";
 import { Button } from "@/components/ui/button";
 import {
   Card,
