@@ -6,6 +6,7 @@ import {
   getMapPreviewServer,
 } from "@/lib/supabase/maps-server";
 import { buildJourneyDays } from "@/lib/utils/map-journey";
+import { getLobbyJourneyOverride } from "@/lib/lobby-journeys";
 import { createClient } from "@/utils/supabase/server";
 import { isInstructor } from "@/lib/supabase/roles";
 import { MapViewerWithProvider as MapViewer } from "@/components/map/MapViewer";
@@ -34,7 +35,9 @@ export default async function MapViewerPage(props: {
 
     // No journey fetch here: `anon` has no SELECT on map_nodes or node_paths,
     // so any query would return empty regardless. The gate renders authored
-    // curriculum content rather than the path graph, so it needs neither.
+    // curriculum content (hardcoded in lib/lobby-journeys.ts for now).
+    const journeyDays =
+      getLobbyJourneyOverride(params.id, preview.title) ?? [];
     return (
       <LobbyCodeGateWrapper
         map={{
@@ -42,10 +45,10 @@ export default async function MapViewerPage(props: {
           title: preview.title,
           description: preview.description,
           cover_image_url: preview.cover_image_url ?? null,
-          node_count: 0,
+          node_count: journeyDays.reduce((sum, d) => sum + d.stops.length, 0),
           avg_difficulty: preview.difficulty ?? 0,
           category: preview.category ?? null,
-          journey: [],
+          journey: journeyDays,
         }}
       />
     );
@@ -107,17 +110,19 @@ export default async function MapViewerPage(props: {
   const initialPresence = userLobby ? await getLobbyPresence(params.id) : [];
 
   if (!userLobby && !canBypassGate) {
-    // Signed-in visitors already have the full map above (RLS allows reading
-    // nodes of public maps), so the journey is derived without a new query.
-    const journeyDays = buildJourneyDays(
-      map.map_nodes ?? [],
-      (map.map_nodes ?? []).flatMap((n) =>
-        (n.node_paths_source ?? []).map((p) => ({
-          source: p.source_node_id,
-          destination: p.destination_node_id,
-        }))
-      )
-    );
+    // Hardcoded journey takes priority (design preview); fall back to the
+    // map's own path graph for maps without an override.
+    const journeyDays =
+      getLobbyJourneyOverride(map.id, map.title) ??
+      buildJourneyDays(
+        map.map_nodes ?? [],
+        (map.map_nodes ?? []).flatMap((n) =>
+          (n.node_paths_source ?? []).map((p) => ({
+            source: p.source_node_id,
+            destination: p.destination_node_id,
+          }))
+        )
+      );
 
     return (
       <LobbyCodeGateWrapper
