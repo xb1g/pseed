@@ -97,7 +97,11 @@ export interface FieldCard {
   src: string;
   alt: string;
   label: string;
+  /** Not open yet: the card greys out and carries a "Coming soon" overlay. */
+  comingSoon?: boolean;
 }
+
+export const COMING_SOON_LABEL = "Coming soon";
 
 /** The paths currently open. Artwork is pre-cut to a shared 876x1171 frame. */
 export const FIELDS: FieldCard[] = [
@@ -120,11 +124,13 @@ export const FIELDS: FieldCard[] = [
     src: "/pathlab/field-medical.webp",
     alt: "หูฟังแพทย์วางบนสมุดบันทึก",
     label: "Medical",
+    comingSoon: true,
   },
   {
     src: "/pathlab/field-architect.webp",
     alt: "แบบแปลนสถาปัตยกรรม",
     label: "Architect",
+    comingSoon: true,
   },
 ];
 

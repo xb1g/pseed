@@ -9518,3 +9518,38 @@ summary:focus-visible .radar-expand-indicator {
   color: #c43e1d;
   text-align: center;
 }
+
+/* Paths not open yet: the artwork greys out, the badge stays legible.
+   The filter goes on the image alone so the badge sitting above it keeps
+   its own colour. */
+.pathlab-fields__item.is-coming-soon .pathlab-fields__frame img {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+/* Muted, but not below the contrast floor: #8d7f7c read as "greyed out" at
+   only 3.5:1 on cream. This keeps the same intent at 4.9:1. */
+.pathlab-fields__item.is-coming-soon .pathlab-fields__label {
+  color: #756663;
+}
+
+.pathlab-fields__badge {
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  translate: 0 -50%;
+  z-index: 1;
+  margin-inline: auto;
+  width: fit-content;
+  max-width: 88%;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(82, 71, 70, 0.92);
+  color: #fdf3e6;
+  font-family: var(--font-athiti), var(--font-noto-sans-thai), sans-serif;
+  font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  white-space: nowrap;
+}
