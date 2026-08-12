@@ -40,6 +40,7 @@ export function Layout({ children }: LayoutProps) {
     pathname === "/experimental-wall" ||
     pathname === "/business-model-canvas" ||
     pathname?.startsWith("/talent") ||
+    pathname?.startsWith("/pathlab") ||
     pathname?.startsWith("/plan") ||
     pathname?.includes("finish-profile") ||
     pathname?.includes("complete-profile") ||
