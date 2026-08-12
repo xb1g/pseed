@@ -9234,13 +9234,13 @@ summary:focus-visible .radar-expand-indicator {
 .pathlab-portfolio__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  /* auto rows in frame/caption pairs so items can subgrid onto them */
-  grid-auto-rows: auto auto;
   gap: clamp(1.75rem, 5vw, 3.5rem) clamp(1rem, 4vw, 3rem);
   margin-top: clamp(2rem, 5vw, 3.5rem);
   max-width: 58rem;
   list-style: none;
   padding: 0;
+  /* Cards keep a sane size instead of stretching across the wide container. */
+  justify-items: center;
 }
 
 @media (min-width: 860px) {
@@ -9250,26 +9250,12 @@ summary:focus-visible .radar-expand-indicator {
   }
 }
 
-/* Frames vary in aspect ratio (square logos, portrait photos), so each item is
-   its own row-track pair: the frame row is sized by the tallest frame and the
-   captions all start at the same y. */
+/* All frames share one ratio now, so captions line up without subgrid. */
 .pathlab-portfolio__item {
-  display: grid;
-  grid-template-rows: subgrid;
-  grid-row: span 2;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 1rem;
-  justify-items: start;
-}
-
-/* subgrid is widely supported now, but fall back to a flex column where it is
-   not: captions lose their shared baseline, nothing else breaks. */
-@supports not (grid-template-rows: subgrid) {
-  .pathlab-portfolio__item {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-  }
 }
 
 /* Visible by default: the reveal only adds a rise. */
@@ -9289,6 +9275,9 @@ summary:focus-visible .radar-expand-indicator {
   }
 }
 
+/* One ratio for every card so the row reads as a set. Logos differ only in how
+   their image sits inside the frame (contained, with padding), never in the
+   frame's own size. */
 .pathlab-portfolio__frame {
   position: relative;
   width: 100%;
@@ -9299,18 +9288,11 @@ summary:focus-visible .radar-expand-indicator {
   box-shadow: 0 14px 34px rgba(82, 71, 70, 0.16);
 }
 
-/* Logos sit on a white plate with breathing room; photographs fill the frame.
-   Square so the mark is not cropped, and the row still reads as one line
-   because the captions sit below the frame, not inside it. */
-.pathlab-portfolio__frame--logo {
-  aspect-ratio: 1 / 1;
-}
-
 .pathlab-portfolio__caption {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
-  text-align: left;
+  text-align: center;
   font-family: var(--font-athiti), var(--font-noto-sans-thai), sans-serif;
   font-size: clamp(0.95rem, 2vw, 1.05rem);
   line-height: 1.7;
@@ -9331,13 +9313,14 @@ summary:focus-visible .radar-expand-indicator {
   line-height: 1.35;
   font-weight: 600;
   color: #c43e1d;
-  text-align: left;
+  text-align: center;
   text-wrap: balance;
 }
 
 .pathlab-stats__grid {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: clamp(2.5rem, 7vw, 5.5rem);
   margin-top: clamp(2.25rem, 5vw, 3.5rem);
   list-style: none;
@@ -9347,11 +9330,10 @@ summary:focus-visible .radar-expand-indicator {
 .pathlab-stat {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 1.1rem;
-  /* Two up on phones, side by side with room to breathe above that. */
-  flex: 1 1 min(100%, 13rem);
-  max-width: 17rem;
+  /* Stacked on phones, side by side with room to breathe above that. */
+  flex: 0 1 min(100%, 15rem);
 }
 
 .pathlab-stat__ring {
@@ -9398,6 +9380,7 @@ summary:focus-visible .radar-expand-indicator {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+  text-align: center;
   font-family: var(--font-athiti), var(--font-noto-sans-thai), sans-serif;
   font-size: clamp(0.95rem, 2vw, 1.05rem);
   line-height: 1.7;
