@@ -43,6 +43,7 @@ import {
   Lock,
   Loader2,
   Key,
+  Trash2,
 } from "lucide-react";
 import { LanguagePicker } from "@/components/language-picker";
 import { useTheme } from "next-themes";
@@ -92,6 +93,18 @@ const translations = {
       passwordTooShort: "Password must be at least 6 characters",
       incorrectPassword: "Current password is incorrect",
     },
+    deleteAccount: {
+      title: "Delete Account",
+      desc: "Permanently delete your account and all data",
+      confirmTitle: "Delete your account?",
+      confirmDesc:
+        "This will permanently delete your account and all associated data, including progress, reflections, and team memberships. This action cannot be undone.",
+      typeToConfirm: 'Type "DELETE" to confirm',
+      cancel: "Cancel",
+      confirm: "Delete Account",
+      deleting: "Deleting...",
+      error: "Failed to delete account. Please try again.",
+    },
   },
   th: {
     headerTitle: "ตั้งค่า",
@@ -133,6 +146,18 @@ const translations = {
       passwordTooShort: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร",
       incorrectPassword: "รหัสผ่านปัจจุบันไม่ถูกต้อง",
     },
+    deleteAccount: {
+      title: "ลบบัญชี",
+      desc: "ลบบัญชีและข้อมูลทั้งหมดของคุณอย่างถาวร",
+      confirmTitle: "ลบบัญชีของคุณ?",
+      confirmDesc:
+        "การดำเนินการนี้จะลบบัญชีและข้อมูลทั้งหมดของคุณอย่างถาวร รวมถึงความคืบหน้า บันทึกสะท้อนคิด และการเป็นสมาชิกทีม ไม่สามารถย้อนกลับได้",
+      typeToConfirm: 'พิมพ์ "DELETE" เพื่อยืนยัน',
+      cancel: "ยกเลิก",
+      confirm: "ลบบัญชี",
+      deleting: "กำลังลบ...",
+      error: "ไม่สามารถลบบัญชีได้ กรุณาลองอีกครั้ง",
+    },
   },
 };
 
@@ -152,6 +177,12 @@ export default function SettingsPage() {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+
+  // Delete account state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -207,6 +238,33 @@ export default function SettingsPage() {
       setPasswordError(t.changePassword.error);
     } finally {
       setPasswordLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteError("");
+    setDeleteLoading(true);
+
+    try {
+      const response = await fetch("/api/profile/delete-account", {
+        method: "DELETE",
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setDeleteError(data.error || t.deleteAccount.error);
+        setDeleteLoading(false);
+        return;
+      }
+
+      // Auth user already gone — clear local session only, then hard-nav.
+      // Global signOut can hang/fail; router.push is soft and can leave stale state.
+      await supabase.auth.signOut({ scope: "local" }).catch(() => {});
+      window.location.href = "/";
+    } catch {
+      setDeleteError(t.deleteAccount.error);
+      setDeleteLoading(false);
     }
   };
 
@@ -418,6 +476,85 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Danger Zone */}
+        <Card className="border-red-500/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-red-500">
+              <Trash2 className="h-5 w-5" />
+              {t.deleteAccount.title}
+            </CardTitle>
+            <CardDescription>{t.deleteAccount.desc}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Dialog
+              open={deleteDialogOpen}
+              onOpenChange={(open) => {
+                setDeleteDialogOpen(open);
+                if (!open) {
+                  setDeleteConfirmText("");
+                  setDeleteError("");
+                }
+              }}
+            >
+              <DialogTrigger asChild>
+                <Button variant="destructive">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  {t.deleteAccount.confirm}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-red-500">
+                    <Trash2 className="h-5 w-5" />
+                    {t.deleteAccount.confirmTitle}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {t.deleteAccount.confirmDesc}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-2">
+                  <Label htmlFor="deleteConfirm">
+                    {t.deleteAccount.typeToConfirm}
+                  </Label>
+                  <Input
+                    id="deleteConfirm"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    placeholder="DELETE"
+                  />
+                </div>
+                {deleteError && (
+                  <p className="text-sm text-red-500">{deleteError}</p>
+                )}
+                <div className="flex justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setDeleteDialogOpen(false)}
+                  >
+                    {t.deleteAccount.cancel}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    disabled={deleteConfirmText !== "DELETE" || deleteLoading}
+                    onClick={handleDeleteAccount}
+                  >
+                    {deleteLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {t.deleteAccount.deleting}
+                      </>
+                    ) : (
+                      t.deleteAccount.confirm
+                    )}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Success Dialog */}

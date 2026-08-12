@@ -2,9 +2,23 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { isAnonymousUser } from "@/lib/supabase/auth";
 import { OnboardClient } from "./onboard-client";
+import type { AccountPrefill } from "./phases/account";
 import type { OnboardingState } from "@/types/onboarding";
 
 export const dynamic = "force-dynamic";
+
+function asEducationLevel(
+  value: string | null | undefined
+): AccountPrefill["education_level"] {
+  if (
+    value === "high_school" ||
+    value === "university" ||
+    value === "unaffiliated"
+  ) {
+    return value;
+  }
+  return null;
+}
 
 export default async function OnboardPage() {
   const supabase = await createClient();
@@ -24,7 +38,9 @@ export default async function OnboardPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_onboarded")
+    .select(
+      "is_onboarded, full_name, username, date_of_birth, education_level"
+    )
     .eq("id", user.id)
     .maybeSingle();
 
@@ -45,6 +61,12 @@ export default async function OnboardPage() {
       isAnonymous={isAnonymousUser(user)}
       oauthName={oauthName}
       initialState={state as OnboardingState | null}
+      accountPrefill={{
+        full_name: profile?.full_name ?? oauthName,
+        username: profile?.username ?? null,
+        date_of_birth: profile?.date_of_birth ?? null,
+        education_level: asEducationLevel(profile?.education_level),
+      }}
     />
   );
 }

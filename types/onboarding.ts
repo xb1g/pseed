@@ -75,7 +75,6 @@ export function isAssessmentComplete(data: CollectedData): boolean {
     data.target_clarity &&
     data.primary_blocker &&
     data.confidence &&
-    data.career_direction &&
     data.commitment_signal
   );
 }

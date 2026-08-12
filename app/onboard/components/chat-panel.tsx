@@ -54,7 +54,7 @@ export function ChatPanel({
             {contextChips.map((chip) => (
               <span
                 key={chip}
-                className="rounded-full border border-orange-300/25 bg-orange-400/10 px-2.5 py-1 text-xs text-orange-100/90"
+                className="rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-xs text-white/70"
               >
                 {chip}
               </span>
@@ -76,7 +76,7 @@ export function ChatPanel({
                 className={[
                   "max-w-[84%] rounded-[1.35rem] px-4 py-3 text-sm leading-relaxed shadow-[0_12px_32px_rgba(0,0,0,0.16)]",
                   message.role === "user"
-                    ? "border border-orange-300/20 bg-[linear-gradient(135deg,rgba(249,115,22,0.26),rgba(190,24,93,0.28))] text-white"
+                    ? "border border-blue-400/25 bg-blue-500/15 text-white"
                     : "border border-white/8 bg-white/8 text-white/90",
                 ].join(" ")}
               >
@@ -107,13 +107,13 @@ export function ChatPanel({
               }
             }}
             placeholder={placeholder || "Type your message..."}
-            className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-orange-300/45 focus:outline-none"
+            className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-blue-400/45 focus:outline-none"
           />
           <button
             type="button"
             onClick={handleSend}
             disabled={isLoading}
-            className="ei-button-dusk min-w-12 justify-center px-4 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-40"
+            className="ei-button-dawn min-w-12 justify-center px-4 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-40"
           >
             →
           </button>

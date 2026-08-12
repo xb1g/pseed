@@ -83,8 +83,8 @@ function AuthCodeErrorContent({ searchParams }: { searchParams: { [key: string]:
 
       <div className="space-y-4">
         <Button asChild className="w-full">
-          <Link href="/auth/finish-profile">
-            Complete Profile Setup
+          <Link href="/onboard">
+            Continue Setup
           </Link>
         </Button>
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { isAnonymousUser } from "@/lib/supabase/auth";
+import { requiresGuardianConsent } from "@/lib/profile-completion";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 
@@ -11,8 +12,87 @@ interface CompleteBody {
   preferred_language: "en" | "th";
   interests: string[];
   collected_data: Record<string, unknown>;
+  full_name?: string;
   email?: string;
   password?: string;
+  guardian_phone?: string;
+  guardian_relationship?: string;
+  guardian_approved?: boolean;
+}
+
+type AdminClient = ReturnType<typeof createAdminClient>;
+
+async function upsertGuardianConsent(
+  admin: AdminClient,
+  userId: string,
+  body: CompleteBody,
+  now: string
+): Promise<{ error: string } | null> {
+  if (!requiresGuardianConsent(body.date_of_birth)) {
+    return null;
+  }
+
+  const phone = body.guardian_phone?.trim() ?? "";
+  const relationship = body.guardian_relationship?.trim() ?? "";
+  if (!phone || !relationship || !body.guardian_approved) {
+    return { error: "Parent or guardian approval is required" };
+  }
+
+  const { error } = await admin.from("profile_guardian_consents").upsert(
+    {
+      user_id: userId,
+      guardian_phone: phone,
+      guardian_relationship: relationship,
+      consent_confirmed_at: now,
+      updated_at: now,
+    },
+    { onConflict: "user_id" }
+  );
+
+  if (error) {
+    console.error("[onboarding/complete] guardian error", error);
+    return { error: "Guardian consent save failed" };
+  }
+
+  return null;
+}
+
+function resolveFullName(body: CompleteBody): string | null {
+  if (typeof body.full_name === "string" && body.full_name.trim()) {
+    return body.full_name.trim();
+  }
+  if (typeof body.collected_data?.name === "string") {
+    return body.collected_data.name.trim() || null;
+  }
+  return null;
+}
+
+async function insertCareerGoals(
+  admin: AdminClient,
+  userId: string,
+  interests: string[] | undefined
+): Promise<{ error: string } | null> {
+  if (!Array.isArray(interests) || interests.length === 0) {
+    return null;
+  }
+
+  const goals = interests
+    .map((career_name) => career_name.trim())
+    .filter(Boolean)
+    .map((career_name) => ({
+      user_id: userId,
+      career_name,
+      source: "user_typed" as const,
+    }));
+
+  if (goals.length === 0) return null;
+
+  const { error } = await admin.from("career_goals").insert(goals);
+  if (error) {
+    console.error("[onboarding/complete] career goals error", error);
+    return { error: "Career goals update failed" };
+  }
+  return null;
 }
 
 export async function POST(request: NextRequest) {
@@ -34,7 +114,6 @@ export async function POST(request: NextRequest) {
       education_level,
       preferred_language,
       interests,
-      collected_data,
       email,
       password,
     } = body;
@@ -51,10 +130,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (
+      requiresGuardianConsent(date_of_birth) &&
+      (!body.guardian_phone?.trim() ||
+        !body.guardian_relationship?.trim() ||
+        !body.guardian_approved)
+    ) {
+      return NextResponse.json(
+        { error: "Parent or guardian approval is required" },
+        { status: 422 }
+      );
+    }
+
     const admin = createAdminClient();
     const now = new Date().toISOString();
     const normalizedUsername = username.trim().toLowerCase();
     const isAnonymous = isAnonymousUser(user);
+    const resolvedName = resolveFullName(body);
 
     if (isAnonymous) {
       if (!email || !password) {
@@ -96,15 +188,8 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Continue with the existing user's ID for profile/career-goals upsert below.
-        // Re-assign user to the signed-in account so the rest of the handler uses it.
         const existingUser = signInData.user;
-        const resolvedEmailExisting =
-          existingUser.email || normalizedEmail;
-        const resolvedNameExisting =
-          typeof collected_data?.name === "string"
-            ? collected_data.name.trim() || null
-            : null;
+        const resolvedEmailExisting = existingUser.email || normalizedEmail;
 
         const { error: profileErrorExisting } = await admin
           .from("profiles")
@@ -116,7 +201,7 @@ export async function POST(request: NextRequest) {
               education_level,
               preferred_language,
               email: resolvedEmailExisting,
-              full_name: resolvedNameExisting,
+              full_name: resolvedName,
               is_onboarded: true,
               onboarded_at: now,
               updated_at: now,
@@ -135,32 +220,23 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        if (Array.isArray(interests) && interests.length > 0) {
-          const goals = interests
-            .map((career_name) => career_name.trim())
-            .filter(Boolean)
-            .map((career_name) => ({
-              user_id: existingUser.id,
-              career_name,
-              source: "user_typed" as const,
-            }));
+        const guardianErrorExisting = await upsertGuardianConsent(
+          admin,
+          existingUser.id,
+          body,
+          now
+        );
+        if (guardianErrorExisting) {
+          return NextResponse.json(guardianErrorExisting, { status: 500 });
+        }
 
-          if (goals.length > 0) {
-            const { error: careerGoalsErrorExisting } = await admin
-              .from("career_goals")
-              .insert(goals);
-
-            if (careerGoalsErrorExisting) {
-              console.error(
-                "[onboarding/complete] career goals error (existing user)",
-                careerGoalsErrorExisting
-              );
-              return NextResponse.json(
-                { error: "Career goals update failed" },
-                { status: 500 }
-              );
-            }
-          }
+        const careerErrorExisting = await insertCareerGoals(
+          admin,
+          existingUser.id,
+          interests
+        );
+        if (careerErrorExisting) {
+          return NextResponse.json(careerErrorExisting, { status: 500 });
         }
 
         return NextResponse.json({ ok: true });
@@ -206,10 +282,6 @@ export async function POST(request: NextRequest) {
     }
 
     const resolvedEmail = user.email || email?.trim().toLowerCase() || null;
-    const resolvedName =
-      typeof collected_data?.name === "string"
-        ? collected_data.name.trim() || null
-        : null;
 
     const { error: profileError } = await admin.from("profiles").upsert(
       {
@@ -235,32 +307,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (Array.isArray(interests) && interests.length > 0) {
-      const goals = interests
-        .map((career_name) => career_name.trim())
-        .filter(Boolean)
-        .map((career_name) => ({
-          user_id: user.id,
-          career_name,
-          source: "user_typed" as const,
-        }));
+    const guardianError = await upsertGuardianConsent(admin, user.id, body, now);
+    if (guardianError) {
+      return NextResponse.json(guardianError, { status: 500 });
+    }
 
-      if (goals.length > 0) {
-        const { error: careerGoalsError } = await admin
-          .from("career_goals")
-          .insert(goals);
-
-        if (careerGoalsError) {
-          console.error(
-            "[onboarding/complete] career goals error",
-            careerGoalsError
-          );
-          return NextResponse.json(
-            { error: "Career goals update failed" },
-            { status: 500 }
-          );
-        }
-      }
+    const careerError = await insertCareerGoals(admin, user.id, interests);
+    if (careerError) {
+      return NextResponse.json(careerError, { status: 500 });
     }
 
     return NextResponse.json({ ok: true });

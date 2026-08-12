@@ -1,54 +1,53 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useRouter } from "next/navigation";
 import type {
   CollectedData,
   OnboardingState,
   OnboardingStep,
 } from "@/types/onboarding";
+import { DawnScene } from "@/components/projectseed/dawn-scene";
 import { ProgressDots } from "./components/progress-dots";
 import { WelcomePhase } from "./phases/welcome";
 import { InterestPhase } from "./phases/interest";
 import { AssessmentWizardPhase } from "./phases/assessment-wizard";
-import { AssessmentChatPhase } from "./phases/assessment-chat";
-import { InfluencePhase } from "./phases/influence";
 import { ResultsPhase } from "./phases/results";
-import { AccountPhase } from "./phases/account";
+import { AccountPhase, type AccountPrefill } from "./phases/account";
 
 interface OnboardClientProps {
   userId: string;
   isAnonymous: boolean;
   oauthName: string | null;
   initialState: OnboardingState | null;
+  accountPrefill?: AccountPrefill | null;
 }
 
-type ChatMessage = { role: "user" | "assistant"; content: string };
 const IS_DEV = process.env.NODE_ENV !== "production";
 
 const PREVIOUS_STEP: Partial<Record<OnboardingStep, OnboardingStep>> = {
   interest: "welcome",
   assessment: "interest",
-  influence: "assessment",
-  results: "influence",
+  results: "assessment",
   account: "results",
 };
+
+const HEADER_CHIP =
+  "inline-flex min-h-11 items-center rounded-full border border-white/10 bg-white/[0.03] px-3.5 text-xs font-medium text-white/70 sm:min-h-0 sm:py-1.5 sm:text-white/60";
 
 export function OnboardClient({
   userId,
   isAnonymous,
   oauthName,
   initialState,
+  accountPrefill,
 }: OnboardClientProps) {
-  const router = useRouter();
-  const [step, setStep] = useState<OnboardingStep>(
-    initialState?.current_step ?? "welcome"
-  );
+  const [step, setStep] = useState<OnboardingStep>(() => {
+    const initial = initialState?.current_step ?? "welcome";
+    // Influence step removed — send leftover sessions forward.
+    return initial === "influence" ? "results" : initial;
+  });
   const [data, setData] = useState<CollectedData>(
-    initialState?.collected_data ?? {}
-  );
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>(
-    initialState?.chat_history ?? []
+    initialState?.collected_data ?? { language: "th" }
   );
 
   const saveState = useCallback(
@@ -70,17 +69,13 @@ export function OnboardClient({
     async (nextStep: OnboardingStep, updates: Partial<CollectedData>) => {
       const nextData = { ...data, ...updates };
       setData(nextData);
-
-      if (nextStep === "account" && !isAnonymous) {
-        await saveState(nextStep, nextData);
-        router.push("/me");
-        return;
-      }
-
       setStep(nextStep);
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "auto" });
+      }
       await saveState(nextStep, nextData);
     },
-    [data, isAnonymous, router, saveState]
+    [data, saveState]
   );
 
   const updateLanguage = useCallback(
@@ -99,10 +94,13 @@ export function OnboardClient({
     }
 
     setStep(previousStep);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }
     await saveState(previousStep, data);
   }, [data, saveState, step]);
 
-  const language = (data.language ?? "en") as "en" | "th";
+  const language = (data.language ?? "th") as "en" | "th";
 
   const resetOnboarding = useCallback(async () => {
     if (!IS_DEV) {
@@ -119,37 +117,30 @@ export function OnboardClient({
 
     setStep("welcome");
     setData({ language });
-    setChatHistory([]);
   }, [language]);
   const sharedProps = { data, advance, goBack };
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(to_bottom,#06000f_0%,#1a0336_28%,#3b0764_58%,#4a1230_82%,#2a0818_100%)] text-white">
-      <div className="relative isolate flex min-h-screen flex-col overflow-hidden">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-x-0 top-[-12%] h-[38rem] bg-[radial-gradient(circle_at_top,rgba(107,33,168,0.34),transparent_62%)] blur-3xl" />
-          <div className="absolute inset-x-0 bottom-0 h-72 bg-[linear-gradient(to_top,rgba(251,146,60,0.14),transparent_68%)] blur-3xl" />
-        </div>
-
-        <header className="sticky top-0 z-20 border-b border-white/[0.06] bg-[#120320]/80 backdrop-blur-md">
-          <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-            <div className="flex min-w-0 flex-col">
-              <span className="text-xs uppercase tracking-[0.24em] text-white/45">
-                PassionSeed
-              </span>
-              <span className="truncate text-sm text-white/75">
-                Career onboarding
+    <div className="dawn-theme relative min-h-dvh text-white antialiased">
+      <DawnScene />
+      <div className="relative z-10 flex min-h-dvh flex-col">
+        <header className="sticky top-0 z-20 border-b border-white/[0.06] bg-[#020617]/85 pt-[env(safe-area-inset-top)] backdrop-blur-md">
+          <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-2 px-3 sm:h-16 sm:gap-4 sm:px-6">
+            <div className="min-w-0 flex-1">
+              <span className="dawn-eyebrow block truncate">PassionSeed</span>
+              <span className="hidden truncate text-sm text-white/70 sm:block">
+                {language === "en" ? "Career onboarding" : "เริ่มต้นเส้นทาง"}
               </span>
             </div>
-            <ProgressDots currentStep={step} />
-            <div className="flex items-center gap-2">
+            <ProgressDots currentStep={step} compact />
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
               {IS_DEV ? (
                 <button
                   type="button"
                   onClick={() => {
                     void resetOnboarding();
                   }}
-                  className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-white/55"
+                  className={HEADER_CHIP}
                 >
                   Reset
                 </button>
@@ -159,41 +150,32 @@ export function OnboardClient({
                 onClick={() => {
                   void updateLanguage(language === "en" ? "th" : "en");
                 }}
-                className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-semibold tracking-[0.18em] text-white/70"
+                className={`${HEADER_CHIP} tracking-[0.14em]`}
               >
                 {language === "en" ? "TH" : "EN"}
-              </button>
-              <button
-                type="button"
-                onClick={() => router.push("/me")}
-                className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-white/55"
-              >
-                Exit
               </button>
             </div>
           </div>
         </header>
 
-        <main className="relative z-10 flex flex-1 items-start justify-center px-4 py-6 sm:px-6 sm:py-8">
-          {step === "welcome" && (
-            <WelcomePhase {...sharedProps} oauthName={oauthName} />
-          )}
-          {step === "interest" && <InterestPhase {...sharedProps} />}
-          {step === "assessment" && data.mode === "chat" && (
-            <AssessmentChatPhase
-              {...sharedProps}
-              chatHistory={chatHistory}
-              onChatHistoryChange={setChatHistory}
-            />
-          )}
-          {step === "assessment" && data.mode !== "chat" && (
-            <AssessmentWizardPhase {...sharedProps} />
-          )}
-          {step === "influence" && <InfluencePhase {...sharedProps} />}
-          {step === "results" && <ResultsPhase {...sharedProps} />}
-          {step === "account" && (
-            <AccountPhase {...sharedProps} isAnonymous={isAnonymous} />
-          )}
+        <main className="relative flex flex-1 justify-center px-3 py-4 sm:px-6 sm:py-8">
+          <div className="w-full pb-[max(1rem,env(safe-area-inset-bottom))]">
+            {step === "welcome" && (
+              <WelcomePhase {...sharedProps} oauthName={oauthName} />
+            )}
+            {step === "interest" && <InterestPhase {...sharedProps} />}
+            {step === "assessment" && (
+              <AssessmentWizardPhase {...sharedProps} />
+            )}
+            {step === "results" && <ResultsPhase {...sharedProps} />}
+            {step === "account" && (
+              <AccountPhase
+                {...sharedProps}
+                isAnonymous={isAnonymous}
+                prefill={accountPrefill}
+              />
+            )}
+          </div>
         </main>
       </div>
     </div>

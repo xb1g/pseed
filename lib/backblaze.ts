@@ -3,6 +3,7 @@ import {
   PutObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
+  ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -303,6 +304,42 @@ class BackblazeB2 {
         `File deletion failed: ${error instanceof Error ? error.message : "Unknown error"}`
       );
     }
+  }
+
+  /** Best-effort wipe of all objects under a key prefix (e.g. submissions/{userId}/). */
+  async deletePrefix(prefix: string): Promise<number> {
+    let deleted = 0;
+    let continuationToken: string | undefined;
+
+    do {
+      const listed = await this.s3Client.send(
+        new ListObjectsV2Command({
+          Bucket: this.bucketName,
+          Prefix: prefix,
+          ContinuationToken: continuationToken,
+        })
+      );
+
+      const keys = (listed.Contents ?? [])
+        .map((obj) => obj.Key)
+        .filter((key): key is string => Boolean(key));
+
+      for (const key of keys) {
+        await this.s3Client.send(
+          new DeleteObjectCommand({
+            Bucket: this.bucketName,
+            Key: key,
+          })
+        );
+        deleted += 1;
+      }
+
+      continuationToken = listed.IsTruncated
+        ? listed.NextContinuationToken
+        : undefined;
+    } while (continuationToken);
+
+    return deleted;
   }
 
   async getSignedUrl(
