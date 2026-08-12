@@ -33,6 +33,7 @@ const PUBLIC_ROUTE_PREFIXES = [
   "/projectseed",
   "/talent",
   "/map",
+  "/pathlab",
 ] as const;
 
 export function isPublicRoute(pathname: string): boolean {
