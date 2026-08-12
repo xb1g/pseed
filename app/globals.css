@@ -9452,3 +9452,69 @@ summary:focus-visible .radar-expand-indicator {
   color: rgba(253, 243, 230, 0.86);
   text-wrap: pretty;
 }
+
+/* ── Fields: the paths currently open ── */
+
+.pathlab-fields {
+  padding: 0 clamp(1.25rem, 5vw, 4rem) clamp(5rem, 12vw, 9rem);
+  max-width: 82rem;
+  margin-inline: auto;
+}
+
+.pathlab-fields__heading {
+  font-family: var(--font-athiti), var(--font-noto-sans-thai), sans-serif;
+  font-size: clamp(1.9rem, 5vw, 3.25rem);
+  line-height: 1.35;
+  font-weight: 600;
+  color: #c43e1d;
+  text-align: center;
+  text-wrap: balance;
+}
+
+/* Flex rather than grid: five items wrap to 3 + 2, and a centred flex line
+   keeps the trailing pair under the middle of the row above. An auto-fit grid
+   would strand them on the left. */
+.pathlab-fields__grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(1.5rem, 4vw, 3rem) clamp(1.25rem, 3.5vw, 3rem);
+  max-width: 52rem;
+  margin: clamp(2.25rem, 5vw, 3.5rem) auto 0;
+  list-style: none;
+  padding: 0;
+}
+
+.pathlab-fields__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  /* Two up on phones, three up once there is room. */
+  flex: 0 1 min(42%, 14rem);
+}
+
+@media (min-width: 640px) {
+  .pathlab-fields__item {
+    flex-basis: 14rem;
+  }
+}
+
+/* Artwork is pre-cut to this ratio, so the image fills with no correction. */
+.pathlab-fields__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 876 / 1171;
+}
+
+.pathlab-fields__frame img {
+  object-fit: contain;
+}
+
+.pathlab-fields__label {
+  font-family: var(--font-instrument-serif), Georgia, serif;
+  font-size: clamp(1.15rem, 2.6vw, 1.6rem);
+  line-height: 1.3;
+  color: #c43e1d;
+  text-align: center;
+}
