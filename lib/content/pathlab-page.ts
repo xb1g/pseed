@@ -86,3 +86,28 @@ export const HERO = {
 } as const;
 
 export const PORTFOLIO_HEADING = "Port ที่ดีต้องการอะไร";
+
+export const STATS_HEADING = "แต่การเริ่มต้นยากสุดเสมอ";
+
+export interface PathlabStat {
+  /** Whole percent, 0-100. Drives both the ring and the printed figure. */
+  percent: number;
+  /** Two short lines under the ring. */
+  lines: string[];
+}
+
+/**
+ * The two numbers that make the case for starting early. Rings are drawn as
+ * inline SVG rather than a chart library: two values do not justify the
+ * dependency, and SVG stays sharp at any size.
+ */
+export const STATS: PathlabStat[] = [
+  {
+    percent: 87,
+    lines: ["เริ่มเตรียม Port", "ตอน ม.5"],
+  },
+  {
+    percent: 58,
+    lines: ["ที่เริ่มตอน ม.6", "ยอมแพ้กับรอบ Port"],
+  },
+];
