@@ -140,41 +140,58 @@ export default async function MapViewerPage(props: {
     );
   }
 
+  const headerBar = (
+    <div className="absolute top-3 inset-x-3 z-10 flex items-center justify-between gap-2 sm:top-4 sm:inset-x-4">
+      <Button asChild variant="outline" size="sm" className="shrink-0 bg-background/80 backdrop-blur-sm">
+        {map.map_type === 'seed' && map.parent_seed_id ? (
+          <Link href={`/seeds/${map.parent_seed_id}`}>
+            <ArrowLeft className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Back to Seed</span>
+          </Link>
+        ) : (
+          <Link href="/map">
+            <ArrowLeft className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Back to Pathlabs</span>
+          </Link>
+        )}
+      </Button>
+
+      <div className="min-w-0 flex-1 rounded-full border border-border bg-background/80 px-4 py-1.5 text-center shadow-sm backdrop-blur-sm sm:flex-none sm:max-w-xs">
+        <p className="truncate text-sm font-semibold leading-tight">
+          {map.title}
+        </p>
+      </div>
+
+      <div className="flex shrink-0 gap-2">
+        {userCanEdit && (
+          <Button asChild variant="default" size="sm" className="bg-background/80 backdrop-blur-sm">
+            <Link href={`/map/${params.id}/edit`}>
+              <Pencil className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Edit Map</span>
+            </Link>
+          </Button>
+        )}
+        {userCanGrade && (
+          <Button asChild variant="secondary" size="sm" className="bg-background/80 backdrop-blur-sm">
+            <Link href={`/map/${params.id}/grading`}>
+              <ClipboardCheck className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Grade Submissions</span>
+            </Link>
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <MapEnrollmentTracker map={map}>
       <div className="w-full" style={{ height: "calc(100vh - 65px)" }}>
-        <div className="absolute top-20 left-4 z-10 flex gap-2">
-          <Button asChild variant="outline" size="sm">
-            {map.map_type === 'seed' && map.parent_seed_id ? (
-              <Link href={`/seeds/${map.parent_seed_id}`}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Seed
-              </Link>
-            ) : (
-              <Link href="/map">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Pathlabs
-              </Link>
-            )}
-          </Button>
-          {userCanEdit && (
-            <Button asChild variant="default" size="sm">
-              <Link href={`/map/${params.id}/edit`}>
-                <Pencil className="h-4 w-4 mr-2" />
-                Edit Map
-              </Link>
-            </Button>
-          )}
-          {userCanGrade && (
-            <Button asChild variant="secondary" size="sm">
-              <Link href={`/map/${params.id}/grading`}>
-                <ClipboardCheck className="h-4 w-4 mr-2" />
-                Grade Submissions
-              </Link>
-            </Button>
-          )}
-        </div>
-        <MapViewer map={map} trailMode initialPresence={initialPresence} />
+        <MapViewer
+          map={map}
+          trailMode
+          initialPresence={initialPresence}
+          headerContent={headerBar}
+        />
       </div>
     </MapEnrollmentTracker>
   );

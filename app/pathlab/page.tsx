@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { PathlabNav } from "@/components/pathlab/PathlabNav";
 import { PathlabHero } from "@/components/pathlab/PathlabHero";
 import { PathlabPortfolio } from "@/components/pathlab/PathlabPortfolio";
+import { PathlabJourney } from "@/components/pathlab/PathlabJourney";
 import { PathlabStats } from "@/components/pathlab/PathlabStats";
 import { PathlabOffer } from "@/components/pathlab/PathlabOffer";
 import { PathlabFields } from "@/components/pathlab/PathlabFields";
@@ -15,8 +17,6 @@ const PATHLAB_DESCRIPTION =
 export const metadata: Metadata = {
   title: PATHLAB_TITLE,
   description: PATHLAB_DESCRIPTION,
-  // Stated explicitly so a shared link shows this page's own title rather than
-  // the site default. The image is inherited from the root layout.
   openGraph: {
     type: "website",
     title: PATHLAB_TITLE,
@@ -24,18 +24,26 @@ export const metadata: Metadata = {
     siteName: "Passion Seed",
     images: [
       {
-        url: "/og-passionseed.jpg",
+        url: "/og-pathlab.jpg",
         width: 1200,
         height: 630,
-        alt: "Passion Seed",
+        alt: "Pathlab — Passion Seed",
       },
     ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: PATHLAB_TITLE,
+    description: PATHLAB_DESCRIPTION,
+    images: ["/og-pathlab.jpg"],
   },
 };
 
 export default function PathlabPage() {
   return (
     <main className="pathlab-page min-h-screen antialiased">
+      <PathlabNav />
+
       {/* Marquee strip, same construction as /talent */}
       <div className="talent-marquee" aria-hidden="true">
         <div className="talent-marquee__track">
@@ -58,6 +66,7 @@ export default function PathlabPage() {
 
       <PathlabHero />
       <PathlabPortfolio />
+      <PathlabJourney />
       <PathlabStats />
       <PathlabOffer />
       <PathlabFields />

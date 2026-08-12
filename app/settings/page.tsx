@@ -279,214 +279,247 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="container max-w-4xl py-10 space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-center space-x-4">
-        <Avatar className="h-16 w-16">
-          <AvatarImage src={user?.user_metadata?.avatar_url} />
-          <AvatarFallback>
-            {user?.email?.charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t.headerTitle}</h1>
-          <p className="text-muted-foreground">{t.headerDesc}</p>
+    <div className="dawn-theme relative min-h-screen text-white antialiased">
+      <DawnScene />
+      <div className="relative z-10 mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12 space-y-8 animate-in fade-in duration-500">
+        {/* Header section styled like Onboarding cards */}
+        <div className="ei-card ei-card--static relative overflow-hidden rounded-[28px] p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div className="flex items-center space-x-5">
+              <Avatar className="h-16 w-16 border border-white/10 ring-2 ring-white/10">
+                <AvatarImage src={user?.user_metadata?.avatar_url} />
+                <AvatarFallback className="bg-white/10 text-white text-xl font-medium">
+                  {user?.email?.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="space-y-1">
+                <p className="dawn-eyebrow">Settings</p>
+                <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">
+                  {t.headerTitle}
+                </h1>
+                <p className="text-sm text-white/60">{t.headerDesc}</p>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div className="grid gap-6">
-        {/* General Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t.preferences}</CardTitle>
-            <CardDescription>{t.preferencesDesc}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Language */}
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label className="text-base font-medium flex items-center gap-2">
-                  <Globe className="w-4 h-4" /> {t.language}
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  {t.languageDesc}
-                </p>
-              </div>
-              <LanguagePicker />
+        <div className="grid gap-6">
+          {/* General Settings / Preferences */}
+          <div className="ei-card ei-card--static relative overflow-hidden rounded-[28px] p-6 sm:p-8 space-y-6">
+            <div className="border-b border-white/[0.08] pb-4">
+              <h2 className="text-xl font-semibold text-white">{t.preferences}</h2>
+              <p className="text-sm text-white/60">{t.preferencesDesc}</p>
             </div>
-
-            {/* Theme */}
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <Label className="text-base font-medium flex items-center gap-2">
-                  <Palette className="w-4 h-4" /> {t.appearance}
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  {t.appearanceDesc}
-                </p>
+            <div className="space-y-6">
+              {/* Language */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="space-y-1">
+                  <Label className="text-base font-medium text-white flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-blue-400" /> {t.language}
+                  </Label>
+                  <p className="text-xs sm:text-sm text-white/60">
+                    {t.languageDesc}
+                  </p>
+                </div>
+                <div className="self-start sm:self-auto">
+                  <LanguagePicker />
+                </div>
               </div>
-              <div className="flex items-center gap-2 bg-muted p-1 rounded-lg">
-                <Button
-                  variant={mounted && theme === "light" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => handleThemeChange("light")}
-                  className="w-8 h-8 p-0"
-                >
-                  <Sun className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={mounted && theme === "dark" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => handleThemeChange("dark")}
-                  className="w-8 h-8 p-0"
-                >
-                  <Moon className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={mounted && theme === "system" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => handleThemeChange("system")}
-                  className="w-8 h-8 p-0"
-                >
-                  <Laptop className="h-4 w-4" />
-                </Button>
+
+              {/* Theme */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="space-y-1">
+                  <Label className="text-base font-medium text-white flex items-center gap-2">
+                    <Palette className="w-4 h-4 text-amber-400" /> {t.appearance}
+                  </Label>
+                  <p className="text-xs sm:text-sm text-white/60">
+                    {t.appearanceDesc}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 bg-black/40 border border-white/10 p-1.5 rounded-xl">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleThemeChange("light")}
+                    className={`h-9 px-3 text-xs gap-1.5 rounded-lg transition-all ${
+                      mounted && theme === "light"
+                        ? "bg-white/20 text-white font-medium shadow-sm"
+                        : "text-white/60 hover:text-white hover:bg-white/10"
+                    }`}
+                  >
+                    <Sun className="h-4 w-4" />
+                    Light
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleThemeChange("dark")}
+                    className={`h-9 px-3 text-xs gap-1.5 rounded-lg transition-all ${
+                      mounted && theme === "dark"
+                        ? "bg-white/20 text-white font-medium shadow-sm"
+                        : "text-white/60 hover:text-white hover:bg-white/10"
+                    }`}
+                  >
+                    <Moon className="h-4 w-4" />
+                    Dark
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleThemeChange("system")}
+                    className={`h-9 px-3 text-xs gap-1.5 rounded-lg transition-all ${
+                      mounted && theme === "system"
+                        ? "bg-white/20 text-white font-medium shadow-sm"
+                        : "text-white/60 hover:text-white hover:bg-white/10"
+                    }`}
+                  >
+                    <Laptop className="h-4 w-4" />
+                    System
+                  </Button>
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Navigation Cards */}
-        <div className="grid md:grid-cols-2 gap-6">
-          {settingsSections.map((section) => (
-            <Link key={section.title} href={section.href}>
-              <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer border-2 hover:border-primary/20">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-xl font-medium">
-                    <div className="flex items-center gap-2">
-                      <section.icon className={`h-5 w-5 ${section.color}`} />
-                      {section.title}
+          {/* Navigation Cards */}
+          <div className="grid sm:grid-cols-2 gap-6">
+            {settingsSections.map((section) => (
+              <Link key={section.title} href={section.href} className="group block">
+                <div className="ei-card relative overflow-hidden rounded-[24px] p-6 h-full border border-white/10 bg-white/[0.03] transition-all hover:bg-white/[0.06] hover:border-white/20 flex flex-col justify-between gap-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                        <section.icon className="h-5 w-5" />
+                      </div>
+                      <h3 className="text-lg font-medium text-white group-hover:text-blue-300 transition-colors">
+                        {section.title}
+                      </h3>
                     </div>
-                  </CardTitle>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-base">
+                    <ChevronRight className="h-5 w-5 text-white/40 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                  </div>
+                  <p className="text-xs sm:text-sm text-white/60 leading-relaxed">
                     {section.description}
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+                  </p>
+                </div>
+              </Link>
+            ))}
 
-          {/* Account - Password Change */}
-          <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
-            <DialogTrigger asChild>
-              <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer border-2 hover:border-primary/20">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-xl font-medium">
-                    <div className="flex items-center gap-2">
-                      <Shield className="h-5 w-5 text-green-500" />
-                      {t.sections.account.title}
+            {/* Account - Password Change */}
+            <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+              <DialogTrigger asChild>
+                <div className="ei-card relative overflow-hidden rounded-[24px] p-6 h-full border border-white/10 bg-white/[0.03] transition-all hover:bg-white/[0.06] hover:border-white/20 flex flex-col justify-between gap-4 cursor-pointer group">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                        <Shield className="h-5 w-5" />
+                      </div>
+                      <h3 className="text-lg font-medium text-white group-hover:text-emerald-300 transition-colors">
+                        {t.sections.account.title}
+                      </h3>
                     </div>
-                  </CardTitle>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-base">
+                    <ChevronRight className="h-5 w-5 text-white/40 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                  </div>
+                  <p className="text-xs sm:text-sm text-white/60 leading-relaxed">
                     {t.sections.account.desc}
-                  </CardDescription>
-                </CardContent>
-              </Card>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Key className="h-5 w-5" />
-                  {t.changePassword.title}
-                </DialogTitle>
-                <DialogDescription>
-                  {t.changePassword.description}
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleChangePassword} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="newPassword">{t.changePassword.newPassword}</Label>
-                  <Input
-                    id="newPassword"
-                    type="password"
-                    placeholder={t.changePassword.newPlaceholder}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
-                  />
+                  </p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">{t.changePassword.confirmPassword}</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder={t.changePassword.confirmPlaceholder}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                {passwordError && (
-                  <p className="text-sm text-red-500">{passwordError}</p>
-                )}
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setPasswordDialogOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={passwordLoading || !newPassword || !confirmPassword}
-                  >
-                    {passwordLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {t.changePassword.submitting}
-                      </>
-                    ) : (
-                      t.changePassword.submit
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="border border-white/15 bg-[#0b1026]/95 text-white backdrop-blur-xl sm:max-w-md rounded-3xl p-6 shadow-2xl">
+                <DialogHeader className="space-y-2">
+                  <DialogTitle className="flex items-center gap-2.5 text-xl font-semibold text-white">
+                    <Key className="h-5 w-5 text-emerald-400" />
+                    {t.changePassword.title}
+                  </DialogTitle>
+                  <DialogDescription className="text-sm text-white/60">
+                    {t.changePassword.description}
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleChangePassword} className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword" className="text-xs uppercase font-semibold tracking-wider text-white/70">
+                      {t.changePassword.newPassword}
+                    </Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      placeholder={t.changePassword.newPlaceholder}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                      className="h-12 rounded-xl border-white/10 bg-white/[0.05] text-white placeholder:text-white/30 focus:border-blue-400/50"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword" className="text-xs uppercase font-semibold tracking-wider text-white/70">
+                      {t.changePassword.confirmPassword}
+                    </Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      placeholder={t.changePassword.confirmPlaceholder}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      className="h-12 rounded-xl border-white/10 bg-white/[0.05] text-white placeholder:text-white/30 focus:border-blue-400/50"
+                    />
+                  </div>
+                  {passwordError && (
+                    <p className="text-xs text-rose-400 font-medium">{passwordError}</p>
+                  )}
+                  <div className="flex justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setPasswordDialogOpen(false)}
+                      className="rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-xs font-semibold text-white/70 hover:bg-white/10 hover:text-white transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={passwordLoading || !newPassword || !confirmPassword}
+                      className="ei-button-dawn px-5 py-2.5 text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {passwordLoading ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          {t.changePassword.submitting}
+                        </div>
+                      ) : (
+                        t.changePassword.submit
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
 
-          {/* Placeholder for Notifications */}
-          <Card className="h-full opacity-60">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xl font-medium">
-                <div className="flex items-center gap-2">
-                  <Bell className="h-5 w-5 text-orange-500" />
-                  {t.sections.notifications.title}
+            {/* Notifications (Coming soon) */}
+            <div className="ei-card relative overflow-hidden rounded-[24px] p-6 h-full border border-white/5 bg-white/[0.01] opacity-50 flex flex-col justify-between gap-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400">
+                    <Bell className="h-5 w-5" />
+                  </div>
+                  <h3 className="text-lg font-medium text-white">
+                    {t.sections.notifications.title}
+                  </h3>
                 </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="text-base">
+              </div>
+              <p className="text-xs sm:text-sm text-white/60 leading-relaxed">
                 {t.sections.notifications.desc}
-              </CardDescription>
-            </CardContent>
-          </Card>
-        </div>
+              </p>
+            </div>
+          </div>
 
-        {/* Danger Zone */}
-        <Card className="border-red-500/30">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-500">
-              <Trash2 className="h-5 w-5" />
-              {t.deleteAccount.title}
-            </CardTitle>
-            <CardDescription>{t.deleteAccount.desc}</CardDescription>
-          </CardHeader>
-          <CardContent>
+          {/* Danger Zone */}
+          <div className="ei-card ei-card--static relative overflow-hidden rounded-[28px] p-6 sm:p-8 border border-rose-500/20 bg-rose-950/10 space-y-4">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold text-rose-400 flex items-center gap-2">
+                <Trash2 className="h-5 w-5" />
+                {t.deleteAccount.title}
+              </h2>
+              <p className="text-xs sm:text-sm text-white/60">{t.deleteAccount.desc}</p>
+            </div>
             <Dialog
               open={deleteDialogOpen}
               onOpenChange={(open) => {
@@ -498,81 +531,92 @@ export default function SettingsPage() {
               }}
             >
               <DialogTrigger asChild>
-                <Button variant="destructive">
-                  <Trash2 className="mr-2 h-4 w-4" />
+                <button
+                  type="button"
+                  className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/20 transition-all flex items-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
                   {t.deleteAccount.confirm}
-                </Button>
+                </button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2 text-red-500">
+              <DialogContent className="border border-rose-500/30 bg-[#0b1026]/95 text-white backdrop-blur-xl sm:max-w-md rounded-3xl p-6 shadow-2xl">
+                <DialogHeader className="space-y-2">
+                  <DialogTitle className="flex items-center gap-2 text-xl font-semibold text-rose-400">
                     <Trash2 className="h-5 w-5" />
                     {t.deleteAccount.confirmTitle}
                   </DialogTitle>
-                  <DialogDescription>
+                  <DialogDescription className="text-xs sm:text-sm text-white/60">
                     {t.deleteAccount.confirmDesc}
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-2">
-                  <Label htmlFor="deleteConfirm">
-                    {t.deleteAccount.typeToConfirm}
-                  </Label>
-                  <Input
-                    id="deleteConfirm"
-                    value={deleteConfirmText}
-                    onChange={(e) => setDeleteConfirmText(e.target.value)}
-                    placeholder="DELETE"
-                  />
-                </div>
-                {deleteError && (
-                  <p className="text-sm text-red-500">{deleteError}</p>
-                )}
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setDeleteDialogOpen(false)}
-                  >
-                    {t.deleteAccount.cancel}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    disabled={deleteConfirmText !== "DELETE" || deleteLoading}
-                    onClick={handleDeleteAccount}
-                  >
-                    {deleteLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {t.deleteAccount.deleting}
-                      </>
-                    ) : (
-                      t.deleteAccount.confirm
-                    )}
-                  </Button>
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="deleteConfirm" className="text-xs uppercase font-semibold tracking-wider text-white/70">
+                      {t.deleteAccount.typeToConfirm}
+                    </Label>
+                    <Input
+                      id="deleteConfirm"
+                      value={deleteConfirmText}
+                      onChange={(e) => setDeleteConfirmText(e.target.value)}
+                      placeholder="DELETE"
+                      className="h-12 rounded-xl border-white/10 bg-white/[0.05] text-white placeholder:text-white/30 focus:border-rose-400/50"
+                    />
+                  </div>
+                  {deleteError && (
+                    <p className="text-xs text-rose-400 font-medium">{deleteError}</p>
+                  )}
+                  <div className="flex justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setDeleteDialogOpen(false)}
+                      className="rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-xs font-semibold text-white/70 hover:bg-white/10 hover:text-white transition-all"
+                    >
+                      {t.deleteAccount.cancel}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={deleteConfirmText !== "DELETE" || deleteLoading}
+                      onClick={handleDeleteAccount}
+                      className="rounded-xl border border-rose-500/40 bg-rose-600/80 px-5 py-2.5 text-xs font-semibold text-white hover:bg-rose-600 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {deleteLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          {t.deleteAccount.deleting}
+                        </>
+                      ) : (
+                        t.deleteAccount.confirm
+                      )}
+                    </button>
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
 
-      {/* Success Dialog */}
-      <AlertDialog open={passwordSuccess} onOpenChange={setPasswordSuccess}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t.changePassword.success}</AlertDialogTitle>
-            <AlertDialogDescription>
-              Your password has been updated successfully.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setPasswordSuccess(false)}>
-              OK
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        {/* Success Dialog */}
+        <AlertDialog open={passwordSuccess} onOpenChange={setPasswordSuccess}>
+          <AlertDialogContent className="border border-white/15 bg-[#0b1026]/95 text-white backdrop-blur-xl rounded-3xl p-6 shadow-2xl">
+            <AlertDialogHeader className="space-y-2">
+              <AlertDialogTitle className="text-xl font-semibold text-emerald-400">
+                {t.changePassword.success}
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-sm text-white/70">
+                Your password has been updated successfully.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="pt-2">
+              <AlertDialogAction
+                onClick={() => setPasswordSuccess(false)}
+                className="ei-button-dawn px-5 py-2 text-xs font-semibold"
+              >
+                OK
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </div>
   );
 }

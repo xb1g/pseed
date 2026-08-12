@@ -1,119 +1,83 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { HERO, HERO_CARDS } from "@/lib/content/pathlab-page";
 
-/** Per-character cadence. The title is slower so it reads as deliberate. */
-const TITLE_CHAR_MS = 90;
-const SUBTITLE_CHAR_MS = 22;
-
-const TITLE = HERO.title;
-const SUBTITLE = HERO.subtitleLines.join("\n");
-
-function Caret() {
-  return <span className="pathlab-caret" aria-hidden="true" />;
-}
-
 /**
- * Hero: title and Thai subtitle on the left, a fan of three angled cards on
- * the right. On narrow screens the fan drops below the copy and shrinks rather
- * than being hidden, since the imagery is what says "these are real fields of
- * work".
+ * Hero: title + Thai subtitle left, interactive fan of field cards right.
  *
- * The intro types itself and holds page scroll until it finishes, matching
- * /talent. Reduced motion skips straight to the finished state and never locks
- * scroll, so the animation is never a barrier to reading the page.
+ * Copy is in the HTML from first paint (no typewriter) so LCP is the real
+ * title/subtitle. Brand mark lives in PathlabNav (home link), not here.
+ * Fan cards tilt toward the pointer on hover-capable devices.
  */
 export function PathlabHero() {
-  const [titleLen, setTitleLen] = useState(0);
-  const [subLen, setSubLen] = useState(0);
-  const [done, setDone] = useState(false);
+  const fanRef = useRef<HTMLDivElement | null>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      setReady(true);
+      return;
+    }
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setReady(true));
+    });
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  useEffect(() => {
+    const node = fanRef.current;
+    if (!node) return;
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+      return;
+    }
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setTitleLen(TITLE.length);
-      setSubLen(SUBTITLE.length);
-      setDone(true);
       return;
     }
 
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    const titleDoneAt = 250 + TITLE.length * TITLE_CHAR_MS;
-    const subDoneAt = titleDoneAt + 350 + SUBTITLE.length * SUBTITLE_CHAR_MS;
+    const onMove = (event: PointerEvent) => {
+      const rect = node.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / rect.width - 0.5;
+      const y = (event.clientY - rect.top) / rect.height - 0.5;
+      node.style.setProperty("--fan-x", x.toFixed(3));
+      node.style.setProperty("--fan-y", y.toFixed(3));
+    };
 
-    for (let i = 1; i <= TITLE.length; i++) {
-      timers.push(setTimeout(() => setTitleLen(i), 250 + i * TITLE_CHAR_MS));
-    }
-    for (let i = 1; i <= SUBTITLE.length; i++) {
-      timers.push(
-        setTimeout(() => setSubLen(i), titleDoneAt + 350 + i * SUBTITLE_CHAR_MS)
-      );
-    }
-    timers.push(setTimeout(() => setDone(true), subDoneAt + 150));
+    const onLeave = () => {
+      node.style.setProperty("--fan-x", "0");
+      node.style.setProperty("--fan-y", "0");
+    };
 
-    return () => timers.forEach(clearTimeout);
+    node.addEventListener("pointermove", onMove);
+    node.addEventListener("pointerleave", onLeave);
+    return () => {
+      node.removeEventListener("pointermove", onMove);
+      node.removeEventListener("pointerleave", onLeave);
+    };
   }, []);
 
-  // Hold scroll until the intro finishes. The cleanup restores whatever was
-  // there before rather than assuming "visible", so this cannot strand the
-  // page unscrollable if another component also sets overflow.
-  useEffect(() => {
-    if (done) return;
-
-    const html = document.documentElement;
-    const prevHtml = html.style.overflow;
-    const prevBody = document.body.style.overflow;
-    html.style.overflow = "hidden";
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      html.style.overflow = prevHtml;
-      document.body.style.overflow = prevBody;
-    };
-  }, [done]);
-
-  const titleDone = titleLen === TITLE.length;
-  const typedSubtitle = SUBTITLE.slice(0, subLen).split("\n");
-
   return (
-    <section className="pathlab-hero">
+    <section className={`pathlab-hero${ready ? " is-ready" : ""}`}>
       <div className="pathlab-hero__inner">
         <div className="pathlab-hero__copy">
-          {/* The invisible copy reserves the final layout, so nothing below
-              shifts as characters land. */}
-          <h1 className="pathlab-hero__title" aria-label={TITLE}>
-            <span aria-hidden="true" className="invisible">
-              {TITLE}
-            </span>
-            <span aria-hidden="true" className="pathlab-hero__typed">
-              {TITLE.slice(0, titleLen)}
-              {!titleDone && <Caret />}
-            </span>
-          </h1>
+          <h1 className="pathlab-hero__title">{HERO.title}</h1>
 
-          <div className="pathlab-hero__sub-wrap" aria-label={SUBTITLE}>
-            <div aria-hidden="true" className="invisible">
-              {HERO.subtitleLines.map((line) => (
-                <p key={line} className="pathlab-hero__subtitle">
-                  {line}
-                </p>
-              ))}
-            </div>
-            <div aria-hidden="true" className="pathlab-hero__typed">
-              {typedSubtitle.map((line, i) => (
-                <p key={i} className="pathlab-hero__subtitle">
-                  {line}
-                  {titleDone && i === typedSubtitle.length - 1 && !done && (
-                    <Caret />
-                  )}
-                </p>
-              ))}
-            </div>
+          <div className="pathlab-hero__sub-wrap">
+            {HERO.subtitleLines.map((line) => (
+              <p key={line} className="pathlab-hero__subtitle">
+                {line}
+              </p>
+            ))}
           </div>
         </div>
 
-        <div className={`pathlab-fan${done ? " is-ready" : ""}`}>
+        <div
+          ref={fanRef}
+          className="pathlab-fan"
+          style={{ ["--fan-x" as string]: "0", ["--fan-y" as string]: "0" }}
+        >
           {HERO_CARDS.map((card, i) => (
             <figure
               key={card.src}
@@ -127,18 +91,15 @@ export function PathlabHero() {
                 className="object-cover"
                 priority={i === 2}
               />
+              <figcaption className="pathlab-fan__label">{card.label}</figcaption>
             </figure>
           ))}
         </div>
       </div>
 
-      {/* The cue only appears once scrolling is actually possible. */}
-      <div
-        className={`pathlab-scroll-cue${done ? " is-ready" : ""}`}
-        aria-hidden={!done}
-      >
+      <div className="pathlab-scroll-cue" aria-hidden="true">
         <span>{HERO.scrollCue}</span>
-        <span className="pathlab-scroll-cue__line" aria-hidden="true" />
+        <span className="pathlab-scroll-cue__line" />
       </div>
     </section>
   );

@@ -15,7 +15,11 @@ import {
  */
 export function PathlabFields() {
   return (
-    <section className="pathlab-fields" aria-labelledby="pathlab-fields-heading">
+    <section
+      id="pathlab-fields"
+      className="pathlab-fields"
+      aria-labelledby="pathlab-fields-heading"
+    >
       <h2 id="pathlab-fields-heading" className="pathlab-fields__heading">
         {FIELDS_HEADING}
       </h2>
