@@ -119,6 +119,12 @@ const tiny5 = Tiny5({
 });
 
 export const metadata: Metadata = {
+  // Required for Open Graph: without it Next emits a relative image path, and
+  // scrapers like Instagram cannot fetch a relative URL, so they fall back to
+  // guessing an image from the page.
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://passionseed.org"
+  ),
   title: "Passion Seed",
   description: "Discover and nurture your passions",
   manifest: "/manifest.json",
@@ -127,6 +133,22 @@ export const metadata: Metadata = {
     title: "Passion Seed",
     description: "Discover and nurture your passions",
     siteName: "Passion Seed",
+    // Without an explicit image, scrapers guess and pick the first thing they
+    // find on the page, which is why shared links showed a random card image.
+    images: [
+      {
+        url: "/og-passionseed.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Passion Seed",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Passion Seed",
+    description: "Discover and nurture your passions",
+    images: ["/og-passionseed.jpg"],
   },
   appleWebApp: {
     capable: true,
