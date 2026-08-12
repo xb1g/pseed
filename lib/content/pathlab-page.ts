@@ -2,8 +2,8 @@
  * Copy and imagery for the public /pathlab page.
  *
  * Kept out of the components so the Thai copy can be edited without touching
- * layout. Thai renders in Bai Jamjuree via the font-sans fallback; the display
- * face is Instrument Serif, matching /talent.
+ * layout. Thai body uses Bai Jamjuree; display headings use Kodchasan — same
+ * pairing as /me. Latin display stays Instrument Serif where titles are English.
  */
 
 export const MARQUEE_PHRASES = [
@@ -16,6 +16,8 @@ export const MARQUEE_PHRASES = [
 export interface HeroCard {
   src: string;
   alt: string;
+  /** Short field label shown on the interactive fan card. */
+  label: string;
   /** Position in the fan: the front card sits highest in the stack. */
   variant: "left" | "right" | "front";
 }
@@ -25,16 +27,19 @@ export const HERO_CARDS: HeroCard[] = [
   {
     src: "/pathlab/webdev.jpg",
     alt: "หน้าจอโค้ด HTML ของงานพัฒนาเว็บ",
+    label: "Web Dev",
     variant: "left",
   },
   {
     src: "/pathlab/medical.jpg",
     alt: "อุปกรณ์ทางการแพทย์",
+    label: "Medical",
     variant: "right",
   },
   {
     src: "/pathlab/architect.webp",
     alt: "แบบแปลนสถาปัตยกรรมพร้อมเครื่องเขียน",
+    label: "Architect",
     variant: "front",
   },
 ];
@@ -83,6 +88,31 @@ export const PORTFOLIO_ITEMS: PortfolioItem[] = [
   },
 ];
 
+/**
+ * The missing piece after the four port ingredients — Passion Seed's formula
+ * that makes a portfolio actually stick: storytelling, interview, mindset.
+ */
+export const PORTFOLIO_FORMULA = {
+  eyebrow: "สิ่งที่ขาดไม่ได้",
+  title: "สูตรลับติดPort",
+  body: "ชิ้นงานดีอย่างเดียวไม่พอ ต้องมีสูตรที่ทำให้พอร์ตติดตาและคุยในห้องสัมภาษณ์ได้",
+  badge: "เราให้คุณ",
+  pillars: [
+    {
+      label: "Storytelling",
+      detail: "ผูกทุกชิ้นงานเป็นเส้นเรื่อง คนอ่านรู้ว่าคุณเป็นใคร",
+    },
+    {
+      label: "Interview",
+      detail: "ซ้อมเล่าโปรเจกต์ให้มั่น ตอบคำถามยากได้",
+    },
+    {
+      label: "Mindset",
+      detail: "มุมคิดนักสร้าง ที่พอร์ตและสัมภาษณ์อ่านออก",
+    },
+  ],
+} as const;
+
 export const HERO = {
   title: "/Pathlab",
   subtitleLines: [
@@ -94,13 +124,20 @@ export const HERO = {
 
 export const PORTFOLIO_HEADING = "Port ที่ดีต้องการอะไร";
 
+export const JOURNEY = {
+  heading: "Learning journey เป็นยังไง",
+  body: "เดินเป็นวัน ๆ บนแผนที่ — แต่ละวันมีโจทย์จริง Learn + Do แล้วไปต่อวันที่ถัดไป",
+  src: "/pathlab/pathlabmap.png",
+  alt: "หน้าจอ Pathlab learning journey แสดงแผนที่โปรเจกต์และรายละเอียดกิจกรรมของนักเรียน",
+} as const;
+
 export const STATS_HEADING = "แต่การเริ่มต้นยากสุดเสมอ";
 
 export const OFFER_HEADING = "Pathlab เลยจะช่วยเริ่มต้นให้?";
 
 export const FIELDS_HEADING = "สายที่เปิดในตอนนี้";
 
-export const PRICE_HEADING = "Price";
+export const PRICE_HEADING = "เลือกทางเริ่มต้น";
 
 export const CONTACT = {
   line: "สนใจทัก IG มาได้เลย",
@@ -109,25 +146,56 @@ export const CONTACT = {
   href: "https://instagram.com/passion_seed.th",
 } as const;
 
-export interface PriceRow {
-  /** Who it is for. */
+export interface PriceTier {
+  /** Who it is for / tier name. */
   label: string;
   /** The figure alone, so it can be coloured without markup in the string. */
   amount: string;
+  /** Currency or free marker shown before/with amount. */
+  currency?: string;
   /** What the figure covers. */
   unit: string;
+  /** One-line pitch under the price. */
+  blurb: string;
+  /** Visual weight: free is soft, featured is the group deal. */
+  tone: "free" | "solo" | "group";
+  /** Optional chip above the amount. */
+  chip?: string;
 }
 
-export const PRICE_ROWS: PriceRow[] = [
-  { label: "เดี่ยว", amount: "299", unit: "ต่อคน" },
-  { label: "กลุ่ม 4 คน", amount: "999", unit: "ทั้งกลุ่ม" },
+export const PRICE_TIERS: PriceTier[] = [
+  {
+    label: "Micro Pathlab",
+    amount: "ฟรี",
+    unit: "วันละ 1 ครั้ง · ~10 นาที",
+    blurb: "ลองโปรเจกต์จิ๋วทุกวัน ไม่เสียตัง รู้เร็วว่าสายนี้ดึงดูดไหม",
+    tone: "free",
+    chip: "เริ่มวันนี้",
+  },
+  {
+    label: "เดี่ยว",
+    amount: "299",
+    currency: "฿",
+    unit: "ต่อคน · รอบ 4–5 วัน",
+    blurb: "มาคนเดียวได้ เราจัดกลุ่ม + mentor ให้ใกล้ชิด",
+    tone: "solo",
+  },
+  {
+    label: "กลุ่ม 4 คน",
+    amount: "999",
+    currency: "฿",
+    unit: "ทั้งกลุ่ม · เลือกวันเริ่มได้",
+    blurb: "มาเป็นทีม ประหยัดกว่า และวางตารางเองได้",
+    tone: "group",
+    chip: "คุ้มสุด",
+  },
 ];
 
 /** How the rounds work. Authored as lines so the breaks are deliberate. */
 export const PRICE_NOTES: string[] = [
-  "Pathlab ของเราจะจัดรอบละ 4 คน ถ้าหากมาเดี่ยวจะจัดหากลุ่มให้ แต่ละกลุ่มจะมี mentor คอยดูแลอย่างใกล้ชิด",
-  "ถ้าสมัครแบบกลุ่มสามารถเลือกวันเริ่มได้",
-  "หากมาเดี่ยว admin จะหาเวลาร่วมของนักเรียนแต่ละคน",
+  "Pathlab จัดรอบละ 4 คน ถ้ามาเดี่ยวเราจัดกลุ่มให้ แต่ละกลุ่มมี mentor ดูแลใกล้ชิด",
+  "สมัครแบบกลุ่มเลือกวันเริ่มได้ · มาเดี่ยว admin หาเวลาร่วมของแต่ละคน",
+  "Micro Pathlab ฟรีวันละหนึ่งรอบ — ใช้ลองก่อนค่อยอัปเป็นรอบเต็ม",
 ];
 
 export interface FieldCard {

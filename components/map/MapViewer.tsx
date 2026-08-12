@@ -91,6 +91,9 @@ interface MapViewerProps {
   // mount comes from the realtime subscription in useLobbyPresence. When this
   // is non-empty it replaces the mock presence avatars.
   initialPresence?: LobbyPresenceEntry[];
+  // Back/title/edit bar, rendered scoped to the map canvas so it never
+  // overlaps the resizable right-hand node panel.
+  headerContent?: React.ReactNode;
 }
 
 // Deterministic avatar color per user, so a given lobbymate always shows in
@@ -265,6 +268,7 @@ export function MapViewer({
   forceStudentView = false,
   trailMode = false,
   initialPresence = [],
+  headerContent,
 }: MapViewerProps) {
   const { presenceByNode } = useLobbyPresence(map.id, initialPresence);
   const [nodes, setNodes, onNodesChange] = useNodesState<any>([]);
@@ -1097,29 +1101,19 @@ export function MapViewer({
                 }}
               />
 
-              {/* Floating Label with Enhanced Animation */}
+              {/* Floating Label */}
               <div
-                className={`absolute -bottom-10 left-1/2 transform -translate-x-1/2 ${selected ? "scale-105 -translate-y-1" : ""} transition-all duration-300 group/label z-30`}
+                className={`absolute -bottom-11 left-1/2 transform -translate-x-1/2 ${selected ? "scale-105 -translate-y-1" : ""} transition-all duration-300 z-30`}
               >
-                <div className="bg-card/95 backdrop-blur-sm border border-border rounded-lg px-3 py-1.5 shadow-lg hover:shadow-xl transition-all duration-200 min-w-[100px] max-w-[240px]">
-                  <div className="text-xs font-bold text-card-foreground text-center break-words line-clamp-2 leading-snug">
+                <div className="bg-card/95 backdrop-blur-sm border border-border rounded-xl px-3.5 py-2 shadow-lg hover:shadow-xl transition-all duration-200 w-[9.5rem] sm:w-[11rem]">
+                  <div className="text-[11px] sm:text-xs font-bold text-card-foreground text-center break-words line-clamp-3 leading-snug">
                     {data.title}
                   </div>
-                  <div className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1 mt-0.5">
+                  <div className="text-[10px] sm:text-xs text-muted-foreground text-center flex items-center justify-center gap-1 mt-1">
                     ⭐ {data.difficulty}
                     {statusIcon && <span className="ml-1">{statusIcon}</span>}
                   </div>
                 </div>
-                {/* Full title tooltip on hover - only if truncated */}
-                {data.title && data.title.length > 20 && (
-                  <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 opacity-0 group-hover/label:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
-                    <div className="bg-gray-900/95 dark:bg-gray-800/95 text-white text-xs rounded-lg px-3 py-2 shadow-xl whitespace-normal max-w-xs backdrop-blur-sm break-words">
-                      {data.title}
-                      {/* Arrow pointing down */}
-                      <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-800" />
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Lock Overlay for locked nodes */}
@@ -1582,7 +1576,8 @@ export function MapViewer({
   const useMobileBottomSheet = trailMode && isMobile;
 
   const mapCanvas = (
-    <div className={trailMode ? "flex-1 trail-mode" : "flex-1"}>
+    <div className={trailMode ? "flex-1 trail-mode relative" : "flex-1 relative"}>
+      {headerContent}
       <ReactFlow
         nodes={nodes}
         edges={edges}

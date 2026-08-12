@@ -9,7 +9,11 @@ import { CONTACT } from "@/lib/content/pathlab-page";
  */
 export function PathlabContact() {
   return (
-    <section className="pathlab-contact" aria-labelledby="pathlab-contact-line">
+    <section
+      id="pathlab-contact"
+      className="pathlab-contact"
+      aria-labelledby="pathlab-contact-line"
+    >
       <p id="pathlab-contact-line" className="pathlab-contact__line">
         {CONTACT.line}
       </p>

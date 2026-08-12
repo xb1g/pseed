@@ -1,39 +1,59 @@
 import {
+  CONTACT,
   PRICE_HEADING,
   PRICE_NOTES,
-  PRICE_ROWS,
+  PRICE_TIERS,
 } from "@/lib/content/pathlab-page";
 
 /**
- * Pricing, and how the rounds are formed.
- *
- * Server component: static copy with nothing to hydrate. A definition list
- * rather than a table, since this is two label/value pairs and not tabular
- * data with meaningful columns.
+ * Pricing: free daily micro Pathlab, solo, and group — as three clear tiers
+ * rather than a flat label/value list.
  */
 export function PathlabPrice() {
   return (
-    <section className="pathlab-price" aria-labelledby="pathlab-price-heading">
+    <section
+      id="pathlab-price"
+      className="pathlab-price"
+      aria-labelledby="pathlab-price-heading"
+    >
       <h2 id="pathlab-price-heading" className="pathlab-price__heading">
         {PRICE_HEADING}
       </h2>
 
-      <dl className="pathlab-price__rows">
-        {PRICE_ROWS.map((row) => (
-          <div key={row.label} className="pathlab-price__row">
-            <dt className="pathlab-price__label">{row.label}</dt>
-            <dd className="pathlab-price__value">
-              <span className="pathlab-price__amount">{row.amount}</span>{" "}
-              {row.unit}
-            </dd>
-          </div>
+      <ul className="pathlab-price__tiers">
+        {PRICE_TIERS.map((tier) => (
+          <li
+            key={tier.label}
+            className={`pathlab-price__tier pathlab-price__tier--${tier.tone}`}
+          >
+            {tier.chip && (
+              <span className="pathlab-price__chip">{tier.chip}</span>
+            )}
+            <h3 className="pathlab-price__tier-label">{tier.label}</h3>
+            <p className="pathlab-price__tier-amount">
+              {tier.currency && (
+                <span className="pathlab-price__currency">{tier.currency}</span>
+              )}
+              <span className="pathlab-price__figure">{tier.amount}</span>
+            </p>
+            <p className="pathlab-price__tier-unit">{tier.unit}</p>
+            <p className="pathlab-price__tier-blurb">{tier.blurb}</p>
+          </li>
         ))}
-      </dl>
+      </ul>
 
       <div className="pathlab-price__notes">
         {PRICE_NOTES.map((note) => (
           <p key={note}>{note}</p>
         ))}
+        <a
+          className="pathlab-price__cta"
+          href={CONTACT.href}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          ทัก IG เพื่อจองรอบ →
+        </a>
       </div>
     </section>
   );
