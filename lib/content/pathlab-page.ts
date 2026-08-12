@@ -131,11 +131,18 @@ export const PRICE_NOTES: string[] = [
 ];
 
 export interface FieldCard {
-  src: string;
-  alt: string;
+  /** Omitted on the "ask us" tile, which is drawn rather than photographed. */
+  src?: string;
+  alt?: string;
   label: string;
   /** Not open yet: the card greys out and carries a "Coming soon" overlay. */
   comingSoon?: boolean;
+  /**
+   * The closing tile: a dark "?" card inviting people to ask about a field
+   * that is not listed. Not a path, so it carries no image and its label wraps
+   * to two lines.
+   */
+  ask?: boolean;
 }
 
 export const COMING_SOON_LABEL = "Coming soon";
@@ -168,6 +175,10 @@ export const FIELDS: FieldCard[] = [
     alt: "แบบแปลนสถาปัตยกรรม",
     label: "Architect",
     comingSoon: true,
+  },
+  {
+    label: "หากไม่มีสายที่สนใจทัก IG\nพวกเรามาได้เลยนะ",
+    ask: true,
   },
 ];
 
