@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     siteName: "Passion Seed",
     images: [
       {
-        url: "/og-pathlab.jpg",
+        url: "/og-pathlab.png",
         width: 1200,
         height: 630,
         alt: "Pathlab — Passion Seed",
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: PATHLAB_TITLE,
     description: PATHLAB_DESCRIPTION,
-    images: ["/og-pathlab.jpg"],
+    images: ["/og-pathlab.png"],
   },
 };
 
