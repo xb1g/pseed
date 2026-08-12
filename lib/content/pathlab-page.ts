@@ -51,25 +51,25 @@ export interface PortfolioItem {
 /** "Port ที่ดีต้องการอะไร" — what belongs in a strong portfolio. */
 export const PORTFOLIO_ITEMS: PortfolioItem[] = [
   {
-    src: "/pathlab/project.jpg",
+    src: "/pathlab/project.webp",
     alt: "แอปพลิเคชันแผนที่บนมือถือที่ใช้งานจริง",
     lines: ["Project", "ที่ได้รับการยอมรับ", "หรือเอาไปใช้งานจริง"],
     kind: "photo",
   },
   {
-    src: "/pathlab/nsc.png",
+    src: "/pathlab/nsc.webp",
     alt: "โลโก้การแข่งขัน National Software Contest",
     lines: ["ชนะการแข่งขัน", "ระดับประเทศ/นานาชาติ"],
     kind: "logo",
   },
   {
-    src: "/pathlab/research.png",
+    src: "/pathlab/research.webp",
     alt: "ตัวอย่างบทความวิจัยทางวิทยาศาสตร์",
     lines: ["Research Paper", "ที่ได้รับการตีพิมพ์"],
     kind: "photo",
   },
   {
-    src: "/pathlab/posn.png",
+    src: "/pathlab/posn.webp",
     alt: "ตราสัญลักษณ์ สอวน.",
     lines: ["สอวน."],
     kind: "logo",

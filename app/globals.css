@@ -9275,37 +9275,24 @@ summary:focus-visible .radar-expand-indicator {
   }
 }
 
-/* One ratio and one width for every card so the row reads as a set. Logos
-   differ only in how their image sits inside the frame, never in the frame's
-   own size. */
+/* The artwork carries its own card treatment: each source file is the same
+   portrait shape with the rounded plate and padding already baked in. So the
+   frame is a plain box that the image fills edge to edge. No background, no
+   radius, no shadow of ours, or they would double up with the artwork's.
+
+   Earlier versions tried to impose a white plate and per-kind insets here.
+   That is what made the four cards render at different sizes: the plate was
+   invisible behind transparent PNGs, so what you saw was each artwork at
+   whatever size object-fit gave it, not the frame. */
 .pathlab-portfolio__frame {
   position: relative;
   width: 100%;
   max-width: 15rem;
-  aspect-ratio: 4 / 5;
-  overflow: hidden;
-  border-radius: 1.25rem;
-  background: #fff;
-  box-shadow: 0 14px 34px rgba(82, 71, 70, 0.16);
+  aspect-ratio: 763 / 1017;
 }
 
-/* Photographs fill the frame. */
-.pathlab-portfolio__frame--photo img {
-  object-fit: cover;
-}
-
-/* Logos are contained and inset. The inset lives here rather than as a padding
-   utility on the image: next/image with `fill` is absolutely positioned, so
-   padding on it does not inset the image the way it would on a normal element.
-   Insetting the element itself is what actually gives the mark its margin. */
-.pathlab-portfolio__frame--logo img {
+.pathlab-portfolio__frame img {
   object-fit: contain;
-  inset: 12%;
-  width: auto;
-  height: auto;
-  max-width: 76%;
-  max-height: 76%;
-  margin: auto;
 }
 
 .pathlab-portfolio__caption {

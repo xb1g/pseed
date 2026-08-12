@@ -61,9 +61,9 @@ export function PathlabPortfolio() {
             }`}
             style={{ ["--i" as string]: String(i) }}
           >
-            <div
-              className={`pathlab-portfolio__frame pathlab-portfolio__frame--${item.kind}`}
-            >
+            {/* The artwork already carries its card treatment, so the frame
+                only sets the shared size. */}
+            <div className="pathlab-portfolio__frame">
               <Image
                 src={item.src}
                 alt={item.alt}
