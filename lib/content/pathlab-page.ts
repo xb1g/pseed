@@ -91,6 +91,43 @@ export const STATS_HEADING = "แต่การเริ่มต้นยา�
 
 export const OFFER_HEADING = "Pathlab เลยจะช่วยเริ่มต้นให้?";
 
+export const FIELDS_HEADING = "สายที่เปิดในตอนนี้";
+
+export interface FieldCard {
+  src: string;
+  alt: string;
+  label: string;
+}
+
+/** The paths currently open. Artwork is pre-cut to a shared 876x1171 frame. */
+export const FIELDS: FieldCard[] = [
+  {
+    src: "/pathlab/field-webdev.webp",
+    alt: "หน้าจอโค้ด HTML",
+    label: "Web Dev",
+  },
+  {
+    src: "/pathlab/field-business.webp",
+    alt: "การประชุมวิเคราะห์ข้อมูลธุรกิจ",
+    label: "Business",
+  },
+  {
+    src: "/pathlab/field-gamedev.webp",
+    alt: "นักพัฒนาเกมทำงานกับ Unity",
+    label: "Game Dev",
+  },
+  {
+    src: "/pathlab/field-medical.webp",
+    alt: "หูฟังแพทย์วางบนสมุดบันทึก",
+    label: "Medical",
+  },
+  {
+    src: "/pathlab/field-architect.webp",
+    alt: "แบบแปลนสถาปัตยกรรม",
+    label: "Architect",
+  },
+];
+
 export interface OfferCard {
   /** Short label, Latin or Thai. */
   title: string;
