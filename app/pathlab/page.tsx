@@ -4,6 +4,8 @@ import { PathlabPortfolio } from "@/components/pathlab/PathlabPortfolio";
 import { PathlabStats } from "@/components/pathlab/PathlabStats";
 import { PathlabOffer } from "@/components/pathlab/PathlabOffer";
 import { PathlabFields } from "@/components/pathlab/PathlabFields";
+import { PathlabPrice } from "@/components/pathlab/PathlabPrice";
+import { PathlabContact } from "@/components/pathlab/PathlabContact";
 import { MARQUEE_PHRASES } from "@/lib/content/pathlab-page";
 
 export const metadata: Metadata = {
@@ -40,6 +42,8 @@ export default function PathlabPage() {
       <PathlabStats />
       <PathlabOffer />
       <PathlabFields />
+      <PathlabPrice />
+      <PathlabContact />
     </main>
   );
 }

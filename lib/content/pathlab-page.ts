@@ -100,6 +100,36 @@ export const OFFER_HEADING = "Pathlab เลยจะช่วยเริ่ม
 
 export const FIELDS_HEADING = "สายที่เปิดในตอนนี้";
 
+export const PRICE_HEADING = "Price";
+
+export const CONTACT = {
+  line: "สนใจทัก IG มาได้เลย",
+  handle: "passion_seed.th",
+  /** Instagram deep link, so the handle is a real destination not just text. */
+  href: "https://instagram.com/passion_seed.th",
+} as const;
+
+export interface PriceRow {
+  /** Who it is for. */
+  label: string;
+  /** The figure alone, so it can be coloured without markup in the string. */
+  amount: string;
+  /** What the figure covers. */
+  unit: string;
+}
+
+export const PRICE_ROWS: PriceRow[] = [
+  { label: "เดี่ยว", amount: "299", unit: "ต่อคน" },
+  { label: "กลุ่ม 4 คน", amount: "999", unit: "ทั้งกลุ่ม" },
+];
+
+/** How the rounds work. Authored as lines so the breaks are deliberate. */
+export const PRICE_NOTES: string[] = [
+  "Pathlab ของเราจะจัดรอบละ 4 คน ถ้าหากมาเดี่ยวจะจัดหากลุ่มให้ แต่ละกลุ่มจะมี mentor คอยดูแลอย่างใกล้ชิด",
+  "ถ้าสมัครแบบกลุ่มสามารถเลือกวันเริ่มได้",
+  "หากมาเดี่ยว admin จะหาเวลาร่วมของนักเรียนแต่ละคน",
+];
+
 export interface FieldCard {
   src: string;
   alt: string;
