@@ -9806,3 +9806,46 @@ summary:focus-visible .radar-expand-indicator {
     transition: none;
   }
 }
+
+/* ── Fields: the "ask us" tile ── */
+
+/* A dark tile with a question mark, closing the row. Uses the same frame size
+   as the field cards so the grid stays even; only its contents differ. */
+.pathlab-fields__ask {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.1rem;
+  background: #3f3735;
+  color: #fdf3e6;
+  font-family: var(--font-athiti), var(--font-noto-sans-thai), sans-serif;
+  font-size: clamp(2.5rem, 7vw, 3.75rem);
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  transition: background 200ms ease-out, translate 200ms ease-out;
+}
+
+@media (hover: hover) {
+  .pathlab-fields__ask:hover {
+    background: #524746;
+    translate: 0 -3px;
+  }
+}
+
+.pathlab-fields__ask:focus-visible {
+  outline: 2px solid #c43e1d;
+  outline-offset: 3px;
+}
+
+/* The ask label is a sentence rather than a field name, so it sets its own
+   line breaks and drops the serif face the field labels use. */
+.pathlab-fields__item.is-ask .pathlab-fields__label {
+  font-family: var(--font-athiti), var(--font-noto-sans-thai), sans-serif;
+  font-size: clamp(0.9rem, 1.9vw, 1rem);
+  line-height: 1.7;
+}
+
+.pathlab-fields__label-line {
+  display: block;
+}
