@@ -89,6 +89,31 @@ export const PORTFOLIO_HEADING = "Port ที่ดีต้องการอ�
 
 export const STATS_HEADING = "แต่การเริ่มต้นยากสุดเสมอ";
 
+export const OFFER_HEADING = "Pathlab เลยจะช่วยเริ่มต้นให้?";
+
+export interface OfferCard {
+  /** Short label, Latin or Thai. */
+  title: string;
+  /** The explanation under it. */
+  body: string;
+}
+
+/** Three dark cards: what a Pathlab actually gives you. */
+export const OFFER_CARDS: OfferCard[] = [
+  {
+    title: "Project",
+    body: "ที่ออกแบบร่วมกับผู้เชี่ยวชาญของสายนั้นๆ ภายในเวลา 4-5 วัน",
+  },
+  {
+    title: "หาสายที่ใช่",
+    body: "ได้ทำโปรเจกต์ที่สายนั้นต้องเจอจริง จะช่วยตัดสินใจว่านี้ใช่ทางของเราไหม",
+  },
+  {
+    title: "Mentor",
+    body: "จะมี mentor คอยวางแผนเส้นทางหลังจบโปรเจกต์ว่าควรจะเตรียมตัวต่อยังไง",
+  },
+];
+
 export interface PathlabStat {
   /** Whole percent, 0-100. Drives both the ring and the printed figure. */
   percent: number;

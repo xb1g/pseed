@@ -9393,3 +9393,62 @@ summary:focus-visible .radar-expand-indicator {
   line-height: 1.7;
   color: #6a5c5a;
 }
+
+/* ── Offer: what a Pathlab gives you ── */
+
+.pathlab-offer {
+  padding: 0 clamp(1.25rem, 5vw, 4rem) clamp(5rem, 12vw, 9rem);
+  max-width: 82rem;
+  margin-inline: auto;
+}
+
+.pathlab-offer__heading {
+  font-family: var(--font-athiti), var(--font-noto-sans-thai), sans-serif;
+  font-size: clamp(1.9rem, 5vw, 3.25rem);
+  line-height: 1.35;
+  font-weight: 600;
+  color: #c43e1d;
+  text-align: center;
+  text-wrap: balance;
+}
+
+/* auto-fit so the three cards go one-up on phones and three-up above ~46rem
+   without a breakpoint. */
+.pathlab-offer__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: clamp(1.25rem, 3vw, 2rem);
+  max-width: 58rem;
+  margin: clamp(2.25rem, 5vw, 3.5rem) auto 0;
+  list-style: none;
+  padding: 0;
+}
+
+/* Brown cards invert the cream ground: the answer reads as a distinct block
+   from the problem stated above it. */
+.pathlab-offer__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: clamp(1.5rem, 3vw, 2rem) clamp(1.25rem, 2.5vw, 1.75rem);
+  border-radius: 1.25rem;
+  background: #524746;
+  text-align: center;
+}
+
+.pathlab-offer__card-title {
+  font-family: var(--font-athiti), var(--font-noto-sans-thai), sans-serif;
+  font-size: clamp(1.15rem, 2.6vw, 1.5rem);
+  font-weight: 600;
+  line-height: 1.4;
+  color: #fdf3e6;
+}
+
+.pathlab-offer__card-body {
+  font-family: var(--font-athiti), var(--font-noto-sans-thai), sans-serif;
+  font-size: clamp(0.95rem, 2vw, 1.05rem);
+  /* Thai stacks marks above and below, so it needs the extra leading. */
+  line-height: 1.85;
+  color: rgba(253, 243, 230, 0.86);
+  text-wrap: pretty;
+}
