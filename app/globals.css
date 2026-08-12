@@ -9235,15 +9235,24 @@ summary:focus-visible .radar-expand-indicator {
    portrait shape with the rounded plate and padding already baked in. So the
    frame is a plain box the image fills, with no background, radius or shadow
    of ours that would double up with the artwork's. */
+/* 3/4 rather than one image's exact pixel ratio: with `cover` the frame is the
+   card, so it should be a round number the artwork crops to, not a value
+   derived from whichever file happened to be measured. */
 .pathlab-portfolio__frame {
   position: relative;
   width: 100%;
   max-width: 14rem;
-  aspect-ratio: 763 / 1017;
+  aspect-ratio: 3 / 4;
 }
 
+/* `cover`, not `contain`. contain preserves each image's own ratio inside the
+   frame, so any file that differs even slightly (0.748 vs 0.750) letterboxes
+   and renders visibly smaller than its neighbours. That is what made these
+   cards mismatch through several rounds of "fixing" the source files: the
+   files were fine, the fit was wrong. cover fills the frame every time, so the
+   frame's size is the card's size, full stop. */
 .pathlab-portfolio__frame img {
-  object-fit: contain;
+  object-fit: cover;
 }
 
 /* Two up on phones, four across once there is room. */
@@ -9502,11 +9511,13 @@ summary:focus-visible .radar-expand-indicator {
 .pathlab-fields__frame {
   position: relative;
   width: 100%;
-  aspect-ratio: 876 / 1171;
+  aspect-ratio: 3 / 4;
 }
 
+/* cover for the same reason as the portfolio frames: contain would shrink any
+   image whose ratio differs from the frame's, breaking the uniform row. */
 .pathlab-fields__frame img {
-  object-fit: contain;
+  object-fit: cover;
 }
 
 .pathlab-fields__label {
