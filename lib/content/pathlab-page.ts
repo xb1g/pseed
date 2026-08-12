@@ -44,7 +44,12 @@ export interface PortfolioItem {
   alt: string;
   /** Two or three short lines. Kept as an array so line breaks are authored. */
   lines: string[];
-  /** Logos need padding and a white plate; photographs fill the frame. */
+  /**
+   * "photo" means the file is already an opaque card and fills the frame.
+   * "logo" means a bare transparent mark, so the frame supplies the white
+   * plate and insets the mark. Judged by the file, not by the subject: the
+   * NSC logo ships as a finished card and so counts as "photo".
+   */
   kind: "photo" | "logo";
 }
 
@@ -58,9 +63,11 @@ export const PORTFOLIO_ITEMS: PortfolioItem[] = [
   },
   {
     src: "/pathlab/nsc.webp",
+    // The NSC file is already an opaque card, so it fills the frame like the
+    // photographs. Only สอวน. is a bare transparent mark.
     alt: "โลโก้การแข่งขัน National Software Contest",
     lines: ["ชนะการแข่งขัน", "ระดับประเทศ/นานาชาติ"],
-    kind: "logo",
+    kind: "photo",
   },
   {
     src: "/pathlab/research.webp",

@@ -61,10 +61,12 @@ export function PathlabPortfolio() {
             }`}
             style={{ ["--i" as string]: String(i) }}
           >
-            {/* The artwork carries its own card treatment (rounded plate and
-                padding baked into the file), so the frame only sets the shared
-                size and the image fills it. */}
-            <div className="pathlab-portfolio__frame">
+            {/* Photo files are opaque cards that fill the frame. The logo file
+                is a transparent mark, so its frame supplies the white plate.
+                Either way the frame defines the card's size. */}
+            <div
+              className={`pathlab-portfolio__frame pathlab-portfolio__frame--${item.kind}`}
+            >
               <Image
                 src={item.src}
                 alt={item.alt}

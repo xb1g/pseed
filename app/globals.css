@@ -9245,14 +9245,29 @@ summary:focus-visible .radar-expand-indicator {
   aspect-ratio: 3 / 4;
 }
 
-/* `cover`, not `contain`. contain preserves each image's own ratio inside the
-   frame, so any file that differs even slightly (0.748 vs 0.750) letterboxes
-   and renders visibly smaller than its neighbours. That is what made these
-   cards mismatch through several rounds of "fixing" the source files: the
-   files were fine, the fit was wrong. cover fills the frame every time, so the
-   frame's size is the card's size, full stop. */
+/* Three of the four files are opaque cards that should fill the frame. The
+   สอวน. file is a transparent logo with no card of its own, so the frame
+   supplies the white plate and the mark is contained inside it with an inset.
+   Both kinds end up the same size because the frame, not the artwork, defines
+   the card. */
 .pathlab-portfolio__frame img {
   object-fit: cover;
+}
+
+.pathlab-portfolio__frame--logo {
+  background: #fff;
+  border-radius: 1.1rem;
+  overflow: hidden;
+}
+
+.pathlab-portfolio__frame--logo img {
+  object-fit: contain;
+  inset: 12%;
+  width: auto;
+  height: auto;
+  max-width: 76%;
+  max-height: 76%;
+  margin: auto;
 }
 
 /* Two up on phones, four across once there is room. */
@@ -9275,12 +9290,18 @@ summary:focus-visible .radar-expand-indicator {
   }
 }
 
-/* All frames share one ratio now, so captions line up without subgrid. */
+/* `align-items: center` on a flex column makes each child shrink to its own
+   content width, so the frame's `width: 100%` resolved against a shrunk box
+   and every card came out a different size. Stretch instead, and centre the
+   content with margin/text-align. This, not the source images, is why the
+   cards never matched. */
 .pathlab-portfolio__item {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   gap: 1rem;
+  width: 100%;
+  max-width: 14rem;
 }
 
 /* Visible by default: the reveal only adds a rise. */
