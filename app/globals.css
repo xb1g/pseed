@@ -9231,22 +9231,38 @@ summary:focus-visible .radar-expand-indicator {
 
 /* Two columns on phones, four once there is room. Capped so the cards keep
    their size instead of stretching across the wider container. */
+/* The artwork carries its own card treatment: each source file is the same
+   portrait shape with the rounded plate and padding already baked in. So the
+   frame is a plain box the image fills, with no background, radius or shadow
+   of ours that would double up with the artwork's. */
+.pathlab-portfolio__frame {
+  position: relative;
+  width: 100%;
+  max-width: 14rem;
+  aspect-ratio: 763 / 1017;
+}
+
+.pathlab-portfolio__frame img {
+  object-fit: contain;
+}
+
+/* Two up on phones, four across once there is room. */
 .pathlab-portfolio__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(1.75rem, 5vw, 3.5rem) clamp(1rem, 4vw, 3rem);
-  margin-top: clamp(2rem, 5vw, 3.5rem);
-  max-width: 58rem;
+  gap: clamp(2rem, 5vw, 3rem) clamp(1.25rem, 4vw, 2.5rem);
+  margin: clamp(2rem, 5vw, 3.5rem) auto 0;
+  max-width: 52rem;
   list-style: none;
   padding: 0;
-  /* Cards keep a sane size instead of stretching across the wide container. */
   justify-items: center;
+  align-items: start;
 }
 
 @media (min-width: 860px) {
   .pathlab-portfolio__grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    max-width: 72rem;
+    max-width: 60rem;
   }
 }
 
@@ -9275,35 +9291,17 @@ summary:focus-visible .radar-expand-indicator {
   }
 }
 
-/* The artwork carries its own card treatment: each source file is the same
-   portrait shape with the rounded plate and padding already baked in. So the
-   frame is a plain box that the image fills edge to edge. No background, no
-   radius, no shadow of ours, or they would double up with the artwork's.
-
-   Earlier versions tried to impose a white plate and per-kind insets here.
-   That is what made the four cards render at different sizes: the plate was
-   invisible behind transparent PNGs, so what you saw was each artwork at
-   whatever size object-fit gave it, not the frame. */
-.pathlab-portfolio__frame {
-  position: relative;
-  width: 100%;
-  max-width: 15rem;
-  aspect-ratio: 763 / 1017;
-}
-
-.pathlab-portfolio__frame img {
-  object-fit: contain;
-}
-
 .pathlab-portfolio__caption {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+  max-width: 14rem;
   text-align: center;
   font-family: var(--font-athiti), var(--font-noto-sans-thai), sans-serif;
   font-size: clamp(0.95rem, 2vw, 1.05rem);
-  line-height: 1.7;
+  line-height: 1.75;
   color: #6a5c5a;
+  text-wrap: pretty;
 }
 
 /* ── Stats: the case for starting early ── */

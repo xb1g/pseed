@@ -61,14 +61,15 @@ export function PathlabPortfolio() {
             }`}
             style={{ ["--i" as string]: String(i) }}
           >
-            {/* The artwork already carries its card treatment, so the frame
-                only sets the shared size. */}
+            {/* The artwork carries its own card treatment (rounded plate and
+                padding baked into the file), so the frame only sets the shared
+                size and the image fills it. */}
             <div className="pathlab-portfolio__frame">
               <Image
                 src={item.src}
                 alt={item.alt}
                 fill
-                sizes="(max-width: 640px) 44vw, (max-width: 1024px) 30vw, 15rem"
+                sizes="(max-width: 640px) 44vw, (max-width: 1024px) 30vw, 14rem"
               />
             </div>
             <p className="pathlab-portfolio__caption">
