@@ -68,10 +68,7 @@ export function PathlabPortfolio() {
                 src={item.src}
                 alt={item.alt}
                 fill
-                sizes="(max-width: 640px) 44vw, (max-width: 1024px) 30vw, 17rem"
-                className={
-                  item.kind === "logo" ? "object-contain p-5" : "object-cover"
-                }
+                sizes="(max-width: 640px) 44vw, (max-width: 1024px) 30vw, 15rem"
               />
             </div>
             <p className="pathlab-portfolio__caption">
