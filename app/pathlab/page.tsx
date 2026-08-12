@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PathlabHero } from "@/components/pathlab/PathlabHero";
 import { PathlabPortfolio } from "@/components/pathlab/PathlabPortfolio";
+import { PathlabStats } from "@/components/pathlab/PathlabStats";
 import { MARQUEE_PHRASES } from "@/lib/content/pathlab-page";
 
 export const metadata: Metadata = {
@@ -34,6 +35,7 @@ export default function PathlabPage() {
 
       <PathlabHero />
       <PathlabPortfolio />
+      <PathlabStats />
     </main>
   );
 }
