@@ -387,583 +387,329 @@ export default function ProfilePage() {
     surfaceBorderClassName: 'border-blue-400/20',
   }
 
-  const primaryStats = getPrimaryStats(dashboard, view.isInstructorView)
-  const buttonClassName = view.buttonClassName
   const isInstructorView = view.isInstructorView
 
+  const activeMapsCount = dashboard?.learningJourney.activeMapCount || 0
+  const nextNodesCount = dashboard?.learningJourney.nextNodes.length || 0
+  const reflectionsCount = dashboard?.reflections.recent.length || 0
+  const streakCount = dashboard?.reflections.streak || 0
+  const classroomsCount = dashboard?.classrooms.length || 0
+
   return (
-    <div
-      className={`${view.themeClassName} profile-dashboard-surface relative min-h-screen overflow-hidden bg-[#020617] text-slate-200`}
-    >
+    <div className={`${view.themeClassName} profile-dashboard-surface relative min-h-screen bg-[#020617] text-slate-200`}>
       <ProfileAtmosphere isInstructorView={isInstructorView} />
 
-      <div className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6 md:py-10">
-        <section className="ei-card rounded-[28px] border border-white/10 px-6 py-6 sm:px-8 sm:py-8">
-          <div className="grid gap-8 xl:grid-cols-[1.2fr_0.8fr] xl:items-start">
-            <div className="space-y-6">
-              <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-                <div className="relative shrink-0">
-                  <Avatar className="h-28 w-28 border border-white/15 bg-white/5 shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
-                    <AvatarImage src={profile.avatar_url ?? undefined} alt="Profile picture" />
-                    <AvatarFallback className="bg-white/10 text-3xl text-white">
-                      {profile.full_name?.charAt(0) || profile.username?.charAt(0) || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
+      <div className="relative z-10 mx-auto max-w-4xl px-4 py-8 sm:px-6 md:py-12">
+        {/* Instagram Header Card */}
+        <section className="ei-card rounded-[28px] border border-white/10 p-6 sm:p-8">
+          <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-10">
+            {/* Avatar */}
+            <div className="relative shrink-0">
+              <Avatar className="h-28 w-28 border-2 border-white/20 bg-white/5 shadow-xl md:h-36 md:w-36">
+                <AvatarImage src={profile.avatar_url ?? undefined} alt="Profile picture" />
+                <AvatarFallback className="bg-white/10 text-3xl font-bold text-white">
+                  {profile.full_name?.charAt(0) || profile.username?.charAt(0) || 'U'}
+                </AvatarFallback>
+              </Avatar>
 
-                  <label
-                    htmlFor="avatar-upload"
-                    className="absolute bottom-1 right-1 inline-flex cursor-pointer items-center justify-center rounded-full border border-white/15 bg-black/50 p-2 text-white transition-colors hover:bg-black/70"
-                  >
-                    <Upload className="h-4 w-4" />
-                    <input
-                      id="avatar-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleAvatarUpload}
-                      disabled={uploading}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-
-                <div className="min-w-0 flex-1 space-y-4">
-                  <div className="space-y-2">
-                    <p className={`text-xs font-semibold uppercase tracking-[0.24em] ${view.accentTextClassName}`}>
-                      {isInstructorView ? 'Dusk Profile' : 'Dawn Profile'}
-                    </p>
-                    <div className="space-y-1">
-                      <h1 className="font-[family-name:var(--font-libre-franklin)] text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-                        {profile.full_name || profile.username}
-                      </h1>
-                      <div className="flex flex-wrap items-center gap-3 text-sm text-slate-300">
-                        <span className="inline-flex items-center gap-2">
-                          <Mail className="h-4 w-4" />
-                          {profile.email}
-                        </span>
-                        <span className="inline-flex items-center gap-2 text-slate-400">
-                          <Calendar className="h-4 w-4" />
-                          Member since {formatDate(profile.created_at)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {dashboard?.roles.map((role) => (
-                      <span
-                        key={role}
-                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium capitalize text-slate-200"
-                      >
-                        {role.replace(/-/g, ' ')}
-                      </span>
-                    ))}
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-200">
-                      {getEducationLabel(profile.education_level)}
-                    </span>
-                    {uploading && (
-                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-200">
-                        Uploading avatar...
-                      </span>
-                    )}
-                  </div>
-
-                  <p className="max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
-                    {isInstructorView
-                      ? 'Your profile now leads with the real signals that matter for mentoring: classrooms, teams, availability, and the work you are actively shaping.'
-                      : 'Your profile now reflects the real arc of your learning journey: active maps, unlocked next steps, reflection momentum, and the spaces where you are building.'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {primaryStats.map((stat) => (
-                  <StatTile key={stat.label} {...stat} />
-                ))}
-              </div>
+              <label
+                htmlFor="avatar-upload"
+                className="absolute bottom-1 right-1 inline-flex cursor-pointer items-center justify-center rounded-full border border-white/20 bg-black/60 p-2 text-white transition-transform hover:scale-105 active:scale-95"
+                title="Change Avatar"
+              >
+                <Upload className="h-4 w-4" />
+                <input
+                  id="avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  disabled={uploading}
+                  className="hidden"
+                />
+              </label>
             </div>
 
-            <div className="space-y-4">
-              <div className="ei-card ei-card--static rounded-[24px] border border-white/10 bg-white/[0.04] p-5">
-                <SectionEyebrow title="Quick actions" />
-                <div className="mt-4 flex flex-col gap-3">
-                  <Link href="/me" className={`${buttonClassName} justify-center text-sm font-semibold`}>
-                    Open dashboard
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                  <Link
-                    href={`/u/${profile.username}`}
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
-                  >
-                    View portfolio
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
+            {/* User Info & Quick Stats Header */}
+            <div className="flex-1 space-y-5 text-center md:text-left">
+              {/* Username + Action Buttons */}
+              <div className="flex flex-col items-center gap-4 sm:flex-row md:justify-start">
+                <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                  {profile.username}
+                </h1>
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    onClick={openAccountEditor}
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                    onClick={() => setIsEditing(!isEditing)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/20"
                   >
-                    <Edit3 className="h-4 w-4" />
-                    Edit account details
+                    <Edit3 className="h-3.5 w-3.5" />
+                    {isEditing ? 'Close Edit' : 'Edit profile'}
                   </button>
                   <Link
-                    href={isInstructorView ? '/classrooms' : '/map'}
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                    href={`/u/${profile.username}`}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/10"
                   >
-                    {isInstructorView ? 'Go to classrooms' : 'Explore Pathlabs'}
-                    <ArrowRight className="h-4 w-4" />
+                    Portfolio
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                  <Link
+                    href="/me"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/10"
+                  >
+                    Dashboard
                   </Link>
                 </div>
               </div>
 
-              <div className="ei-card ei-card--static rounded-[24px] border border-white/10 bg-white/[0.04] p-5">
-                <SectionEyebrow title={isInstructorView ? 'Role focus' : 'Current arc'} />
-                <p className="mt-3 text-sm leading-7 text-slate-300">
-                  {isInstructorView
-                    ? dashboard?.mentorAvailabilityDays
-                      ? `You have availability configured on ${dashboard.mentorAvailabilityDays} day${dashboard.mentorAvailabilityDays === 1 ? '' : 's'} this week.`
-                      : 'You have not configured mentor availability yet.'
-                    : dashboard?.learningJourney.nextNodes.length
-                      ? `Your next unlocked step is ${dashboard.learningJourney.nextNodes[0].node.title} in ${dashboard.learningJourney.nextNodes[0].map.title}.`
-                      : 'You do not have an unlocked next step yet. Enroll in a pathlab to start building momentum.'}
-                </p>
+              {/* Instagram Stats Row */}
+              <div className="flex justify-center gap-8 border-y border-white/10 py-3 md:justify-start">
+                <div className="text-center md:text-left">
+                  <span className="block text-lg font-bold text-white sm:text-xl">
+                    {isInstructorView ? classroomsCount : activeMapsCount}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    {isInstructorView ? 'Classrooms' : 'Active Maps'}
+                  </span>
+                </div>
+                <div className="text-center md:text-left">
+                  <span className="block text-lg font-bold text-white sm:text-xl">{nextNodesCount}</span>
+                  <span className="text-xs text-slate-400">Next Steps</span>
+                </div>
+                <div className="text-center md:text-left">
+                  <span className="block text-lg font-bold text-white sm:text-xl">{streakCount}🔥</span>
+                  <span className="text-xs text-slate-400">Streak</span>
+                </div>
+              </div>
+
+              {/* Bio & Details */}
+              <div className="space-y-1 text-sm text-slate-300">
+                <p className="font-semibold text-white">{profile.full_name || profile.username}</p>
+                <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400 md:justify-start">
+                  <span className="inline-flex items-center gap-1">
+                    <Mail className="h-3.5 w-3.5" />
+                    {profile.email}
+                  </span>
+                  <span>•</span>
+                  <span>{getEducationLabel(profile.education_level)}</span>
+                  <span>•</span>
+                  <span>Joined {formatDate(profile.created_at)}</span>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <section className="ei-card rounded-[28px] border border-white/10 p-6 sm:p-7">
-            <SectionHeader
-              eyebrow={isInstructorView ? 'Teaching footprint' : 'Current journey'}
-              title={isInstructorView ? 'Classrooms, teams, and availability' : 'Real progress across your maps'}
-              description={
-                isInstructorView
-                  ? 'This section prioritizes the spaces you lead and the real structures students encounter.'
-                  : 'Unlocked next steps and map progress are derived from your live enrollments and node completion data.'
-              }
-            />
-
-            {isInstructorView ? (
-              <div className="mt-6 space-y-5">
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <MiniMetric
-                    label="Classrooms"
-                    value={String(dashboard?.classrooms.length || 0)}
-                    hint="Active memberships"
-                  />
-                  <MiniMetric
-                    label="Teams"
-                    value={String(dashboard?.teams.length || 0)}
-                    hint="Across your classrooms"
-                  />
-                  <MiniMetric
-                    label="Availability"
-                    value={String(dashboard?.mentorAvailabilityDays || 0)}
-                    hint="Days configured"
-                  />
-                </div>
-
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <ListCard
-                    title="Classroom spaces"
-                    items={(dashboard?.classrooms || []).slice(0, 4).map((classroom) => ({
-                      key: classroom.classroomId,
-                      title: classroom.name,
-                      subtitle: classroom.description || `Role: ${classroom.role}`,
-                      href: `/classrooms/${classroom.classroomId}`,
-                    }))}
-                    emptyText="No classrooms yet."
-                  />
-                  <ListCard
-                    title="Team groups"
-                    items={(dashboard?.teams || []).slice(0, 4).map((team) => ({
-                      key: team.teamId,
-                      title: team.name,
-                      subtitle: team.isLeader ? 'Team leader' : 'Team member',
-                      href: team.classroomId ? `/classrooms/${team.classroomId}` : '/classrooms',
-                    }))}
-                    emptyText="No team memberships yet."
-                  />
-                </div>
-
-                {dashboard?.learningJourney.activeMapCount ? (
-                  <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-white">Your own learning snapshot</p>
-                        <p className="text-sm text-slate-400">
-                          {dashboard.learningJourney.activeMapCount} active map{dashboard.learningJourney.activeMapCount === 1 ? '' : 's'} with {dashboard.learningJourney.averageProgressPercentage}% average progress
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            ) : (
-              <div className="mt-6 space-y-5">
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <MiniMetric
-                    label="Active maps"
-                    value={String(dashboard?.learningJourney.activeMapCount || 0)}
-                    hint="Currently enrolled"
-                  />
-                  <MiniMetric
-                    label="Completed nodes"
-                    value={String(dashboard?.learningJourney.completedNodeCount || 0)}
-                    hint="Passed or submitted"
-                  />
-                  <MiniMetric
-                    label="In progress"
-                    value={String(dashboard?.learningJourney.inProgressNodeCount || 0)}
-                    hint="Nodes underway"
-                  />
-                </div>
-
-                <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-                  <ListCard
-                    title="Unlocked next steps"
-                    items={(dashboard?.learningJourney.nextNodes || []).map((nextNode) => ({
-                      key: nextNode.node.id,
-                      title: nextNode.node.title,
-                      subtitle: `${nextNode.map.title} • ${formatStatus(nextNode.status)}`,
-                      href: `/map/${nextNode.map.id}`,
-                    }))}
-                    emptyText="No unlocked steps yet. Explore a pathlab to get started."
-                  />
-                  <div className="space-y-3">
-                    <p className="text-sm font-semibold text-white">Active Pathlabs</p>
-                    {(dashboard?.learningJourney.mapSummaries || []).slice(0, 4).map((map) => (
-                      <div
-                        key={map.mapId}
-                        className="rounded-[22px] border border-white/10 bg-white/[0.03] p-4"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-semibold text-white">{map.title}</p>
-                            <p className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-400">
-                              {map.category || 'Journey'}
-                            </p>
-                          </div>
-                          <span className="text-sm font-semibold text-white">
-                            {map.progressPercentage}%
-                          </span>
-                        </div>
-                        <div className="mt-3 h-2 rounded-full bg-white/10">
-                          <div
-                            className={`h-full rounded-full ${isInstructorView ? 'bg-gradient-to-r from-orange-400 via-amber-400 to-pink-400' : 'bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400'}`}
-                            style={{ width: `${Math.min(100, Math.max(0, map.progressPercentage))}%` }}
-                          />
-                        </div>
-                        <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-300">
-                          <span>{map.completedNodes}/{map.totalNodes} nodes complete</span>
-                          <span>{map.totalAssessments} assessments</span>
-                          {map.nextNodeTitle ? <span>Next: {map.nextNodeTitle}</span> : null}
-                        </div>
-                      </div>
-                    ))}
-
-                    {!dashboard?.learningJourney.mapSummaries.length ? (
-                      <EmptyPanel
-                        text="No pathlab enrollments yet. Once you start a pathlab, this section will reflect your real progress."
-                        href="/map"
-                        cta="Browse Pathlabs"
-                      />
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-            )}
-          </section>
-
-          <section className="ei-card rounded-[28px] border border-white/10 p-6 sm:p-7">
-            <SectionHeader
-              eyebrow="Reflection & practice"
-              title="Momentum outside the profile form"
-              description="These signals come from your reflections, projects, and workshops rather than manually-entered profile fields."
-            />
-
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              <MiniMetric
-                label="Reflection streak"
-                value={String(dashboard?.reflections.streak || 0)}
-                hint="Consecutive active days"
-              />
-              <MiniMetric
-                label="Projects"
-                value={String(dashboard?.projects.count || 0)}
-                hint="Tracked in your workspace"
-              />
-              <MiniMetric
-                label="Workshops"
-                value={String(dashboard?.workshops.count || 0)}
-                hint="Joined so far"
-              />
-            </div>
-
-            <div className="mt-6 space-y-4">
-              <p className="text-sm font-semibold text-white">Recent reflection snapshots</p>
-              {(dashboard?.reflections.recent || []).map((reflection) => (
-                <div
-                  key={reflection.id}
-                  className="rounded-[22px] border border-white/10 bg-white/[0.03] p-4"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-sm font-medium text-slate-200">
-                      {formatDate(reflection.createdAt)}
-                    </p>
-                    <div className="flex flex-wrap gap-2 text-xs text-slate-300">
-                      <span>S {reflection.satisfactionRating ?? '-'}</span>
-                      <span>P {reflection.progressRating ?? '-'}</span>
-                      <span>C {reflection.challengeRating ?? '-'}</span>
-                    </div>
-                  </div>
-                  {reflection.topics.length ? (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {reflection.topics.map((topic) => (
-                        <span
-                          key={topic.id}
-                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200"
-                        >
-                          {topic.text}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                  {reflection.overallReflection ? (
-                    <p className="mt-3 line-clamp-3 text-sm leading-7 text-slate-300">
-                      {reflection.overallReflection}
-                    </p>
-                  ) : null}
-                </div>
-              ))}
-
-              {!dashboard?.reflections.recent.length ? (
-                <EmptyPanel
-                  text="No recent reflection entries yet. Once you write one, this section will pull the latest real entries here."
-                  href="/me/reflection"
-                  cta="Open reflection"
-                />
-              ) : null}
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <CompactList
-                  title="Recent projects"
-                  items={(dashboard?.projects.recent || []).map((project) => ({
-                    key: project.id,
-                    title: project.name,
-                    subtitle: formatDate(project.created_at),
-                  }))}
-                  emptyText="No projects yet."
-                />
-                <CompactList
-                  title="Recent workshops"
-                  items={(dashboard?.workshops.recent || []).map((workshop) => ({
-                    key: workshop.id,
-                    title: workshop.title,
-                    subtitle: workshop.slug ? `/workshops/${workshop.slug}` : 'Workshop',
-                  }))}
-                  emptyText="No workshops yet."
-                />
-              </div>
-            </div>
-          </section>
-        </div>
-
-        <div className="mt-6 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-          <section className="ei-card rounded-[28px] border border-white/10 p-6 sm:p-7">
-            <SectionHeader
-              eyebrow="Learning spaces"
-              title="Where your profile is actually active"
-              description="These are the classrooms and teams directly connected to your account right now."
-            />
-
-            <div className="mt-6 grid gap-4 lg:grid-cols-2">
-              <ListCard
-                title="Classrooms"
-                items={(dashboard?.classrooms || []).map((classroom) => ({
-                  key: classroom.classroomId,
-                  title: classroom.name,
-                  subtitle: classroom.description || `Role: ${classroom.role}`,
-                  href: `/classrooms/${classroom.classroomId}`,
-                }))}
-                emptyText="No classroom memberships yet."
-              />
-              <ListCard
-                title="Teams"
-                items={(dashboard?.teams || []).map((team) => ({
-                  key: team.teamId,
-                  title: team.name,
-                  subtitle: team.isLeader ? 'Leader' : 'Member',
-                  href: team.classroomId ? `/classrooms/${team.classroomId}` : '/classrooms',
-                }))}
-                emptyText="No team memberships yet."
-              />
-            </div>
-          </section>
-
-          <section
-            id="account-details"
-            className="ei-card rounded-[28px] border border-white/10 p-6 sm:p-7"
-          >
-            <SectionHeader
-              eyebrow="Account details"
-              title={isEditing ? 'Edit your profile' : 'Identity and settings'}
-              description="This section keeps the editable account fields, but it no longer has to pretend it is your whole profile."
-            />
-
-            <div className="mt-6 space-y-5">
-              <div className="grid gap-5 md:grid-cols-2">
-                <Field>
-                  <Label htmlFor="fullName" className="ei-label text-xs uppercase tracking-[0.2em] text-slate-400">
-                    Full name
-                  </Label>
-                  <Input
-                    id="fullName"
-                    value={fullName}
-                    onChange={(event) => setFullName(event.target.value)}
-                    disabled={!isEditing}
-                    placeholder="Your full name"
-                    className="ei-input h-11 border-white/10 bg-white/[0.04] disabled:opacity-80"
-                  />
-                </Field>
-
-                <Field>
-                  <Label htmlFor="username" className="ei-label text-xs uppercase tracking-[0.2em] text-slate-400">
-                    Username
-                  </Label>
-                  <Input
-                    id="username"
-                    value={username}
-                    onChange={(event) => setUsername(event.target.value)}
-                    disabled={!isEditing}
-                    placeholder="Username"
-                    className="ei-input h-11 border-white/10 bg-white/[0.04] disabled:opacity-80"
-                  />
-                </Field>
-
-                <Field>
-                  <Label htmlFor="dateOfBirth" className="ei-label text-xs uppercase tracking-[0.2em] text-slate-400">
-                    Date of birth
-                  </Label>
-                  <Input
-                    id="dateOfBirth"
-                    type="date"
-                    value={dateOfBirth}
-                    onChange={(event) => setDateOfBirth(event.target.value)}
-                    disabled={!isEditing}
-                    className="ei-input h-11 border-white/10 bg-white/[0.04] disabled:opacity-80"
-                  />
-                </Field>
-
-                <Field>
-                  <Label htmlFor="discordId" className="ei-label text-xs uppercase tracking-[0.2em] text-slate-400">
-                    Discord UID
-                  </Label>
-                  <Input
-                    id="discordId"
-                    value={discordId}
-                    onChange={(event) => setDiscordId(event.target.value)}
-                    disabled={!isEditing}
-                    placeholder="Discord user id"
-                    className="ei-input h-11 border-white/10 bg-white/[0.04] disabled:opacity-80"
-                  />
-                </Field>
-              </div>
-
+        {/* Edit Form Drawer / Toggle Section */}
+        {isEditing && (
+          <section className="mt-6 ei-card rounded-[28px] border border-white/15 p-6 bg-white/[0.04]">
+            <h2 className="text-lg font-semibold text-white mb-4">Edit Profile Information</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
               <Field>
-                <Label htmlFor="educationLevel" className="ei-label text-xs uppercase tracking-[0.2em] text-slate-400">
-                  Education level
-                </Label>
+                <Label htmlFor="full_name" className="text-xs text-slate-300">Full Name</Label>
+                <Input
+                  id="full_name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="border-white/10 bg-white/5 text-white"
+                />
+              </Field>
+              <Field>
+                <Label htmlFor="username" className="text-xs text-slate-300">Username</Label>
+                <Input
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="border-white/10 bg-white/5 text-white"
+                />
+              </Field>
+              <Field>
+                <Label htmlFor="education" className="text-xs text-slate-300">Education Level</Label>
                 <select
-                  id="educationLevel"
+                  id="education"
                   value={educationLevel}
-                  onChange={(event) =>
-                    setEducationLevel(
-                      event.target.value as 'high_school' | 'university' | 'unaffiliated'
-                    )
-                  }
-                  disabled={!isEditing}
-                  className="ei-select h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm text-white disabled:opacity-80"
+                  onChange={(e) => setEducationLevel(e.target.value as any)}
+                  className="w-full rounded-md border border-white/10 bg-slate-900 p-2 text-sm text-white"
                 >
-                  <option value="high_school">High school</option>
+                  <option value="high_school">High School</option>
                   <option value="university">University</option>
                   <option value="unaffiliated">Unaffiliated</option>
                 </select>
               </Field>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <EducationBadge
-                  active={educationLevel === 'high_school'}
-                  icon={School}
-                  title="High school"
-                  description="Currently in high school"
+              <Field>
+                <Label htmlFor="discord" className="text-xs text-slate-300">Discord User ID</Label>
+                <Input
+                  id="discord"
+                  value={discordId}
+                  onChange={(e) => setDiscordId(e.target.value)}
+                  placeholder="e.g. username#0000"
+                  className="border-white/10 bg-white/5 text-white"
                 />
-                <EducationBadge
-                  active={educationLevel === 'university'}
-                  icon={GraduationCap}
-                  title="University"
-                  description="Currently in university"
-                />
-                <EducationBadge
-                  active={educationLevel === 'unaffiliated'}
-                  icon={Building}
-                  title="Unaffiliated"
-                  description="Outside formal education"
-                />
-              </div>
-
-              <div className="flex flex-wrap gap-3 pt-2">
-                {isEditing ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={handleSaveProfile}
-                      disabled={saving || !username.trim()}
-                      className={`${buttonClassName} justify-center text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50`}
-                    >
-                      <Save className="h-4 w-4" />
-                      {saving ? 'Saving...' : 'Save changes'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleCancelEdit}
-                      disabled={saving}
-                      className="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10 disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setIsEditing(true)}
-                    className={`${buttonClassName} justify-center text-sm font-semibold`}
-                  >
-                    <Edit3 className="h-4 w-4" />
-                    Edit profile
-                  </button>
-                )}
-              </div>
+              </Field>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-300 transition-colors hover:bg-white/10"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveProfile}
+                disabled={saving}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-blue-400/30 bg-blue-600/80 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-500"
+              >
+                <Save className="h-3.5 w-3.5" />
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
             </div>
           </section>
-        </div>
+        )}
 
-        <section className="mt-6 ei-card rounded-[28px] border border-white/10 p-6 sm:p-7">
-          <SectionHeader
-            eyebrow="Achievements"
-            title="Badges earned from real work"
-            description="This gallery stays connected to the same live badge data and detail modal."
-          />
-          <div className="mt-6">
-            <BadgeGallery userId={profile.id} showTitle={false} />
+        {/* Tabbed Content Grid */}
+        <ProfileInstagramTabs dashboard={dashboard} isInstructorView={isInstructorView} />
+      </div>
+    </div>
+  )
+}
+
+function ProfileInstagramTabs({
+  dashboard,
+  isInstructorView,
+}: {
+  dashboard: DashboardData | null
+  isInstructorView: boolean
+}) {
+  const [activeTab, setActiveTab] = useState<'grid' | 'badges' | 'spaces'>('grid')
+
+  return (
+    <div className="mt-8">
+      {/* Tabs bar */}
+      <div className="flex justify-center border-t border-white/10">
+        <button
+          type="button"
+          onClick={() => setActiveTab('grid')}
+          className={`flex items-center gap-2 border-t-2 px-6 py-4 text-xs font-semibold uppercase tracking-wider transition-colors ${
+            activeTab === 'grid'
+              ? 'border-white text-white'
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Compass className="h-4 w-4" />
+          {isInstructorView ? 'Teaching' : 'Journey Grid'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('badges')}
+          className={`flex items-center gap-2 border-t-2 px-6 py-4 text-xs font-semibold uppercase tracking-wider transition-colors ${
+            activeTab === 'badges'
+              ? 'border-white text-white'
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Sparkles className="h-4 w-4" />
+          Badges & Reflect
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('spaces')}
+          className={`flex items-center gap-2 border-t-2 px-6 py-4 text-xs font-semibold uppercase tracking-wider transition-colors ${
+            activeTab === 'spaces'
+              ? 'border-white text-white'
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Users className="h-4 w-4" />
+          Spaces & Settings
+        </button>
+      </div>
+
+      {/* Tab Panels */}
+      <div className="mt-6">
+        {activeTab === 'grid' && (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {dashboard?.learningJourney.nextNodes.map((item) => (
+              <Link
+                key={item.node.id}
+                href={`/map/${item.map.id}`}
+                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition-all hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.07]"
+              >
+                <div>
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-blue-300">
+                    {item.map.title}
+                  </span>
+                  <h3 className="mt-1 text-base font-semibold text-white group-hover:text-blue-200">
+                    {item.node.title}
+                  </h3>
+                </div>
+                <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
+                  <span className="capitalize">{formatStatus(item.status)}</span>
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </div>
+              </Link>
+            ))}
+
+            {!dashboard?.learningJourney.nextNodes.length && (
+              <div className="col-span-full rounded-2xl border border-dashed border-white/10 p-8 text-center text-slate-400">
+                <p className="text-sm">No active map steps yet.</p>
+                <Link
+                  href="/map"
+                  className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-blue-300 hover:underline"
+                >
+                  Explore pathlabs <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            )}
           </div>
-        </section>
+        )}
 
-        {isInstructorView ? (
-          <section className="mt-6">
-            <MentorAvailabilitySettings userId={profile.id} />
-          </section>
-        ) : null}
+        {activeTab === 'badges' && (
+          <div className="space-y-6">
+            <BadgeGallery />
+            {dashboard?.reflections.recent.length ? (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                <h3 className="text-sm font-semibold text-white mb-3">Recent Reflections</h3>
+                <div className="space-y-3">
+                  {dashboard.reflections.recent.slice(0, 3).map((r) => (
+                    <div key={r.id} className="rounded-xl border border-white/5 bg-white/5 p-3 text-xs text-slate-300">
+                      <p className="font-medium text-white">{r.overallReflection || 'Daily Reflection'}</p>
+                      <p className="mt-1 text-slate-400">{formatDate(r.createdAt)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {activeTab === 'spaces' && (
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-white">Classrooms</h3>
+              <ListCard
+                title=""
+                items={(dashboard?.classrooms || []).map((c) => ({
+                  key: c.classroomId,
+                  title: c.name,
+                  subtitle: c.role,
+                  href: `/classrooms/${c.classroomId}`,
+                }))}
+                emptyText="No classrooms joined yet."
+              />
+            </div>
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-white">Mentor Settings</h3>
+              {isInstructorView ? (
+                <MentorAvailabilitySettings initialDays={dashboard?.mentorAvailabilityDays || 0} />
+              ) : (
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-xs text-slate-400">
+                  Mentor settings are available for instructors/mentors.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -1040,81 +786,6 @@ function ProfileLoadingState() {
   )
 }
 
-function SectionEyebrow({ title }: { title: string }) {
-  return (
-    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-      {title}
-    </p>
-  )
-}
-
-function SectionHeader({
-  eyebrow,
-  title,
-  description,
-}: {
-  eyebrow: string
-  title: string
-  description: string
-}) {
-  return (
-    <div className="space-y-2">
-      <SectionEyebrow title={eyebrow} />
-      <div className="space-y-1">
-        <h2 className="font-[family-name:var(--font-libre-franklin)] text-2xl font-semibold tracking-tight text-white">
-          {title}
-        </h2>
-        <p className="max-w-2xl text-sm leading-7 text-slate-300">
-          {description}
-        </p>
-      </div>
-    </div>
-  )
-}
-
-function StatTile({ label, value, hint, icon: Icon }: StatItem) {
-  return (
-    <div className="rounded-[22px] border border-white/10 bg-white/[0.04] p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-            {label}
-          </p>
-          <p className="font-[family-name:var(--font-libre-franklin)] text-3xl font-semibold text-white">
-            {value}
-          </p>
-          <p className="text-sm text-slate-300">{hint}</p>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-slate-200">
-          <Icon className="h-5 w-5" />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function MiniMetric({
-  label,
-  value,
-  hint,
-}: {
-  label: string
-  value: string
-  hint: string
-}) {
-  return (
-    <div className="rounded-[22px] border border-white/10 bg-white/[0.03] p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-        {label}
-      </p>
-      <p className="mt-2 font-[family-name:var(--font-libre-franklin)] text-3xl font-semibold text-white">
-        {value}
-      </p>
-      <p className="mt-2 text-sm text-slate-300">{hint}</p>
-    </div>
-  )
-}
-
 function ListCard({
   title,
   items,
@@ -1126,7 +797,7 @@ function ListCard({
 }) {
   return (
     <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
-      <p className="text-sm font-semibold text-white">{title}</p>
+      {title ? <p className="text-sm font-semibold text-white">{title}</p> : null}
       <div className="mt-4 space-y-3">
         {items.map((item) => (
           <Link
@@ -1148,160 +819,8 @@ function ListCard({
   )
 }
 
-function CompactList({
-  title,
-  items,
-  emptyText,
-}: {
-  title: string
-  items: Array<{ key: string; title: string; subtitle: string }>
-  emptyText: string
-}) {
-  return (
-    <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
-      <p className="text-sm font-semibold text-white">{title}</p>
-      <div className="mt-4 space-y-3">
-        {items.map((item) => (
-          <div key={item.key} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-            <p className="text-sm font-medium text-white">{item.title}</p>
-            <p className="mt-1 text-sm text-slate-400">{item.subtitle}</p>
-          </div>
-        ))}
-        {!items.length ? (
-          <p className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-sm text-slate-400">
-            {emptyText}
-          </p>
-        ) : null}
-      </div>
-    </div>
-  )
-}
-
-function EmptyPanel({
-  text,
-  href,
-  cta,
-}: {
-  text: string
-  href: string
-  cta: string
-}) {
-  return (
-    <div className="rounded-[24px] border border-dashed border-white/10 bg-white/[0.03] p-5">
-      <p className="text-sm leading-7 text-slate-300">{text}</p>
-      <Link
-        href={href}
-        className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-white transition-opacity hover:opacity-80"
-      >
-        {cta}
-        <ArrowRight className="h-4 w-4" />
-      </Link>
-    </div>
-  )
-}
-
 function Field({ children }: { children: ReactNode }) {
   return <div className="space-y-1.5">{children}</div>
-}
-
-function EducationBadge({
-  active,
-  icon: Icon,
-  title,
-  description,
-}: {
-  active: boolean
-  icon: typeof School
-  title: string
-  description: string
-}) {
-  return (
-    <div
-      className={`rounded-[22px] border p-4 ${
-        active
-          ? 'border-white/25 bg-white/[0.08] text-white'
-          : 'border-white/10 bg-white/[0.03] text-slate-300'
-      }`}
-    >
-      <div className="flex items-start gap-3">
-        <Icon className="mt-0.5 h-5 w-5 shrink-0" />
-        <div>
-          <p className="text-sm font-semibold">{title}</p>
-          <p className="mt-1 text-sm text-slate-400">{description}</p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function getPrimaryStats(
-  dashboard: DashboardData | null,
-  isInstructorView: boolean
-): StatItem[] {
-  if (!dashboard) {
-    return [
-      { label: 'Profile', value: '-', hint: 'Waiting for dashboard data', icon: Sparkles },
-      { label: 'Maps', value: '-', hint: 'Waiting for dashboard data', icon: Compass },
-      { label: 'Spaces', value: '-', hint: 'Waiting for dashboard data', icon: Users },
-      { label: 'Practice', value: '-', hint: 'Waiting for dashboard data', icon: Brain },
-    ]
-  }
-
-  if (isInstructorView) {
-    return [
-      {
-        label: 'Classrooms',
-        value: String(dashboard.classrooms.length),
-        hint: 'Active memberships',
-        icon: Layers3,
-      },
-      {
-        label: 'Teams',
-        value: String(dashboard.teams.length),
-        hint: 'Across your spaces',
-        icon: Users,
-      },
-      {
-        label: 'Availability',
-        value: String(dashboard.mentorAvailabilityDays),
-        hint: 'Days configured',
-        icon: Calendar,
-      },
-      {
-        label: 'Reflection streak',
-        value: String(dashboard.reflections.streak),
-        hint: 'Recent presence',
-        icon: Flame,
-      },
-    ]
-  }
-
-  return [
-    {
-      label: 'Active maps',
-      value: String(dashboard.learningJourney.activeMapCount),
-      hint: `${dashboard.learningJourney.averageProgressPercentage}% average progress`,
-      icon: Compass,
-    },
-    {
-      label: 'Next steps',
-      value: String(dashboard.learningJourney.nextNodes.length),
-      hint: 'Unlocked right now',
-      icon: CheckCircle2,
-    },
-    {
-      label: 'Classrooms',
-      value: String(dashboard.classrooms.length),
-      hint: 'Spaces you belong to',
-      icon: BookOpen,
-    },
-    {
-      label: 'Reflection streak',
-      value: String(dashboard.reflections.streak),
-      hint: 'Consecutive active days',
-      icon: Flame,
-    },
-  ]
 }
 
 function getEducationLabel(value: UserProfile['education_level']) {

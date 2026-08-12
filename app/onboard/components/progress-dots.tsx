@@ -6,21 +6,28 @@ const STEPS: OnboardingStep[] = [
   "welcome",
   "interest",
   "assessment",
-  "influence",
   "results",
   "account",
 ];
 
 interface ProgressDotsProps {
   currentStep: OnboardingStep;
+  /** Compact for cramped mobile headers */
+  compact?: boolean;
 }
 
-export function ProgressDots({ currentStep }: ProgressDotsProps) {
+export function ProgressDots({
+  currentStep,
+  compact = false,
+}: ProgressDotsProps) {
   const currentIndex = STEPS.indexOf(currentStep);
 
   return (
     <div
-      className="flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.03] px-3 py-2"
+      className={[
+        "flex items-center rounded-full border border-white/8 bg-white/[0.03]",
+        compact ? "gap-1.5 px-2 py-1.5" : "gap-2 px-3 py-2",
+      ].join(" ")}
       aria-label={`Onboarding step ${Math.max(currentIndex + 1, 1)} of ${STEPS.length}`}
     >
       {STEPS.map((step, index) => {
@@ -31,12 +38,18 @@ export function ProgressDots({ currentStep }: ProgressDotsProps) {
           <span
             key={step}
             className={[
-              "block rounded-full transition-all duration-200",
+              "block rounded-full",
               isCurrent
-                ? "h-3 w-8 bg-white shadow-[0_0_22px_rgba(251,146,60,0.3)]"
+                ? compact
+                  ? "h-2 w-4 bg-blue-400"
+                  : "h-2.5 w-6 bg-blue-400"
                 : isComplete
-                  ? "h-2 w-2 bg-orange-300"
-                  : "h-2 w-2 bg-white/20",
+                  ? compact
+                    ? "h-1.5 w-1.5 bg-white/55"
+                    : "h-2 w-2 bg-white/55"
+                  : compact
+                    ? "h-1.5 w-1.5 bg-white/20"
+                    : "h-2 w-2 bg-white/20",
             ].join(" ")}
           />
         );

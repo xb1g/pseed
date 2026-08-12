@@ -2,6 +2,10 @@ import { LoginForm } from "@/components/login-form";
 import { isAnonymousUser } from "@/lib/supabase/auth";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
+import {
+  isProfileComplete,
+  PROFILE_COMPLETION_SELECT,
+} from "@/lib/profile-completion";
 
 export const dynamic = "force-dynamic";
 
@@ -18,13 +22,21 @@ export default async function LoginPage({
     // Check if profile is complete before redirecting
     const { data: profileData, error: profileError } = await supabase
       .from("profiles")
-      .select("full_name, username, date_of_birth")
+      .select(`${PROFILE_COMPLETION_SELECT}, is_onboarded`)
       .eq("id", data.user.id)
       .single();
+    const { data: guardianConsent } = await supabase
+      .from("profile_guardian_consents")
+      .select("guardian_phone, guardian_relationship, consent_confirmed_at")
+      .eq("user_id", data.user.id)
+      .maybeSingle();
 
-    if (profileError || !profileData?.full_name || !profileData?.username || !profileData?.date_of_birth) {
-      // Profile incomplete, redirect to finish profile
-      redirect(`/auth/finish-profile?next=${encodeURIComponent(next)}`);
+    if (
+      profileError ||
+      !isProfileComplete(profileData, guardianConsent) ||
+      !profileData.is_onboarded
+    ) {
+      redirect("/onboard");
     }
 
     redirect(next);

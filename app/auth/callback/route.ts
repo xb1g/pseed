@@ -1,43 +1,106 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { trackAppRegister, assignUserToCohort } from "@/lib/supabase/funnel-tracking";
+import {
+  isProfileComplete,
+  PROFILE_COMPLETION_SELECT,
+} from "@/lib/profile-completion";
+
+type PendingCookie = {
+  name: string;
+  value: string;
+  options: CookieOptions;
+};
+
+/**
+ * Prefer the browser Host header. `next dev -H 0.0.0.0` makes `request.url`
+ * report origin `http://0.0.0.0:3000`, which breaks cookies + OAuth allowlists.
+ */
+function resolveAppOrigin(request: Request): string {
+  const url = new URL(request.url);
+  const hostHeader =
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  const protoHeader = request.headers.get("x-forwarded-proto");
+  const protocol = protoHeader ?? url.protocol.replace(":", "") ?? "http";
+
+  const host = hostHeader?.split(",")[0]?.trim() || url.host;
+  if (host.startsWith("0.0.0.0") || host.startsWith("[::]")) {
+    return `${protocol}://localhost:${url.port || "3000"}`;
+  }
+
+  return `${protocol}://${host}`;
+}
+
+function redirectWithCookies(url: URL, pendingCookies: PendingCookie[]) {
+  const response = NextResponse.redirect(url);
+  for (const { name, value, options } of pendingCookies) {
+    response.cookies.set(name, value, options);
+  }
+  return response;
+}
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
+  const origin = resolveAppOrigin(request);
   const code = searchParams.get("code");
-  // if "next" is in param, use it as the redirect URL
-  const next = searchParams.get("next") ?? "/me";
+  let next = searchParams.get("next") ?? "/me";
+  if (!next.startsWith("/") || next.startsWith("//")) {
+    next = "/me";
+  }
 
   if (code) {
-    const supabase = await createClient();
+    const cookieStore = await cookies();
+    // `cookies().set()` alone often does NOT attach Set-Cookie to a separately
+    // constructed NextResponse.redirect(). Collect and write onto the redirect.
+    const pendingCookies: PendingCookie[] = [];
+
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet: PendingCookie[]) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              pendingCookies.push({ name, value, options });
+              try {
+                cookieStore.set(name, value, options);
+              } catch {
+                // Still applied on the redirect Response below.
+              }
+            });
+          },
+        },
+      }
+    );
+
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error && data.session && data.user) {
       const userId = data.user.id;
-      const isNewUser = data.user.created_at && new Date(data.user.created_at) > new Date(Date.now() - 60000);
-      
+      const isNewUser =
+        data.user.created_at &&
+        new Date(data.user.created_at) > new Date(Date.now() - 60000);
+
       if (isNewUser) {
         await trackAppRegister(userId);
-        await assignUserToCohort(userId, 'organic', 'oauth_signup');
+        await assignUserToCohort(userId, "organic", "oauth_signup");
       }
-      // Attempt to create a profile entry.
-      // This assumes a 'profiles' table with an 'id' column linked to auth.users.id.
-      // Using upsert to avoid errors if the profile already exists or to create it.
 
-      // Enhanced profile creation with retry logic for production
       let profileData = null;
       let profileError = null;
       let retryCount = 0;
       const maxRetries = 3;
 
-      // Retry logic to handle timing issues in production
       while (retryCount < maxRetries) {
-        // Wait longer for trigger to complete (production needs more time)
-        const waitTime = 200 + retryCount * 300; // 200ms, 500ms, 800ms
+        const waitTime = 200 + retryCount * 300;
         await new Promise((resolve) => setTimeout(resolve, waitTime));
 
         const result = await supabase
           .from("profiles")
-          .select("full_name, username, date_of_birth, email, preferred_language")
+          .select(`${PROFILE_COMPLETION_SELECT}, is_onboarded`)
           .eq("id", userId)
           .single();
 
@@ -45,65 +108,54 @@ export async function GET(request: Request) {
         profileError = result.error;
 
         if (!profileError) {
-          console.log(
-            `Profile found on attempt ${retryCount + 1}:`,
-            profileData
-          );
           break;
         }
 
         if (profileError.code !== "PGRST116") {
-          // Not a "not found" error, break and handle
           break;
         }
 
         retryCount++;
-        console.log(
-          `Profile not found, retry ${retryCount}/${maxRetries} for user:`,
-          userId
-        );
       }
 
       let redirectTo = next;
-      console.log(profileData, profileError, "profileData, profileError");
 
       if (profileError && profileError.code === "PGRST116") {
-        // Profile still doesn't exist, something went wrong with the trigger
         console.error("Profile creation trigger failed for user:", userId);
-        return NextResponse.redirect(
-          `${origin}/auth/auth-code-error?error=profile_creation_failed`
+        return redirectWithCookies(
+          new URL("/auth/auth-code-error?error=profile_creation_failed", origin),
+          pendingCookies
         );
       } else if (profileError) {
         console.error("Error fetching profile:", profileError);
-        return NextResponse.redirect(
-          `${origin}/auth/auth-code-error?error=profile_fetch_failed&details=${encodeURIComponent(profileError.message)}`
+        return redirectWithCookies(
+          new URL(
+            `/auth/auth-code-error?error=profile_fetch_failed&details=${encodeURIComponent(profileError.message)}`,
+            origin
+          ),
+          pendingCookies
         );
       }
 
       if (profileData) {
-        const profile = profileData;
-        if (!profile.full_name || !profile.username || !profile.date_of_birth) {
-          redirectTo = `/auth/finish-profile?next=${encodeURIComponent(next)}`;
-        }
-        console.log("Final profile data:", profile);
-        
+        const { data: guardianConsent } = await supabase
+          .from("profile_guardian_consents")
+          .select("guardian_phone, guardian_relationship, consent_confirmed_at")
+          .eq("user_id", userId)
+          .maybeSingle();
 
+        if (
+          !isProfileComplete(profileData, guardianConsent) ||
+          !profileData.is_onboarded
+        ) {
+          redirectTo = "/onboard";
+        }
       }
 
-      console.log(redirectTo, "redirectTo");
-      const forwardedHost = request.headers.get("x-forwarded-host"); // original origin before load balancer
-      const isLocalEnv = process.env.NODE_ENV === "development";
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-
-      return NextResponse.redirect(`${siteUrl}${redirectTo}`);
+      return redirectWithCookies(new URL(redirectTo, origin), pendingCookies);
     }
   }
 
-  // return the user to an error page with instructions
-  // Supabase usually reports OAuth failures against the Site URL rather than
-  // here, but when it does reach this route the reason is in the query string.
-  // Forward it, so the error page can say what actually went wrong instead of
-  // falling back to "your link may have expired".
   const errorRedirect = new URL("/auth/auth-code-error", origin);
   for (const key of ["error", "error_code", "error_description"]) {
     const value = searchParams.get(key);

@@ -21,10 +21,15 @@ export function LoginForm({ next = "/" }: { next?: string }) {
   const safeNext = next.startsWith("/") ? next : "/";
 
   function getRedirectTo() {
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      (typeof window !== "undefined" ? window.location.origin : "");
-    const callbackUrl = new URL("/auth/callback", siteUrl);
+    // Prefer the tab origin, but rewrite 0.0.0.0 (from `next dev -H 0.0.0.0`)
+    // to localhost so cookies + Supabase redirect allowlists still work.
+    let origin = window.location.origin;
+    if (origin.includes("://0.0.0.0") || origin.includes("://[::]")) {
+      origin = origin
+        .replace("://0.0.0.0", "://localhost")
+        .replace("://[::]", "://localhost");
+    }
+    const callbackUrl = new URL("/auth/callback", origin);
     callbackUrl.searchParams.set("next", safeNext);
     return callbackUrl.toString();
   }

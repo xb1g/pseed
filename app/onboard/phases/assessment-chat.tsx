@@ -32,7 +32,7 @@ export function AssessmentChatPhase({
 }: Props) {
   const [localData, setLocalData] = useState<CollectedData>(data);
   const [isLoading, setIsLoading] = useState(false);
-  const language = (data.language || "en") as "en" | "th";
+  const language = (data.language || "th") as "en" | "th";
   const isEn = language === "en";
   const shouldShowTargetPicker =
     isAssessmentComplete(localData) && localData.target_clarity === "specific";
@@ -156,7 +156,7 @@ export function AssessmentChatPhase({
             }}
           />
         </div>
-        <p className="text-xs uppercase tracking-[0.24em] text-orange-200/50">
+        <p className="text-xs uppercase tracking-[0.24em] dawn-eyebrow">
           {isEn ? "Assessment chat" : "บทสนทนาประเมินตัวเอง"}
         </p>
         <h2 className="mt-2 text-xl font-semibold text-white sm:text-2xl">
@@ -176,10 +176,10 @@ export function AssessmentChatPhase({
                 setLocalData((current) => ({ ...current, ...updates }));
               }}
               onContinue={() => {
-                void advance("influence", localData);
+                void advance("results", localData);
               }}
               onSkip={() => {
-                void advance("influence", {
+                void advance("results", {
                   ...localData,
                   target_university_id: undefined,
                   target_university_name: undefined,
@@ -208,8 +208,8 @@ export function AssessmentChatPhase({
         <div className="px-1">
           <button
             type="button"
-            onClick={() => advance("influence", localData)}
-            className="ei-button-dusk w-full justify-center py-3 text-sm font-semibold"
+            onClick={() => advance("results", localData)}
+            className="ei-button-dawn w-full justify-center py-3 text-sm font-semibold"
           >
             {isEn ? "Next →" : "ถัดไป →"}
           </button>

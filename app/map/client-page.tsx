@@ -36,18 +36,24 @@ export function MapsClientPage({ initialData }: MapsClientPageProps) {
     closePreviewDialog,
   } = useMapOperations({ initialData });
 
+  // Only show LaunchPad — Startup Trial for now; hide all other maps/pathlabs
+  const visibleMaps = useMemo(
+    () => maps.filter((map) => map.title.toLowerCase().includes("launchpad")),
+    [maps]
+  );
+
   // Filter maps based on search query
   const filteredMaps = useMemo(() => {
-    if (!searchQuery.trim()) return maps;
+    if (!searchQuery.trim()) return visibleMaps;
 
     const query = searchQuery.toLowerCase().trim();
-    return maps.filter(
+    return visibleMaps.filter(
       (map) =>
         map.title.toLowerCase().includes(query) ||
         map.description?.toLowerCase().includes(query) ||
         map.category?.toLowerCase().includes(query)
     );
-  }, [maps, searchQuery]);
+  }, [visibleMaps, searchQuery]);
 
   const renderMapsSections = () => {
     const sections = groupMapsByType(filteredMaps);

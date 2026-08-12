@@ -1,6 +1,31 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { isAnonymousUser } from '@/lib/supabase/auth'
+import {
+  isProfileComplete,
+  PROFILE_COMPLETION_SELECT,
+} from '@/lib/profile-completion'
 import { isPublicRoute } from './public-routes'
+
+function shouldSkipOnboardGate(pathname: string): boolean {
+  return (
+    pathname === '/onboard' ||
+    pathname.startsWith('/onboard/') ||
+    pathname.startsWith('/auth/') ||
+    pathname.startsWith('/api/') ||
+    pathname.startsWith('/_next/')
+  )
+}
+
+function copySessionCookies(
+  from: NextResponse,
+  to: NextResponse
+): NextResponse {
+  from.cookies.getAll().forEach(({ name, value }) => {
+    to.cookies.set(name, value)
+  })
+  return to
+}
 
 // Fail fast when Supabase is unreachable in local dev (Docker not running)
 const isLocal = process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('127.0.0.1') ||
@@ -61,14 +86,41 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse
   }
 
-  if (
-    !user &&
-    !isPublicRoute(request.nextUrl.pathname)
-  ) {
+  const pathname = request.nextUrl.pathname
+
+  if (!user && !isPublicRoute(pathname)) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    return NextResponse.redirect(url)
+    return copySessionCookies(supabaseResponse, NextResponse.redirect(url))
+  }
+
+  // Logged-in users must finish onboard (profile essentials + journey) before app use.
+  if (
+    user &&
+    !isAnonymousUser(user) &&
+    !shouldSkipOnboardGate(pathname)
+  ) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select(`${PROFILE_COMPLETION_SELECT}, is_onboarded`)
+      .eq('id', user.id)
+      .maybeSingle()
+    const { data: guardianConsent } = await supabase
+      .from('profile_guardian_consents')
+      .select('guardian_phone, guardian_relationship, consent_confirmed_at')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    const needsOnboard =
+      !isProfileComplete(profile, guardianConsent) || !profile?.is_onboarded
+
+    if (needsOnboard) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/onboard'
+      url.search = ''
+      return copySessionCookies(supabaseResponse, NextResponse.redirect(url))
+    }
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're

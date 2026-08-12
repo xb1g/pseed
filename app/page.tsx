@@ -1,7 +1,11 @@
 import { LandingPageWrapper } from "@/components/landing-page-wrapper";
 import { isAnonymousUser } from "@/lib/supabase/auth";
 import { createClient } from "@/utils/supabase/server";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
+import {
+  isProfileComplete,
+  PROFILE_COMPLETION_SELECT,
+} from "@/lib/profile-completion";
 
 export const dynamic = "force-dynamic";
 
@@ -31,26 +35,29 @@ export default async function Home() {
     if (user && !isAnonymous) {
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select("full_name, username, date_of_birth, is_onboarded")
+        .select(`${PROFILE_COMPLETION_SELECT}, is_onboarded`)
         .eq("id", user.id)
         .single();
-
-      if (!profileData?.is_onboarded) {
-        redirect("/onboard");
-      }
+      const { data: guardianConsent } = await supabase
+        .from("profile_guardian_consents")
+        .select("guardian_phone, guardian_relationship, consent_confirmed_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
 
       if (
         profileError ||
-        !profileData?.full_name ||
-        !profileData?.username ||
-        !profileData?.date_of_birth
+        !isProfileComplete(profileData, guardianConsent) ||
+        !profileData.is_onboarded
       ) {
-        redirect("/auth/finish-profile");
+        redirect("/onboard");
       }
 
       redirect("/me");
     }
-  } catch {
+  } catch (error) {
+    // redirect() throws a framework control-flow error. Preserve it instead of
+    // treating a successful auth redirect as a failed Supabase request.
+    unstable_rethrow(error);
     // Supabase unreachable or auth error — show landing page
   }
 

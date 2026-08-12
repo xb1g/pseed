@@ -209,7 +209,7 @@ export function TcasTargetPicker({
   return (
     <div className="flex flex-col gap-5">
       <div className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.22em] text-orange-200/55">
+        <p className="text-xs uppercase tracking-[0.22em] dawn-eyebrow">
           {copy.eyebrow}
         </p>
         <h3 className="text-xl font-semibold leading-tight text-white">
@@ -228,7 +228,7 @@ export function TcasTargetPicker({
             value={universityQuery}
             onChange={(event) => setUniversityQuery(event.target.value)}
             placeholder={copy.universityPlaceholder}
-            className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition focus:border-orange-300/40 focus:bg-white/[0.06]"
+            className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition focus:border-blue-400/40 focus:bg-white/[0.06]"
           />
         </label>
 
@@ -242,7 +242,7 @@ export function TcasTargetPicker({
                 onClick={() => handleUniversitySelect(item)}
                 className={`ei-card rounded-2xl border px-4 py-3 text-left ${
                   selected
-                    ? "border-orange-300/40 bg-orange-400/[0.08]"
+                    ? "border-blue-400/40 bg-blue-500/10"
                     : "border-white/10 bg-white/[0.04]"
                 }`}
               >
@@ -281,7 +281,7 @@ export function TcasTargetPicker({
             onChange={(event) => setProgramQuery(event.target.value)}
             placeholder={copy.programPlaceholder}
             disabled={!data.target_university_id}
-            className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition focus:border-orange-300/40 focus:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition focus:border-blue-400/40 focus:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-50"
           />
         </label>
 
@@ -305,7 +305,7 @@ export function TcasTargetPicker({
                   onClick={() => handleProgramSelect(item)}
                   className={`ei-card rounded-2xl border px-4 py-3 text-left ${
                     selected
-                      ? "border-orange-300/40 bg-orange-400/[0.08]"
+                      ? "border-blue-400/40 bg-blue-500/10"
                       : "border-white/10 bg-white/[0.04]"
                   }`}
                 >
@@ -331,8 +331,8 @@ export function TcasTargetPicker({
       </div>
 
       {selectedSummary ? (
-        <div className="rounded-2xl border border-orange-300/20 bg-orange-400/[0.05] px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-orange-200/70">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] dawn-eyebrow">
             {copy.picked}
           </p>
           <p className="mt-2 text-sm text-white/90">{selectedSummary}</p>
@@ -350,7 +350,7 @@ export function TcasTargetPicker({
         <button
           type="button"
           onClick={onContinue}
-          className="ei-button-dusk justify-center px-5 py-2.5 text-sm font-semibold"
+          className="ei-button-dawn justify-center px-5 py-2.5 text-sm font-semibold"
         >
           {copy.continue}
         </button>
