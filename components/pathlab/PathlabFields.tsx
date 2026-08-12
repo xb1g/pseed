@@ -1,5 +1,9 @@
 import Image from "next/image";
-import { FIELDS, FIELDS_HEADING } from "@/lib/content/pathlab-page";
+import {
+  COMING_SOON_LABEL,
+  FIELDS,
+  FIELDS_HEADING,
+} from "@/lib/content/pathlab-page";
 
 /**
  * "สายที่เปิดในตอนนี้" — the paths currently open.
@@ -17,7 +21,12 @@ export function PathlabFields() {
 
       <ul className="pathlab-fields__grid">
         {FIELDS.map((field) => (
-          <li key={field.src} className="pathlab-fields__item">
+          <li
+            key={field.src}
+            className={`pathlab-fields__item${
+              field.comingSoon ? " is-coming-soon" : ""
+            }`}
+          >
             <div className="pathlab-fields__frame">
               <Image
                 src={field.src}
@@ -25,6 +34,13 @@ export function PathlabFields() {
                 fill
                 sizes="(max-width: 640px) 44vw, (max-width: 1024px) 30vw, 14rem"
               />
+              {/* Real text, not a pseudo-element: the status has to reach
+                  screen readers, not just sighted users. */}
+              {field.comingSoon && (
+                <span className="pathlab-fields__badge">
+                  {COMING_SOON_LABEL}
+                </span>
+              )}
             </div>
             <p className="pathlab-fields__label">{field.label}</p>
           </li>
