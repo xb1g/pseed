@@ -9161,63 +9161,115 @@ summary:focus-visible .radar-expand-indicator {
   color: #c43e1d;
 }
 
+/* Track holds the full travel distance so the arrow never appears clipped.
+   The previous version faded to transparent AND scaled from a top origin,
+   which read as a half-drawn line at rest. */
 .pathlab-scroll-cue__line {
-  width: 2px;
-  height: 2.5rem;
-  background: linear-gradient(to bottom, #c43e1d, rgba(196, 62, 29, 0));
+  position: relative;
+  width: 1px;
+  height: 3.25rem;
+  background: rgba(196, 62, 29, 0.24);
+  overflow: hidden;
+}
+
+/* The travelling head: a short solid segment that runs the track. */
+.pathlab-scroll-cue__line::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 45%;
+  background: #c43e1d;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .pathlab-scroll-cue__line {
-    animation: pathlab-cue 2.4s ease-in-out infinite;
-    transform-origin: top;
+  .pathlab-scroll-cue__line::after {
+    animation: pathlab-cue 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   }
 }
 
 @keyframes pathlab-cue {
-  0%,
-  100% {
-    transform: scaleY(0.55);
-    opacity: 0.5;
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
   }
-  50% {
-    transform: scaleY(1);
+  30% {
     opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(222%);
+    opacity: 0;
   }
 }
 
 /* ── Portfolio ── */
 
+/* Left-aligned rather than centred: the heading anchors to the same edge as
+   the hero copy, so the page reads down one margin instead of alternating. */
 .pathlab-portfolio {
   padding: clamp(3rem, 8vw, 6rem) clamp(1.25rem, 5vw, 4rem)
     clamp(4rem, 10vw, 8rem);
-  max-width: 62rem;
+  max-width: 82rem;
   margin-inline: auto;
 }
 
+/* Athiti carries both Thai and Latin, so "Port" and the Thai run share one
+   face instead of the serif/sans clash of the previous pairing. Thai needs
+   more leading than Latin for its tone marks and upper vowels. */
 .pathlab-portfolio__heading {
-  font-family: var(--font-instrument-serif), Georgia, serif;
-  font-size: clamp(2rem, 5.5vw, 3.5rem);
-  line-height: 1.15;
-  font-weight: 400;
+  font-family: var(--font-athiti), var(--font-noto-sans-thai), sans-serif;
+  font-size: clamp(1.9rem, 5vw, 3.25rem);
+  line-height: 1.35;
+  font-weight: 600;
   color: #c43e1d;
+  text-align: left;
   text-wrap: balance;
 }
 
+/* Two columns on phones, four once there is room. Capped so the cards keep
+   their size instead of stretching across the wider container. */
 .pathlab-portfolio__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* auto rows in frame/caption pairs so items can subgrid onto them */
+  grid-auto-rows: auto auto;
   gap: clamp(1.75rem, 5vw, 3.5rem) clamp(1rem, 4vw, 3rem);
   margin-top: clamp(2rem, 5vw, 3.5rem);
+  max-width: 58rem;
   list-style: none;
   padding: 0;
 }
 
+@media (min-width: 860px) {
+  .pathlab-portfolio__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    max-width: 72rem;
+  }
+}
+
+/* Frames vary in aspect ratio (square logos, portrait photos), so each item is
+   its own row-track pair: the frame row is sized by the tallest frame and the
+   captions all start at the same y. */
 .pathlab-portfolio__item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 2;
+  align-items: start;
   gap: 1rem;
+  justify-items: start;
+}
+
+/* subgrid is widely supported now, but fall back to a flex column where it is
+   not: captions lose their shared baseline, nothing else breaks. */
+@supports not (grid-template-rows: subgrid) {
+  .pathlab-portfolio__item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 /* Visible by default: the reveal only adds a rise. */
@@ -9240,7 +9292,6 @@ summary:focus-visible .radar-expand-indicator {
 .pathlab-portfolio__frame {
   position: relative;
   width: 100%;
-  max-width: 17rem;
   aspect-ratio: 4 / 5;
   overflow: hidden;
   border-radius: 1.25rem;
@@ -9248,18 +9299,20 @@ summary:focus-visible .radar-expand-indicator {
   box-shadow: 0 14px 34px rgba(82, 71, 70, 0.16);
 }
 
-/* Logos sit on a white plate with breathing room; photographs fill the frame. */
+/* Logos sit on a white plate with breathing room; photographs fill the frame.
+   Square so the mark is not cropped, and the row still reads as one line
+   because the captions sit below the frame, not inside it. */
 .pathlab-portfolio__frame--logo {
   aspect-ratio: 1 / 1;
-  max-width: 15rem;
 }
 
 .pathlab-portfolio__caption {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
-  text-align: center;
-  font-size: clamp(0.95rem, 2vw, 1.1rem);
-  line-height: 1.65;
+  text-align: left;
+  font-family: var(--font-athiti), var(--font-noto-sans-thai), sans-serif;
+  font-size: clamp(0.95rem, 2vw, 1.05rem);
+  line-height: 1.7;
   color: #6a5c5a;
 }
