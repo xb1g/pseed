@@ -4,6 +4,7 @@ import type {
   DmConversationWithMessages,
   DmLeadClassification,
   DmLeadStage,
+  DmLeadStatus,
   DmMessageDirection,
   DmMessageSenderType,
   DmPlatform,
@@ -159,6 +160,12 @@ export interface DmLeadFilters {
   sort?: "newest" | "waiting";
   /** Only conversations where we already sent a /pathlab link (outbound). */
   pathlabLinkSent?: boolean;
+  starredOnly?: boolean;
+  /** Only conversations whose follow-up time has arrived (or passed). */
+  followUpDue?: boolean;
+  leadStatus?: DmLeadStatus;
+  /** Exact match on an admin tag. */
+  tag?: string;
 }
 
 const INTENT_COLUMN: Record<DmLeadIntentFilter, string> = {
@@ -183,6 +190,8 @@ function applyDmLeadFilters<T>(
     eq: (col: string, val: unknown) => typeof q;
     is: (col: string, val: unknown) => typeof q;
     or: (expr: string) => typeof q;
+    lte: (col: string, val: unknown) => typeof q;
+    contains: (col: string, val: unknown) => typeof q;
   };
 
   if (filters.stage && !skipStage) q = q.eq("stage", filters.stage);
@@ -192,12 +201,41 @@ function applyDmLeadFilters<T>(
   if (filters.platform) q = q.eq("platform", filters.platform);
   if (filters.intent) q = q.eq(INTENT_COLUMN[filters.intent], true);
   if (filters.myTurnOnly) q = q.eq("last_message_direction", "inbound");
+  if (filters.starredOnly) q = q.eq("starred", true);
+  if (filters.followUpDue) q = q.lte("follow_up_at", new Date().toISOString());
+  if (filters.leadStatus) q = q.eq("lead_status", filters.leadStatus);
+  if (filters.tag) q = q.contains("admin_tags", [filters.tag]);
   if (filters.search) {
     const term = escapeIlike(filters.search);
     if (term) q = q.or(`username.ilike.%${term}%,display_name.ilike.%${term}%`);
   }
 
   return q as unknown as T;
+}
+
+/**
+ * Admin-managed inbox fields. Partial patch — only provided keys change.
+ */
+export async function updateLeadMeta(
+  conversationId: string,
+  patch: Partial<{
+    starred: boolean;
+    follow_up_at: string | null;
+    lead_status: DmLeadStatus;
+    admin_tags: string[];
+  }>
+): Promise<void> {
+  const supabase = createAdminClient();
+
+  const { error } = await supabase
+    .from("dm_conversations")
+    .update(patch)
+    .eq("id", conversationId);
+
+  if (error) {
+    console.error("Error updating dm_conversation meta:", error);
+    throw new Error("Failed to update conversation");
+  }
 }
 
 /**
@@ -255,6 +293,12 @@ export interface DmLeadFacets {
   payReady: number;
   /** Conversations we already sent a /pathlab link to. */
   pathlabSent: number;
+  starred: number;
+  /** Follow-up time arrived (or passed). */
+  followUpDue: number;
+  leadStatusCounts: Record<DmLeadStatus, number>;
+  /** Distinct admin tags in the filtered set, with counts — filter options. */
+  tagCounts: Record<string, number>;
 }
 
 const EMPTY_FACETS: DmLeadFacets = {
@@ -263,6 +307,10 @@ const EMPTY_FACETS: DmLeadFacets = {
   needsReply: 0,
   payReady: 0,
   pathlabSent: 0,
+  starred: 0,
+  followUpDue: 0,
+  leadStatusCounts: { new: 0, contacted: 0, qualified: 0, converted: 0, lost: 0, spam: 0 },
+  tagCounts: {},
 };
 
 export async function getDmLeadFacets(filters: DmLeadFilters = {}): Promise<DmLeadFacets> {
@@ -272,7 +320,9 @@ export async function getDmLeadFacets(filters: DmLeadFilters = {}): Promise<DmLe
 
   let query = supabase
     .from("dm_conversations")
-    .select("id, stage, last_message_direction, pathlab_pay_ready");
+    .select(
+      "id, stage, last_message_direction, pathlab_pay_ready, starred, follow_up_at, lead_status, admin_tags"
+    );
   query = applyDmLeadFilters(query, filters, { skipStage: true });
   if (filters.pathlabLinkSent) {
     if (pathlabIds.size === 0) return EMPTY_FACETS;
@@ -287,24 +337,54 @@ export async function getDmLeadFacets(filters: DmLeadFilters = {}): Promise<DmLe
   }
 
   const rows = data ?? [];
+  const now = Date.now();
   const stageCounts: Record<DmLeadStage, number> = {
     unknown: 0,
     exploring: 0,
     building: 0,
     job_seeking: 0,
   };
+  const leadStatusCounts: Record<DmLeadStatus, number> = {
+    new: 0,
+    contacted: 0,
+    qualified: 0,
+    converted: 0,
+    lost: 0,
+    spam: 0,
+  };
+  const tagCounts: Record<string, number> = {};
   let needsReply = 0;
   let payReady = 0;
   let pathlabSent = 0;
+  let starred = 0;
+  let followUpDue = 0;
 
   for (const row of rows) {
     if (row.stage in stageCounts) stageCounts[row.stage as DmLeadStage] += 1;
+    if (row.lead_status in leadStatusCounts) {
+      leadStatusCounts[row.lead_status as DmLeadStatus] += 1;
+    }
     if (row.last_message_direction === "inbound") needsReply += 1;
     if (row.pathlab_pay_ready) payReady += 1;
     if (pathlabIds.has(row.id)) pathlabSent += 1;
+    if (row.starred) starred += 1;
+    if (row.follow_up_at && new Date(row.follow_up_at).getTime() <= now) followUpDue += 1;
+    for (const tag of row.admin_tags ?? []) {
+      tagCounts[tag] = (tagCounts[tag] ?? 0) + 1;
+    }
   }
 
-  return { stageCounts, total: rows.length, needsReply, payReady, pathlabSent };
+  return {
+    stageCounts,
+    total: rows.length,
+    needsReply,
+    payReady,
+    pathlabSent,
+    starred,
+    followUpDue,
+    leadStatusCounts,
+    tagCounts,
+  };
 }
 
 export async function getConversationWithMessages(

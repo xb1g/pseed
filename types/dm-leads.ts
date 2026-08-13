@@ -2,6 +2,15 @@ export type DmPlatform = "instagram" | "facebook";
 
 export type DmLeadStage = "unknown" | "exploring" | "building" | "job_seeking";
 
+/** Admin-managed pipeline status — distinct from the auto-classified stage. */
+export type DmLeadStatus =
+  | "new"
+  | "contacted"
+  | "qualified"
+  | "converted"
+  | "lost"
+  | "spam";
+
 export type DmMessageDirection = "inbound" | "outbound";
 
 export type DmMessageSenderType = "lead" | "admin" | "ai_draft";
@@ -26,6 +35,10 @@ export interface DmConversation {
   classified_at: string | null;
   last_message_at: string;
   last_message_direction: DmMessageDirection | null;
+  starred: boolean;
+  admin_tags: string[];
+  follow_up_at: string | null;
+  lead_status: DmLeadStatus;
   created_at: string;
   updated_at: string;
 }

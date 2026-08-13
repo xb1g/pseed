@@ -1,13 +1,5 @@
 import Link from "next/link";
 import { Flame, Inbox, MessageSquareWarning } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import {
   getConversationsForAdmin,
@@ -15,7 +7,7 @@ import {
   type DmLeadFilters,
   type DmLeadIntentFilter,
 } from "@/lib/supabase/dm-leads";
-import { DmLeadRow } from "@/components/admin/DmLeadRow";
+import { DmLeadsInbox } from "@/components/admin/DmLeadsInbox";
 import { DmLeadFilters as DmLeadFilterBar } from "@/components/admin/DmLeadFilters";
 import { RefreshButton } from "@/components/admin/RefreshButton";
 import type { DmLeadStage, DmPlatform } from "@/types/dm-leads";
@@ -38,7 +30,13 @@ interface RawParams {
   sort?: string;
   search?: string;
   link?: string;
+  star?: string;
+  followup?: string;
+  status?: string;
+  tag?: string;
 }
+
+const LEAD_STATUSES = ["new", "contacted", "qualified", "converted", "lost", "spam"] as const;
 
 function parseFilters(raw: RawParams): DmLeadFilters {
   return {
@@ -53,6 +51,10 @@ function parseFilters(raw: RawParams): DmLeadFilters {
     search: raw.search?.trim() || undefined,
     sort: raw.sort === "waiting" ? "waiting" : "newest",
     pathlabLinkSent: raw.link === "pathlab",
+    starredOnly: raw.star === "1",
+    followUpDue: raw.followup === "due",
+    leadStatus: LEAD_STATUSES.find((s) => s === raw.status),
+    tag: raw.tag && raw.tag !== "all" ? raw.tag : undefined,
   };
 }
 
@@ -83,6 +85,8 @@ export default async function DmLeadsPage({
   const activeStage = raw.stage && raw.stage !== "all" ? raw.stage : "all";
   const myTurnOnly = raw.turn === "mine";
   const pathlabSentOnly = raw.link === "pathlab";
+  const starredOnly = raw.star === "1";
+  const followUpDueOnly = raw.followup === "due";
 
   return (
     <div className="space-y-6">
@@ -96,43 +100,26 @@ export default async function DmLeadsPage({
         <RefreshButton />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Card>
-          <CardContent className="flex items-center gap-3 py-4">
-            <Inbox className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <p className="text-2xl font-semibold leading-none">{facets.total}</p>
-              <p className="mt-1 text-xs text-muted-foreground">Leads ทั้งหมด</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className={cn(facets.needsReply > 0 && "border-amber-300 dark:border-amber-800")}>
-          <CardContent className="flex items-center gap-3 py-4">
-            <MessageSquareWarning className="h-5 w-5 text-amber-500" />
-            <div>
-              <p className="text-2xl font-semibold leading-none">{facets.needsReply}</p>
-              <p className="mt-1 text-xs text-muted-foreground">รอเราตอบ</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className={cn(facets.payReady > 0 && "border-red-300 dark:border-red-800")}>
-          <CardContent className="flex items-center gap-3 py-4">
-            <Flame className="h-5 w-5 text-red-500" />
-            <div>
-              <p className="text-2xl font-semibold leading-none">{facets.payReady}</p>
-              <p className="mt-1 text-xs text-muted-foreground">พร้อมสมัคร (Hot)</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-3 py-4">
-            <Inbox className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <p className="text-2xl font-semibold leading-none">{conversations.length}</p>
-              <p className="mt-1 text-xs text-muted-foreground">ตามตัวกรองนี้</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <Inbox className="h-4 w-4" /> ทั้งหมด{" "}
+          <b className="text-foreground">{facets.total}</b>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <MessageSquareWarning className="h-4 w-4 text-amber-500" /> รอเราตอบ{" "}
+          <b className={cn(facets.needsReply > 0 && "text-amber-600 dark:text-amber-400")}>
+            {facets.needsReply}
+          </b>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <Flame className="h-4 w-4 text-red-500" /> พร้อมสมัคร{" "}
+          <b className={cn(facets.payReady > 0 && "text-red-600 dark:text-red-400")}>
+            {facets.payReady}
+          </b>
+        </span>
+        <span>
+          ตามตัวกรองนี้ <b className="text-foreground">{conversations.length}</b>
+        </span>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -182,6 +169,30 @@ export default async function DmLeadsPage({
           {pathlabSentOnly ? "✓ " : ""}📨 ส่งลิงก์ PathLab แล้ว
           <span className="ml-1.5 text-xs opacity-70">{facets.pathlabSent}</span>
         </Link>
+        <Link
+          href={buildHref(raw, { star: starredOnly ? undefined : "1" })}
+          className={cn(
+            "rounded-full border px-3 py-1 text-sm transition-colors",
+            starredOnly
+              ? "border-amber-400 bg-amber-400 text-white"
+              : "text-muted-foreground hover:border-amber-400 hover:text-amber-500"
+          )}
+        >
+          {starredOnly ? "✓ " : ""}⭐ ติดดาว
+          <span className="ml-1.5 text-xs opacity-70">{facets.starred}</span>
+        </Link>
+        <Link
+          href={buildHref(raw, { followup: followUpDueOnly ? undefined : "due" })}
+          className={cn(
+            "rounded-full border px-3 py-1 text-sm transition-colors",
+            followUpDueOnly
+              ? "border-red-500 bg-red-500 text-white"
+              : "text-muted-foreground hover:border-red-400 hover:text-red-600"
+          )}
+        >
+          {followUpDueOnly ? "✓ " : ""}⏰ ถึงกำหนดติดตาม
+          <span className="ml-1.5 text-xs opacity-70">{facets.followUpDue}</span>
+        </Link>
       </div>
 
       <DmLeadFilterBar
@@ -191,36 +202,14 @@ export default async function DmLeadsPage({
           platform: raw.platform ?? "all",
           sort: raw.sort === "waiting" ? "waiting" : "newest",
           search: raw.search ?? "",
+          status: raw.status ?? "all",
+          tag: raw.tag ?? "all",
         }}
+        statusCounts={facets.leadStatusCounts}
+        tagCounts={facets.tagCounts}
       />
 
-      <Card>
-        <CardContent className="pt-6">
-          {conversations.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              ไม่พบ lead ที่ตรงกับตัวกรองนี้
-            </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Lead</TableHead>
-                  <TableHead>Platform</TableHead>
-                  <TableHead>Grade</TableHead>
-                  <TableHead>Stage</TableHead>
-                  <TableHead>Tags</TableHead>
-                  <TableHead>Last message</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {conversations.map((c) => (
-                  <DmLeadRow key={c.id} conversation={c} />
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <DmLeadsInbox conversations={conversations} />
     </div>
   );
 }

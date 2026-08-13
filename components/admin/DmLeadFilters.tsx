@@ -19,7 +19,20 @@ export interface DmLeadFilterValues {
   platform: string;
   sort: string;
   search: string;
+  status: string;
+  tag: string;
 }
+
+const STATUS_OPTIONS = [
+  { value: "new", label: "New" },
+  { value: "contacted", label: "Contacted" },
+  { value: "qualified", label: "Qualified" },
+  { value: "converted", label: "Converted" },
+  { value: "lost", label: "Lost" },
+  { value: "spam", label: "Spam" },
+];
+
+export const DM_LEAD_SEARCH_INPUT_ID = "dm-lead-search";
 
 const GRADE_OPTIONS = [
   { value: "ม.3", label: "ม.3" },
@@ -48,11 +61,19 @@ const SORT_OPTIONS = [
   { value: "waiting", label: "ค้างตอบนานสุด" },
 ];
 
+interface DmLeadFiltersProps {
+  values: DmLeadFilterValues;
+  /** Live counts per lead status, shown inside the status options. */
+  statusCounts?: Record<string, number>;
+  /** Distinct admin tags in the current set, with counts — tag options. */
+  tagCounts?: Record<string, number>;
+}
+
 /**
  * Search + dropdown filters for the DM leads inbox. Writes every change to
  * the URL so the server component re-queries and filters stay shareable.
  */
-export function DmLeadFilters({ values }: { values: DmLeadFilterValues }) {
+export function DmLeadFilters({ values, statusCounts, tagCounts }: DmLeadFiltersProps) {
   const router = useRouter();
   const [search, setSearch] = useState(values.search);
   const isFirstRender = useRef(true);
@@ -86,12 +107,15 @@ export function DmLeadFilters({ values }: { values: DmLeadFilterValues }) {
     values.intent !== "all" ||
     values.platform !== "all" ||
     values.sort !== "newest" ||
-    values.search !== "";
+    values.search !== "" ||
+    values.status !== "all" ||
+    values.tag !== "all";
 
   const clearAll = () => {
     setSearch("");
     const params = new URLSearchParams(window.location.search);
-    for (const key of ["grade", "intent", "platform", "sort", "search"]) params.delete(key);
+    for (const key of ["grade", "intent", "platform", "sort", "search", "status", "tag"])
+      params.delete(key);
     const qs = params.toString();
     router.push(qs ? `/admin/dm-leads?${qs}` : "/admin/dm-leads");
   };
@@ -101,9 +125,10 @@ export function DmLeadFilters({ values }: { values: DmLeadFilterValues }) {
       <div className="relative">
         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
+          id={DM_LEAD_SEARCH_INPUT_ID}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="ค้นหาชื่อ / username…"
+          placeholder="ค้นหาชื่อ / username…  ( / )"
           className="w-56 pl-8"
         />
       </div>
@@ -149,6 +174,39 @@ export function DmLeadFilters({ values }: { values: DmLeadFilterValues }) {
           ))}
         </SelectContent>
       </Select>
+
+      <Select value={values.status} onValueChange={(v) => pushParams({ status: v })}>
+        <SelectTrigger className="w-36">
+          <SelectValue placeholder="สถานะ" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">ทุกสถานะ</SelectItem>
+          {STATUS_OPTIONS.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+              {statusCounts?.[o.value] ? ` (${statusCounts[o.value]})` : ""}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {tagCounts && Object.keys(tagCounts).length > 0 && (
+        <Select value={values.tag} onValueChange={(v) => pushParams({ tag: v })}>
+          <SelectTrigger className="w-36">
+            <SelectValue placeholder="แท็ก" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">ทุกแท็ก</SelectItem>
+            {Object.entries(tagCounts)
+              .sort((a, b) => b[1] - a[1])
+              .map(([tag, count]) => (
+                <SelectItem key={tag} value={tag}>
+                  {tag} ({count})
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+      )}
 
       <Select value={values.sort} onValueChange={(v) => pushParams({ sort: v })}>
         <SelectTrigger className="w-40">

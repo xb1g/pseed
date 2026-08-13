@@ -1,0 +1,463 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Bell, Flame, Inbox, Keyboard, Star } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { contextFromConversation, getQuickReplies } from "@/lib/dm-leads/quick-replies";
+import { updateLead, type LeadMetaPatch } from "@/app/admin/dm-leads/actions";
+import { DmLeadDetailPane } from "@/components/admin/DmLeadDetailPane";
+import { DM_REPLY_TEXTAREA_ID } from "@/components/admin/DmLeadReplyForm";
+import { DM_LEAD_SEARCH_INPUT_ID } from "@/components/admin/DmLeadFilters";
+import {
+  followUpTomorrow,
+  isFollowUpDue,
+} from "@/components/admin/DmLeadManageBar";
+import type { DmConversation, DmLeadStage } from "@/types/dm-leads";
+
+const STAGE_LABEL: Record<DmLeadStage, string> = {
+  unknown: "Unknown",
+  exploring: "Exploring",
+  building: "Building",
+  job_seeking: "Job seeking",
+};
+
+const STAGE_VARIANT: Record<DmLeadStage, "secondary" | "default" | "outline"> = {
+  unknown: "outline",
+  exploring: "secondary",
+  building: "default",
+  job_seeking: "default",
+};
+
+function timeAgo(iso: string): string {
+  const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (seconds < 60) return "now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+  return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+}
+
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return (
+    target.tagName === "INPUT" ||
+    target.tagName === "TEXTAREA" ||
+    target.tagName === "SELECT" ||
+    target.isContentEditable
+  );
+}
+
+function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px]">{children}</kbd>
+  );
+}
+
+/**
+ * Split-pane DM inbox optimized for big-screen, keyboard-first triage:
+ *   j/k or ↑/↓  move between leads
+ *   Enter       jump into the reply box
+ *   1–4         insert a quick-reply suggestion
+ *   ⌘/Ctrl+↵    send (then auto-advance to the next lead)
+ *   o           open the lead's full page
+ *   /           focus search
+ *   Esc         leave the input you're typing in
+ */
+const VIM_MODE_STORAGE_KEY = "dm-leads-vim-mode";
+const HALF_PAGE = 5;
+
+export function DmLeadsInbox({ conversations }: { conversations: DmConversation[] }) {
+  const router = useRouter();
+  const [items, setItems] = useState(conversations);
+  const [selectedId, setSelectedId] = useState<string | null>(conversations[0]?.id ?? null);
+  const [replyBody, setReplyBody] = useState("");
+  const [vimMode, setVimModeState] = useState(false);
+  const [editorMode, setEditorMode] = useState<"normal" | "insert">("normal");
+  const pendingG = useRef(false);
+
+  // Persist the vim-mode preference across sessions. Loaded after mount to
+  // avoid a server/client hydration mismatch.
+  useEffect(() => {
+    if (localStorage.getItem(VIM_MODE_STORAGE_KEY) === "1") setVimModeState(true);
+  }, []);
+
+  const setVimMode = (on: boolean) => {
+    setVimModeState(on);
+    localStorage.setItem(VIM_MODE_STORAGE_KEY, on ? "1" : "0");
+  };
+
+  // Track NORMAL/INSERT from focus so the mode line reflects reality.
+  useEffect(() => {
+    if (!vimMode) return;
+    const onFocusIn = (e: FocusEvent) =>
+      setEditorMode(isTypingTarget(e.target) ? "insert" : "normal");
+    const onFocusOut = () => setEditorMode("normal");
+    window.addEventListener("focusin", onFocusIn);
+    window.addEventListener("focusout", onFocusOut);
+    return () => {
+      window.removeEventListener("focusin", onFocusIn);
+      window.removeEventListener("focusout", onFocusOut);
+    };
+  }, [vimMode]);
+
+  // Re-sync when the server revalidates (e.g. after a reply is sent).
+  useEffect(() => setItems(conversations), [conversations]);
+
+  const selectedIndex = items.findIndex((c) => c.id === selectedId);
+  const selected = selectedIndex >= 0 ? items[selectedIndex] : (items[0] ?? null);
+
+  // Fresh reply box per conversation.
+  useEffect(() => setReplyBody(""), [selected?.id]);
+
+  const suggestions = useMemo(
+    () => (selected ? getQuickReplies(contextFromConversation(selected)) : []),
+    [selected]
+  );
+
+  const selectByIndex = (index: number) => {
+    if (items.length === 0) return;
+    const clamped = Math.max(0, Math.min(items.length - 1, index));
+    setSelectedId(items[clamped].id);
+  };
+
+  // Keep the selected row visible while keyboard-navigating.
+  useEffect(() => {
+    if (!selected) return;
+    document
+      .getElementById(`dm-lead-item-${selected.id}`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [selected]);
+
+  useEffect(() => {
+    const focusReply = () => document.getElementById(DM_REPLY_TEXTAREA_ID)?.focus();
+
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isTypingTarget(e.target)) {
+        (e.target as HTMLElement).blur();
+        return;
+      }
+      if (isTypingTarget(e.target)) return;
+
+      // Vim half-page jumps — must run before the modifier bail-out.
+      if (vimMode && e.ctrlKey && (e.key === "d" || e.key === "u")) {
+        e.preventDefault();
+        selectByIndex(selectedIndex + (e.key === "d" ? HALF_PAGE : -HALF_PAGE));
+        return;
+      }
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      // Bindings available in both modes.
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          selectByIndex(selectedIndex + 1);
+          return;
+        case "ArrowUp":
+          e.preventDefault();
+          selectByIndex(selectedIndex - 1);
+          return;
+        case "Enter":
+          e.preventDefault();
+          focusReply();
+          return;
+        case "1":
+        case "2":
+        case "3":
+        case "4": {
+          const suggestion = suggestions[Number(e.key) - 1];
+          if (suggestion) {
+            e.preventDefault();
+            setReplyBody(suggestion.body);
+            focusReply();
+          }
+          return;
+        }
+        case "o":
+          if (selected) router.push(`/admin/dm-leads/${selected.id}`);
+          return;
+        case "/":
+          e.preventDefault();
+          document.getElementById(DM_LEAD_SEARCH_INPUT_ID)?.focus();
+          return;
+      }
+
+      if (!vimMode) return;
+
+      // Vim-mode bindings.
+      switch (e.key) {
+        case "j":
+          e.preventDefault();
+          selectByIndex(selectedIndex + 1);
+          break;
+        case "k":
+          e.preventDefault();
+          selectByIndex(selectedIndex - 1);
+          break;
+        case "i":
+          e.preventDefault();
+          focusReply();
+          break;
+        case "s":
+          e.preventDefault();
+          if (selected) applyMeta({ starred: !selected.starred });
+          break;
+        case "f":
+          e.preventDefault();
+          if (selected) {
+            applyMeta({ follow_up_at: selected.follow_up_at ? null : followUpTomorrow() });
+          }
+          break;
+        case "G":
+          e.preventDefault();
+          selectByIndex(items.length - 1);
+          break;
+        case "g":
+          e.preventDefault();
+          if (pendingG.current) {
+            pendingG.current = false;
+            selectByIndex(0);
+          } else {
+            pendingG.current = true;
+            setTimeout(() => {
+              pendingG.current = false;
+            }, 500);
+          }
+          break;
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vimMode, items, selectedIndex, selected, suggestions, router]);
+
+  const handleSelect = (conversation: DmConversation) => {
+    // Below lg the detail pane is hidden — go to the full page instead.
+    if (window.matchMedia("(min-width: 1024px)").matches) {
+      setSelectedId(conversation.id);
+    } else {
+      router.push(`/admin/dm-leads/${conversation.id}`);
+    }
+  };
+
+  // Superhuman-style: send → mark replied locally → advance to the next lead.
+  const handleSent = () => {
+    if (!selected) return;
+    setItems((prev) =>
+      prev.map((c) =>
+        c.id === selected.id ? { ...c, last_message_direction: "outbound" as const } : c
+      )
+    );
+    const next = items[selectedIndex + 1] ?? items[selectedIndex - 1];
+    if (next && next.id !== selected.id) setSelectedId(next.id);
+  };
+
+  /** Optimistic local sync for manage-bar patches (star, status, tags, …). */
+  const syncMeta = (patch: LeadMetaPatch) => {
+    if (!selected) return;
+    setItems((prev) => prev.map((c) => (c.id === selected.id ? { ...c, ...patch } : c)));
+  };
+
+  /** Keyboard path: sync locally AND persist (the bar persists its own). */
+  const applyMeta = (patch: LeadMetaPatch) => {
+    if (!selected) return;
+    syncMeta(patch);
+    updateLead(selected.id, patch).then((r) => {
+      if (!r.ok) router.refresh();
+    });
+  };
+
+  if (items.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-2 rounded-lg border py-16 text-muted-foreground">
+        <Inbox className="h-8 w-8" />
+        <p className="text-sm">ไม่พบ lead ที่ตรงกับตัวกรองนี้</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="grid gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
+        <div className="overflow-hidden rounded-lg border">
+          <div className="flex items-center justify-between border-b bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+            <span>
+              {selectedIndex + 1} / {items.length}
+            </span>
+            <button
+              type="button"
+              onClick={() => setVimMode(!vimMode)}
+              title="Toggle vim mode"
+              className={cn(
+                "flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[10px] font-semibold transition-colors",
+                vimMode
+                  ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                  : "hover:text-foreground"
+              )}
+            >
+              <Keyboard className="h-3 w-3" />
+              VIM {vimMode ? "ON" : "OFF"}
+            </button>
+          </div>
+          <div className="divide-y lg:h-[calc(100vh-16.5rem)] lg:overflow-y-auto">
+            {items.map((c) => {
+              const isSelected = c.id === selected?.id;
+              const myTurn = c.last_message_direction === "inbound";
+              return (
+                <button
+                  key={c.id}
+                  id={`dm-lead-item-${c.id}`}
+                  type="button"
+                  onClick={() => handleSelect(c)}
+                  className={cn(
+                    "w-full px-3 py-2.5 text-left transition-colors",
+                    isSelected
+                      ? "bg-accent ring-2 ring-inset ring-foreground/20"
+                      : "hover:bg-muted/60",
+                    c.pathlab_pay_ready && !isSelected && "bg-red-50/60 dark:bg-red-950/10"
+                  )}
+                >
+                  <div className="flex items-center gap-1.5">
+                    {c.starred && (
+                      <Star
+                        className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400"
+                        aria-label="Starred"
+                      />
+                    )}
+                    {c.pathlab_pay_ready && (
+                      <Flame className="h-3.5 w-3.5 shrink-0 text-red-500" aria-label="Hot lead" />
+                    )}
+                    {myTurn && (
+                      <span
+                        className="h-2 w-2 shrink-0 rounded-full bg-amber-500"
+                        title="Your turn to reply"
+                      />
+                    )}
+                    <span className="truncate text-sm font-medium">
+                      {c.display_name || c.username || c.platform_user_id}
+                    </span>
+                    {c.follow_up_at && (
+                      <Bell
+                        className={cn(
+                          "h-3 w-3 shrink-0",
+                          isFollowUpDue(c.follow_up_at)
+                            ? "text-red-500"
+                            : "text-muted-foreground"
+                        )}
+                        aria-label={
+                          isFollowUpDue(c.follow_up_at) ? "Follow-up due" : "Follow-up set"
+                        }
+                      />
+                    )}
+                    <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                      {timeAgo(c.last_message_at)}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Badge variant={STAGE_VARIANT[c.stage]} className="px-1.5 py-0 text-[10px]">
+                      {STAGE_LABEL[c.stage]}
+                    </Badge>
+                    {c.lead_status !== "new" && (
+                      <Badge
+                        variant={c.lead_status === "converted" ? "default" : "outline"}
+                        className="px-1.5 py-0 text-[10px] capitalize"
+                      >
+                        {c.lead_status}
+                      </Badge>
+                    )}
+                    {c.grade_level && <span className="shrink-0">{c.grade_level}</span>}
+                    <span className="shrink-0">{c.platform === "instagram" ? "IG" : "FB"}</span>
+                    {c.interests[0] && (
+                      <span className="truncate">· {c.interests[0]}</span>
+                    )}
+                    {c.admin_tags[0] && (
+                      <span className="shrink-0 rounded bg-muted px-1 text-[10px]">
+                        {c.admin_tags[0]}
+                        {c.admin_tags.length > 1 ? ` +${c.admin_tags.length - 1}` : ""}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="hidden lg:block">
+          {selected && (
+            <DmLeadDetailPane
+              conversation={selected}
+              body={replyBody}
+              onBodyChange={setReplyBody}
+              onSent={handleSent}
+              onMetaChange={syncMeta}
+            />
+          )}
+        </div>
+      </div>
+
+      <div className="hidden items-center gap-3 text-xs text-muted-foreground lg:flex">
+        {vimMode && (
+          <span
+            className={cn(
+              "rounded px-1.5 py-0.5 font-mono text-[10px] font-bold text-white",
+              editorMode === "insert" ? "bg-amber-500" : "bg-emerald-600"
+            )}
+          >
+            {editorMode === "insert" ? "INSERT" : "NORMAL"}
+          </span>
+        )}
+        {vimMode ? (
+          <>
+            <span className="flex items-center gap-1">
+              <Kbd>j</Kbd>/<Kbd>k</Kbd> เลือก lead
+            </span>
+            <span className="flex items-center gap-1">
+              <Kbd>gg</Kbd>/<Kbd>G</Kbd> แรก/สุดท้าย
+            </span>
+            <span className="flex items-center gap-1">
+              <Kbd>^d</Kbd>/<Kbd>^u</Kbd> ±{HALF_PAGE}
+            </span>
+            <span className="flex items-center gap-1">
+              <Kbd>i</Kbd> ไปที่ช่องตอบ
+            </span>
+            <span className="flex items-center gap-1">
+              <Kbd>s</Kbd> ติดดาว
+            </span>
+            <span className="flex items-center gap-1">
+              <Kbd>f</Kbd> ติดตามพรุ่งนี้/ยกเลิก
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="flex items-center gap-1">
+              <Kbd>↑</Kbd>/<Kbd>↓</Kbd> เลือก lead
+            </span>
+            <span className="flex items-center gap-1">
+              <Kbd>Enter</Kbd> ไปที่ช่องตอบ
+            </span>
+          </>
+        )}
+        <span className="flex items-center gap-1">
+          <Kbd>1</Kbd>–<Kbd>4</Kbd> แทรก quick reply
+        </span>
+        <span className="flex items-center gap-1">
+          <Kbd>⌘↵</Kbd> ส่งแล้วไป lead ถัดไป
+        </span>
+        <span className="flex items-center gap-1">
+          <Kbd>o</Kbd> เปิดหน้าเต็ม
+        </span>
+        <span className="flex items-center gap-1">
+          <Kbd>/</Kbd> ค้นหา
+        </span>
+        <span className="flex items-center gap-1">
+          <Kbd>Esc</Kbd> {vimMode ? "normal mode" : "ออกจากช่องพิมพ์"}
+        </span>
+      </div>
+    </div>
+  );
+}
