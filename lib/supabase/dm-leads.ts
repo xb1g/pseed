@@ -1,14 +1,42 @@
 import { createAdminClient } from "@/utils/supabase/admin";
+import {
+  classifyBucket,
+  getFieldCoverage,
+  type DmLeadBucket,
+  type DmLeadSignals,
+  type FunnelScoreboard,
+} from "@/lib/dm-leads/playbook";
+import {
+  reduceMessagesToSignals,
+  signalsFor,
+  type DmMessageSignalRow,
+} from "@/lib/dm-leads/signals";
 import type {
   DmConversation,
+  DmConversationWithBucket,
   DmConversationWithMessages,
   DmLeadClassification,
   DmLeadStage,
   DmLeadStatus,
   DmMessageDirection,
+  DmMessageSendStatus,
   DmMessageSenderType,
+  DmMessageType,
   DmPlatform,
 } from "@/types/dm-leads";
+
+export interface InboundMessageWriteResult {
+  conversation: DmConversation;
+  messageId: string;
+  outcome: "created" | "duplicate";
+}
+
+export interface InboundAttachmentInput {
+  type: string;
+  url: string | null;
+  title: string | null;
+  payload: Record<string, unknown>;
+}
 
 /**
  * Upserts the conversation for an inbound DM and appends the message.
@@ -23,9 +51,67 @@ export async function recordInboundMessage(params: {
   displayName?: string | null;
   body: string;
   platformMessageId?: string | null;
+  messageType?: DmMessageType;
+  metadata?: Record<string, unknown>;
+  attachments?: InboundAttachmentInput[];
   sentAt: string;
-}): Promise<DmConversation> {
+}): Promise<InboundMessageWriteResult> {
   const supabase = createAdminClient();
+
+  const ensureAttachments = async (messageId: string): Promise<void> => {
+    const attachments = params.attachments ?? [];
+    if (attachments.length === 0) return;
+
+    const { error } = await supabase.from("dm_message_attachments").upsert(
+      attachments.map((attachment, position) => ({
+        message_id: messageId,
+        attachment_type: attachment.type,
+        position,
+        source_url: attachment.url,
+        title: attachment.title,
+        payload: attachment.payload,
+      })),
+      { onConflict: "message_id,position" }
+    );
+    if (error) {
+      console.error("Error persisting dm_message attachments:", error);
+      throw new Error("Failed to record message attachments");
+    }
+  };
+
+  const loadExisting = async (): Promise<InboundMessageWriteResult | null> => {
+    if (!params.platformMessageId) return null;
+    const { data: existing, error: existingError } = await supabase
+      .from("dm_messages")
+      .select("id, conversation_id")
+      .eq("platform_message_id", params.platformMessageId)
+      .maybeSingle();
+
+    if (existingError) {
+      console.error("Error checking existing inbound dm_message:", existingError);
+      throw new Error("Failed to deduplicate inbound message");
+    }
+    if (!existing) return null;
+
+    const { data: existingConversation, error: existingConversationError } = await supabase
+      .from("dm_conversations")
+      .select("*")
+      .eq("id", existing.conversation_id)
+      .single();
+    if (existingConversationError || !existingConversation) {
+      console.error("Error loading deduplicated dm_conversation:", existingConversationError);
+      throw new Error("Failed to load deduplicated conversation");
+    }
+    await ensureAttachments(existing.id);
+    return {
+      conversation: existingConversation,
+      messageId: existing.id,
+      outcome: "duplicate",
+    };
+  };
+
+  const existing = await loadExisting();
+  if (existing) return existing;
 
   const { data: conversation, error: conversationError } = await supabase
     .from("dm_conversations")
@@ -34,8 +120,8 @@ export async function recordInboundMessage(params: {
         platform: params.platform,
         platform_thread_id: params.platformThreadId,
         platform_user_id: params.platformUserId,
-        username: params.username ?? null,
-        display_name: params.displayName ?? null,
+        ...(params.username !== undefined ? { username: params.username } : {}),
+        ...(params.displayName !== undefined ? { display_name: params.displayName } : {}),
         last_message_at: params.sentAt,
         last_message_direction: "inbound",
       },
@@ -49,21 +135,43 @@ export async function recordInboundMessage(params: {
     throw new Error("Failed to record conversation");
   }
 
-  const { error: messageError } = await supabase.from("dm_messages").insert({
-    conversation_id: conversation.id,
-    direction: "inbound" as DmMessageDirection,
-    sender_type: "lead" as DmMessageSenderType,
-    body: params.body,
-    platform_message_id: params.platformMessageId ?? null,
-    sent_at: params.sentAt,
-  });
+  const { data: message, error: messageError } = await supabase
+    .from("dm_messages")
+    .insert({
+      conversation_id: conversation.id,
+      direction: "inbound" as DmMessageDirection,
+      sender_type: "lead" as DmMessageSenderType,
+      body: params.body,
+      platform_message_id: params.platformMessageId ?? null,
+      message_type: params.messageType ?? "text",
+      metadata: params.metadata ?? {},
+      sent_at: params.sentAt,
+    })
+    .select("id")
+    .single();
 
   if (messageError) {
+    if (messageError.code === "23505") {
+      const racedExisting = await loadExisting();
+      if (racedExisting) return racedExisting;
+    }
     console.error("Error inserting inbound dm_message:", messageError);
     throw new Error("Failed to record message");
   }
 
-  return conversation;
+  await ensureAttachments(message.id);
+
+  const { error: reactionLinkError } = await supabase
+    .from("dm_message_reactions")
+    .update({ message_id: message.id, updated_at: new Date().toISOString() })
+    .eq("target_platform_message_id", params.platformMessageId ?? "")
+    .is("message_id", null);
+  if (reactionLinkError) {
+    console.error("Error linking earlier dm_message reactions:", reactionLinkError);
+    throw new Error("Failed to link message reactions");
+  }
+
+  return { conversation, messageId: message.id, outcome: "created" };
 }
 
 /**
@@ -166,6 +274,11 @@ export interface DmLeadFilters {
   leadStatus?: DmLeadStatus;
   /** Exact match on an admin tag. */
   tag?: string;
+  /**
+   * Playbook work-order bucket. Derived from message history, not a column, so
+   * it is applied in memory after the DB-side filters have narrowed the set.
+   */
+  bucket?: DmLeadBucket;
 }
 
 const INTENT_COLUMN: Record<DmLeadIntentFilter, string> = {
@@ -238,36 +351,78 @@ export async function updateLeadMeta(
   }
 }
 
-/**
- * Conversation IDs where any outbound message contains a /pathlab link.
- * Detected from message history, so it works for backfilled threads too.
- */
-async function getPathlabLinkConversationIds(
-  supabase: ReturnType<typeof createAdminClient>
-): Promise<Set<string>> {
-  const { data, error } = await supabase
-    .from("dm_messages")
-    .select("conversation_id")
-    .eq("direction", "outbound")
-    .ilike("body", "%/pathlab%");
+/** PostgREST caps a single response at 1000 rows; page through with .range(). */
+const MESSAGE_PAGE_SIZE = 1000;
 
-  if (error) {
-    console.error("Error fetching pathlab-link messages:", error);
-    throw new Error("Failed to check sent PathLab links");
+export type DmLeadSignalMap = Map<string, DmLeadSignals>;
+
+/**
+ * Every playbook signal for every conversation, in one pass over `dm_messages`.
+ *
+ * Deliberately not per-conversation: a query per thread would be an N+1 the
+ * moment the inbox grows. One paginated scan of three narrow columns stays
+ * cheap well past the ~1,200 rows we have today.
+ */
+export async function getDmLeadSignals(): Promise<DmLeadSignalMap> {
+  const supabase = createAdminClient();
+  const rows: DmMessageSignalRow[] = [];
+
+  for (let offset = 0; ; offset += MESSAGE_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("dm_messages")
+      .select("conversation_id, direction, body")
+      .order("id", { ascending: true })
+      .range(offset, offset + MESSAGE_PAGE_SIZE - 1);
+
+    if (error) {
+      console.error("Error fetching dm_messages for signals:", error);
+      throw new Error("Failed to compute lead signals");
+    }
+
+    const page = (data ?? []) as DmMessageSignalRow[];
+    rows.push(...page);
+    if (page.length < MESSAGE_PAGE_SIZE) break;
   }
 
-  return new Set((data ?? []).map((m) => m.conversation_id));
+  return reduceMessagesToSignals(rows);
+}
+
+/**
+ * Conversation IDs where any outbound message contains a /pathlab link.
+ * Derived from the signal map so the list, the facets and the buckets can never
+ * disagree about who got a link.
+ */
+function pathlabLinkConversationIds(signals: DmLeadSignalMap): Set<string> {
+  const ids = new Set<string>();
+  for (const [conversationId, signal] of signals) {
+    if (signal.pathlabLinkSent) ids.add(conversationId);
+  }
+  return ids;
+}
+
+/** Attaches the derived bucket + offer routing to a raw conversation row. */
+function withBucket(
+  conversation: DmConversation,
+  signals: DmLeadSignalMap
+): DmConversationWithBucket {
+  return {
+    ...conversation,
+    bucket: classifyBucket(conversation, signalsFor(signals, conversation.id)),
+    coverage: getFieldCoverage(conversation.interests),
+  };
 }
 
 export async function getConversationsForAdmin(
-  filters: DmLeadFilters = {}
-): Promise<DmConversation[]> {
+  filters: DmLeadFilters = {},
+  preloadedSignals?: DmLeadSignalMap
+): Promise<DmConversationWithBucket[]> {
   const supabase = createAdminClient();
+  const signals = preloadedSignals ?? (await getDmLeadSignals());
 
   let query = supabase.from("dm_conversations").select("*");
   query = applyDmLeadFilters(query, filters);
   if (filters.pathlabLinkSent) {
-    const ids = await getPathlabLinkConversationIds(supabase);
+    const ids = pathlabLinkConversationIds(signals);
     if (ids.size === 0) return [];
     query = query.in("id", [...ids]);
   }
@@ -282,12 +437,21 @@ export async function getConversationsForAdmin(
     throw new Error("Failed to fetch conversations");
   }
 
-  return data ?? [];
+  const classified = (data ?? []).map((row) => withBucket(row, signals));
+  // Bucket is derived, so it cannot be pushed into SQL — filter last, after the
+  // DB has already narrowed the set as far as it can.
+  return filters.bucket
+    ? classified.filter((c) => c.bucket === filters.bucket)
+    : classified;
 }
 
 export interface DmLeadFacets {
   /** Stage counts respect every active filter except the stage filter itself. */
   stageCounts: Record<DmLeadStage, number>;
+  /** Bucket counts respect every active filter except the bucket filter itself. */
+  bucketCounts: Record<DmLeadBucket, number>;
+  /** Funnel health for the WHOLE inbox — never scoped to the current view. */
+  scoreboard: FunnelScoreboard;
   total: number;
   needsReply: number;
   payReady: number;
@@ -301,8 +465,29 @@ export interface DmLeadFacets {
   tagCounts: Record<string, number>;
 }
 
+function emptyBucketCounts(): Record<DmLeadBucket, number> {
+  return {
+    hot: 0,
+    waiting_qualified: 0,
+    waiting_unqualified: 0,
+    link_no_price: 0,
+    never_pitched: 0,
+    no_reply: 0,
+    done: 0,
+  };
+}
+
+const EMPTY_SCOREBOARD: FunnelScoreboard = {
+  engaged: 0,
+  offerMade: 0,
+  priceStated: 0,
+  endsOnOurMessage: 0,
+};
+
 const EMPTY_FACETS: DmLeadFacets = {
   stageCounts: { unknown: 0, exploring: 0, building: 0, job_seeking: 0 },
+  bucketCounts: emptyBucketCounts(),
+  scoreboard: EMPTY_SCOREBOARD,
   total: 0,
   needsReply: 0,
   payReady: 0,
@@ -313,19 +498,68 @@ const EMPTY_FACETS: DmLeadFacets = {
   tagCounts: {},
 };
 
-export async function getDmLeadFacets(filters: DmLeadFilters = {}): Promise<DmLeadFacets> {
+const CONVERSATION_PAGE_SIZE = 1000;
+
+/**
+ * Funnel health for the operation, computed over the WHOLE inbox — never scoped
+ * to the current filters. "How are we selling?" must not change when the
+ * operator clicks a pill; a filtered scoreboard would be a vanity number.
+ *
+ * Denominator is engaged threads (the lead replied at least once) because a
+ * thread nobody answered says nothing about how we sell.
+ */
+async function computeScoreboard(
+  supabase: ReturnType<typeof createAdminClient>,
+  signals: DmLeadSignalMap
+): Promise<FunnelScoreboard> {
+  const scoreboard: FunnelScoreboard = { ...EMPTY_SCOREBOARD };
+
+  for (let offset = 0; ; offset += CONVERSATION_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from("dm_conversations")
+      .select("id, last_message_direction")
+      .order("id", { ascending: true })
+      .range(offset, offset + CONVERSATION_PAGE_SIZE - 1);
+
+    if (error) {
+      console.error("Error fetching dm_conversations for scoreboard:", error);
+      throw new Error("Failed to compute funnel scoreboard");
+    }
+
+    const page = data ?? [];
+    for (const row of page) {
+      const signal = signalsFor(signals, row.id);
+      if (!signal.hasInbound) continue;
+      scoreboard.engaged += 1;
+      if (signal.offerMade) scoreboard.offerMade += 1;
+      if (signal.priceMentioned) scoreboard.priceStated += 1;
+      if (row.last_message_direction === "outbound") scoreboard.endsOnOurMessage += 1;
+    }
+
+    if (page.length < CONVERSATION_PAGE_SIZE) break;
+  }
+
+  return scoreboard;
+}
+
+export async function getDmLeadFacets(
+  filters: DmLeadFilters = {},
+  preloadedSignals?: DmLeadSignalMap
+): Promise<DmLeadFacets> {
   const supabase = createAdminClient();
 
-  const pathlabIds = await getPathlabLinkConversationIds(supabase);
+  const signals = preloadedSignals ?? (await getDmLeadSignals());
+  const pathlabIds = pathlabLinkConversationIds(signals);
+  const scoreboard = await computeScoreboard(supabase, signals);
 
   let query = supabase
     .from("dm_conversations")
     .select(
-      "id, stage, last_message_direction, pathlab_pay_ready, starred, follow_up_at, lead_status, admin_tags"
+      "id, stage, grade_level, interests, last_message_direction, pathlab_pay_ready, starred, follow_up_at, lead_status, admin_tags"
     );
   query = applyDmLeadFilters(query, filters, { skipStage: true });
   if (filters.pathlabLinkSent) {
-    if (pathlabIds.size === 0) return EMPTY_FACETS;
+    if (pathlabIds.size === 0) return { ...EMPTY_FACETS, scoreboard };
     query = query.in("id", [...pathlabIds]);
   }
 
@@ -352,6 +586,7 @@ export async function getDmLeadFacets(filters: DmLeadFilters = {}): Promise<DmLe
     lost: 0,
     spam: 0,
   };
+  const bucketCounts = emptyBucketCounts();
   const tagCounts: Record<string, number> = {};
   let needsReply = 0;
   let payReady = 0;
@@ -360,6 +595,9 @@ export async function getDmLeadFacets(filters: DmLeadFilters = {}): Promise<DmLe
   let followUpDue = 0;
 
   for (const row of rows) {
+    // `filters.bucket` is never applied here — bucket counts must show what each
+    // pill would give you, exactly like stageCounts skips the stage filter.
+    bucketCounts[classifyBucket(row, signalsFor(signals, row.id))] += 1;
     if (row.stage in stageCounts) stageCounts[row.stage as DmLeadStage] += 1;
     if (row.lead_status in leadStatusCounts) {
       leadStatusCounts[row.lead_status as DmLeadStatus] += 1;
@@ -376,6 +614,8 @@ export async function getDmLeadFacets(filters: DmLeadFilters = {}): Promise<DmLe
 
   return {
     stageCounts,
+    bucketCounts,
+    scoreboard,
     total: rows.length,
     needsReply,
     payReady,
@@ -394,7 +634,7 @@ export async function getConversationWithMessages(
 
   const { data, error } = await supabase
     .from("dm_conversations")
-    .select("*, dm_messages(*)")
+    .select("*, dm_messages(*, dm_message_attachments(*), dm_message_reactions(*))")
     .eq("id", conversationId)
     .order("sent_at", { referencedTable: "dm_messages", ascending: true })
     .single();
@@ -406,6 +646,177 @@ export async function getConversationWithMessages(
   }
 
   return data;
+}
+
+export async function reconcileOutboundEcho(params: {
+  platformMessageId: string;
+}): Promise<{ messageId: string | null; outcome: "processed" | "ignored" }> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("dm_messages")
+    .select("id")
+    .eq("platform_message_id", params.platformMessageId)
+    .eq("direction", "outbound")
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error reconciling outbound Meta echo:", error);
+    throw new Error("Failed to reconcile outbound echo");
+  }
+  return data
+    ? { messageId: data.id, outcome: "processed" }
+    : { messageId: null, outcome: "ignored" };
+}
+
+export async function applyMessageReaction(params: {
+  targetPlatformMessageId: string;
+  actorPlatformUserId: string;
+  reaction: string | null;
+  action: "react" | "unreact";
+  reactedAt: string;
+}): Promise<{ messageId: string | null; outcome: "processed" | "ignored" }> {
+  const supabase = createAdminClient();
+  const { data: message, error: messageError } = await supabase
+    .from("dm_messages")
+    .select("id")
+    .eq("platform_message_id", params.targetPlatformMessageId)
+    .maybeSingle();
+
+  if (messageError) {
+    console.error("Error resolving reacted-to dm_message:", messageError);
+    throw new Error("Failed to resolve reaction target");
+  }
+
+  if (params.action === "unreact") {
+    const { error } = await supabase
+      .from("dm_message_reactions")
+      .delete()
+      .eq("target_platform_message_id", params.targetPlatformMessageId)
+      .eq("actor_platform_user_id", params.actorPlatformUserId);
+    if (error) {
+      console.error("Error removing dm_message reaction:", error);
+      throw new Error("Failed to remove message reaction");
+    }
+    return { messageId: message?.id ?? null, outcome: "processed" };
+  }
+
+  const { error } = await supabase.from("dm_message_reactions").upsert(
+    {
+      message_id: message?.id ?? null,
+      target_platform_message_id: params.targetPlatformMessageId,
+      actor_platform_user_id: params.actorPlatformUserId,
+      reaction: params.reaction,
+      reacted_at: params.reactedAt,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "target_platform_message_id,actor_platform_user_id" }
+  );
+  if (error) {
+    console.error("Error upserting dm_message reaction:", error);
+    throw new Error("Failed to record message reaction");
+  }
+  return {
+    messageId: message?.id ?? null,
+    outcome: message ? "processed" : "ignored",
+  };
+}
+
+const SEND_STATUS_RANK: Record<NonNullable<DmMessageSendStatus>, number> = {
+  pending: 0,
+  failed: 0,
+  sent: 1,
+  delivered: 2,
+  read: 3,
+};
+
+async function updateOutboundStatus(params: {
+  platform: DmPlatform;
+  platformUserId: string | null;
+  messageIds?: string[];
+  watermark?: string | null;
+  status: "delivered" | "read";
+  occurredAt: string;
+}): Promise<string[]> {
+  const supabase = createAdminClient();
+  let query = supabase
+    .from("dm_messages")
+    .select("id, send_status, sent_at, delivered_at, conversation_id, dm_conversations!inner(platform, platform_user_id)")
+    .eq("direction", "outbound")
+    .eq("dm_conversations.platform", params.platform);
+
+  if (params.platformUserId) {
+    query = query.eq("dm_conversations.platform_user_id", params.platformUserId);
+  }
+  if (params.messageIds?.length) {
+    query = query.in("platform_message_id", params.messageIds);
+  } else if (params.watermark) {
+    const watermarkNumber = Number(params.watermark);
+    if (Number.isFinite(watermarkNumber)) {
+      query = query.lte("sent_at", new Date(watermarkNumber).toISOString());
+    }
+  } else {
+    return [];
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error(`Error finding outbound messages for ${params.status}:`, error);
+    throw new Error(`Failed to find ${params.status} messages`);
+  }
+
+  const targetRank = SEND_STATUS_RANK[params.status];
+  const ids = (data ?? [])
+    .filter((message) => {
+      const current = message.send_status as DmMessageSendStatus | null;
+      return current === null || SEND_STATUS_RANK[current] < targetRank;
+    })
+    .map((message) => message.id);
+  if (ids.length === 0) return [];
+
+  const patch = params.status === "read"
+    ? { send_status: "read", read_at: params.occurredAt }
+    : { send_status: "delivered", delivered_at: params.occurredAt };
+  const { error: updateError } = await supabase.from("dm_messages").update(patch).in("id", ids);
+  if (updateError) {
+    console.error(`Error marking outbound messages ${params.status}:`, updateError);
+    throw new Error(`Failed to mark messages ${params.status}`);
+  }
+
+  if (params.status === "read") {
+    const missingDeliveryIds = (data ?? [])
+      .filter((message) => ids.includes(message.id) && !message.delivered_at)
+      .map((message) => message.id);
+    if (missingDeliveryIds.length > 0) {
+      const { error: deliveryError } = await supabase
+        .from("dm_messages")
+        .update({ delivered_at: params.occurredAt })
+        .in("id", missingDeliveryIds);
+      if (deliveryError) {
+        console.error("Error backfilling delivery timestamp from read receipt:", deliveryError);
+        throw new Error("Failed to save delivery timestamp");
+      }
+    }
+  }
+  return ids;
+}
+
+export function markOutboundDelivered(params: {
+  platform: DmPlatform;
+  platformUserId: string | null;
+  messageIds: string[];
+  watermark: string | null;
+  occurredAt: string;
+}) {
+  return updateOutboundStatus({ ...params, status: "delivered" });
+}
+
+export function markOutboundRead(params: {
+  platform: DmPlatform;
+  platformUserId: string | null;
+  watermark: string | null;
+  occurredAt: string;
+}) {
+  return updateOutboundStatus({ ...params, status: "read" });
 }
 
 export async function applyClassification(
@@ -450,7 +861,7 @@ export async function sendAdminReply(
 
   const { data: conversation, error: fetchError } = await supabase
     .from("dm_conversations")
-    .select("platform, platform_user_id")
+    .select("platform, platform_user_id, last_message_at, last_message_direction")
     .eq("id", conversationId)
     .single();
 
@@ -460,13 +871,19 @@ export async function sendAdminReply(
   }
 
   const sentAt = new Date().toISOString();
-  const { error: insertError } = await supabase.from("dm_messages").insert({
-    conversation_id: conversationId,
-    direction: "outbound" as DmMessageDirection,
-    sender_type: "admin" as DmMessageSenderType,
-    body,
-    sent_at: sentAt,
-  });
+  const { data: outboundMessage, error: insertError } = await supabase
+    .from("dm_messages")
+    .insert({
+      conversation_id: conversationId,
+      direction: "outbound" as DmMessageDirection,
+      sender_type: "admin" as DmMessageSenderType,
+      body,
+      message_type: "text",
+      send_status: "pending",
+      sent_at: sentAt,
+    })
+    .select("id")
+    .single();
 
   if (insertError) {
     console.error("Error inserting outbound dm_message:", insertError);
@@ -479,5 +896,45 @@ export async function sendAdminReply(
     .eq("id", conversationId);
 
   const { sendMetaMessage } = await import("@/lib/meta/graph");
-  await sendMetaMessage(conversation.platform, conversation.platform_user_id, body);
+  let platformMessageId: string;
+  try {
+    platformMessageId = await sendMetaMessage(
+      conversation.platform,
+      conversation.platform_user_id,
+      body
+    );
+  } catch (error) {
+    const { error: failedStateError } = await supabase
+      .from("dm_messages")
+      .update({
+        send_status: "failed",
+        metadata: { send_error: error instanceof Error ? error.message.slice(0, 300) : "unknown" },
+      })
+      .eq("id", outboundMessage.id);
+    if (failedStateError) {
+      console.error("Failed to persist failed outbound message state:", failedStateError);
+    }
+    const { error: restoreConversationError } = await supabase
+      .from("dm_conversations")
+      .update({
+        last_message_at: conversation.last_message_at,
+        last_message_direction: conversation.last_message_direction,
+      })
+      .eq("id", conversationId)
+      .eq("last_message_at", sentAt)
+      .eq("last_message_direction", "outbound");
+    if (restoreConversationError) {
+      console.error("Failed to restore conversation state after send failure:", restoreConversationError);
+    }
+    throw error;
+  }
+
+  const { error: sentError } = await supabase
+    .from("dm_messages")
+    .update({ platform_message_id: platformMessageId, send_status: "sent" })
+    .eq("id", outboundMessage.id);
+  if (sentError) {
+    console.error("Meta reply sent but dm_message state update failed:", sentError);
+    throw new Error("Reply sent, but delivery state was not saved");
+  }
 }

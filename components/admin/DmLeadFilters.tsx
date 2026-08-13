@@ -12,27 +12,39 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+export const DM_LEAD_SEARCH_INPUT_ID = "dm-lead-search";
 
 export interface DmLeadFilterValues {
+  stage: string;
   grade: string;
   intent: string;
   platform: string;
-  sort: string;
-  search: string;
   status: string;
   tag: string;
+  sort: string;
+  search: string;
+  /** Toggle chips — empty string means off. */
+  turn: string;
+  link: string;
+  star: string;
+  followup: string;
 }
 
-const STATUS_OPTIONS = [
-  { value: "new", label: "New" },
-  { value: "contacted", label: "Contacted" },
-  { value: "qualified", label: "Qualified" },
-  { value: "converted", label: "Converted" },
-  { value: "lost", label: "Lost" },
-  { value: "spam", label: "Spam" },
-];
+export interface DmLeadChipCounts {
+  needsReply: number;
+  pathlabSent: number;
+  starred: number;
+  followUpDue: number;
+}
 
-export const DM_LEAD_SEARCH_INPUT_ID = "dm-lead-search";
+const STAGE_OPTIONS = [
+  { value: "unknown", label: "Unknown" },
+  { value: "exploring", label: "Exploring" },
+  { value: "building", label: "Building" },
+  { value: "job_seeking", label: "Job seeking" },
+];
 
 const GRADE_OPTIONS = [
   { value: "ม.3", label: "ม.3" },
@@ -56,13 +68,64 @@ const PLATFORM_OPTIONS = [
   { value: "facebook", label: "Facebook" },
 ];
 
+const STATUS_OPTIONS = [
+  { value: "new", label: "New" },
+  { value: "contacted", label: "Contacted" },
+  { value: "qualified", label: "Qualified" },
+  { value: "converted", label: "Converted" },
+  { value: "lost", label: "Lost" },
+  { value: "spam", label: "Spam" },
+];
+
 const SORT_OPTIONS = [
   { value: "newest", label: "ล่าสุดก่อน" },
   { value: "waiting", label: "ค้างตอบนานสุด" },
 ];
 
+const TOGGLE_CHIPS: {
+  key: "turn" | "link" | "star" | "followup";
+  value: string;
+  label: string;
+  countKey: keyof DmLeadChipCounts;
+  activeClass: string;
+}[] = [
+  {
+    key: "turn",
+    value: "mine",
+    label: "รอเราตอบ",
+    countKey: "needsReply",
+    activeClass: "border-amber-500 bg-amber-500 text-white",
+  },
+  {
+    key: "link",
+    value: "pathlab",
+    label: "📨 ส่ง PathLab แล้ว",
+    countKey: "pathlabSent",
+    activeClass: "border-emerald-500 bg-emerald-500 text-white",
+  },
+  {
+    key: "star",
+    value: "1",
+    label: "⭐ ติดดาว",
+    countKey: "starred",
+    activeClass: "border-amber-400 bg-amber-400 text-white",
+  },
+  {
+    key: "followup",
+    value: "due",
+    label: "⏰ ถึงกำหนดติดตาม",
+    countKey: "followUpDue",
+    activeClass: "border-red-500 bg-red-500 text-white",
+  },
+];
+
+const SELECT_KEYS = ["stage", "grade", "intent", "platform", "status", "tag", "sort"];
+const CHIP_KEYS = ["turn", "link", "star", "followup"];
+
 interface DmLeadFiltersProps {
   values: DmLeadFilterValues;
+  chipCounts?: DmLeadChipCounts;
+  stageCounts?: Record<string, number>;
   /** Live counts per lead status, shown inside the status options. */
   statusCounts?: Record<string, number>;
   /** Distinct admin tags in the current set, with counts — tag options. */
@@ -70,10 +133,17 @@ interface DmLeadFiltersProps {
 }
 
 /**
- * Search + dropdown filters for the DM leads inbox. Writes every change to
- * the URL so the server component re-queries and filters stay shareable.
+ * The single filter row for the DM leads inbox: toggle chips, search, and
+ * dropdowns. Writes every change to the URL so the server component
+ * re-queries and filters stay shareable.
  */
-export function DmLeadFilters({ values, statusCounts, tagCounts }: DmLeadFiltersProps) {
+export function DmLeadFilters({
+  values,
+  chipCounts,
+  stageCounts,
+  statusCounts,
+  tagCounts,
+}: DmLeadFiltersProps) {
   const router = useRouter();
   const [search, setSearch] = useState(values.search);
   const isFirstRender = useRef(true);
@@ -103,38 +173,77 @@ export function DmLeadFilters({ values, statusCounts, tagCounts }: DmLeadFilters
   };
 
   const hasActiveFilters =
-    values.grade !== "all" ||
-    values.intent !== "all" ||
-    values.platform !== "all" ||
-    values.sort !== "newest" ||
+    SELECT_KEYS.some((k) => {
+      const v = values[k as keyof DmLeadFilterValues] as string;
+      return k === "sort" ? v !== "newest" : v !== "all";
+    }) ||
     values.search !== "" ||
-    values.status !== "all" ||
-    values.tag !== "all";
+    CHIP_KEYS.some((k) => values[k as keyof DmLeadFilterValues] !== "");
 
   const clearAll = () => {
     setSearch("");
     const params = new URLSearchParams(window.location.search);
-    for (const key of ["grade", "intent", "platform", "sort", "search", "status", "tag"])
-      params.delete(key);
+    for (const key of [...SELECT_KEYS, ...CHIP_KEYS, "search"]) params.delete(key);
     const qs = params.toString();
     router.push(qs ? `/admin/dm-leads?${qs}` : "/admin/dm-leads");
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-1.5">
+      {TOGGLE_CHIPS.map((chip) => {
+        const active = values[chip.key] === chip.value;
+        const count = chipCounts?.[chip.countKey];
+        return (
+          <button
+            key={chip.key}
+            type="button"
+            onClick={() => pushParams({ [chip.key]: active ? "" : chip.value })}
+            className={cn(
+              "rounded-full border px-2.5 py-1 text-xs transition-colors",
+              active
+                ? chip.activeClass
+                : "text-muted-foreground hover:border-foreground/40 hover:text-foreground"
+            )}
+          >
+            {active ? "✓ " : ""}
+            {chip.label}
+            {count !== undefined && (
+              <span className="ml-1 text-[10px] opacity-70">{count}</span>
+            )}
+          </button>
+        );
+      })}
+
+      <span className="mx-0.5 text-border">|</span>
+
       <div className="relative">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
         <Input
           id={DM_LEAD_SEARCH_INPUT_ID}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="ค้นหาชื่อ / username…  ( / )"
-          className="w-56 pl-8"
+          placeholder="ค้นหา…  ( / )"
+          className="h-8 w-40 pl-7 text-xs"
         />
       </div>
 
+      <Select value={values.stage} onValueChange={(v) => pushParams({ stage: v })}>
+        <SelectTrigger className="h-8 w-32 text-xs">
+          <SelectValue placeholder="Stage" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">ทุก stage</SelectItem>
+          {STAGE_OPTIONS.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+              {stageCounts?.[o.value] !== undefined ? ` (${stageCounts[o.value]})` : ""}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
       <Select value={values.grade} onValueChange={(v) => pushParams({ grade: v })}>
-        <SelectTrigger className="w-36">
+        <SelectTrigger className="h-8 w-28 text-xs">
           <SelectValue placeholder="ชั้นปี" />
         </SelectTrigger>
         <SelectContent>
@@ -148,7 +257,7 @@ export function DmLeadFilters({ values, statusCounts, tagCounts }: DmLeadFilters
       </Select>
 
       <Select value={values.intent} onValueChange={(v) => pushParams({ intent: v })}>
-        <SelectTrigger className="w-44">
+        <SelectTrigger className="h-8 w-36 text-xs">
           <SelectValue placeholder="ความต้องการ" />
         </SelectTrigger>
         <SelectContent>
@@ -162,7 +271,7 @@ export function DmLeadFilters({ values, statusCounts, tagCounts }: DmLeadFilters
       </Select>
 
       <Select value={values.platform} onValueChange={(v) => pushParams({ platform: v })}>
-        <SelectTrigger className="w-36">
+        <SelectTrigger className="h-8 w-28 text-xs">
           <SelectValue placeholder="แพลตฟอร์ม" />
         </SelectTrigger>
         <SelectContent>
@@ -176,7 +285,7 @@ export function DmLeadFilters({ values, statusCounts, tagCounts }: DmLeadFilters
       </Select>
 
       <Select value={values.status} onValueChange={(v) => pushParams({ status: v })}>
-        <SelectTrigger className="w-36">
+        <SelectTrigger className="h-8 w-28 text-xs">
           <SelectValue placeholder="สถานะ" />
         </SelectTrigger>
         <SelectContent>
@@ -192,7 +301,7 @@ export function DmLeadFilters({ values, statusCounts, tagCounts }: DmLeadFilters
 
       {tagCounts && Object.keys(tagCounts).length > 0 && (
         <Select value={values.tag} onValueChange={(v) => pushParams({ tag: v })}>
-          <SelectTrigger className="w-36">
+          <SelectTrigger className="h-8 w-28 text-xs">
             <SelectValue placeholder="แท็ก" />
           </SelectTrigger>
           <SelectContent>
@@ -209,7 +318,7 @@ export function DmLeadFilters({ values, statusCounts, tagCounts }: DmLeadFilters
       )}
 
       <Select value={values.sort} onValueChange={(v) => pushParams({ sort: v })}>
-        <SelectTrigger className="w-40">
+        <SelectTrigger className="h-8 w-32 text-xs">
           <SelectValue placeholder="เรียงตาม" />
         </SelectTrigger>
         <SelectContent>
@@ -222,8 +331,8 @@ export function DmLeadFilters({ values, statusCounts, tagCounts }: DmLeadFilters
       </Select>
 
       {hasActiveFilters && (
-        <Button variant="ghost" size="sm" onClick={clearAll} className="gap-1">
-          <X className="h-3.5 w-3.5" /> ล้างตัวกรอง
+        <Button variant="ghost" size="sm" onClick={clearAll} className="h-8 gap-1 px-2 text-xs">
+          <X className="h-3.5 w-3.5" /> ล้าง
         </Button>
       )}
     </div>

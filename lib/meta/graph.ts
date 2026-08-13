@@ -42,7 +42,7 @@ export async function sendMetaMessage(
   platform: DmPlatform,
   recipientPsid: string,
   text: string
-): Promise<void> {
+): Promise<string> {
   const accessToken = process.env.META_PAGE_ACCESS_TOKEN;
   if (!accessToken) {
     throw new Error("META_PAGE_ACCESS_TOKEN is not set");
@@ -64,6 +64,12 @@ export async function sendMetaMessage(
     const errBody = await res.text();
     throw new Error(`Meta Send API failed for ${platform} (${res.status}): ${errBody}`);
   }
+
+  const json: { message_id?: string } = await res.json();
+  if (!json.message_id) {
+    throw new Error(`Meta Send API returned no message_id for ${platform}`);
+  }
+  return json.message_id;
 }
 
 /**

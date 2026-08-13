@@ -1,24 +1,15 @@
 import { notFound } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import { getConversationWithMessages } from "@/lib/supabase/dm-leads";
 import { DmLeadManageBar } from "@/components/admin/DmLeadManageBar";
 import { DmLeadReplyForm } from "@/components/admin/DmLeadReplyForm";
 import { DmLeadTagsEditor } from "@/components/admin/DmLeadTagsEditor";
 import { LeadNeedsSummary } from "@/components/admin/LeadNeedsSummary";
 import { LeadTagBadges } from "@/components/admin/LeadTagBadges";
+import { DmMessageBubble } from "@/components/admin/DmMessageBubble";
 
 export const dynamic = "force-dynamic";
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export default async function DmLeadDetailPage({
   params,
@@ -59,19 +50,8 @@ export default async function DmLeadDetailPage({
 
       <Card>
         <CardContent className="space-y-3 pt-6">
-          {conversation.dm_messages.map((m) => (
-            <div
-              key={m.id}
-              className={cn(
-                "max-w-[75%] rounded-lg px-3 py-2 text-sm",
-                m.direction === "inbound"
-                  ? "mr-auto bg-muted"
-                  : "ml-auto bg-primary text-primary-foreground"
-              )}
-            >
-              <p>{m.body}</p>
-              <p className="mt-1 text-xs opacity-70">{formatDate(m.sent_at)}</p>
-            </div>
+          {conversation.dm_messages.map((message) => (
+            <DmMessageBubble key={message.id} message={message} />
           ))}
         </CardContent>
       </Card>
