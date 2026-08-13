@@ -1,0 +1,4 @@
+interface:
+  display_name: "Create Micro PathLab Map"
+  short_description: "Build Micro PathLabs for app/map/[id]"
+  default_prompt: "Use $create-micro-pathlab-map to turn this career simulation into a validated standalone map at /map/<id>."

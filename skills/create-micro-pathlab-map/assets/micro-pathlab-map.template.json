@@ -1,0 +1,132 @@
+{
+  "map": {
+    "title": "Micro PathLab: The Wet Stage Call",
+    "description": "ทดลองบทบาททนายความคดีบันเทิงระหว่างประเทศ ผ่านการอ่านข้อสัญญา ให้คำแนะนำภาษาอังกฤษ และตอบแรงกดดันก่อนคอนเสิร์ต แบบฝึกนี้เป็นสถานการณ์สมมติเพื่อการศึกษา ไม่ใช่คำแนะนำทางกฎหมายจริง",
+    "difficulty": 1,
+    "estimatedMinutes": 10,
+    "visibility": "public",
+    "metadata": {
+      "tags": ["law", "english", "entertainment"],
+      "audience": "Mathayom 4",
+      "fit_signals": [
+        "ชอบอ่านถ้อยคำให้แม่นก่อนตัดสินใจ",
+        "สนุกกับการเปลี่ยนข้อสัญญาเป็นคำแนะนำที่กระชับ"
+      ],
+      "misfit_signals": [
+        "รู้สึกหมดพลังเมื่อต้องอ่านรายละเอียด",
+        "ไม่ชอบอธิบายจุดยืนภายใต้แรงกดดัน"
+      ]
+    }
+  },
+  "nodes": [
+    {
+      "key": "choose_the_clause",
+      "title": "เลือกอาวุธทางกฎหมาย",
+      "instructions": "อ่าน facts และ Clause A–B แล้วเลือกข้อสัญญาที่รองรับการหยุดการแสดงได้ตรงที่สุด",
+      "node_type": "learning",
+      "position": { "x": 100, "y": 100 },
+      "difficulty": 1,
+      "content": [
+        {
+          "content_type": "text",
+          "content_title": "The Wet Stage Facts",
+          "content_body": "ก่อน showtime 3 ชั่วโมง ฝนตกหนักจนน้ำท่วมเวที ระบบไฟและลำโพงเปียก ทีมงานประเมินว่าไม่ปลอดภัย และรัฐบาลยังไม่ได้ประกาศภาวะฉุกเฉิน แบบฝึกนี้เป็นสถานการณ์สมมติเพื่อการศึกษา",
+          "content_url": null
+        },
+        {
+          "content_type": "text",
+          "content_title": "Clause A & Clause B",
+          "content_body": "Clause A: Heavy rain is not Force Majeure unless a state of emergency is officially declared. Clause B: The Promoter must provide a dry, safe stage; the Artist may suspend without penalty until safety is restored.",
+          "content_url": null
+        }
+      ],
+      "assessment": {
+        "type": "quiz",
+        "prompt": "เลือก clause ที่ใช้ได้ตรงที่สุด",
+        "isGraded": false,
+        "pointsPossible": 0,
+        "quiz_questions": [
+          {
+            "question_text": "Which clause most directly supports suspending the unsafe performance?",
+            "options": [
+              { "option": "A", "text": "Clause A" },
+              { "option": "B", "text": "Clause B" }
+            ],
+            "correct_option": "B"
+          }
+        ]
+      }
+    },
+    {
+      "key": "draft_the_advice",
+      "title": "เขียน Legal Advice",
+      "instructions": "เขียนคำแนะนำภาษาอังกฤษหนึ่งประโยคที่ระบุ action, safety fact และ clause ให้ครบ",
+      "node_type": "learning",
+      "position": { "x": 380, "y": 100 },
+      "difficulty": 1,
+      "content": [
+        {
+          "content_type": "text",
+          "content_title": "Sentence frame",
+          "content_body": "Complete and refine: We should [cancel / suspend] the concert because the stage is [safe / unsafe] under Clause [A / B].",
+          "content_url": null
+        }
+      ],
+      "assessment": {
+        "type": "text_answer",
+        "prompt": "ส่งคำแนะนำภาษาอังกฤษหนึ่งประโยค",
+        "isGraded": false,
+        "pointsPossible": 0
+      }
+    },
+    {
+      "key": "answer_the_promoter",
+      "title": "ตอบข้อโต้แย้งของ Promoter",
+      "instructions": "ตอบ promoter เป็นภาษาอังกฤษ 1–2 ประโยค โดยแยก Clause A ออกจากสิทธิด้าน safety ใน Clause B",
+      "node_type": "learning",
+      "position": { "x": 660, "y": 100 },
+      "difficulty": 2,
+      "content": [
+        {
+          "content_type": "text",
+          "content_title": "Promoter objection",
+          "content_body": "The Promoter says: There is no government emergency, so the Artist must perform. Start your answer with: However, Clause B states that...",
+          "content_url": null
+        }
+      ],
+      "assessment": {
+        "type": "text_answer",
+        "prompt": "เขียนคำตอบโต้เป็นภาษาอังกฤษ 1–2 ประโยค",
+        "isGraded": false,
+        "pointsPossible": 0
+      }
+    },
+    {
+      "key": "decide_your_fit",
+      "title": "ตัดสินใจจากสัญญาณของตัวเอง",
+      "instructions": "เลือก Continue / Pause / Quit แล้วให้เหตุผลหนึ่งประโยคจากความรู้สึกตอนอ่านสัญญา เขียนคำแนะนำ และรับมือแรงกดดัน",
+      "node_type": "end",
+      "position": { "x": 940, "y": 100 },
+      "difficulty": 1,
+      "content": [
+        {
+          "content_type": "text",
+          "content_title": "ทุกคำตอบมีค่า",
+          "content_body": "Continue = อยากลองคดีที่ซับซ้อนขึ้น, Pause = อยากเทียบกับงานอื่นก่อน, Quit = งานแบบนี้ไม่เติมพลังให้เรา การเลือก Quit เป็นผลลัพธ์การเรียนรู้ ไม่ใช่ความล้มเหลว",
+          "content_url": null
+        }
+      ],
+      "assessment": {
+        "type": "text_answer",
+        "prompt": "Continue / Pause / Quit — เลือกหนึ่งคำและให้เหตุผลหนึ่งประโยค",
+        "isGraded": false,
+        "pointsPossible": 0
+      }
+    }
+  ],
+  "connections": [
+    { "from": "choose_the_clause", "to": "draft_the_advice" },
+    { "from": "draft_the_advice", "to": "answer_the_promoter" },
+    { "from": "answer_the_promoter", "to": "decide_your_fit" }
+  ]
+}
