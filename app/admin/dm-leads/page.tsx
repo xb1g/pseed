@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/table";
 import { getConversationsForAdmin } from "@/lib/supabase/dm-leads";
 import { DmLeadRow } from "@/components/admin/DmLeadRow";
+import { RefreshButton } from "@/components/admin/RefreshButton";
 import type { DmLeadStage } from "@/types/dm-leads";
 
 export const dynamic = "force-dynamic";
@@ -20,35 +21,63 @@ const STAGE_LABEL: Record<DmLeadStage, string> = {
   job_seeking: "Job seeking",
 };
 
+function buildHref(stage: string, myTurn: boolean) {
+  const params = new URLSearchParams();
+  if (stage !== "all") params.set("stage", stage);
+  if (myTurn) params.set("turn", "mine");
+  const qs = params.toString();
+  return qs ? `/admin/dm-leads?${qs}` : "/admin/dm-leads";
+}
+
 export default async function DmLeadsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ stage?: string }>;
+  searchParams: Promise<{ stage?: string; turn?: string }>;
 }) {
-  const { stage } = await searchParams;
+  const { stage, turn } = await searchParams;
+  const myTurnOnly = turn === "mine";
   const conversations = await getConversationsForAdmin(
-    stage && stage !== "all" ? (stage as DmLeadStage) : undefined
+    stage && stage !== "all" ? (stage as DmLeadStage) : undefined,
+    myTurnOnly
   );
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold">DM Leads</h2>
-        <p className="text-sm text-muted-foreground">
-          Instagram &amp; Facebook DM leads, auto-labeled by stage.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-semibold">DM Leads</h2>
+          <p className="text-sm text-muted-foreground">
+            Instagram &amp; Facebook DM leads, auto-labeled by stage.
+          </p>
+        </div>
+        <RefreshButton />
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {(["all", "unknown", "exploring", "building", "job_seeking"] as const).map((s) => (
           <Link
             key={s}
-            href={s === "all" ? "/admin/dm-leads" : `/admin/dm-leads?stage=${s}`}
-            className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+            href={buildHref(s, myTurnOnly)}
+            className={
+              (s === "all" ? !stage || stage === "all" : stage === s)
+                ? "text-sm font-medium underline underline-offset-4"
+                : "text-sm text-muted-foreground underline-offset-4 hover:underline"
+            }
           >
             {s === "all" ? "All" : STAGE_LABEL[s]}
           </Link>
         ))}
+        <span className="mx-1 text-muted-foreground">·</span>
+        <Link
+          href={buildHref(stage ?? "all", !myTurnOnly)}
+          className={
+            myTurnOnly
+              ? "text-sm font-medium underline underline-offset-4"
+              : "text-sm text-muted-foreground underline-offset-4 hover:underline"
+          }
+        >
+          {myTurnOnly ? "✓ My turn only" : "My turn only"}
+        </Link>
       </div>
 
       <Card>
@@ -65,7 +94,7 @@ export default async function DmLeadsPage({
                   <TableHead>Platform</TableHead>
                   <TableHead>Grade</TableHead>
                   <TableHead>Stage</TableHead>
-                  <TableHead>Recommended</TableHead>
+                  <TableHead>Tags</TableHead>
                   <TableHead>Last message</TableHead>
                 </TableRow>
               </TableHeader>

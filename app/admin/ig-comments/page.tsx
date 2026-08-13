@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/table";
 import { getCommentsForAdmin } from "@/lib/supabase/ig-comments";
 import { IgCommentReplyRow } from "@/components/admin/IgCommentReplyRow";
+import { LeadTagBadges } from "@/components/admin/LeadTagBadges";
+import { RefreshButton } from "@/components/admin/RefreshButton";
 import type { DmLeadStage } from "@/types/dm-leads";
 
 export const dynamic = "force-dynamic";
@@ -45,12 +47,15 @@ export default async function IgCommentsPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold">IG Comments</h2>
-        <p className="text-sm text-muted-foreground">
-          Comments on posts, auto-labeled by stage. Private reply (DM) only works within 7
-          days of the comment — after that, only a public reply is possible.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-semibold">IG Comments</h2>
+          <p className="text-sm text-muted-foreground">
+            Comments on posts, auto-labeled by stage. Private reply (DM) only works within 7
+            days of the comment — after that, only a public reply is possible.
+          </p>
+        </div>
+        <RefreshButton />
       </div>
 
       <div className="flex gap-2">
@@ -77,6 +82,7 @@ export default async function IgCommentsPage({
                   <TableHead>Comment</TableHead>
                   <TableHead>Grade</TableHead>
                   <TableHead>Stage</TableHead>
+                  <TableHead>Tags</TableHead>
                   <TableHead>Commented</TableHead>
                   <TableHead>DM window</TableHead>
                   <TableHead className="w-[360px]">Reply</TableHead>
@@ -93,6 +99,9 @@ export default async function IgCommentsPage({
                       <TableCell>{c.grade_level ?? "—"}</TableCell>
                       <TableCell>
                         <Badge variant="secondary">{STAGE_LABEL[c.stage]}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <LeadTagBadges tags={c} />
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDate(c.commented_at)}

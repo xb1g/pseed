@@ -27,6 +27,25 @@ const JOB_SEEKING_SIGNALS = [
   /freelance/i, /หางาน/, /รับงาน/, /portfolio.*ส่ง/, /ฝึกงาน/, /internship/i, /จ้างงาน/,
 ];
 
+// Explicit interest in trying PathLab — asking how to start, wanting to try
+// a project, or naming the product directly.
+const PATHLAB_SIGNALS = [
+  /pathlab/i, /path\s*lab/i, /เริ่ม[^.!?\n]{0,15}(?:ยังไง|ต้น|ลงมือ)/, /อยากลอง/, /อยากเริ่ม/,
+  /อยากลงมือทำ/, /ควรเริ่มตรงไหน/, /อยากทำโปรเจกต์/,
+];
+
+// Buying intent — asking about price/enrollment, not just browsing info.
+const PAY_READY_SIGNALS = [
+  /ราคา/, /ค่าเรียน/, /กี่บาท/, /เท่าไหร่.*บาท/, /สมัคร/, /ลงทะเบียน/, /จ่าย(?:เงิน|ค่า)?/,
+  /จอง(?:ที่|คิว)/, /วิธีสมัคร/, /enroll/i, /register/i,
+];
+
+// Wants an ongoing group / mentor / community, not a one-off program.
+const COMMUNITY_SIGNALS = [
+  /community/i, /ชุมชน/, /หาทีม/, /หาเพื่อนทำโปรเจกต์/, /กลุ่มคนที่สนใจเหมือนกัน/,
+  /mentor/i, /ที่ปรึกษาต่อเนื่อง/, /ทำโปรเจกต์ต่อ/,
+];
+
 // Common Thai faculty/major names mentioned in leads. Order matters where
 // one name is a substring of another (e.g. เทคนิคการแพทย์ before แพทย์).
 const INTEREST_KEYWORDS: { pattern: RegExp; label: string }[] = [
@@ -85,6 +104,11 @@ export function classifyConversationText(messages: string[]): DmLeadClassificati
     activitiesSummary: text.slice(0, 500),
     stage,
     recommendedProduct,
+    hasHandsOnExperience: isBuilding,
+    wantsPathlab: PATHLAB_SIGNALS.some((p) => p.test(text)),
+    pathlabPayReady: PAY_READY_SIGNALS.some((p) => p.test(text)),
+    wantsCommunity: COMMUNITY_SIGNALS.some((p) => p.test(text)),
+    wantsTalent: isJobSeeking,
   };
 }
 
