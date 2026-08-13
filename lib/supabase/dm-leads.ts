@@ -36,6 +36,7 @@ export async function recordInboundMessage(params: {
         username: params.username ?? null,
         display_name: params.displayName ?? null,
         last_message_at: params.sentAt,
+        last_message_direction: "inbound",
       },
       { onConflict: "platform,platform_thread_id", ignoreDuplicates: false }
     )
@@ -89,6 +90,7 @@ export async function recordBackfilledMessage(params: {
         platform_user_id: params.platformUserId,
         username: params.username ?? null,
         last_message_at: params.sentAt,
+        last_message_direction: params.direction,
       },
       { onConflict: "platform,platform_thread_id", ignoreDuplicates: false }
     )
@@ -138,7 +140,8 @@ export async function updateConversationUsername(
 }
 
 export async function getConversationsForAdmin(
-  stage?: DmLeadStage
+  stage?: DmLeadStage,
+  myTurnOnly?: boolean
 ): Promise<DmConversation[]> {
   const supabase = createAdminClient();
 
@@ -149,6 +152,10 @@ export async function getConversationsForAdmin(
 
   if (stage) {
     query = query.eq("stage", stage);
+  }
+
+  if (myTurnOnly) {
+    query = query.eq("last_message_direction", "inbound");
   }
 
   const { data, error } = await query;
@@ -196,6 +203,11 @@ export async function applyClassification(
       activities_summary: classification.activitiesSummary,
       stage: classification.stage,
       recommended_product: classification.recommendedProduct,
+      has_hands_on_experience: classification.hasHandsOnExperience,
+      wants_pathlab: classification.wantsPathlab,
+      pathlab_pay_ready: classification.pathlabPayReady,
+      wants_community: classification.wantsCommunity,
+      wants_talent: classification.wantsTalent,
       classified_at: new Date().toISOString(),
     })
     .eq("id", conversationId);
@@ -244,7 +256,7 @@ export async function sendAdminReply(
 
   await supabase
     .from("dm_conversations")
-    .update({ last_message_at: sentAt })
+    .update({ last_message_at: sentAt, last_message_direction: "outbound" })
     .eq("id", conversationId);
 
   const { sendMetaMessage } = await import("@/lib/meta/graph");

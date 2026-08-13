@@ -18,8 +18,14 @@ export interface DmConversation {
   activities_summary: string | null;
   stage: DmLeadStage;
   recommended_product: string | null;
+  has_hands_on_experience: boolean;
+  wants_pathlab: boolean;
+  pathlab_pay_ready: boolean;
+  wants_community: boolean;
+  wants_talent: boolean;
   classified_at: string | null;
   last_message_at: string;
+  last_message_direction: DmMessageDirection | null;
   created_at: string;
   updated_at: string;
 }
@@ -45,6 +51,11 @@ export interface DmLeadClassification {
   activitiesSummary: string;
   stage: DmLeadStage;
   recommendedProduct: string;
+  hasHandsOnExperience: boolean;
+  wantsPathlab: boolean;
+  pathlabPayReady: boolean;
+  wantsCommunity: boolean;
+  wantsTalent: boolean;
 }
 
 export interface IgComment {
@@ -58,6 +69,11 @@ export interface IgComment {
   grade_level: string | null;
   stage: DmLeadStage;
   recommended_product: string | null;
+  has_hands_on_experience: boolean;
+  wants_pathlab: boolean;
+  pathlab_pay_ready: boolean;
+  wants_community: boolean;
+  wants_talent: boolean;
   classified_at: string | null;
   replied_at: string | null;
   commented_at: string;

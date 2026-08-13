@@ -71,6 +71,11 @@ export async function applyCommentClassification(
       grade_level: classification.gradeLevel,
       stage: classification.stage,
       recommended_product: classification.recommendedProduct,
+      has_hands_on_experience: classification.hasHandsOnExperience,
+      wants_pathlab: classification.wantsPathlab,
+      pathlab_pay_ready: classification.pathlabPayReady,
+      wants_community: classification.wantsCommunity,
+      wants_talent: classification.wantsTalent,
       classified_at: new Date().toISOString(),
     })
     .eq("id", commentId);

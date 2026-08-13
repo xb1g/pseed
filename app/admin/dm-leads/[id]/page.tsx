@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { getConversationWithMessages } from "@/lib/supabase/dm-leads";
 import { DmLeadReplyForm } from "@/components/admin/DmLeadReplyForm";
+import { LeadTagBadges } from "@/components/admin/LeadTagBadges";
 
 export const dynamic = "force-dynamic";
 
@@ -36,9 +37,12 @@ export default async function DmLeadDetailPage({
           {conversation.grade_level && <Badge variant="outline">{conversation.grade_level}</Badge>}
           <Badge variant="secondary">{conversation.stage}</Badge>
         </div>
-        {conversation.recommended_product && (
+        <div className="mt-2">
+          <LeadTagBadges tags={conversation} />
+        </div>
+        {conversation.interests.length > 0 && (
           <p className="mt-2 text-sm text-muted-foreground">
-            Recommended: {conversation.recommended_product}
+            Interests: {conversation.interests.join(", ")}
           </p>
         )}
       </div>

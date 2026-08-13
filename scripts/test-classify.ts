@@ -16,6 +16,13 @@ const samples = [
 
 for (const s of samples) {
   const c = classifyConversationText([s]);
-  console.log(`grade=${c.gradeLevel ?? "-"} stage=${c.stage} interests=[${c.interests.join(",")}]`);
+  const tags = [
+    c.hasHandsOnExperience && "hands-on",
+    c.wantsPathlab && "pathlab",
+    c.pathlabPayReady && "pay-ready",
+    c.wantsCommunity && "community",
+    c.wantsTalent && "talent",
+  ].filter(Boolean);
+  console.log(`grade=${c.gradeLevel ?? "-"} stage=${c.stage} tags=[${tags.join(",")}] interests=[${c.interests.join(",")}]`);
   console.log(`  "${s.slice(0, 70)}"`);
 }

@@ -23,6 +23,7 @@
     "reclassify:all": "dotenv -e .env.local -o -- tsx scripts/reclassify-all.ts",
     "check:counts": "dotenv -e .env.local -o -- tsx scripts/check-counts.ts",
     "inspect:current-data": "dotenv -e .env.local -o -- tsx scripts/inspect-current-data.ts",
+    "backfill:last-message-direction": "dotenv -e .env.local -o -- tsx scripts/backfill-last-message-direction.ts",
     "migrate:logs": "node scripts/migrate-console-logs.js",
     "migrate:logs:dry": "node scripts/migrate-console-logs.js --dry-run",
     "start": "next start",

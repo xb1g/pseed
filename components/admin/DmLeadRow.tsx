@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { getThread } from "@/app/admin/dm-leads/actions";
 import { DmLeadReplyForm } from "@/components/admin/DmLeadReplyForm";
+import { LeadTagBadges } from "@/components/admin/LeadTagBadges";
 import type { DmConversation, DmConversationWithMessages, DmLeadStage } from "@/types/dm-leads";
 
 const STAGE_LABEL: Record<DmLeadStage, string> = {
@@ -51,12 +52,15 @@ export function DmLeadRow({ conversation }: { conversation: DmConversation }) {
     }
   };
 
+  const myTurn = conversation.last_message_direction === "inbound";
+
   return (
     <>
-      <TableRow className="cursor-pointer" onClick={toggle}>
+      <TableRow className={cn("cursor-pointer", myTurn && "bg-amber-50 dark:bg-amber-950/20")} onClick={toggle}>
         <TableCell>
           <div className="flex items-center gap-1 font-medium">
             {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            {myTurn && <span className="mr-1 h-2 w-2 shrink-0 rounded-full bg-amber-500" title="Your turn to reply" />}
             {conversation.display_name || conversation.username || conversation.platform_user_id}
           </div>
         </TableCell>
@@ -65,8 +69,8 @@ export function DmLeadRow({ conversation }: { conversation: DmConversation }) {
         <TableCell>
           <Badge variant={STAGE_VARIANT[conversation.stage]}>{STAGE_LABEL[conversation.stage]}</Badge>
         </TableCell>
-        <TableCell className="max-w-[220px] truncate text-sm text-muted-foreground">
-          {conversation.recommended_product ?? "—"}
+        <TableCell>
+          <LeadTagBadges tags={conversation} />
         </TableCell>
         <TableCell className="text-sm text-muted-foreground">
           {formatDate(conversation.last_message_at)}

@@ -7,6 +7,8 @@ import { listInstagramConversations, getConversationMessages } from "../lib/meta
 import { recordBackfilledMessage, applyClassification } from "../lib/supabase/dm-leads";
 import { classifyConversationText } from "../lib/meta/classify";
 import { sleep, withRetry } from "./lib/rate-limit-retry";
+import { Checkpoint } from "./lib/checkpoint";
+import { createAdminClient } from "../utils/supabase/admin";
 
 const IG_USER_ID = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID;
 if (!IG_USER_ID) {
@@ -15,14 +17,32 @@ if (!IG_USER_ID) {
 }
 
 async function main() {
+  const checkpoint = new Checkpoint("dm-conversations");
   const conversations = await listInstagramConversations(IG_USER_ID!);
-  console.log(`Found ${conversations.length} conversations.`);
+
+  // Bootstrap from what's already in the DB from earlier (killed) runs, so a
+  // fresh checkpoint doesn't re-spend API budget re-fetching those.
+  const supabase = createAdminClient();
+  const { data: existing } = await supabase
+    .from("dm_conversations")
+    .select("platform_user_id")
+    .eq("platform", "instagram");
+  const existingParticipantIds = new Set((existing ?? []).map((r) => r.platform_user_id));
+  for (const convo of conversations) {
+    const participant = convo.participants?.data.find((p) => p.id !== IG_USER_ID);
+    if (participant && existingParticipantIds.has(participant.id)) checkpoint.markDone(convo.id);
+  }
+
+  console.log(`Found ${conversations.length} conversations. ${checkpoint.size} already done (from DB + previous checkpoint).`);
 
   let totalMessages = 0;
   for (const convo of conversations) {
+    if (checkpoint.has(convo.id)) continue;
+
     const participant = convo.participants?.data.find((p) => p.id !== IG_USER_ID);
     if (!participant) {
       console.log(`  ${convo.id}: no non-page participant, skipping`);
+      checkpoint.markDone(convo.id);
       continue;
     }
 
@@ -56,12 +76,14 @@ async function main() {
       }
 
       console.log(`  ${convo.id} (${participant.username ?? participant.id}): ${messages.length} messages`);
+      checkpoint.markDone(convo.id);
     } catch (error) {
       console.error(`  skipped conversation ${convo.id}:`, error instanceof Error ? error.message : error);
+      // not marked done — next run retries it
     }
   }
 
-  console.log(`Backfilled ${totalMessages} messages across ${conversations.length} conversations.`);
+  console.log(`Backfilled ${totalMessages} messages across ${conversations.length} conversations. ${checkpoint.size}/${conversations.length} total done.`);
 }
 
 main().catch((error) => {
