@@ -7,7 +7,12 @@
 --
 -- Research date: 2026-08-13 | Verified by: web research subagents
 -- Sources: posn.or.th, nstda.or.th, nsm.or.th, gistda.or.th, ncsa.or.th,
---          nectec.or.th, set.or.th, teolympiad.com, tpa.or.th, gammaco.co.th
+--          nectec.or.th, set.or.th, teolympiad.com, tpa.or.th, gammaco.co.th,
+--          contester.life
+--
+-- DESIGN NOTE: Crons expire and flag stale rows; they do NOT auto-insert next
+-- year's batch (that violates the hard rule). recurrence_pattern signals WHEN
+-- to check a source so the human review is proactive, not reactive.
 -- =============================================================================
 
 -- ---------------------------------------------------------------------------
@@ -21,15 +26,19 @@ CREATE TABLE IF NOT EXISTS public.competitions (
   field             text[]      NOT NULL,          -- e.g. ['วิศวกรรมศาสตร์','วิทยาการคอมพิวเตอร์']
   grade_levels      text[]      NOT NULL,          -- e.g. ['ม.4','ม.5','ม.6']
   weight            smallint    NOT NULL CHECK (weight BETWEEN 1 AND 5),
-  application_opens date,
-  deadline          date,
-  url               text,
-  source_checked_at timestamptz NOT NULL DEFAULT now(),
-  verified_by       text        DEFAULT 'web-research-2026-08-13',
-  notes             text,
-  is_active         boolean     NOT NULL DEFAULT true,
-  created_at        timestamptz NOT NULL DEFAULT now(),
-  updated_at        timestamptz NOT NULL DEFAULT now()
+  application_opens   date,
+  deadline            date,
+  -- 'annual-july' = check source every July; 'annual-september' = every Sept etc.
+  -- Format: 'annual-<month-name>' | 'biannual' | null (one-off / unknown)
+  recurrence_pattern  text,
+  url                 text,
+  contester_url       text,   -- contester.life listing URL if available
+  source_checked_at   timestamptz NOT NULL DEFAULT now(),
+  verified_by         text        DEFAULT 'web-research-2026-08-13',
+  notes               text,
+  is_active           boolean     NOT NULL DEFAULT true,
+  created_at          timestamptz NOT NULL DEFAULT now(),
+  updated_at          timestamptz NOT NULL DEFAULT now()
 );
 
 -- ---------------------------------------------------------------------------
@@ -91,7 +100,7 @@ CREATE POLICY "competitions_admin_write"
 
 INSERT INTO public.competitions (
   name_th, name_en, field, grade_levels, weight,
-  application_opens, deadline, url, notes, source_checked_at
+  application_opens, deadline, recurrence_pattern, url, notes, source_checked_at
 ) VALUES
 
 -- ══════════════════════════════════════════════════════════════════════════

@@ -61,8 +61,7 @@ export async function sendMetaMessage(
   });
 
   if (!res.ok) {
-    const errBody = await res.text();
-    throw new Error(`Meta Send API failed for ${platform} (${res.status}): ${errBody}`);
+    throw new Error(`Meta Send API failed for ${platform} (${res.status})`);
   }
 
   const json: { message_id?: string } = await res.json();
@@ -85,7 +84,7 @@ export async function getInstagramUsername(igsid: string): Promise<string | null
   );
 
   if (!res.ok) {
-    console.error(`Failed to resolve username for ${igsid}: ${res.status} ${await res.text()}`);
+    console.error(`Failed to resolve Meta username (${res.status})`);
     return null;
   }
 

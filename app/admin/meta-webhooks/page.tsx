@@ -24,8 +24,27 @@ function statusVariant(status: string): "default" | "secondary" | "destructive" 
   return "outline";
 }
 
-export default async function MetaWebhooksPage() {
-  const receipts = await getRecentMetaWebhookReceipts(100);
+export default async function MetaWebhooksPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string; kind?: string }>;
+}) {
+  const filters = await searchParams;
+  const allReceipts = await getRecentMetaWebhookReceipts(100);
+  const receipts = allReceipts.filter((receipt) => {
+    if (filters.status && receipt.status !== filters.status) return false;
+    if (
+      filters.kind &&
+      !receipt.meta_webhook_events.some((event) => event.event_kind === filters.kind)
+    ) {
+      return false;
+    }
+    return true;
+  });
+  const bodyAttempts = allReceipts.reduce<Record<string, number>>((counts, receipt) => {
+    counts[receipt.body_sha256] = (counts[receipt.body_sha256] ?? 0) + 1;
+    return counts;
+  }, {});
 
   return (
     <div className="space-y-5">
@@ -37,10 +56,46 @@ export default async function MetaWebhooksPage() {
         </p>
       </div>
 
+      <form className="flex flex-wrap items-end gap-3 rounded-lg border bg-muted/20 p-3">
+        <label className="space-y-1 text-xs font-medium">
+          <span>Status</span>
+          <select
+            name="status"
+            defaultValue={filters.status ?? ""}
+            className="block h-9 rounded-md border bg-background px-2 text-sm"
+          >
+            <option value="">All statuses</option>
+            <option value="processed">Processed</option>
+            <option value="partial">Partial</option>
+            <option value="failed">Failed</option>
+            <option value="received">Still processing</option>
+          </select>
+        </label>
+        <label className="space-y-1 text-xs font-medium">
+          <span>Exact event kind</span>
+          <input
+            name="kind"
+            defaultValue={filters.kind ?? ""}
+            placeholder="message.attachment"
+            className="block h-9 w-56 rounded-md border bg-background px-2 text-sm"
+          />
+        </label>
+        <button type="submit" className="h-9 rounded-md bg-primary px-3 text-sm text-primary-foreground">
+          Filter
+        </button>
+        {(filters.status || filters.kind) && (
+          <Link href="/admin/meta-webhooks" className="pb-2 text-xs underline underline-offset-2">
+            Clear
+          </Link>
+        )}
+      </form>
+
       {receipts.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            No webhook receipts recorded yet.
+            {allReceipts.length === 0
+              ? "No webhook receipts recorded yet."
+              : "No webhook receipts match these filters."}
           </CardContent>
         </Card>
       ) : (
@@ -68,6 +123,9 @@ export default async function MetaWebhooksPage() {
                   <span>{receipt.duplicate_count} duplicate</span>
                   <span>{receipt.ignored_count} ignored</span>
                   <span>{receipt.failed_count} failed</span>
+                  {bodyAttempts[receipt.body_sha256] > 1 && (
+                    <span>{bodyAttempts[receipt.body_sha256]} matching-body attempts</span>
+                  )}
                   <span className="font-mono">Body {receipt.body_sha256.slice(0, 12)}…</span>
                 </div>
 
@@ -114,6 +172,16 @@ export default async function MetaWebhooksPage() {
                               <p className="break-all font-mono text-[10px] text-muted-foreground">
                                 Comment {event.ig_comment_id}
                               </p>
+                            )}
+                            {event.raw_payload && (
+                              <details className="mt-1">
+                                <summary className="cursor-pointer font-medium text-destructive">
+                                  Raw failed/unknown payload
+                                </summary>
+                                <pre className="mt-1 max-h-48 max-w-xl overflow-auto whitespace-pre-wrap rounded bg-muted p-2 text-[10px]">
+                                  {JSON.stringify(event.raw_payload, null, 2)}
+                                </pre>
+                              </details>
                             )}
                           </td>
                           <td className="whitespace-nowrap px-3 py-2">
