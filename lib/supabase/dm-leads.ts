@@ -139,24 +139,103 @@ export async function updateConversationUsername(
   }
 }
 
+export type DmLeadIntentFilter =
+  | "pay_ready"
+  | "pathlab"
+  | "community"
+  | "talent"
+  | "hands_on";
+
+export interface DmLeadFilters {
+  stage?: DmLeadStage;
+  /** Grade label ("ม.4", "ปี 1", …) or "none" for unclassified. */
+  grade?: string;
+  platform?: DmPlatform;
+  intent?: DmLeadIntentFilter;
+  myTurnOnly?: boolean;
+  /** Case-insensitive match on username / display name. */
+  search?: string;
+  /** "newest" (default) or "waiting" (oldest unanswered first). */
+  sort?: "newest" | "waiting";
+  /** Only conversations where we already sent a /pathlab link (outbound). */
+  pathlabLinkSent?: boolean;
+}
+
+const INTENT_COLUMN: Record<DmLeadIntentFilter, string> = {
+  pay_ready: "pathlab_pay_ready",
+  pathlab: "wants_pathlab",
+  community: "wants_community",
+  talent: "wants_talent",
+  hands_on: "has_hands_on_experience",
+};
+
+function escapeIlike(term: string): string {
+  return term.replace(/[%_,()"]/g, " ").trim();
+}
+
+/** Shared filter application so list + facet counts stay in sync. */
+function applyDmLeadFilters<T>(
+  query: T,
+  filters: DmLeadFilters,
+  { skipStage = false }: { skipStage?: boolean } = {}
+): T {
+  let q = query as {
+    eq: (col: string, val: unknown) => typeof q;
+    is: (col: string, val: unknown) => typeof q;
+    or: (expr: string) => typeof q;
+  };
+
+  if (filters.stage && !skipStage) q = q.eq("stage", filters.stage);
+  if (filters.grade) {
+    q = filters.grade === "none" ? q.is("grade_level", null) : q.eq("grade_level", filters.grade);
+  }
+  if (filters.platform) q = q.eq("platform", filters.platform);
+  if (filters.intent) q = q.eq(INTENT_COLUMN[filters.intent], true);
+  if (filters.myTurnOnly) q = q.eq("last_message_direction", "inbound");
+  if (filters.search) {
+    const term = escapeIlike(filters.search);
+    if (term) q = q.or(`username.ilike.%${term}%,display_name.ilike.%${term}%`);
+  }
+
+  return q as unknown as T;
+}
+
+/**
+ * Conversation IDs where any outbound message contains a /pathlab link.
+ * Detected from message history, so it works for backfilled threads too.
+ */
+async function getPathlabLinkConversationIds(
+  supabase: ReturnType<typeof createAdminClient>
+): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from("dm_messages")
+    .select("conversation_id")
+    .eq("direction", "outbound")
+    .ilike("body", "%/pathlab%");
+
+  if (error) {
+    console.error("Error fetching pathlab-link messages:", error);
+    throw new Error("Failed to check sent PathLab links");
+  }
+
+  return new Set((data ?? []).map((m) => m.conversation_id));
+}
+
 export async function getConversationsForAdmin(
-  stage?: DmLeadStage,
-  myTurnOnly?: boolean
+  filters: DmLeadFilters = {}
 ): Promise<DmConversation[]> {
   const supabase = createAdminClient();
 
-  let query = supabase
-    .from("dm_conversations")
-    .select("*")
-    .order("last_message_at", { ascending: false });
-
-  if (stage) {
-    query = query.eq("stage", stage);
+  let query = supabase.from("dm_conversations").select("*");
+  query = applyDmLeadFilters(query, filters);
+  if (filters.pathlabLinkSent) {
+    const ids = await getPathlabLinkConversationIds(supabase);
+    if (ids.size === 0) return [];
+    query = query.in("id", [...ids]);
   }
-
-  if (myTurnOnly) {
-    query = query.eq("last_message_direction", "inbound");
-  }
+  query = query.order("last_message_at", {
+    ascending: filters.sort === "waiting",
+  });
 
   const { data, error } = await query;
 
@@ -166,6 +245,66 @@ export async function getConversationsForAdmin(
   }
 
   return data ?? [];
+}
+
+export interface DmLeadFacets {
+  /** Stage counts respect every active filter except the stage filter itself. */
+  stageCounts: Record<DmLeadStage, number>;
+  total: number;
+  needsReply: number;
+  payReady: number;
+  /** Conversations we already sent a /pathlab link to. */
+  pathlabSent: number;
+}
+
+const EMPTY_FACETS: DmLeadFacets = {
+  stageCounts: { unknown: 0, exploring: 0, building: 0, job_seeking: 0 },
+  total: 0,
+  needsReply: 0,
+  payReady: 0,
+  pathlabSent: 0,
+};
+
+export async function getDmLeadFacets(filters: DmLeadFilters = {}): Promise<DmLeadFacets> {
+  const supabase = createAdminClient();
+
+  const pathlabIds = await getPathlabLinkConversationIds(supabase);
+
+  let query = supabase
+    .from("dm_conversations")
+    .select("id, stage, last_message_direction, pathlab_pay_ready");
+  query = applyDmLeadFilters(query, filters, { skipStage: true });
+  if (filters.pathlabLinkSent) {
+    if (pathlabIds.size === 0) return EMPTY_FACETS;
+    query = query.in("id", [...pathlabIds]);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Error fetching dm_conversation facets:", error);
+    throw new Error("Failed to fetch conversation facets");
+  }
+
+  const rows = data ?? [];
+  const stageCounts: Record<DmLeadStage, number> = {
+    unknown: 0,
+    exploring: 0,
+    building: 0,
+    job_seeking: 0,
+  };
+  let needsReply = 0;
+  let payReady = 0;
+  let pathlabSent = 0;
+
+  for (const row of rows) {
+    if (row.stage in stageCounts) stageCounts[row.stage as DmLeadStage] += 1;
+    if (row.last_message_direction === "inbound") needsReply += 1;
+    if (row.pathlab_pay_ready) payReady += 1;
+    if (pathlabIds.has(row.id)) pathlabSent += 1;
+  }
+
+  return { stageCounts, total: rows.length, needsReply, payReady, pathlabSent };
 }
 
 export async function getConversationWithMessages(
