@@ -46,3 +46,21 @@ export interface DmLeadClassification {
   stage: DmLeadStage;
   recommendedProduct: string;
 }
+
+export interface IgComment {
+  id: string;
+  ig_comment_id: string;
+  media_id: string;
+  parent_comment_id: string | null;
+  username: string | null;
+  ig_user_id: string | null;
+  text: string;
+  grade_level: string | null;
+  stage: DmLeadStage;
+  recommended_product: string | null;
+  classified_at: string | null;
+  replied_at: string | null;
+  commented_at: string;
+  created_at: string;
+  updated_at: string;
+}

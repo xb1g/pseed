@@ -64,6 +64,62 @@ export async function recordInboundMessage(params: {
   return conversation;
 }
 
+/**
+ * Upserts a conversation + message pulled from Graph API history, not the
+ * webhook. Dedupes on platform_message_id so re-running backfill is safe.
+ */
+export async function recordBackfilledMessage(params: {
+  platform: DmPlatform;
+  platformThreadId: string;
+  platformUserId: string;
+  username?: string | null;
+  direction: DmMessageDirection;
+  body: string;
+  platformMessageId: string;
+  sentAt: string;
+}): Promise<string> {
+  const supabase = createAdminClient();
+
+  const { data: conversation, error: conversationError } = await supabase
+    .from("dm_conversations")
+    .upsert(
+      {
+        platform: params.platform,
+        platform_thread_id: params.platformThreadId,
+        platform_user_id: params.platformUserId,
+        username: params.username ?? null,
+        last_message_at: params.sentAt,
+      },
+      { onConflict: "platform,platform_thread_id", ignoreDuplicates: false }
+    )
+    .select()
+    .single();
+
+  if (conversationError) {
+    console.error("Error upserting dm_conversation (backfill):", conversationError);
+    throw new Error("Failed to record conversation");
+  }
+
+  const { error: messageError } = await supabase.from("dm_messages").upsert(
+    {
+      conversation_id: conversation.id,
+      direction: params.direction,
+      sender_type: params.direction === "inbound" ? "lead" : "admin",
+      body: params.body,
+      platform_message_id: params.platformMessageId,
+      sent_at: params.sentAt,
+    },
+    { onConflict: "platform_message_id", ignoreDuplicates: true }
+  );
+
+  if (messageError) {
+    console.error("Error upserting dm_message (backfill):", messageError);
+    throw new Error("Failed to record message");
+  }
+
+  return conversation.id;
+}
+
 export async function getConversationsForAdmin(
   stage?: DmLeadStage
 ): Promise<DmConversation[]> {
