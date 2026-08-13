@@ -120,6 +120,23 @@ export async function recordBackfilledMessage(params: {
   return conversation.id;
 }
 
+export async function updateConversationUsername(
+  conversationId: string,
+  username: string
+): Promise<void> {
+  const supabase = createAdminClient();
+
+  const { error } = await supabase
+    .from("dm_conversations")
+    .update({ username })
+    .eq("id", conversationId);
+
+  if (error) {
+    console.error("Error updating dm_conversation username:", error);
+    throw new Error("Failed to update username");
+  }
+}
+
 export async function getConversationsForAdmin(
   stage?: DmLeadStage
 ): Promise<DmConversation[]> {

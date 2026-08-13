@@ -18,6 +18,7 @@
     "list:dm-gap": "dotenv -e .env.local -o -- tsx scripts/list-dm-gap.ts",
     "verify:dm-gap": "dotenv -e .env.local -o -- tsx scripts/verify-dm-gap.ts",
     "check:recent-webhook": "dotenv -e .env.local -o -- tsx scripts/check-recent-webhook.ts",
+    "backfill:dm-usernames": "dotenv -e .env.local -o -- tsx scripts/backfill-dm-usernames.ts",
     "migrate:logs": "node scripts/migrate-console-logs.js",
     "migrate:logs:dry": "node scripts/migrate-console-logs.js --dry-run",
     "start": "next start",
