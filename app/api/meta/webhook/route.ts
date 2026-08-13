@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyMetaSignature } from "@/lib/meta/graph";
-import { recordInboundMessage, applyClassification, getConversationWithMessages } from "@/lib/supabase/dm-leads";
+import { verifyMetaSignature, getInstagramUsername } from "@/lib/meta/graph";
+import { recordInboundMessage, applyClassification, getConversationWithMessages, updateConversationUsername } from "@/lib/supabase/dm-leads";
 import { upsertComment, applyCommentClassification } from "@/lib/supabase/ig-comments";
 import { classifyConversationText } from "@/lib/meta/classify";
 import type { DmPlatform } from "@/types/dm-leads";
@@ -73,6 +73,11 @@ export async function POST(request: NextRequest) {
         platformMessageId: event.message.mid,
         sentAt: new Date(event.timestamp).toISOString(),
       });
+
+      if (!conversation.username && platform === "instagram") {
+        const username = await getInstagramUsername(event.sender.id);
+        if (username) await updateConversationUsername(conversation.id, username);
+      }
 
       const withMessages = await getConversationWithMessages(conversation.id);
       const inboundText = (withMessages?.dm_messages ?? [])

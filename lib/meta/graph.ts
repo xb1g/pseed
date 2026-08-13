@@ -66,6 +66,27 @@ export async function sendMetaMessage(
   }
 }
 
+/**
+ * Resolves an IGSID (the sender.id in a messaging webhook event, which is
+ * NOT a username) to a display username. The messaging webhook payload
+ * never includes username — this is the only way to get it.
+ */
+export async function getInstagramUsername(igsid: string): Promise<string | null> {
+  const accessToken = requireAccessToken();
+
+  const res = await fetch(
+    `${IG_GRAPH_HOST}/${GRAPH_API_VERSION}/${igsid}?fields=username&access_token=${encodeURIComponent(accessToken)}`
+  );
+
+  if (!res.ok) {
+    console.error(`Failed to resolve username for ${igsid}: ${res.status} ${await res.text()}`);
+    return null;
+  }
+
+  const json: { username?: string } = await res.json();
+  return json.username ?? null;
+}
+
 function requireAccessToken(): string {
   const accessToken = process.env.META_PAGE_ACCESS_TOKEN;
   if (!accessToken) {
