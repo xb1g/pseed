@@ -15,7 +15,8 @@ export async function replyToLead(conversationId: string, body: string) {
     await sendAdminReply(conversationId, body.trim());
   } catch (error) {
     console.error("replyToLead failed:", error);
-    return { ok: false, error: "Failed to send reply" };
+    const message = error instanceof Error ? error.message : "Failed to send reply";
+    return { ok: false, error: message };
   }
 
   revalidatePath("/admin/dm-leads");
