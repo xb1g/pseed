@@ -459,10 +459,10 @@ The approved hybrid scope is implemented in the worktree:
 Verification completed locally:
 
 ```text
-pnpm exec tsc --noEmit --pretty false                      PASS
+scoped TypeScript error filter for integration files       PASS
 targeted ESLint across all changed integration files       PASS
 7 parser + route tests                                     PASS
 git diff --check                                           PASS
 ```
 
-Database migration execution could not be tested locally because the Docker/OrbStack daemon was not running. No production migration or deployment was performed. The next researcher should apply the migration in a controlled environment, send fixture callbacks for each normalized kind, then verify the resulting IDs and statuses on `/admin/meta-webhooks` before enabling any additional Meta subscriptions.
+The repository-wide TypeScript command remains red on unrelated pre-existing files; its output contains no errors in the integration file set. Database migration and pgTAP execution could not be tested locally because the Docker/OrbStack daemon was not running. No production migration or deployment was performed. The next researcher should apply the migration in a controlled environment, run `supabase test db`, send fixture callbacks for each normalized kind, then verify the resulting IDs and statuses on `/admin/meta-webhooks` before enabling any additional Meta subscriptions.
