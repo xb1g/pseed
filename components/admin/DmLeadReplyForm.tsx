@@ -16,10 +16,32 @@ const TONE_STYLES: Record<string, string> = {
     "border-violet-300 bg-violet-50 hover:bg-violet-100 dark:border-violet-800 dark:bg-violet-950/40 dark:hover:bg-violet-950/70",
 };
 
-export function DmLeadReplyForm({ conversation }: { conversation: DmConversation }) {
-  const [body, setBody] = useState("");
+export const DM_REPLY_TEXTAREA_ID = "dm-reply-textarea";
+
+interface DmLeadReplyFormProps {
+  conversation: DmConversation;
+  /** Controlled body — when provided, onBodyChange must be too. */
+  body?: string;
+  onBodyChange?: (body: string) => void;
+  /** Called after a reply is successfully sent. */
+  onSent?: () => void;
+}
+
+export function DmLeadReplyForm({
+  conversation,
+  body: controlledBody,
+  onBodyChange,
+  onSent,
+}: DmLeadReplyFormProps) {
+  const [internalBody, setInternalBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const body = controlledBody ?? internalBody;
+  const setBody = (value: string) => {
+    if (onBodyChange) onBodyChange(value);
+    else setInternalBody(value);
+  };
 
   const suggestions = useMemo(
     () => getQuickReplies(contextFromConversation(conversation)),
@@ -35,6 +57,7 @@ export function DmLeadReplyForm({ conversation }: { conversation: DmConversation
         return;
       }
       setBody("");
+      onSent?.();
     });
   };
 
@@ -44,7 +67,7 @@ export function DmLeadReplyForm({ conversation }: { conversation: DmConversation
         <span className="flex items-center gap-1 text-xs text-muted-foreground">
           <Sparkles className="h-3 w-3" /> Quick replies
         </span>
-        {suggestions.map((s) => (
+        {suggestions.map((s, i) => (
           <button
             key={s.id}
             type="button"
@@ -56,11 +79,13 @@ export function DmLeadReplyForm({ conversation }: { conversation: DmConversation
               TONE_STYLES[s.tone]
             )}
           >
+            <span className="mr-1 opacity-50">{i + 1}.</span>
             {s.label}
           </button>
         ))}
       </div>
       <Textarea
+        id={DM_REPLY_TEXTAREA_ID}
         value={body}
         onChange={(e) => setBody(e.target.value)}
         onKeyDown={(e) => {
@@ -70,13 +95,15 @@ export function DmLeadReplyForm({ conversation }: { conversation: DmConversation
           }
         }}
         placeholder="Type a reply… (⌘/Ctrl + Enter to send)"
-        rows={4}
+        rows={3}
         disabled={isPending}
       />
       {error && <p className="text-sm text-destructive">{error}</p>}
-      <Button onClick={handleSend} disabled={isPending || !body.trim()}>
-        {isPending ? "Sending…" : "Send"}
-      </Button>
+      <div className="flex justify-end">
+        <Button size="sm" onClick={handleSend} disabled={isPending || !body.trim()}>
+          {isPending ? "Sending…" : "Send ⌘↵"}
+        </Button>
+      </div>
     </div>
   );
 }

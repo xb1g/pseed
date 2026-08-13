@@ -3,7 +3,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { getConversationWithMessages } from "@/lib/supabase/dm-leads";
+import { DmLeadManageBar } from "@/components/admin/DmLeadManageBar";
 import { DmLeadReplyForm } from "@/components/admin/DmLeadReplyForm";
+import { DmLeadTagsEditor } from "@/components/admin/DmLeadTagsEditor";
 import { LeadNeedsSummary } from "@/components/admin/LeadNeedsSummary";
 import { LeadTagBadges } from "@/components/admin/LeadTagBadges";
 
@@ -40,6 +42,10 @@ export default async function DmLeadDetailPage({
         </div>
         <div className="mt-2">
           <LeadTagBadges tags={conversation} />
+        </div>
+        <div className="mt-3 space-y-2">
+          <DmLeadManageBar conversation={conversation} />
+          <DmLeadTagsEditor conversation={conversation} />
         </div>
         {conversation.interests.length > 0 && (
           <p className="mt-2 text-sm text-muted-foreground">
