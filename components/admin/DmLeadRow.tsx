@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Flame } from "lucide-react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { getThread } from "@/app/admin/dm-leads/actions";
 import { DmLeadReplyForm } from "@/components/admin/DmLeadReplyForm";
+import { LeadNeedsSummary } from "@/components/admin/LeadNeedsSummary";
 import { LeadTagBadges } from "@/components/admin/LeadTagBadges";
 import type { DmConversation, DmConversationWithMessages, DmLeadStage } from "@/types/dm-leads";
 
@@ -53,13 +54,23 @@ export function DmLeadRow({ conversation }: { conversation: DmConversation }) {
   };
 
   const myTurn = conversation.last_message_direction === "inbound";
+  const hot = conversation.pathlab_pay_ready;
 
   return (
     <>
-      <TableRow className={cn("cursor-pointer", myTurn && "bg-amber-50 dark:bg-amber-950/20")} onClick={toggle}>
+      <TableRow
+        className={cn(
+          "cursor-pointer",
+          hot
+            ? "bg-red-50 dark:bg-red-950/20"
+            : myTurn && "bg-amber-50 dark:bg-amber-950/20"
+        )}
+        onClick={toggle}
+      >
         <TableCell>
           <div className="flex items-center gap-1 font-medium">
             {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            {hot && <Flame className="h-3.5 w-3.5 shrink-0 text-red-500" aria-label="Hot lead" />}
             {myTurn && <span className="mr-1 h-2 w-2 shrink-0 rounded-full bg-amber-500" title="Your turn to reply" />}
             {conversation.display_name || conversation.username || conversation.platform_user_id}
           </div>
@@ -83,6 +94,7 @@ export function DmLeadRow({ conversation }: { conversation: DmConversation }) {
               <p className="py-4 text-center text-sm text-muted-foreground">Loading…</p>
             ) : (
               <div className="space-y-3 py-3">
+                <LeadNeedsSummary conversation={conversation} />
                 <div className="max-h-80 space-y-2 overflow-y-auto">
                   {thread.dm_messages.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No messages.</p>
@@ -104,7 +116,7 @@ export function DmLeadRow({ conversation }: { conversation: DmConversation }) {
                   )}
                 </div>
                 <div onClick={(e) => e.stopPropagation()}>
-                  <DmLeadReplyForm conversationId={conversation.id} />
+                  <DmLeadReplyForm conversation={conversation} />
                 </div>
               </div>
             )}

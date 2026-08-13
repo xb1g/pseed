@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { getConversationWithMessages } from "@/lib/supabase/dm-leads";
 import { DmLeadReplyForm } from "@/components/admin/DmLeadReplyForm";
+import { LeadNeedsSummary } from "@/components/admin/LeadNeedsSummary";
 import { LeadTagBadges } from "@/components/admin/LeadTagBadges";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +46,9 @@ export default async function DmLeadDetailPage({
             Interests: {conversation.interests.join(", ")}
           </p>
         )}
+        <div className="mt-3 max-w-xl">
+          <LeadNeedsSummary conversation={conversation} />
+        </div>
       </div>
 
       <Card>
@@ -66,7 +70,7 @@ export default async function DmLeadDetailPage({
         </CardContent>
       </Card>
 
-      <DmLeadReplyForm conversationId={conversation.id} />
+      <DmLeadReplyForm conversation={conversation} />
     </div>
   );
 }
