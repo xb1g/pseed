@@ -15,6 +15,7 @@ const ADMIN_NAV_ITEMS = [
   { href: "/admin/event-tracker", label: "Event Tracker" },
   { href: "/admin/experts", label: "Experts" },
   { href: "/admin/dm-leads", label: "DM Leads" },
+  { href: "/admin/meta-webhooks", label: "Meta Webhooks" },
   { href: "/admin/ig-comments", label: "IG Comments" },
   { href: "/admin/talent", label: "Talent" },
   { href: "/admin/trials", label: "Trials" },

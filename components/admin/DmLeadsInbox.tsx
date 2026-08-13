@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Flame, Inbox, Keyboard, Star } from "lucide-react";
+import { Bell, Flame, Inbox, Keyboard, Maximize2, Minimize2, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { contextFromConversation, getQuickReplies } from "@/lib/dm-leads/quick-replies";
@@ -78,6 +78,7 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversation[
   const [replyBody, setReplyBody] = useState("");
   const [vimMode, setVimModeState] = useState(false);
   const [editorMode, setEditorMode] = useState<"normal" | "insert">("normal");
+  const [fullscreen, setFullscreen] = useState(false);
   const pendingG = useRef(false);
 
   // Persist the vim-mode preference across sessions. Loaded after mount to
@@ -137,9 +138,15 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversation[
     const focusReply = () => document.getElementById(DM_REPLY_TEXTAREA_ID)?.focus();
 
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isTypingTarget(e.target)) {
-        (e.target as HTMLElement).blur();
-        return;
+      if (e.key === "Escape") {
+        if (isTypingTarget(e.target)) {
+          (e.target as HTMLElement).blur();
+          return;
+        }
+        if (fullscreen) {
+          setFullscreen(false);
+          return;
+        }
       }
       if (isTypingTarget(e.target)) return;
 
@@ -183,6 +190,10 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversation[
         case "/":
           e.preventDefault();
           document.getElementById(DM_LEAD_SEARCH_INPUT_ID)?.focus();
+          return;
+        case "z":
+          e.preventDefault();
+          setFullscreen((v) => !v);
           return;
       }
 
@@ -233,7 +244,7 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversation[
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vimMode, items, selectedIndex, selected, suggestions, router]);
+  }, [vimMode, fullscreen, items, selectedIndex, selected, suggestions, router]);
 
   const handleSelect = (conversation: DmConversation) => {
     // Below lg the detail pane is hidden — go to the full page instead.
@@ -281,29 +292,55 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversation[
   }
 
   return (
-    <div className="space-y-2">
-      <div className="grid gap-4 lg:grid-cols-[360px_minmax(0,1fr)]">
-        <div className="overflow-hidden rounded-lg border">
+    <div
+      className={cn(
+        fullscreen
+          ? "fixed inset-0 z-50 flex flex-col gap-2 bg-background p-3"
+          : "space-y-2"
+      )}
+    >
+      <div
+        className={cn(
+          "grid gap-4 lg:grid-cols-[360px_minmax(0,1fr)]",
+          fullscreen ? "min-h-0 flex-1" : "lg:h-[calc(100vh-14rem)]"
+        )}
+      >
+        <div className="flex min-h-0 flex-col overflow-hidden rounded-lg border">
           <div className="flex items-center justify-between border-b bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
             <span>
               {selectedIndex + 1} / {items.length}
             </span>
-            <button
-              type="button"
-              onClick={() => setVimMode(!vimMode)}
-              title="Toggle vim mode"
-              className={cn(
-                "flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[10px] font-semibold transition-colors",
-                vimMode
-                  ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                  : "hover:text-foreground"
-              )}
-            >
-              <Keyboard className="h-3 w-3" />
-              VIM {vimMode ? "ON" : "OFF"}
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setFullscreen((v) => !v)}
+                title="Fullscreen (z), Esc to exit"
+                className="flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[10px] font-semibold transition-colors hover:text-foreground"
+              >
+                {fullscreen ? (
+                  <Minimize2 className="h-3 w-3" />
+                ) : (
+                  <Maximize2 className="h-3 w-3" />
+                )}
+                {fullscreen ? "EXIT" : "FULL"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setVimMode(!vimMode)}
+                title="Toggle vim mode"
+                className={cn(
+                  "flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-[10px] font-semibold transition-colors",
+                  vimMode
+                    ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    : "hover:text-foreground"
+                )}
+              >
+                <Keyboard className="h-3 w-3" />
+                VIM {vimMode ? "ON" : "OFF"}
+              </button>
+            </div>
           </div>
-          <div className="divide-y lg:h-[calc(100vh-16.5rem)] lg:overflow-y-auto">
+          <div className="min-h-0 flex-1 divide-y overflow-y-auto">
             {items.map((c) => {
               const isSelected = c.id === selected?.id;
               const myTurn = c.last_message_direction === "inbound";
@@ -387,7 +424,7 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversation[
           </div>
         </div>
 
-        <div className="hidden lg:block">
+        <div className="hidden min-h-0 lg:block">
           {selected && (
             <DmLeadDetailPane
               conversation={selected}
@@ -453,6 +490,9 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversation[
         </span>
         <span className="flex items-center gap-1">
           <Kbd>/</Kbd> ค้นหา
+        </span>
+        <span className="flex items-center gap-1">
+          <Kbd>z</Kbd> เต็มจอ
         </span>
         <span className="flex items-center gap-1">
           <Kbd>Esc</Kbd> {vimMode ? "normal mode" : "ออกจากช่องพิมพ์"}

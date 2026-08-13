@@ -1,12 +1,20 @@
 import Link from "next/link";
-import { Flame, Inbox, MessageSquareWarning } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   getConversationsForAdmin,
   getDmLeadFacets,
+  getDmLeadSignals,
   type DmLeadFilters,
   type DmLeadIntentFilter,
 } from "@/lib/supabase/dm-leads";
+import {
+  BUCKET_META,
+  BUCKET_ORDER,
+  SCOREBOARD_METRICS,
+  pct,
+  type DmLeadBucket,
+  type FunnelScoreboard,
+} from "@/lib/dm-leads/playbook";
 import { DmLeadsInbox } from "@/components/admin/DmLeadsInbox";
 import { DmLeadFilters as DmLeadFilterBar } from "@/components/admin/DmLeadFilters";
 import { RefreshButton } from "@/components/admin/RefreshButton";
@@ -14,14 +22,8 @@ import type { DmLeadStage, DmPlatform } from "@/types/dm-leads";
 
 export const dynamic = "force-dynamic";
 
-const STAGE_LABEL: Record<DmLeadStage, string> = {
-  unknown: "Unknown",
-  exploring: "Exploring",
-  building: "Building",
-  job_seeking: "Job seeking",
-};
-
 interface RawParams {
+  bucket?: string;
   stage?: string;
   turn?: string;
   grade?: string;
@@ -38,8 +40,14 @@ interface RawParams {
 
 const LEAD_STATUSES = ["new", "contacted", "qualified", "converted", "lost", "spam"] as const;
 
+function parseBucket(raw: string | undefined): DmLeadBucket | undefined {
+  if (!raw || raw === "all") return undefined;
+  return BUCKET_ORDER.find((b) => b === raw);
+}
+
 function parseFilters(raw: RawParams): DmLeadFilters {
   return {
+    bucket: parseBucket(raw.bucket),
     stage:
       raw.stage && raw.stage !== "all" ? (raw.stage as DmLeadStage) : undefined,
     grade: raw.grade && raw.grade !== "all" ? raw.grade : undefined,
@@ -70,6 +78,93 @@ function buildHref(raw: RawParams, patch: Partial<RawParams>) {
   return qs ? `/admin/dm-leads?${qs}` : "/admin/dm-leads";
 }
 
+const PILL_BASE = "rounded-full border px-2.5 py-0.5 text-xs transition-colors";
+
+/**
+ * Funnel health for the whole inbox, one compact strip. Failing metrics are
+ * red — the point of the strip is to be uncomfortable when we go quiet.
+ */
+function ScoreboardStrip({ scoreboard }: { scoreboard: FunnelScoreboard }) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border bg-muted/30 px-3 py-1.5 text-xs">
+      <span className="text-muted-foreground">
+        สุขภาพกรวย · คุยจริง <b className="text-foreground">{scoreboard.engaged}</b>
+      </span>
+      {SCOREBOARD_METRICS.map((metric) => {
+        const value = pct(scoreboard[metric.key], scoreboard.engaged);
+        const passing = value >= metric.targetPct;
+        return (
+          <span
+            key={metric.key}
+            className="flex items-center gap-1"
+            title={`ฐาน ${metric.baselinePct}% · เป้า ${metric.targetPct}%`}
+          >
+            <span className="text-muted-foreground">{metric.label}</span>
+            <b
+              className={cn(
+                "tabular-nums",
+                passing ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
+              )}
+            >
+              {value}%
+            </b>
+            <span className="text-muted-foreground/70">{passing ? "✓" : "✗"}</span>
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Primary navigation: the playbook work order, highest-value bucket first. */
+function BucketPills({
+  raw,
+  activeBucket,
+  bucketCounts,
+  total,
+}: {
+  raw: RawParams;
+  activeBucket: DmLeadBucket | undefined;
+  bucketCounts: Record<DmLeadBucket, number>;
+  total: number;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Link
+        href={buildHref(raw, { bucket: undefined })}
+        className={cn(
+          PILL_BASE,
+          !activeBucket
+            ? "border-foreground bg-foreground text-background"
+            : "text-muted-foreground hover:border-foreground/40 hover:text-foreground"
+        )}
+      >
+        All
+        <span className={cn("ml-1.5 text-xs", !activeBucket ? "opacity-80" : "opacity-60")}>
+          {total}
+        </span>
+      </Link>
+      {BUCKET_ORDER.map((bucket) => {
+        const meta = BUCKET_META[bucket];
+        const isActive = activeBucket === bucket;
+        return (
+          <Link
+            key={bucket}
+            href={buildHref(raw, { bucket: isActive ? undefined : bucket })}
+            title={meta.why}
+            className={cn(PILL_BASE, isActive ? meta.activeClass : meta.idleClass)}
+          >
+            {meta.label}
+            <span className={cn("ml-1.5 text-xs", isActive ? "opacity-80" : "opacity-60")}>
+              {bucketCounts[bucket]}
+            </span>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
 export default async function DmLeadsPage({
   searchParams,
 }: {
@@ -77,134 +172,56 @@ export default async function DmLeadsPage({
 }) {
   const raw = await searchParams;
   const filters = parseFilters(raw);
+  // One scan of dm_messages, shared by the list and the facets.
+  const signals = await getDmLeadSignals();
   const [conversations, facets] = await Promise.all([
-    getConversationsForAdmin(filters),
-    getDmLeadFacets(filters),
+    getConversationsForAdmin(filters, signals),
+    getDmLeadFacets(filters, signals),
   ]);
 
-  const activeStage = raw.stage && raw.stage !== "all" ? raw.stage : "all";
-  const myTurnOnly = raw.turn === "mine";
-  const pathlabSentOnly = raw.link === "pathlab";
-  const starredOnly = raw.star === "1";
-  const followUpDueOnly = raw.followup === "due";
-
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-semibold">DM Leads</h2>
-          <p className="text-sm text-muted-foreground">
-            Instagram &amp; Facebook DM leads, auto-labeled by stage.
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-baseline gap-2">
+          <h2 className="text-xl font-semibold">DM Leads</h2>
+          <p className="text-xs text-muted-foreground">
+            เรียงตามลำดับงานจาก reply playbook — ทำจากซ้ายไปขวา
           </p>
         </div>
         <RefreshButton />
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-        <span className="flex items-center gap-1.5">
-          <Inbox className="h-4 w-4" /> ทั้งหมด{" "}
-          <b className="text-foreground">{facets.total}</b>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <MessageSquareWarning className="h-4 w-4 text-amber-500" /> รอเราตอบ{" "}
-          <b className={cn(facets.needsReply > 0 && "text-amber-600 dark:text-amber-400")}>
-            {facets.needsReply}
-          </b>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <Flame className="h-4 w-4 text-red-500" /> พร้อมสมัคร{" "}
-          <b className={cn(facets.payReady > 0 && "text-red-600 dark:text-red-400")}>
-            {facets.payReady}
-          </b>
-        </span>
-        <span>
-          ตามตัวกรองนี้ <b className="text-foreground">{conversations.length}</b>
-        </span>
-      </div>
+      <ScoreboardStrip scoreboard={facets.scoreboard} />
 
-      <div className="flex flex-wrap items-center gap-2">
-        {(["all", "unknown", "exploring", "building", "job_seeking"] as const).map((s) => {
-          const isActive = activeStage === s;
-          const count = s === "all" ? facets.total : facets.stageCounts[s];
-          return (
-            <Link
-              key={s}
-              href={buildHref(raw, { stage: s === "all" ? undefined : s })}
-              className={cn(
-                "rounded-full border px-3 py-1 text-sm transition-colors",
-                isActive
-                  ? "border-foreground bg-foreground text-background"
-                  : "text-muted-foreground hover:border-foreground/40 hover:text-foreground"
-              )}
-            >
-              {s === "all" ? "All" : STAGE_LABEL[s]}
-              <span className={cn("ml-1.5 text-xs", isActive ? "opacity-80" : "opacity-60")}>
-                {count}
-              </span>
-            </Link>
-          );
-        })}
-        <span className="mx-1 text-muted-foreground">·</span>
-        <Link
-          href={buildHref(raw, { turn: myTurnOnly ? undefined : "mine" })}
-          className={cn(
-            "rounded-full border px-3 py-1 text-sm transition-colors",
-            myTurnOnly
-              ? "border-amber-500 bg-amber-500 text-white"
-              : "text-muted-foreground hover:border-amber-400 hover:text-amber-600"
-          )}
-        >
-          {myTurnOnly ? "✓ " : ""}รอเราตอบ
-          <span className="ml-1.5 text-xs opacity-70">{facets.needsReply}</span>
-        </Link>
-        <Link
-          href={buildHref(raw, { link: pathlabSentOnly ? undefined : "pathlab" })}
-          className={cn(
-            "rounded-full border px-3 py-1 text-sm transition-colors",
-            pathlabSentOnly
-              ? "border-emerald-500 bg-emerald-500 text-white"
-              : "text-muted-foreground hover:border-emerald-400 hover:text-emerald-600"
-          )}
-        >
-          {pathlabSentOnly ? "✓ " : ""}📨 ส่งลิงก์ PathLab แล้ว
-          <span className="ml-1.5 text-xs opacity-70">{facets.pathlabSent}</span>
-        </Link>
-        <Link
-          href={buildHref(raw, { star: starredOnly ? undefined : "1" })}
-          className={cn(
-            "rounded-full border px-3 py-1 text-sm transition-colors",
-            starredOnly
-              ? "border-amber-400 bg-amber-400 text-white"
-              : "text-muted-foreground hover:border-amber-400 hover:text-amber-500"
-          )}
-        >
-          {starredOnly ? "✓ " : ""}⭐ ติดดาว
-          <span className="ml-1.5 text-xs opacity-70">{facets.starred}</span>
-        </Link>
-        <Link
-          href={buildHref(raw, { followup: followUpDueOnly ? undefined : "due" })}
-          className={cn(
-            "rounded-full border px-3 py-1 text-sm transition-colors",
-            followUpDueOnly
-              ? "border-red-500 bg-red-500 text-white"
-              : "text-muted-foreground hover:border-red-400 hover:text-red-600"
-          )}
-        >
-          {followUpDueOnly ? "✓ " : ""}⏰ ถึงกำหนดติดตาม
-          <span className="ml-1.5 text-xs opacity-70">{facets.followUpDue}</span>
-        </Link>
-      </div>
+      <BucketPills
+        raw={raw}
+        activeBucket={filters.bucket}
+        bucketCounts={facets.bucketCounts}
+        total={facets.total}
+      />
 
       <DmLeadFilterBar
         values={{
+          stage: raw.stage ?? "all",
           grade: raw.grade ?? "all",
           intent: raw.intent ?? "all",
           platform: raw.platform ?? "all",
-          sort: raw.sort === "waiting" ? "waiting" : "newest",
-          search: raw.search ?? "",
           status: raw.status ?? "all",
           tag: raw.tag ?? "all",
+          sort: raw.sort === "waiting" ? "waiting" : "newest",
+          search: raw.search ?? "",
+          turn: raw.turn === "mine" ? "mine" : "",
+          link: raw.link === "pathlab" ? "pathlab" : "",
+          star: raw.star === "1" ? "1" : "",
+          followup: raw.followup === "due" ? "due" : "",
         }}
+        chipCounts={{
+          needsReply: facets.needsReply,
+          pathlabSent: facets.pathlabSent,
+          starred: facets.starred,
+          followUpDue: facets.followUpDue,
+        }}
+        stageCounts={facets.stageCounts}
         statusCounts={facets.leadStatusCounts}
         tagCounts={facets.tagCounts}
       />

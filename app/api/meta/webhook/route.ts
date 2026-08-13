@@ -1,14 +1,17 @@
+import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { verifyMetaSignature, getInstagramUsername } from "@/lib/meta/graph";
-import { recordInboundMessage, applyClassification, getConversationWithMessages, updateConversationUsername } from "@/lib/supabase/dm-leads";
-import { upsertComment, applyCommentClassification } from "@/lib/supabase/ig-comments";
-import { classifyConversationText } from "@/lib/meta/classify";
-import type { DmPlatform } from "@/types/dm-leads";
+import { verifyMetaSignature } from "@/lib/meta/graph";
+import { parseMetaWebhook } from "@/lib/meta/webhook-events";
+import { processMetaWebhookEvent } from "@/lib/meta/process-webhook-event";
+import {
+  createMetaWebhookReceipt,
+  finalizeMetaWebhookReceipt,
+  recordMetaWebhookEvent,
+  type MetaWebhookEventResult,
+  type MetaWebhookReceiptSummary,
+} from "@/lib/supabase/meta-webhook-events";
 
-/**
- * Meta calls this with hub.mode/hub.verify_token/hub.challenge once, when the
- * webhook URL is saved in the developer console, to prove we control it.
- */
+/** Meta uses this challenge once when the webhook URL is configured. */
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const mode = params.get("hub.mode");
@@ -22,35 +25,25 @@ export async function GET(request: NextRequest) {
   return new NextResponse("Forbidden", { status: 403 });
 }
 
-interface MetaMessagingEvent {
-  sender: { id: string };
-  recipient: { id: string };
-  timestamp: number;
-  message?: { mid: string; text?: string; is_echo?: boolean };
+function requestId(request: NextRequest): string | null {
+  return request.headers.get("x-request-id") ?? request.headers.get("x-vercel-id");
 }
 
-interface MetaCommentChange {
-  field: string;
-  value: {
-    id: string;
-    text: string;
-    media?: { id: string };
-    from?: { id: string; username?: string };
-    parent_id?: string;
-  };
+function emptySummary(): MetaWebhookReceiptSummary {
+  return { processed: 0, duplicate: 0, ignored: 0, failed: 0 };
 }
 
-interface MetaWebhookBody {
-  object: string;
-  entry: {
-    id: string;
-    time?: number;
-    messaging?: MetaMessagingEvent[];
-    changes?: MetaCommentChange[];
-  }[];
+function countResult(summary: MetaWebhookReceiptSummary, result: MetaWebhookEventResult): void {
+  summary[result.status] += 1;
 }
 
+/**
+ * Signature-valid deliveries are normalized, processed idempotently, and then
+ * given a durable receipt. Returning 500 on any failed event asks Meta to retry;
+ * message IDs and event-specific dedupe keys keep those retries safe.
+ */
 export async function POST(request: NextRequest) {
+  const startedAt = Date.now();
   const rawBody = await request.text();
   const signature = request.headers.get("x-hub-signature-256");
 
@@ -58,53 +51,73 @@ export async function POST(request: NextRequest) {
     return new NextResponse("Invalid signature", { status: 401 });
   }
 
-  const body = JSON.parse(rawBody) as MetaWebhookBody;
-  const platform: DmPlatform = body.object === "instagram" ? "instagram" : "facebook";
-
-  for (const entry of body.entry ?? []) {
-    for (const event of entry.messaging ?? []) {
-      if (!event.message || event.message.is_echo || !event.message.text) continue;
-
-      const conversation = await recordInboundMessage({
-        platform,
-        platformThreadId: event.sender.id,
-        platformUserId: event.sender.id,
-        body: event.message.text,
-        platformMessageId: event.message.mid,
-        sentAt: new Date(event.timestamp).toISOString(),
-      });
-
-      if (!conversation.username && platform === "instagram") {
-        const username = await getInstagramUsername(event.sender.id);
-        if (username) await updateConversationUsername(conversation.id, username);
-      }
-
-      const withMessages = await getConversationWithMessages(conversation.id);
-      const inboundText = (withMessages?.dm_messages ?? [])
-        .filter((m) => m.direction === "inbound")
-        .map((m) => m.body);
-
-      const classification = classifyConversationText(inboundText);
-      await applyClassification(conversation.id, classification);
-    }
-
-    for (const change of entry.changes ?? []) {
-      if (change.field !== "comments") continue;
-
-      const comment = await upsertComment({
-        igCommentId: change.value.id,
-        mediaId: change.value.media?.id ?? "",
-        parentCommentId: change.value.parent_id ?? null,
-        username: change.value.from?.username ?? null,
-        igUserId: change.value.from?.id ?? null,
-        text: change.value.text,
-        commentedAt: new Date().toISOString(),
-      });
-
-      const classification = classifyConversationText([comment.text]);
-      await applyCommentClassification(comment.id, classification);
-    }
+  let value: unknown;
+  try {
+    value = JSON.parse(rawBody);
+  } catch {
+    return new NextResponse("Invalid JSON", { status: 400 });
   }
 
-  return new NextResponse("EVENT_RECEIVED", { status: 200 });
+  let parsed;
+  try {
+    parsed = parseMetaWebhook(value);
+  } catch {
+    return new NextResponse("Invalid webhook payload", { status: 400 });
+  }
+
+  const receiptId = await createMetaWebhookReceipt({
+    providerRequestId: requestId(request),
+    objectType: parsed.objectType,
+    bodySha256: createHash("sha256").update(rawBody).digest("hex"),
+    entryCount: parsed.entryCount,
+    eventCount: parsed.events.length,
+  });
+  const summary = emptySummary();
+
+  for (const event of parsed.events) {
+    let result: MetaWebhookEventResult;
+    try {
+      result = await processMetaWebhookEvent(event);
+    } catch (error) {
+      console.error("Meta webhook event processing failed:", {
+        receiptId,
+        eventKind: event.kind,
+        error: error instanceof Error ? error.message : "unknown",
+      });
+      result = {
+        status: "failed",
+        errorCode: "event_processing_failed",
+      };
+    }
+
+    await recordMetaWebhookEvent({
+      receiptId,
+      dedupeKey: event.dedupeKey,
+      eventKind: event.kind,
+      sourceEventId: event.sourceEventId,
+      occurredAt: event.occurredAt,
+      result,
+      safeMetadata: event.metadata,
+      rawPayload: event.raw,
+    });
+    countResult(summary, result);
+  }
+
+  const status = await finalizeMetaWebhookReceipt(
+    receiptId,
+    summary,
+    summary.failed > 0 ? "event_processing_failed" : null
+  );
+  console.info("Meta webhook receipt completed", {
+    receiptId,
+    status,
+    eventCount: parsed.events.length,
+    ...summary,
+    durationMs: Date.now() - startedAt,
+  });
+
+  if (summary.failed > 0) {
+    return NextResponse.json({ receiptId, status }, { status: 500 });
+  }
+  return NextResponse.json({ receiptId, status: "EVENT_RECEIVED" }, { status: 200 });
 }

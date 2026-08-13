@@ -1,0 +1,101 @@
+/**
+ * Message-level pattern matching for the DM lead playbook.
+ *
+ * Pure module — takes rows of `dm_messages` and reduces them into the
+ * `DmLeadSignals` that `classifyBucket()` consumes. Kept separate from the data
+ * layer so the matchers are unit-testable and can run anywhere (a script, the
+ * client) without a Supabase client.
+ */
+
+import { EMPTY_SIGNALS, type DmLeadSignals } from "@/lib/dm-leads/playbook";
+import type { DmMessageDirection } from "@/types/dm-leads";
+
+/** The only columns of `dm_messages` any signal depends on. */
+export interface DmMessageSignalRow {
+  conversation_id: string;
+  direction: DmMessageDirection;
+  body: string | null;
+}
+
+/**
+ * A price is stated either as one of the four numbers we actually charge, or in
+ * Thai words. The number matcher is bounded by non-digits so "1299" or a phone
+ * number fragment does not read as "299".
+ */
+const PRICE_NUMBER_PATTERN = /(^|[^\d])(299|999|490|1,?000)([^\d]|$)/;
+const PRICE_WORD_PATTERN = /ราคา|ค่าใช้จ่าย|บาท/;
+
+/** A `/pathlab` URL, sent by us. */
+const PATHLAB_LINK_PATTERN = /\/pathlab/i;
+
+/**
+ * We pitched *something*, even without a link or a number: the camp, PathLab by
+ * name, or the "5 วัน" shape of the offer.
+ */
+const OFFER_PATTERN = /ค่าย|pathlab|โปรเจกต์\s*5\s*วัน|4\s*[-–]\s*5\s*วัน/i;
+
+export function mentionsPrice(body: string): boolean {
+  return PRICE_NUMBER_PATTERN.test(body) || PRICE_WORD_PATTERN.test(body);
+}
+
+export function mentionsPathlabLink(body: string): boolean {
+  return PATHLAB_LINK_PATTERN.test(body);
+}
+
+export function mentionsOffer(body: string): boolean {
+  return OFFER_PATTERN.test(body);
+}
+
+/**
+ * Folds every message into one `DmLeadSignals` per conversation. Conversations
+ * with no messages are absent from the map — callers fall back to
+ * `EMPTY_SIGNALS`.
+ */
+export function reduceMessagesToSignals(
+  rows: DmMessageSignalRow[]
+): Map<string, DmLeadSignals> {
+  const signals = new Map<string, DmLeadSignals>();
+
+  for (const row of rows) {
+    const current = signals.get(row.conversation_id) ?? { ...EMPTY_SIGNALS };
+    const body = row.body ?? "";
+    const outbound = row.direction === "outbound";
+
+    if (row.direction === "inbound") current.hasInbound = true;
+    if (outbound && mentionsPathlabLink(body)) current.pathlabLinkSent = true;
+    // Price counts from either side — the lead asking "เท่าไหร่ครับ" means the
+    // number is on the table, which is what the "hot" bucket is about.
+    if (mentionsPrice(body)) current.priceMentioned = true;
+    if (outbound && mentionsOffer(body)) current.offerMade = true;
+
+    signals.set(row.conversation_id, current);
+  }
+
+  // A link or a price is itself an offer, whatever the wording was.
+  for (const value of signals.values()) {
+    value.offerMade = value.offerMade || value.pathlabLinkSent || value.priceMentioned;
+  }
+
+  return signals;
+}
+
+export function signalsFor(
+  signals: Map<string, DmLeadSignals>,
+  conversationId: string
+): DmLeadSignals {
+  return signals.get(conversationId) ?? EMPTY_SIGNALS;
+}
+
+/**
+ * Single-thread variant for callers that already hold the messages — the admin
+ * detail pane, which must never open its own DB connection. Same matchers as
+ * the bulk path, so a lead's bucket cannot differ between list and detail.
+ */
+export function deriveSignalsFromMessages(
+  messages: Pick<DmMessageSignalRow, "direction" | "body">[] | undefined
+): DmLeadSignals {
+  if (!messages?.length) return EMPTY_SIGNALS;
+
+  const rows = messages.map((message) => ({ ...message, conversation_id: "single" }));
+  return signalsFor(reduceMessagesToSignals(rows), "single");
+}
