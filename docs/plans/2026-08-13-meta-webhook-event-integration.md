@@ -454,6 +454,7 @@ The approved hybrid scope is implemented in the worktree:
 - transcript rendering is shared through `components/admin/DmMessageBubble.tsx`;
 - admins can inspect evidence at `/admin/meta-webhooks` using receipt, request, source-event, conversation, message, and comment IDs;
 - failed and unknown raw event payloads are admin-only and cleared after 30 days.
+- `supabase/tests/meta_webhook_event_integration.test.sql` asserts RLS, client privileges, cleanup-function security, and retention behavior.
 
 Verification completed locally:
 
