@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { PathlabNav } from "@/components/pathlab/PathlabNav";
 import { PathlabHero } from "@/components/pathlab/PathlabHero";
 import { PathlabPortfolio } from "@/components/pathlab/PathlabPortfolio";
+import { PathlabProof } from "@/components/pathlab/PathlabProof";
 import { PathlabJourney } from "@/components/pathlab/PathlabJourney";
 import { PathlabStats } from "@/components/pathlab/PathlabStats";
 import { PathlabOffer } from "@/components/pathlab/PathlabOffer";
@@ -65,6 +66,7 @@ export default function PathlabPage() {
       </div>
 
       <PathlabHero />
+      <PathlabProof />
       <PathlabPortfolio />
       <PathlabJourney />
       <PathlabStats />

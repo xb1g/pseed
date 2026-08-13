@@ -9690,6 +9690,167 @@ summary:focus-visible .radar-expand-indicator {
   }
 }
 
+/* ── Proof: social-proof figure + example projects ── */
+
+.pathlab-proof {
+  padding: clamp(3rem, 8vw, 5rem) clamp(1.25rem, 5vw, 4rem)
+    clamp(4rem, 10vw, 7rem);
+  max-width: 82rem;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.pathlab-proof__figure {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: clamp(3rem, 10vw, 5.5rem);
+  font-weight: 700;
+  line-height: 1;
+  color: #c43e1d;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 0 rgba(196, 62, 29, 0);
+}
+
+/* The count-up ticks numbers fast; a matching glow pulse under the digits
+   sells the number as "charging up" rather than just changing text. */
+@media (prefers-reduced-motion: no-preference) {
+  .pathlab-proof__figure.is-shown {
+    animation: pathlab-figure-glow 1400ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99));
+  }
+}
+
+@keyframes pathlab-figure-glow {
+  0% {
+    text-shadow: 0 0 0 rgba(196, 62, 29, 0);
+  }
+  55% {
+    text-shadow: 0 0 28px rgba(196, 62, 29, 0.45);
+  }
+  100% {
+    text-shadow: 0 0 0 rgba(196, 62, 29, 0);
+  }
+}
+
+.pathlab-proof__headline {
+  margin-top: 0.5rem;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: clamp(1.4rem, 4vw, 2.1rem);
+  font-weight: 600;
+  line-height: 1.4;
+  color: #524746;
+  text-wrap: balance;
+}
+
+.pathlab-proof__sub {
+  margin-top: 0.6rem;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: clamp(0.95rem, 2vw, 1.05rem);
+  line-height: 1.7;
+  color: #6a5c5a;
+}
+
+.pathlab-proof__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(1.5rem, 4vw, 2.5rem);
+  margin: clamp(2.5rem, 6vw, 3.5rem) auto 0;
+  max-width: 52rem;
+  list-style: none;
+  padding: 0;
+  justify-items: center;
+}
+
+@media (min-width: 720px) {
+  .pathlab-proof__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.pathlab-proof__item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.85rem;
+  width: 100%;
+  max-width: 16rem;
+}
+
+.pathlab-proof__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 1.1rem;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(82, 71, 70, 0);
+  transition: transform var(--duration-snap, 160ms) var(--ease-snap, cubic-bezier(0.4, 0, 0.2, 1)),
+    box-shadow var(--duration-snap, 160ms) var(--ease-snap, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.pathlab-proof__frame img {
+  object-fit: cover;
+  transition: transform 420ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99));
+}
+
+.pathlab-proof__glow {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(to top, rgba(196, 62, 29, 0.4) 0%, transparent 60%);
+  clip-path: inset(100% 0 0 0);
+  opacity: 0;
+  filter: blur(14px);
+  pointer-events: none;
+  transition: clip-path 160ms var(--ease-snap, cubic-bezier(0.4, 0, 0.2, 1)),
+    opacity 160ms var(--ease-snap, cubic-bezier(0.4, 0, 0.2, 1)),
+    filter 160ms var(--ease-snap, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .pathlab-proof__item:hover .pathlab-proof__frame {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 26px rgba(82, 71, 70, 0.28);
+  }
+
+  .pathlab-proof__item:hover .pathlab-proof__frame img {
+    transform: scale(1.06);
+  }
+
+  .pathlab-proof__item:hover .pathlab-proof__glow {
+    clip-path: inset(0% 0 0 0);
+    opacity: 1;
+    filter: blur(3px);
+    transition: clip-path 420ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99)),
+      opacity 420ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99)),
+      filter 420ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99));
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pathlab-proof__item {
+    opacity: 0;
+    transform: translateY(18px);
+    transition:
+      opacity 620ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99)),
+      transform 620ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99));
+    transition-delay: calc(var(--i, 0) * 90ms);
+  }
+
+  .pathlab-proof__item.is-shown {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.pathlab-proof__caption {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  text-align: center;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: clamp(0.9rem, 2vw, 1rem);
+  line-height: 1.6;
+  color: #6a5c5a;
+}
+
 /* ── Stats: the case for starting early ── */
 
 .pathlab-stats {
@@ -9811,6 +9972,9 @@ summary:focus-visible .radar-expand-indicator {
 /* Brown cards invert the cream ground: the answer reads as a distinct block
    from the problem stated above it. */
 .pathlab-offer__card {
+  --tilt-x: 0;
+  --tilt-y: 0;
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
@@ -9818,6 +9982,65 @@ summary:focus-visible .radar-expand-indicator {
   border-radius: 1.25rem;
   background: #524746;
   text-align: center;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14), 0 0 0 rgba(196, 62, 29, 0);
+  transition: transform var(--duration-snap, 160ms) var(--ease-snap, cubic-bezier(0.4, 0, 0.2, 1)),
+    box-shadow var(--duration-snap, 160ms) var(--ease-snap, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+/* Rise + opacity, staggered on scroll reveal — matches PathlabStats/Portfolio. */
+@media (prefers-reduced-motion: no-preference) {
+  .pathlab-offer__card {
+    opacity: 0;
+    transform: translateY(18px);
+    transition:
+      opacity 620ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99)),
+      transform 620ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99));
+    transition-delay: calc(var(--i, 0) * 100ms);
+  }
+
+  .pathlab-offer__card.is-shown {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Layered glow: clip-path + opacity + blur animate together, per design
+   system. Hidden and diffuse at rest, revealed and focused on hover. */
+.pathlab-offer__card-glow {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(to top, rgba(196, 62, 29, 0.35) 0%, transparent 65%);
+  clip-path: inset(100% 0 0 0 round 1.25rem);
+  opacity: 0;
+  filter: blur(18px);
+  pointer-events: none;
+  transition: clip-path 160ms var(--ease-snap, cubic-bezier(0.4, 0, 0.2, 1)),
+    opacity 160ms var(--ease-snap, cubic-bezier(0.4, 0, 0.2, 1)),
+    filter 160ms var(--ease-snap, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .pathlab-offer__card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22), 0 0 44px rgba(196, 62, 29, 0.18);
+  }
+
+  .pathlab-offer__card:hover .pathlab-offer__card-glow {
+    clip-path: inset(0% 0 0 0 round 1.25rem);
+    opacity: 1;
+    filter: blur(3px);
+    transition: clip-path 420ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99)),
+      opacity 420ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99)),
+      filter 420ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99));
+  }
+}
+
+.pathlab-offer__card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .pathlab-offer__card-title {
@@ -9999,6 +10222,21 @@ summary:focus-visible .radar-expand-indicator {
   background: rgba(255, 255, 255, 0.55);
   border: 1px solid rgba(82, 71, 70, 0.12);
   min-height: 100%;
+  box-shadow: 0 0 0 rgba(196, 62, 29, 0);
+  transition: transform var(--duration-snap, 160ms) var(--ease-snap, cubic-bezier(0.4, 0, 0.2, 1)),
+    box-shadow var(--duration-snap, 160ms) var(--ease-snap, cubic-bezier(0.4, 0, 0.2, 1)),
+    border-color var(--duration-snap, 160ms) var(--ease-snap, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .pathlab-price__tier:hover {
+    transform: translateY(-4px);
+    border-color: rgba(196, 62, 29, 0.4);
+    box-shadow: 0 10px 24px rgba(82, 71, 70, 0.16), 0 0 36px rgba(196, 62, 29, 0.14);
+    transition: transform 380ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99)),
+      box-shadow 380ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99)),
+      border-color 380ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99));
+  }
 }
 
 .pathlab-price__tier--free {
@@ -10010,6 +10248,31 @@ summary:focus-visible .radar-expand-indicator {
   background: #524746;
   border-color: #524746;
   color: #fdf3e6;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .pathlab-price__tier--group:hover {
+    border-color: #524746;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28), 0 0 44px rgba(232, 155, 96, 0.28);
+  }
+}
+
+/* Featured tier only: a slow, quiet pulse on the chip so the "best value"
+   card draws the eye without competing with the other sections' motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .pathlab-price__tier--group .pathlab-price__chip {
+    animation: pathlab-chip-pulse 4001ms ease-in-out infinite;
+  }
+}
+
+@keyframes pathlab-chip-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(253, 243, 230, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(253, 243, 230, 0);
+  }
 }
 
 .pathlab-price__chip {

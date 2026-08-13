@@ -124,6 +124,42 @@ export const HERO = {
 
 export const PORTFOLIO_HEADING = "Port ที่ดีต้องการอะไร";
 
+export interface ProofProject {
+  src: string;
+  alt: string;
+  /** Two short lines: what it was, then where it landed. */
+  lines: string[];
+}
+
+/**
+ * Social-proof strip under the hero. Figure and project examples are
+ * placeholders pending real numbers/cases — swap PROOF.figure and
+ * PROOF_PROJECTS for verified data before this ships publicly.
+ */
+export const PROOF = {
+  figure: "200+",
+  headline: "นักเรียนติดมหาวิทยาลัยที่ใช่ ด้วยซัพพอร์ทจาก Passion Seed",
+  sub: "ตัวเลขจากนักเรียนที่ผ่าน Pathlab แล้วนำ Project ไปต่อยอดเป็น Port",
+} as const;
+
+export const PROOF_PROJECTS: ProofProject[] = [
+  {
+    src: "/pathlab/project.webp",
+    alt: "ตัวอย่าง Project ของนักเรียน Pathlab",
+    lines: ["ตัวอย่าง Project", "รอใส่เคสจริง"],
+  },
+  {
+    src: "/pathlab/nsc.webp",
+    alt: "ตัวอย่าง Project ของนักเรียน Pathlab",
+    lines: ["ตัวอย่าง Project", "รอใส่เคสจริง"],
+  },
+  {
+    src: "/pathlab/research.webp",
+    alt: "ตัวอย่าง Project ของนักเรียน Pathlab",
+    lines: ["ตัวอย่าง Project", "รอใส่เคสจริง"],
+  },
+];
+
 export const JOURNEY = {
   heading: "Learning journey เป็นยังไง",
   body: "เดินเป็นวัน ๆ บนแผนที่ — แต่ละวันมีโจทย์จริง Learn + Do แล้วไปต่อวันที่ถัดไป",
