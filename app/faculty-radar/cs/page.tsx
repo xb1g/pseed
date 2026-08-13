@@ -127,6 +127,8 @@ export const metadata = {
   description: "A student-facing preview of what Computer Science feels like inside university.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function ComputerScienceFacultyPage() {
   const tcasPrograms = await getComputerScienceTcasPrograms();
 

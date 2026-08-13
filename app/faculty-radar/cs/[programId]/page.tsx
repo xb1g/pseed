@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { getComputerScienceTcasProgram } from "@/lib/tcas/faculty-gallery";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({
   params,
 }: {

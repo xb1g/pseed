@@ -1,15 +1,14 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { getConversationsForAdmin } from "@/lib/supabase/dm-leads";
+import { DmLeadRow } from "@/components/admin/DmLeadRow";
 import type { DmLeadStage } from "@/types/dm-leads";
 
 export const dynamic = "force-dynamic";
@@ -20,22 +19,6 @@ const STAGE_LABEL: Record<DmLeadStage, string> = {
   building: "Building",
   job_seeking: "Job seeking",
 };
-
-const STAGE_VARIANT: Record<DmLeadStage, "secondary" | "default" | "outline"> = {
-  unknown: "outline",
-  exploring: "secondary",
-  building: "default",
-  job_seeking: "default",
-};
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export default async function DmLeadsPage({
   searchParams,
@@ -88,24 +71,7 @@ export default async function DmLeadsPage({
               </TableHeader>
               <TableBody>
                 {conversations.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell>
-                      <Link href={`/admin/dm-leads/${c.id}`} className="font-medium hover:underline">
-                        {c.display_name || c.username || c.platform_user_id}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="capitalize">{c.platform}</TableCell>
-                    <TableCell>{c.grade_level ?? "—"}</TableCell>
-                    <TableCell>
-                      <Badge variant={STAGE_VARIANT[c.stage]}>{STAGE_LABEL[c.stage]}</Badge>
-                    </TableCell>
-                    <TableCell className="max-w-[220px] truncate text-sm text-muted-foreground">
-                      {c.recommended_product ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {formatDate(c.last_message_at)}
-                    </TableCell>
-                  </TableRow>
+                  <DmLeadRow key={c.id} conversation={c} />
                 ))}
               </TableBody>
             </Table>

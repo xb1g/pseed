@@ -15,6 +15,13 @@ Key rules (full details in the doc):
 - Mobile touch devices: use `IntersectionObserver` + `@media (hover: none)` — never leave hover-only animations unhandled
 - Reuse `.ei-card` and `.ei-button-dusk` CSS classes from `app/globals.css` — do not redefine them inline
 
+## Micro PathLab Maps
+
+Before creating or publishing a short Micro PathLab for the standalone map
+viewer, read [`skills/create-micro-pathlab-map/SKILL.md`](skills/create-micro-pathlab-map/SKILL.md).
+These experiences must render through `app/map/[id]/page.tsx`; do not use the
+seed/day-based PathLab generator for this surface.
+
 ## Development Commands
 
 ```bash

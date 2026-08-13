@@ -6,6 +6,8 @@ export const metadata = {
   description: "Explore university faculties by what students actually face inside.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function FacultyRadarPage() {
   const tcasSummaries = await getFacultyTcasSummaries();
 

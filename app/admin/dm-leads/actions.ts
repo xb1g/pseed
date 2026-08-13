@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
-import { sendAdminReply } from "@/lib/supabase/dm-leads";
+import { sendAdminReply, getConversationWithMessages } from "@/lib/supabase/dm-leads";
 
 export async function replyToLead(conversationId: string, body: string) {
   await requireAdmin();
@@ -21,4 +21,9 @@ export async function replyToLead(conversationId: string, body: string) {
 
   revalidatePath("/admin/dm-leads");
   return { ok: true, error: null };
+}
+
+export async function getThread(conversationId: string) {
+  await requireAdmin();
+  return getConversationWithMessages(conversationId);
 }
