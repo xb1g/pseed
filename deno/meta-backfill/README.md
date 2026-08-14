@@ -3,7 +3,9 @@
 This Deno Deploy service runs Meta history backfill directly against the
 production Supabase database every 15 minutes. Vercel is not in the background
 execution path. A second daily cron refreshes normalized Contester and Devpost
-source records and promotes explicitly high-school-eligible Contester listings.
+source records. It follows every active Contester page and every Devpost online
+page (within documented safety caps), writes in chunks, and promotes only
+Contester listings with explicit high-school education eligibility.
 
 ## Deno Deploy configuration
 
@@ -24,6 +26,9 @@ definitions exist on branch timelines too, but the handler checks
 
 - Meta schedule: every 15 minutes, UTC;
 - competition source schedule: daily at 01:23 UTC;
+- source completeness and failures: persisted in `competition_sync_runs` for
+  `/admin/competitions`;
+- incomplete source runs never close unseen records or claim full coverage;
 - overlapping executions: prevented by Deno Deploy;
 - transient failures: retried after 1, 5, and 15 minutes;
 - completed Graph conversations/media are checkpointed in Supabase;

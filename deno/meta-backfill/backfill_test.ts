@@ -1,5 +1,10 @@
 import { classifyConversation } from "./classification.ts";
-import { contesterUrl, devpostDates } from "./competition-sync.ts";
+import {
+  contesterUrl,
+  deriveContesterEligibility,
+  devpostDates,
+  devpostUrl,
+} from "./competition-sync.ts";
 import { listConversations, MetaRequestError } from "./meta-client.ts";
 
 function assertEquals(actual: unknown, expected: unknown): void {
@@ -67,12 +72,38 @@ Deno.test("builds the public Contester page request without session data", () =>
   const url = new URL(contesterUrl(2));
   assertEquals(url.searchParams.get("page"), "2");
   assertEquals(url.searchParams.get("approvalStatus"), "APPROVED");
-  assertEquals(url.searchParams.get("showOnlyActive"), "false");
+  assertEquals(url.searchParams.get("showOnlyActive"), "true");
   assertEquals(url.searchParams.has("cookie"), false);
+});
+
+Deno.test("builds paginated Devpost requests at the supported page size", () => {
+  const url = new URL(devpostUrl(3));
+  assertEquals(url.searchParams.get("page"), "3");
+  assertEquals(url.searchParams.get("per_page"), "40");
+  assertEquals(url.searchParams.get("challenge_type[]"), "online");
 });
 
 Deno.test("normalizes Devpost submission windows", () => {
   const dates = devpostDates("Aug 01 - Sep 12, 2026");
   assertEquals(dates.opensAt?.slice(0, 10), "2026-08-01");
   assertEquals(dates.deadline?.slice(0, 10), "2026-09-12");
+});
+
+Deno.test("uses structured Contester eligibility evidence", () => {
+  assertEquals(
+    deriveContesterEligibility(["HIGH"], null, null).status,
+    "eligible",
+  );
+  assertEquals(
+    deriveContesterEligibility([], 16, 20).status,
+    "needs_review",
+  );
+  assertEquals(
+    deriveContesterEligibility(["BACHELOR"], 19, 30).status,
+    "ineligible",
+  );
+  assertEquals(
+    deriveContesterEligibility([], null, null).status,
+    "needs_review",
+  );
 });
