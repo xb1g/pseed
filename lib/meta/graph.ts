@@ -206,11 +206,22 @@ export interface GraphConversationSummary {
   participants?: { data: { id: string; username?: string }[] };
 }
 
+export interface GraphDmAttachment {
+  id?: string;
+  mime_type?: string;
+  name?: string;
+  size?: number;
+  file_url?: string;
+  image_data?: { url?: string; preview_url?: string; max_width?: number; max_height?: number };
+  video_data?: { url?: string; preview_url?: string };
+}
+
 export interface GraphDmMessage {
   id: string;
   message?: string;
   created_time: string;
   from?: { id: string; username?: string };
+  attachments?: { data: GraphDmAttachment[] };
 }
 
 /**
@@ -241,6 +252,35 @@ export async function listInstagramConversations(igUserId: string): Promise<Grap
   return conversations;
 }
 
+/**
+ * Finds the IG conversation ID corresponding to a given participant ID
+ * by searching through recent conversations.
+ */
+export async function findInstagramConversationForUser(
+  igUserId: string,
+  targetUserId: string
+): Promise<string | null> {
+  const accessToken = requireAccessToken();
+  let url: string | null =
+    `${IG_GRAPH_HOST}/${GRAPH_API_VERSION}/${igUserId}/conversations` +
+    `?platform=instagram&fields=participants&limit=50&access_token=${encodeURIComponent(accessToken)}`;
+
+  let pages = 0;
+  while (url && pages < 5) {
+    pages++;
+    const res = await fetch(url);
+    if (!res.ok) break;
+    const json: { data: GraphConversationSummary[]; paging?: { next?: string } } = await res.json();
+    for (const convo of json.data) {
+      const match = convo.participants?.data.some((p) => p.id === targetUserId);
+      if (match) return convo.id;
+    }
+    url = json.paging?.next ?? null;
+  }
+
+  return null;
+}
+
 /** Fetches full message history for one conversation, oldest first. */
 export async function getConversationMessages(conversationId: string): Promise<GraphDmMessage[]> {
   const accessToken = requireAccessToken();
@@ -248,7 +288,7 @@ export async function getConversationMessages(conversationId: string): Promise<G
 
   let url: string | null =
     `${IG_GRAPH_HOST}/${GRAPH_API_VERSION}/${conversationId}/messages` +
-    `?fields=id,message,created_time,from&limit=50&access_token=${encodeURIComponent(accessToken)}`;
+    `?fields=id,message,created_time,from,attachments{id,mime_type,name,size,file_url,image_data,video_data}&limit=50&access_token=${encodeURIComponent(accessToken)}`;
 
   while (url) {
     const res = await fetch(url);

@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ExternalLink } from "lucide-react";
+import { ChevronDown, ExternalLink, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { getThread, type LeadMetaPatch } from "@/app/admin/dm-leads/actions";
+import { getThread, syncLeadMessages, type LeadMetaPatch } from "@/app/admin/dm-leads/actions";
 import {
   BUCKET_META,
   COVERAGE_OFFER,
@@ -92,6 +92,9 @@ interface DmLeadDetailPaneProps {
   onMetaChange?: (patch: LeadMetaPatch) => void;
   /** Shared thread cache, lifted to the inbox so prefetched neighbors land here too. */
   threadCache: React.RefObject<Map<string, DmConversationWithMessages>>;
+  /** Sync newest content from Meta/DB */
+  onSync?: (conversationId: string) => Promise<void> | void;
+  isSyncing?: boolean;
 }
 
 /**
@@ -106,9 +109,13 @@ export function DmLeadDetailPane({
   onSent,
   onMetaChange,
   threadCache,
+  onSync,
+  isSyncing: propIsSyncing,
 }: DmLeadDetailPaneProps) {
   const [thread, setThread] = useState<DmConversationWithMessages | null>(null);
   const [loading, setLoading] = useState(true);
+  const [internalSyncing, setInternalSyncing] = useState(false);
+  const isSyncing = propIsSyncing ?? internalSyncing;
   const [scriptsOpen, setScriptsOpen] = useState(false);
   const threadRef = useRef<HTMLDivElement>(null);
 
@@ -156,6 +163,29 @@ export function DmLeadDetailPane({
     document.getElementById(DM_REPLY_TEXTAREA_ID)?.focus();
   };
 
+  const handleSync = async () => {
+    if (onSync) {
+      await onSync(conversation.id);
+      const updated = threadCache.current.get(conversation.id);
+      if (updated) setThread(updated);
+      return;
+    }
+
+    setInternalSyncing(true);
+    try {
+      const res = await syncLeadMessages(conversation.id);
+      if (res.ok && res.conversation) {
+        threadCache.current.set(conversation.id, res.conversation);
+        setThread(res.conversation);
+        onMetaChange?.(res.conversation);
+      }
+    } catch (error) {
+      console.error("Failed to sync conversation:", error);
+    } finally {
+      setInternalSyncing(false);
+    }
+  };
+
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-lg border">
       <div className="space-y-1.5 border-b px-3 py-2">
@@ -164,6 +194,16 @@ export function DmLeadDetailPane({
             {conversation.display_name || conversation.username || conversation.platform_user_id}
           </h3>
           <div className="ml-auto flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleSync}
+              disabled={isSyncing}
+              title="โหลดข้อความล่าสุด (Load newest content)"
+              className="inline-flex items-center gap-1 rounded border bg-background px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+            >
+              <RefreshCw className={cn("h-3 w-3", isSyncing && "animate-spin text-foreground")} />
+              <span className="hidden sm:inline">โหลดข้อความล่าสุด</span>
+            </button>
             <DmLeadManageBar conversation={conversation} onChange={onMetaChange} />
             <Link
               href={`/admin/dm-leads/${conversation.id}`}

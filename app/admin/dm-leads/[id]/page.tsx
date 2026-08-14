@@ -7,6 +7,7 @@ import { LeadNeedsSummary } from "@/components/admin/LeadNeedsSummary";
 import { LeadTagBadges } from "@/components/admin/LeadTagBadges";
 import { DmLeadConversation } from "@/components/admin/DmLeadConversation";
 import { PlanGeneratorModal } from "@/components/admin/PlanGeneratorModal";
+import { RefreshButton } from "@/components/admin/RefreshButton";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,10 @@ export default async function DmLeadDetailPage({
               <Badge variant="secondary">{conversation.stage}</Badge>
             </div>
           </div>
-          <PlanGeneratorModal conversation={conversation} />
+          <div className="flex items-center gap-2">
+            <RefreshButton />
+            <PlanGeneratorModal conversation={conversation} />
+          </div>
         </div>
         <div className="mt-2">
           <LeadTagBadges tags={conversation} />

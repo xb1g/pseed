@@ -80,7 +80,7 @@ function ReadinessMeter({ score }: { score: number }) {
   const activeSlots = Math.min(Math.max(score, 1), totalSlots);
 
   return (
-    <div className="plan-poster__card" style={{ padding: "24px 28px" }}>
+    <div className="plan-poster__card" style={{ padding: "20px 24px" }}>
       <div
         style={{
           display: "flex",
@@ -165,10 +165,10 @@ export const StudentPlanPoster = React.forwardRef<
         style={{
           position: "relative",
           zIndex: 1,
-          padding: "64px 64px 56px",
+          padding: "56px 56px 32px",
           display: "flex",
           flexDirection: "column",
-          gap: 40,
+          gap: 28,
           color: ink.primary,
         }}
       >
@@ -223,24 +223,24 @@ export const StudentPlanPoster = React.forwardRef<
             </span>
           </div>
 
-          <div style={{ marginTop: 28 }}>
+          <div style={{ marginTop: 24 }}>
             <div className="dawn-eyebrow" style={{ fontFamily: font.thai, fontSize: 16 }}>
               แผนเตรียมพอร์ตรายบุคคล
             </div>
             <h1
               style={{
                 fontFamily: font.display,
-                fontSize: 48,
+                fontSize: 46,
                 fontWeight: 700,
                 lineHeight: 1.25,
                 letterSpacing: "-0.01em",
                 color: "#ffffff",
-                margin: "10px 0 0",
+                margin: "8px 0 0",
               }}
             >
               {data.studentName || "นักเรียน"} · สาย{data.targetField}
             </h1>
-            <hr className="dawn-rule" style={{ margin: "22px 0 0", width: "72%" }} />
+            <hr className="dawn-rule" style={{ margin: "18px 0 0", width: "72%" }} />
           </div>
         </header>
 
@@ -268,7 +268,7 @@ export const StudentPlanPoster = React.forwardRef<
             <div
               key={item.rank}
               className="plan-poster__card"
-              style={{ padding: "24px 28px" }}
+              style={{ padding: "20px 24px" }}
             >
               <div style={{ display: "flex", gap: 18, alignItems: "flex-start" }}>
                 <span
@@ -349,7 +349,7 @@ export const StudentPlanPoster = React.forwardRef<
           <span className="dawn-eyebrow" style={{ fontFamily: font.thai, fontSize: 16 }}>
             ปฏิทิน 6 เดือน & กำหนดการจริง
           </span>
-          <div className="plan-poster__card" style={{ padding: "10px 28px" }}>
+          <div className="plan-poster__card" style={{ padding: "8px 24px" }}>
             {timeline.map((item, idx) => (
               <div
                 key={idx}
@@ -358,7 +358,7 @@ export const StudentPlanPoster = React.forwardRef<
                   alignItems: "center",
                   justifyContent: "space-between",
                   gap: 20,
-                  padding: "16px 0",
+                  padding: "12px 0",
                   borderBottom:
                     idx < timeline.length - 1
                       ? "1px solid rgba(255,255,255,0.06)"
@@ -410,7 +410,7 @@ export const StudentPlanPoster = React.forwardRef<
         </section>
 
         {/* Step 1 — the one gold keynote of the poster */}
-        <section className="dawn-keynote" style={{ padding: "30px 34px 30px 40px" }}>
+        <section className="dawn-keynote" style={{ padding: "24px 30px 24px 36px" }}>
           <div
             style={{
               display: "flex",
@@ -486,7 +486,7 @@ export const StudentPlanPoster = React.forwardRef<
         <section
           className="plan-poster__card"
           style={{
-            padding: "24px 28px",
+            padding: "20px 24px",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -556,21 +556,21 @@ export const StudentPlanPoster = React.forwardRef<
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            paddingTop: 24,
-            borderTop: "1px solid rgba(255,255,255,0.07)",
+            paddingTop: 12,
+            borderTop: "1px solid rgba(255,255,255,0.06)",
           }}
         >
           <span
             style={{
               fontFamily: font.mono,
-              fontSize: 14,
+              fontSize: 12,
               letterSpacing: "0.08em",
               color: ink.faint,
             }}
           >
             passionseed.org · แผนพอร์ตรายบุคคล
           </span>
-          <span style={{ fontFamily: font.mono, fontSize: 14, color: ink.faint }}>
+          <span style={{ fontFamily: font.mono, fontSize: 12, color: ink.faint }}>
             {new Date().toLocaleDateString("th-TH", {
               day: "numeric",
               month: "short",

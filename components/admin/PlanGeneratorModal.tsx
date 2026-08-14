@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { toBlob, toPng } from "html-to-image";
 import { StudentPlanPoster } from "@/components/plans/StudentPlanPoster";
 import { PosterScaler } from "@/components/plans/PosterScaler";
+import { deriveReadinessScore } from "@/lib/plans/readiness";
 import {
   generatePlanDraftAction,
   saveStudentPlanAction,
@@ -70,7 +71,11 @@ export function PlanGeneratorModal({
   const [studentName, setStudentName] = useState(defaultName);
   const [gradeLevel, setGradeLevel] = useState(defaultGrade);
   const [targetField, setTargetField] = useState(defaultField);
-  const [readinessScore, setReadinessScore] = useState(3);
+  // Derived from the conversation's classification signals (stage, hands-on
+  // experience, activities, interests) — the admin can still adjust it.
+  const [readinessScore, setReadinessScore] = useState(() =>
+    deriveReadinessScore(conversation)
+  );
 
   // Draft State
   const [draft, setDraft] = useState<GeneratedPlanDraft | null>(null);
@@ -90,6 +95,14 @@ export function PlanGeneratorModal({
     setStudentName(name);
     setGradeLevel(grade);
     setTargetField(field);
+    setReadinessScore(
+      deriveReadinessScore({
+        stage: conversation.stage,
+        has_hands_on_experience: conversation.has_hands_on_experience,
+        activities_summary: conversation.activities_summary,
+        interests: conversation.interests,
+      })
+    );
     setDraft(null);
     setSavedPlan(null);
   }, [
@@ -98,6 +111,9 @@ export function PlanGeneratorModal({
     conversation.username,
     conversation.grade_level,
     conversation.interests,
+    conversation.stage,
+    conversation.has_hands_on_experience,
+    conversation.activities_summary,
   ]);
 
   // Generate Draft on load or when opened
@@ -341,7 +357,7 @@ export function PlanGeneratorModal({
 
           <div className="space-y-1">
             <Label className="text-[11px] text-slate-400">
-              ความพร้อมพอร์ต (1–8) · ประเมินจากแชท
+              ความพร้อมพอร์ต (1–8) · คำนวณจาก stage ในแชท
             </Label>
             <Input
               type="number"

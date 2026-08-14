@@ -187,6 +187,8 @@ export async function recordBackfilledMessage(params: {
   body: string;
   platformMessageId: string;
   sentAt: string;
+  messageType?: DmMessageType;
+  attachments?: InboundAttachmentInput[];
 }): Promise<string> {
   const supabase = createAdminClient();
 
@@ -211,21 +213,46 @@ export async function recordBackfilledMessage(params: {
     throw new Error("Failed to record conversation");
   }
 
-  const { error: messageError } = await supabase.from("dm_messages").upsert(
-    {
-      conversation_id: conversation.id,
-      direction: params.direction,
-      sender_type: params.direction === "inbound" ? "lead" : "admin",
-      body: params.body,
-      platform_message_id: params.platformMessageId,
-      sent_at: params.sentAt,
-    },
-    { onConflict: "platform_message_id", ignoreDuplicates: true }
-  );
+  const { data: msgData, error: messageError } = await supabase
+    .from("dm_messages")
+    .upsert(
+      {
+        conversation_id: conversation.id,
+        direction: params.direction,
+        sender_type: params.direction === "inbound" ? "lead" : "admin",
+        body: params.body,
+        platform_message_id: params.platformMessageId,
+        message_type:
+          params.messageType ??
+          (params.attachments && params.attachments.length > 0 ? "attachment" : "text"),
+        sent_at: params.sentAt,
+      },
+      { onConflict: "platform_message_id", ignoreDuplicates: true }
+    )
+    .select("id")
+    .maybeSingle();
 
   if (messageError) {
     console.error("Error upserting dm_message (backfill):", messageError);
     throw new Error("Failed to record message");
+  }
+
+  const messageId = msgData?.id;
+  if (messageId && params.attachments && params.attachments.length > 0) {
+    const { error: attError } = await supabase.from("dm_message_attachments").upsert(
+      params.attachments.map((attachment, position) => ({
+        message_id: messageId,
+        attachment_type: attachment.type,
+        position,
+        source_url: attachment.url,
+        title: attachment.title,
+        payload: attachment.payload,
+      })),
+      { onConflict: "message_id,position" }
+    );
+    if (attError) {
+      console.error("Error upserting dm_message_attachments (backfill):", attError);
+    }
   }
 
   return conversation.id;

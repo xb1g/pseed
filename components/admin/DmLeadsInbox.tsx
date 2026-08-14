@@ -2,11 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Flame, Inbox, Keyboard, Maximize2, Minimize2, Star } from "lucide-react";
+import { Bell, Flame, Inbox, Keyboard, Maximize2, Minimize2, RefreshCw, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { contextFromConversation, getQuickReplies } from "@/lib/dm-leads/quick-replies";
-import { getThread, updateLead, type LeadMetaPatch } from "@/app/admin/dm-leads/actions";
+import { getThread, syncLeadMessages, updateLead, type LeadMetaPatch } from "@/app/admin/dm-leads/actions";
 import { DmLeadDetailPane } from "@/components/admin/DmLeadDetailPane";
 import { DM_REPLY_TEXTAREA_ID } from "@/components/admin/DmLeadReplyForm";
 import { DM_LEAD_SEARCH_INPUT_ID } from "@/components/admin/DmLeadFilters";
@@ -79,8 +79,27 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversation[
   const [vimMode, setVimModeState] = useState(false);
   const [editorMode, setEditorMode] = useState<"normal" | "insert">("normal");
   const [fullscreen, setFullscreen] = useState(false);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
   const pendingG = useRef(false);
   const threadCache = useRef(new Map<string, DmConversationWithMessages>());
+
+  const handleSyncChat = async (conversationId: string) => {
+    setSyncingId(conversationId);
+    try {
+      const res = await syncLeadMessages(conversationId);
+      if (res.ok && res.conversation) {
+        const updated = res.conversation;
+        threadCache.current.set(conversationId, updated);
+        setItems((prev) =>
+          prev.map((c) => (c.id === conversationId ? { ...c, ...updated } : c))
+        );
+      }
+    } catch (error) {
+      console.error("Failed to sync chat:", error);
+    } finally {
+      setSyncingId(null);
+    }
+  };
 
   // Persist the vim-mode preference across sessions. Loaded after mount to
   // avoid a server/client hydration mismatch.
@@ -412,9 +431,29 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversation[
                         }
                       />
                     )}
-                    <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                      {timeAgo(c.last_message_at)}
-                    </span>
+                    <div className="ml-auto flex items-center gap-1 shrink-0">
+                      <span className="text-xs text-muted-foreground">
+                        {timeAgo(c.last_message_at)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSyncChat(c.id);
+                        }}
+                        disabled={syncingId === c.id}
+                        title="โหลดข้อความล่าสุด (Load newest content)"
+                        aria-label="Load newest content"
+                        className="rounded p-0.5 text-muted-foreground/70 transition-colors hover:bg-background/80 hover:text-foreground disabled:opacity-50"
+                      >
+                        <RefreshCw
+                          className={cn(
+                            "h-3 w-3",
+                            syncingId === c.id && "animate-spin text-foreground"
+                          )}
+                        />
+                      </button>
+                    </div>
                   </div>
                   <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Badge variant={STAGE_VARIANT[c.stage]} className="px-1.5 py-0 text-[10px]">
@@ -455,6 +494,8 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversation[
               onSent={handleSent}
               onMetaChange={syncMeta}
               threadCache={threadCache}
+              onSync={handleSyncChat}
+              isSyncing={syncingId === selected.id}
             />
           )}
         </div>

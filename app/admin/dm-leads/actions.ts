@@ -107,3 +107,102 @@ export async function replyPubliclyToLeadComment(commentId: string, message: str
   return replyPublicly(commentId, message);
 }
 
+export async function syncLeadMessages(conversationId: string) {
+  await requireAdmin();
+
+  try {
+    const { createAdminClient } = await import("@/utils/supabase/admin");
+    const supabase = createAdminClient();
+    const { data: conv, error: convError } = await supabase
+      .from("dm_conversations")
+      .select("id, platform, platform_user_id, platform_thread_id, username")
+      .eq("id", conversationId)
+      .single();
+
+    if (convError || !conv) {
+      throw new Error("Conversation not found");
+    }
+
+    if (
+      conv.platform === "instagram" &&
+      process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID &&
+      process.env.META_PAGE_ACCESS_TOKEN
+    ) {
+      try {
+        const { findInstagramConversationForUser, getConversationMessages } = await import(
+          "@/lib/meta/graph"
+        );
+        const { recordBackfilledMessage, applyClassification } = await import(
+          "@/lib/supabase/dm-leads"
+        );
+        const { classifyConversationText } = await import("@/lib/meta/classify");
+
+        const igUserId = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID;
+        const targetUserId = conv.platform_user_id || conv.platform_thread_id;
+        const graphConvoId = await findInstagramConversationForUser(igUserId, targetUserId);
+
+        if (graphConvoId) {
+          const messages = await getConversationMessages(graphConvoId);
+          const inboundBodies: string[] = [];
+
+          for (const msg of messages) {
+            const direction = msg.from?.id === igUserId ? "outbound" : "inbound";
+            const attachments = (msg.attachments?.data ?? []).map((att) => ({
+              type: att.image_data ? "image" : att.video_data ? "video" : "attachment",
+              url: att.image_data?.url || att.file_url || att.video_data?.url || null,
+              title: att.name || (att.image_data ? "Image" : "Attachment"),
+              payload: {
+                mime_type: att.mime_type,
+                size: att.size,
+                preview_url: att.image_data?.preview_url || att.video_data?.preview_url,
+              },
+            }));
+
+            const bodyText =
+              msg.message ||
+              (attachments.length > 0
+                ? attachments.some((a) => a.type === "image")
+                  ? "[Image]"
+                  : "[Attachment]"
+                : "");
+
+            if (!bodyText && attachments.length === 0) continue;
+
+            await recordBackfilledMessage({
+              platform: "instagram",
+              platformThreadId: conv.platform_thread_id,
+              platformUserId: conv.platform_user_id,
+              username: conv.username ?? null,
+              direction,
+              body: bodyText || "[Attachment]",
+              platformMessageId: msg.id,
+              sentAt: msg.created_time,
+              messageType: attachments.length > 0 ? "attachment" : "text",
+              attachments,
+            });
+
+            if (direction === "inbound" && bodyText) inboundBodies.push(bodyText);
+          }
+
+          if (inboundBodies.length > 0) {
+            const classification = classifyConversationText(inboundBodies);
+            await applyClassification(conversationId, classification);
+          }
+        }
+      } catch (metaErr) {
+        console.error("Meta Graph API sync error for conversation:", metaErr);
+      }
+    }
+
+    const updated = await getConversationWithMessages(conversationId);
+    revalidatePath("/admin/dm-leads");
+    revalidatePath(`/admin/dm-leads/${conversationId}`);
+    return { ok: true, conversation: updated, error: null };
+  } catch (error) {
+    console.error("syncLeadMessages failed:", error);
+    const message = error instanceof Error ? error.message : "Failed to sync conversation";
+    return { ok: false, conversation: null, error: message };
+  }
+}
+
+

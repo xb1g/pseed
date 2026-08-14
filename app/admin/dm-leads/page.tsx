@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { cn } from "@/lib/utils";
 import {
   getConversationsForAdmin,
@@ -8,7 +7,6 @@ import {
   type DmLeadIntentFilter,
 } from "@/lib/supabase/dm-leads";
 import {
-  BUCKET_META,
   BUCKET_ORDER,
   SCOREBOARD_METRICS,
   pct,
