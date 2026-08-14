@@ -79,10 +79,17 @@ export function FieldDetailPanel({
       </div>
 
       <div className="pathlab-detail__block">
+        {/* The count comes from the data: paths do not all run the same
+            number of days, and the heading must not claim otherwise. */}
         <h4 className="pathlab-detail__block-title">
-          {FIELD_DETAIL_LABELS.days}
+          {detail.days.length} {FIELD_DETAIL_LABELS.daysPrefix}
         </h4>
-        <ol className="pathlab-detail__days">
+        <ol
+          className="pathlab-detail__days"
+          style={
+            { "--day-count": detail.days.length } as React.CSSProperties
+          }
+        >
           {detail.days.map((day, index) => (
             <li
               key={day.title}
