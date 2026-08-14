@@ -6,7 +6,7 @@ import { Bell, Flame, Inbox, Keyboard, Maximize2, Minimize2, Star } from "lucide
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { contextFromConversation, getQuickReplies } from "@/lib/dm-leads/quick-replies";
-import { updateLead, type LeadMetaPatch } from "@/app/admin/dm-leads/actions";
+import { getThread, updateLead, type LeadMetaPatch } from "@/app/admin/dm-leads/actions";
 import { DmLeadDetailPane } from "@/components/admin/DmLeadDetailPane";
 import { DM_REPLY_TEXTAREA_ID } from "@/components/admin/DmLeadReplyForm";
 import { DM_LEAD_SEARCH_INPUT_ID } from "@/components/admin/DmLeadFilters";
@@ -14,7 +14,7 @@ import {
   followUpTomorrow,
   isFollowUpDue,
 } from "@/components/admin/DmLeadManageBar";
-import type { DmConversation, DmLeadStage } from "@/types/dm-leads";
+import type { DmConversation, DmConversationWithMessages, DmLeadStage } from "@/types/dm-leads";
 
 const STAGE_LABEL: Record<DmLeadStage, string> = {
   unknown: "Unknown",
@@ -80,6 +80,7 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversation[
   const [editorMode, setEditorMode] = useState<"normal" | "insert">("normal");
   const [fullscreen, setFullscreen] = useState(false);
   const pendingG = useRef(false);
+  const threadCache = useRef(new Map<string, DmConversationWithMessages>());
 
   // Persist the vim-mode preference across sessions. Loaded after mount to
   // avoid a server/client hydration mismatch.
@@ -114,6 +115,27 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversation[
 
   // Fresh reply box per conversation.
   useEffect(() => setReplyBody(""), [selected?.id]);
+
+  // Prefetch neighboring threads so j/k and send-then-advance feel instant
+  // instead of showing "Loading…" for ~2s on every new lead.
+  useEffect(() => {
+    const neighborIds = [
+      items[selectedIndex + 1]?.id,
+      items[selectedIndex - 1]?.id,
+    ].filter((id): id is string => Boolean(id) && !threadCache.current.has(id!));
+
+    if (neighborIds.length === 0) return;
+    let cancelled = false;
+    for (const id of neighborIds) {
+      getThread(id).then((result) => {
+        if (cancelled || !result) return;
+        threadCache.current.set(id, result);
+      });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedIndex, items]);
 
   const suggestions = useMemo(
     () => (selected ? getQuickReplies(contextFromConversation(selected)) : []),
@@ -432,6 +454,7 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversation[
               onBodyChange={setReplyBody}
               onSent={handleSent}
               onMetaChange={syncMeta}
+              threadCache={threadCache}
             />
           )}
         </div>

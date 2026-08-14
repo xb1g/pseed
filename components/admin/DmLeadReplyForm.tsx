@@ -25,6 +25,12 @@ interface DmLeadReplyFormProps {
   onBodyChange?: (body: string) => void;
   /** Called after a reply is successfully sent. */
   onSent?: () => void;
+  /** When provided, overrides the built-in send handler (e.g. for optimistic UI). */
+  onSend?: () => void;
+  /** Externally controlled pending state — used together with onSend. */
+  isPending?: boolean;
+  /** Externally controlled error — used together with onSend. */
+  error?: string | null;
 }
 
 export function DmLeadReplyForm({
@@ -32,16 +38,21 @@ export function DmLeadReplyForm({
   body: controlledBody,
   onBodyChange,
   onSent,
+  onSend,
+  isPending: controlledIsPending,
+  error: controlledError,
 }: DmLeadReplyFormProps) {
   const [internalBody, setInternalBody] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [internalError, setInternalError] = useState<string | null>(null);
+  const [internalIsPending, startTransition] = useTransition();
 
   const body = controlledBody ?? internalBody;
   const setBody = (value: string) => {
     if (onBodyChange) onBodyChange(value);
     else setInternalBody(value);
   };
+  const error = onSend ? controlledError ?? null : internalError;
+  const isPending = onSend ? controlledIsPending ?? false : internalIsPending;
 
   const suggestions = useMemo(
     () => getQuickReplies(contextFromConversation(conversation)),
@@ -49,11 +60,15 @@ export function DmLeadReplyForm({
   );
 
   const handleSend = () => {
-    setError(null);
+    if (onSend) {
+      onSend();
+      return;
+    }
+    setInternalError(null);
     startTransition(async () => {
       const result = await replyToLead(conversation.id, body);
       if (!result.ok) {
-        setError(result.error);
+        setInternalError(result.error);
         return;
       }
       setBody("");
