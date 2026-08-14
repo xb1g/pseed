@@ -1,6 +1,6 @@
 # PassionSeed UI Design System
 
-> **Version 2.2** — Last updated: 2026-07-22
+> **Version 2.3** — Last updated: 2026-08-15
 >
 > This is a living document. If you add a new pattern, update this doc. If you can't explain it here, it doesn't belong in the codebase.
 
@@ -1368,7 +1368,7 @@ Basecamp-style margin note for the cream marketing page (`/pathlab`): a short, f
 - Copy stays short, warm, and humane — write it like a note from a friend
 - Alternate `-1.6deg` / `+1.3deg` tilts on neighbouring notes
 - `prefers-reduced-motion`: rotation is removed (a tilted highlight is layout, not essential)
-- Cream page only — Dawn/Dusk surfaces have their own annotation idioms
+- Works on the cream `/pathlab` page and on dark landing surfaces, where the yellow marker reads like a sticky note on a dark board (see `landing-testimonials.tsx`)
 
 **Usage:**
 ```tsx

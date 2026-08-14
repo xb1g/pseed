@@ -14,6 +14,8 @@ Key rules (full details in the doc):
 - Infinite pulse layers use **prime-number durations** to prevent visual sync
 - Mobile touch devices: use `IntersectionObserver` + `@media (hover: none)` — never leave hover-only animations unhandled
 - Reuse `.ei-card` and `.ei-button-dusk` CSS classes from `app/globals.css` — do not redefine them inline
+- Marketing/landing pages use **Basecamp-style margin notes** (`.pathlab-note` in `app/globals.css`): short, warm, humane asides in a yellow highlighter set at a casual angle. One per section, never on headings or body copy. Each note says the quiet human thing formal copy cannot (e.g. "รุ่นพี่เขียนเองทุกคน ไม่ได้จ้างนะ"). Copy lives in the `NOTES` block of `lib/content/pathlab-page.ts`; full spec in `docs/ui-design-system.md`
+- No em dashes (—) in user-facing copy. Use a comma, a colon, or rewrite the sentence
 
 ## Micro PathLab Maps
 

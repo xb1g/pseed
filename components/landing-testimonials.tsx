@@ -4,6 +4,34 @@ import { motion, useInView } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 import { useLanguage } from "@/lib/i18n/language-context";
 import { Quote, GraduationCap, CheckCircle2, Users, Target, School } from "lucide-react";
+import {
+  NOTES,
+  REVIEWS,
+  type AlumniReview,
+} from "@/lib/content/pathlab-page";
+
+/**
+ * The quotes are the real alumni reviews from /pathlab (REVIEWS is the
+ * single source of truth). They stay Thai in both language modes on
+ * purpose: a verbatim quote stops being verbatim once translated, and the
+ * IG handles are the receipt. Only the section chrome is translated.
+ */
+
+/** Card tints cycle through the landing palette. */
+const CARD_COLORS = [
+  "from-purple-500/20 to-purple-500/5",
+  "from-blue-500/20 to-blue-500/5",
+  "from-orange-500/20 to-orange-500/5",
+  "from-emerald-500/20 to-emerald-500/5",
+  "from-rose-500/20 to-rose-500/5",
+  "from-amber-500/20 to-amber-500/5",
+] as const;
+
+/** First letter of the IG handle, for the avatar disc. */
+function avatarLetter(handle: string): string {
+  const match = handle.match(/[a-z0-9]/i);
+  return match ? match[0].toUpperCase() : "★";
+}
 
 // Stats counter animation hook
 function useCountUp(end: number, duration: number = 2, start: number = 0) {
@@ -40,69 +68,25 @@ const content = {
     eyebrow: "Real Students, Real Results",
     title: "Join 20+ students who found their path.",
     subtitle: "Every direction report tells a story of self-discovery.",
+    note: "Every quote written by the alumni themselves, unpaid and unprompted.",
     stats: {
       students: { value: 20, suffix: "+", label: "Students discovered their path" },
       paths: { value: 15, suffix: "+", label: "Career paths explored" },
       schools: { value: 5, suffix: "+", label: "Partner universities" },
     },
-    testimonials: [
-      {
-        quote: "I thought I wanted to be a doctor because my parents said so. After trying the Medical PathLab, I realized I love the research side more than patient care. Now I'm aiming for biomedical research.",
-        name: "Pim",
-        school: "Chulalongkorn University",
-        avatar: "P",
-        color: "from-purple-500/20 to-purple-500/5",
-      },
-      {
-        quote: "The 5-day UX design challenge made me realize I actually enjoy problem-solving more than drawing. I switched from fine arts to Human-Computer Interaction and never looked back.",
-        name: "Ton",
-        school: "Thammasat University",
-        avatar: "T",
-        color: "from-blue-500/20 to-blue-500/5",
-      },
-      {
-        quote: "I was torn between engineering and business. The PathLab helped me discover product management — where I get to use both. Got an internship because I could speak both languages.",
-        name: "Mint",
-        school: "KMUTT",
-        avatar: "M",
-        color: "from-orange-500/20 to-orange-500/5",
-      },
-    ],
-    badge: "Verified PathLab Graduate",
+    badge: "Verified alumnus",
   },
   th: {
     eyebrow: "เสียงจากนักเรียนตัวจริง",
     title: "ร่วมกับนักเรียนกว่า 20 คนที่เจอทางที่ใช่",
     subtitle: "ทุกรีพอร์ตคือก้าวสำคัญของการค้นหาตัวเอง",
+    note: NOTES.reviews,
     stats: {
       students: { value: 20, suffix: "+", label: "น้องๆ ที่เราได้ดูแล" },
       paths: { value: 15, suffix: "+", label: "สายอาชีพที่ได้สำรวจ" },
       schools: { value: 5, suffix: "+", label: "มหาวิทยาลัยชั้นนำ" },
     },
-    testimonials: [
-      {
-        quote: "ตอนแรกคิดว่าต้องเป็นหมอเพราะที่บ้านอยากให้เป็น แต่พอได้ลองทำ PathLab สายการแพทย์จริงๆ ถึงรู้ว่าเราชอบงานวิจัยมากกว่าการตรวจคนไข้ ตอนนี้เลยมุ่งเป้าไปที่วิจัยชีวการแพทย์แทนค่ะ",
-        name: "พิม",
-        school: "จุฬาลงกรณ์มหาวิทยาลัย",
-        avatar: "พ",
-        color: "from-purple-500/20 to-purple-500/5",
-      },
-      {
-        quote: "โปรเจกต์ UX Challenge 5 วันทำให้ผมรู้ใจตัวเองว่าชอบการแก้ปัญหามากกว่าการแค่วาดรูป เลยตัดสินใจเปลี่ยนจากสาย Fine Arts มาเป็น HCI และไม่เคยหันหลังกลับไปมองเลยครับ",
-        name: "ต้น",
-        school: "มหาวิทยาลัยธรรมศาสตร์",
-        avatar: "ต",
-        color: "from-blue-500/20 to-blue-500/5",
-      },
-      {
-        quote: "หนูลังเลระหว่างสัตวแพทย์กับเทคนิคการแพทย์ พอได้ลอง PathLab ถึงรู้ว่าชอบตรวจวินิจฉัยมากกว่าการผ่าตัด ตอนนี้มั่นใจขึ้นเยอะเลยค่ะ",
-        name: "มิ้นท์",
-        school: "KMUTT",
-        avatar: "ม",
-        color: "from-orange-500/20 to-orange-500/5",
-      },
-    ],
-    badge: "ศิษย์เก่า PathLab (Verified)",
+    badge: "รุ่นพี่ตัวจริง",
   },
 };
 
@@ -144,21 +128,27 @@ function StatCard({
 }
 
 function TestimonialCard({
-  testimonial,
+  review,
   index,
   badge,
 }: {
-  testimonial: (typeof content.en.testimonials)[0];
+  review: AlumniReview;
   index: number;
   badge: string;
 }) {
+  /* Handles arrive as "IG:name"; the @ is the receipt that this is a real
+     account, not a persona. */
+  const handle = review.ig.replace(/^IG:/, "");
+
   return (
     <motion.div
       whileInView={{ opacity: 1, y: 0 }}
       initial={false}
       transition={{ duration: 0.6, delay: index * 0.1 + 0.3 }}
       viewport={{ once: true }}
-      className={`ei-card group relative p-8 border border-white/[0.06] bg-gradient-to-br ${testimonial.color} hover:border-white/[0.12] transition-all duration-500`}
+      className={`ei-card group relative p-8 border border-white/[0.06] bg-gradient-to-br ${
+        CARD_COLORS[index % CARD_COLORS.length]
+      } hover:border-white/[0.12] transition-all duration-500`}
     >
       {/* Quote icon — aligned to card padding, larger, with theme-aware hover */}
       <Quote className="absolute top-8 right-8 h-10 w-10 text-white/[0.08] group-hover:text-white/[0.18] transition-colors duration-500" />
@@ -173,20 +163,22 @@ function TestimonialCard({
 
       {/* Quote — improved typography with max line length */}
       <p className="text-slate-300 leading-[1.7] mb-8 text-[0.9375rem] max-w-[55ch]">
-        &ldquo;{testimonial.quote}&rdquo;
+        &ldquo;{review.quote}&rdquo;
       </p>
 
       {/* Author — refined spacing and alignment */}
       <div className="flex items-center gap-3.5 pt-4 border-t border-white/[0.04]">
         <div className="w-11 h-11 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-sm">
-          {testimonial.avatar}
+          {avatarLetter(handle)}
         </div>
         <div className="min-w-0">
-          <div className="font-semibold text-white text-sm">{testimonial.name}</div>
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
-            <GraduationCap className="h-3 w-3 flex-shrink-0" />
-            <span className="truncate">{testimonial.school}</span>
-          </div>
+          <div className="font-semibold text-white text-sm">@{handle}</div>
+          {review.by && (
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
+              <GraduationCap className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">{review.by}</span>
+            </div>
+          )}
         </div>
       </div>
     </motion.div>
@@ -235,6 +227,17 @@ export function LandingTestimonials() {
           >
             {t.subtitle}
           </motion.p>
+          {/* Basecamp-style margin note: the quiet honest thing, highlighted
+              and set at a casual angle. Yellow marker pops on the dark band. */}
+          <motion.p
+            whileInView={{ opacity: 1, y: 0 }}
+            initial={false}
+            transition={{ duration: 0.6, delay: 0.25 }}
+            viewport={{ once: true }}
+            className="pathlab-note-row"
+          >
+            <span className="pathlab-note pathlab-note--tilt-r">{t.note}</span>
+          </motion.p>
         </div>
 
         {/* Stats Grid */}
@@ -262,12 +265,13 @@ export function LandingTestimonials() {
           />
         </div>
 
-        {/* Testimonials Grid */}
+        {/* Testimonials Grid: the real alumni reviews from /pathlab. The mix
+            of long stories and two-word punch lines is the wall of love. */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {t.testimonials.map((testimonial, index) => (
+          {REVIEWS.map((review, index) => (
             <TestimonialCard
-              key={index}
-              testimonial={testimonial}
+              key={review.ig + index}
+              review={review}
               index={index}
               badge={t.badge}
             />
