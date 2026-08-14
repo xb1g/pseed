@@ -142,3 +142,35 @@ export async function markCommentReplied(commentId: string): Promise<void> {
     throw new Error("Failed to update comment");
   }
 }
+
+export async function getLatestCommentForUser(params: {
+  igUserId?: string | null;
+  username?: string | null;
+}): Promise<IgComment | null> {
+  const supabase = createAdminClient();
+
+  let query = supabase
+    .from("ig_comments")
+    .select("*")
+    .order("commented_at", { ascending: false })
+    .limit(1);
+
+  if (params.igUserId && params.username) {
+    query = query.or(`ig_user_id.eq.${params.igUserId},username.eq.${params.username}`);
+  } else if (params.igUserId) {
+    query = query.eq("ig_user_id", params.igUserId);
+  } else if (params.username) {
+    query = query.eq("username", params.username);
+  } else {
+    return null;
+  }
+
+  const { data, error } = await query.maybeSingle();
+  if (error) {
+    console.error("Error fetching latest comment for user:", error);
+    return null;
+  }
+
+  return data ?? null;
+}
+

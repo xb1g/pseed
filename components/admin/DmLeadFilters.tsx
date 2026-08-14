@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -145,21 +145,21 @@ export function DmLeadFilters({
   tagCounts,
 }: DmLeadFiltersProps) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [localValues, setLocalValues] = useState<DmLeadFilterValues>(values);
   const [search, setSearch] = useState(values.search);
   const isFirstRender = useRef(true);
 
-  // Debounce search → URL. Skip the initial mount so we don't loop.
+  // Sync server props into local state when props change
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    const timer = setTimeout(() => pushParams({ search }), 300);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
+    setLocalValues(values);
+    setSearch(values.search);
+  }, [values]);
 
   const pushParams = (patch: Partial<DmLeadFilterValues>) => {
+    const updated = { ...localValues, ...patch };
+    setLocalValues(updated);
+
     const params = new URLSearchParams(window.location.search);
     for (const [key, value] of Object.entries(patch)) {
       if (value && value !== "all" && !(key === "sort" && value === "newest")) {
@@ -169,29 +169,67 @@ export function DmLeadFilters({
       }
     }
     const qs = params.toString();
-    router.push(qs ? `/admin/dm-leads?${qs}` : "/admin/dm-leads");
+    const url = qs ? `/admin/dm-leads?${qs}` : "/admin/dm-leads";
+
+    startTransition(() => {
+      router.replace(url, { scroll: false });
+    });
   };
+
+  // Debounce search → URL. Skip the initial mount so we don't loop.
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    const timer = setTimeout(() => {
+      pushParams({ search });
+    }, 250);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
   const hasActiveFilters =
     SELECT_KEYS.some((k) => {
-      const v = values[k as keyof DmLeadFilterValues] as string;
+      const v = localValues[k as keyof DmLeadFilterValues] as string;
       return k === "sort" ? v !== "newest" : v !== "all";
     }) ||
-    values.search !== "" ||
-    CHIP_KEYS.some((k) => values[k as keyof DmLeadFilterValues] !== "");
+    localValues.search !== "" ||
+    CHIP_KEYS.some((k) => localValues[k as keyof DmLeadFilterValues] !== "");
 
   const clearAll = () => {
+    const cleared: DmLeadFilterValues = {
+      stage: "all",
+      grade: "all",
+      intent: "all",
+      platform: "all",
+      status: "all",
+      tag: "all",
+      sort: "newest",
+      search: "",
+      turn: "",
+      link: "",
+      star: "",
+      followup: "",
+    };
+    setLocalValues(cleared);
     setSearch("");
     const params = new URLSearchParams(window.location.search);
     for (const key of [...SELECT_KEYS, ...CHIP_KEYS, "search"]) params.delete(key);
     const qs = params.toString();
-    router.push(qs ? `/admin/dm-leads?${qs}` : "/admin/dm-leads");
+    const url = qs ? `/admin/dm-leads?${qs}` : "/admin/dm-leads";
+    startTransition(() => {
+      router.replace(url, { scroll: false });
+    });
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
+    <div className="relative flex flex-wrap items-center gap-1.5">
+      {isPending && (
+        <div className="absolute -top-1.5 left-0 right-0 h-0.5 animate-pulse bg-primary/60 rounded-full z-10" />
+      )}
       {TOGGLE_CHIPS.map((chip) => {
-        const active = values[chip.key] === chip.value;
+        const active = localValues[chip.key] === chip.value;
         const count = chipCounts?.[chip.countKey];
         return (
           <button
@@ -199,9 +237,9 @@ export function DmLeadFilters({
             type="button"
             onClick={() => pushParams({ [chip.key]: active ? "" : chip.value })}
             className={cn(
-              "rounded-full border px-2.5 py-1 text-xs transition-colors",
+              "rounded-full border px-2.5 py-1 text-xs transition-all cursor-pointer active:scale-95",
               active
-                ? chip.activeClass
+                ? cn(chip.activeClass, "font-medium shadow-sm")
                 : "text-muted-foreground hover:border-foreground/40 hover:text-foreground"
             )}
           >
@@ -216,21 +254,34 @@ export function DmLeadFilters({
 
       <span className="mx-0.5 text-border">|</span>
 
-      <div className="relative">
-        <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
+      <div className="relative flex items-center">
+        <Search className="absolute left-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
         <Input
           id={DM_LEAD_SEARCH_INPUT_ID}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="ค้นหา…  ( / )"
-          className="h-8 w-40 pl-7 text-xs"
+          className="h-8 w-40 pl-7 pr-6 text-xs"
         />
+        {search && (
+          <button
+            type="button"
+            onClick={() => {
+              setSearch("");
+              pushParams({ search: "" });
+            }}
+            className="absolute right-2 text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        )}
       </div>
 
-      <Select value={values.stage} onValueChange={(v) => pushParams({ stage: v })}>
+      <Select value={localValues.stage} onValueChange={(v) => pushParams({ stage: v })}>
         <SelectTrigger className="h-8 w-32 text-xs">
           <SelectValue placeholder="Stage" />
         </SelectTrigger>
+
         <SelectContent>
           <SelectItem value="all">ทุก stage</SelectItem>
           {STAGE_OPTIONS.map((o) => (
@@ -242,7 +293,7 @@ export function DmLeadFilters({
         </SelectContent>
       </Select>
 
-      <Select value={values.grade} onValueChange={(v) => pushParams({ grade: v })}>
+      <Select value={localValues.grade} onValueChange={(v) => pushParams({ grade: v })}>
         <SelectTrigger className="h-8 w-28 text-xs">
           <SelectValue placeholder="ชั้นปี" />
         </SelectTrigger>
@@ -256,7 +307,7 @@ export function DmLeadFilters({
         </SelectContent>
       </Select>
 
-      <Select value={values.intent} onValueChange={(v) => pushParams({ intent: v })}>
+      <Select value={localValues.intent} onValueChange={(v) => pushParams({ intent: v })}>
         <SelectTrigger className="h-8 w-36 text-xs">
           <SelectValue placeholder="ความต้องการ" />
         </SelectTrigger>
@@ -270,7 +321,7 @@ export function DmLeadFilters({
         </SelectContent>
       </Select>
 
-      <Select value={values.platform} onValueChange={(v) => pushParams({ platform: v })}>
+      <Select value={localValues.platform} onValueChange={(v) => pushParams({ platform: v })}>
         <SelectTrigger className="h-8 w-28 text-xs">
           <SelectValue placeholder="แพลตฟอร์ม" />
         </SelectTrigger>
@@ -284,7 +335,7 @@ export function DmLeadFilters({
         </SelectContent>
       </Select>
 
-      <Select value={values.status} onValueChange={(v) => pushParams({ status: v })}>
+      <Select value={localValues.status} onValueChange={(v) => pushParams({ status: v })}>
         <SelectTrigger className="h-8 w-28 text-xs">
           <SelectValue placeholder="สถานะ" />
         </SelectTrigger>
@@ -300,7 +351,7 @@ export function DmLeadFilters({
       </Select>
 
       {tagCounts && Object.keys(tagCounts).length > 0 && (
-        <Select value={values.tag} onValueChange={(v) => pushParams({ tag: v })}>
+        <Select value={localValues.tag} onValueChange={(v) => pushParams({ tag: v })}>
           <SelectTrigger className="h-8 w-28 text-xs">
             <SelectValue placeholder="แท็ก" />
           </SelectTrigger>
@@ -317,7 +368,7 @@ export function DmLeadFilters({
         </Select>
       )}
 
-      <Select value={values.sort} onValueChange={(v) => pushParams({ sort: v })}>
+      <Select value={localValues.sort} onValueChange={(v) => pushParams({ sort: v })}>
         <SelectTrigger className="h-8 w-32 text-xs">
           <SelectValue placeholder="เรียงตาม" />
         </SelectTrigger>
@@ -329,6 +380,7 @@ export function DmLeadFilters({
           ))}
         </SelectContent>
       </Select>
+
 
       {hasActiveFilters && (
         <Button variant="ghost" size="sm" onClick={clearAll} className="h-8 gap-1 px-2 text-xs">

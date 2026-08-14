@@ -22,6 +22,7 @@ import { DmLeadScripts } from "@/components/admin/DmLeadScripts";
 import { DmLeadTagsEditor } from "@/components/admin/DmLeadTagsEditor";
 import { LeadTagBadges } from "@/components/admin/LeadTagBadges";
 import { DmMessageBubble } from "@/components/admin/DmMessageBubble";
+import { DmLeadPublicReplyBar } from "@/components/admin/DmLeadPublicReplyBar";
 import type { DmConversation, DmConversationWithMessages } from "@/types/dm-leads";
 
 const COVERAGE_BADGE: Record<FieldCoverage, { label: string; className: string }> = {
@@ -216,6 +217,8 @@ export function DmLeadDetailPane({
           </div>
         )}
       </div>
+
+      <DmLeadPublicReplyBar conversation={conversation} thread={thread} />
 
       <div ref={threadRef} className="min-h-32 flex-1 space-y-2 overflow-y-auto p-3">
         {loading ? (

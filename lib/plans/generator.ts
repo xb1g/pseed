@@ -1,0 +1,647 @@
+import { createAdminClient } from "@/utils/supabase/admin";
+import { COVERED_FIELDS } from "@/lib/dm-leads/playbook";
+import type {
+  GeneratedPlanDraft,
+  PlanDraftRequest,
+  PlanPriorityItem,
+  PlanStepOneAction,
+  PlanTimelineItem,
+} from "@/types/student-plan";
+
+interface CompetitionRow {
+  id: string;
+  name_th: string;
+  name_en: string | null;
+  field: string[];
+  grade_levels: string[];
+  weight: number;
+  application_opens: string | null;
+  deadline: string | null;
+  url: string | null;
+  notes: string | null;
+}
+
+/**
+ * Format deadline date to readable Thai short date (e.g. '30 ก.ย. 69' or 'ปิด 15 เม.ย.')
+ */
+function formatDeadlineTh(dateStr: string | null): string {
+  if (!dateStr) return "ช่วงเปิดรับสมัคร";
+  try {
+    const d = new Date(dateStr);
+    const months = [
+      "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
+      "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."
+    ];
+    const day = d.getDate();
+    const month = months[d.getMonth()];
+    const year = (d.getFullYear() + 543) % 100;
+    return `ปิด ${day} ${month} ${year}`;
+  } catch {
+    return "ช่วงเปิดรับสมัคร";
+  }
+}
+
+function formatMonthTh(dateStr: string | null): string {
+  if (!dateStr) return "ช่วงเปิดเทอม";
+  try {
+    const d = new Date(dateStr);
+    const months = [
+      "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
+      "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."
+    ];
+    const month = months[d.getMonth()];
+    const year = (d.getFullYear() + 543) % 100;
+    return `${month} ${year}`;
+  } catch {
+    return "ช่วงเปิดเทอม";
+  }
+}
+
+/**
+ * Extract subfield and specific interests directly from conversation text
+ */
+export function extractSpecificFieldFromText(text: string, fallbackInterests: string[] = []): string {
+  const lower = text.toLowerCase();
+
+  // Specific high-intent subfields
+  if (lower.includes("ยานยนต์") || lower.includes("เครื่องกล")) {
+    return "วิศวกรรมเครื่องกล / ยานยนต์";
+  }
+  if (lower.includes("โยธา") || lower.includes("โครงสร้าง")) {
+    return "วิศวกรรมโยธา / โครงสร้าง";
+  }
+  if (lower.includes("หุ่นยนต์") || lower.includes("เมคคาทรอนิกส์") || lower.includes("robot")) {
+    return "วิศวกรรมหุ่นยนต์และระบบอัตโนมัติ";
+  }
+  if (lower.includes("ไฟฟ้า") || lower.includes("อิเล็กทรอนิกส์")) {
+    return "วิศวกรรมไฟฟ้าและอิเล็กทรอนิกส์";
+  }
+  if (lower.includes("การบิน") || lower.includes("อวกาศ") || lower.includes("aerospace")) {
+    return "วิศวกรรมการบินและอวกาศ";
+  }
+  if (lower.includes("วิศวะคอม") || lower.includes("วิศวกรรมคอม") || lower.includes("cecs")) {
+    return "วิศวกรรมคอมพิวเตอร์";
+  }
+  if (lower.includes("ai") || lower.includes("ปัญญาประดิษฐ์") || lower.includes("data")) {
+    return "วิทยาการคอมพิวเตอร์ / ปัญญาประดิษฐ์ (AI)";
+  }
+  if (lower.includes("cyber") || lower.includes("ความมั่นคงปลอดภัยไซเบอร์")) {
+    return "วิทยาการคอมพิวเตอร์ / ความมั่นคงปลอดภัยไซเบอร์";
+  }
+  if (
+    (lower.includes("ภาษา") && lower.includes("นิเทศ")) ||
+    (lower.includes("นิเทศ") && lower.includes("สื่อ"))
+  ) {
+    return "ภาษาและการสื่อสารดิจิทัล / นิเทศศาสตร์";
+  }
+  if (lower.includes("นิเทศ") || lower.includes("วารสาร") || lower.includes("ภาพยนตร์") || lower.includes("คอนเทนต์")) {
+    return "นิเทศศาสตร์ / สื่อสารมวลชน";
+  }
+  if (lower.includes("อักษร") || lower.includes("มนุษยศาสตร์") || lower.includes("ศิลปศาสตร์") || lower.includes("ภาษา")) {
+    return "อักษรศาสตร์ / ภาษาและการสื่อสาร";
+  }
+  if (lower.includes("ทันตะ") || lower.includes("หมอฟัน")) {
+    return "ทันตแพทยศาสตร์";
+  }
+  if (lower.includes("เภสัช")) {
+    return "เภสัชศาสตร์";
+  }
+  if (lower.includes("แพทย์") || lower.includes("หมอ")) {
+    return "แพทยศาสตร์";
+  }
+  if (lower.includes("พยาบาล")) {
+    return "พยาบาลศาสตร์";
+  }
+  if (lower.includes("ชีวการแพทย์") || lower.includes("biomedical")) {
+    return "วิศวกรรมชีวการแพทย์";
+  }
+  if (lower.includes("นิติ") || lower.includes("กฎหมาย")) {
+    return "นิติศาสตร์";
+  }
+  if (lower.includes("รัฐศาสตร์") || lower.includes("ความสัมพันธ์ระหว่างประเทศ")) {
+    return "รัฐศาสตร์ / ความสัมพันธ์ระหว่างประเทศ";
+  }
+  if (lower.includes("บริหาร") || lower.includes("bba") || lower.includes("ธุรกิจ") || lower.includes("การตลาด")) {
+    return "บริหารธุรกิจ / การตลาด";
+  }
+  if (lower.includes("เศรษฐศาสตร์") || lower.includes("econ")) {
+    return "เศรษฐศาสตร์";
+  }
+  if (lower.includes("สถาปัตย์") || lower.includes("interior") || lower.includes("ออกแบบ")) {
+    return "สถาปัตยกรรมศาสตร์ / การออกแบบ";
+  }
+  if (lower.includes("จิตวิทยา")) {
+    return "จิตวิทยา";
+  }
+
+  // Fallback to interests array or default
+  if (fallbackInterests.length > 0) {
+    return fallbackInterests.join(" / ");
+  }
+
+  return "วิศวกรรมศาสตร์";
+}
+
+/**
+ * Format student name cleanly for display and DM greetings
+ */
+export function formatStudentDisplayName(rawName?: string | null, username?: string | null): string {
+  if (rawName && rawName.trim() && rawName !== "null" && rawName !== "undefined") {
+    return rawName.replace(/^@+/, "").trim();
+  }
+  if (username && username.trim() && username !== "null" && username !== "undefined") {
+    return username.replace(/^@+/, "").trim();
+  }
+  return "น้อง";
+}
+
+/**
+ * Identify Field Archetype for ranked priorities
+ */
+function getFieldArchetype(field: string, interests: string[] = []): string {
+  const combined = `${field} ${interests.join(" ")}`.toLowerCase();
+
+  if (
+    combined.includes("วิศว") ||
+    combined.includes("หุ่นยนต์") ||
+    combined.includes("ยานยนต์") ||
+    combined.includes("เครื่องกล") ||
+    combined.includes("โยธา") ||
+    combined.includes("ไฟฟ้า") ||
+    combined.includes("การบิน")
+  ) {
+    return "engineering";
+  }
+  if (
+    combined.includes("คอม") ||
+    combined.includes("ซอฟต์แวร์") ||
+    combined.includes("ai") ||
+    combined.includes("ไอที") ||
+    combined.includes("cyber") ||
+    combined.includes("เว็บ") ||
+    combined.includes("data")
+  ) {
+    return "computer_science";
+  }
+  if (
+    combined.includes("แพทย์") ||
+    combined.includes("หมอ") ||
+    combined.includes("ทันตะ") ||
+    combined.includes("เภสัช") ||
+    combined.includes("พยาบาล") ||
+    combined.includes("ชีว") ||
+    combined.includes("สุขภาพ")
+  ) {
+    return "health_medical";
+  }
+  if (
+    combined.includes("ธุรกิจ") ||
+    combined.includes("บริหาร") ||
+    combined.includes("เศรษฐศาสตร์") ||
+    combined.includes("การตลาด") ||
+    combined.includes("startup") ||
+    combined.includes("การเงิน") ||
+    combined.includes("bba")
+  ) {
+    return "business_econ";
+  }
+  if (
+    combined.includes("นิเทศ") ||
+    combined.includes("สื่อ") ||
+    combined.includes("ภาษา") ||
+    combined.includes("วารสาร") ||
+    combined.includes("คอนเทนต์") ||
+    combined.includes("อักษร") ||
+    combined.includes("ศิลปศาสตร์")
+  ) {
+    return "communication_arts";
+  }
+  if (combined.includes("สถาปัตย์") || combined.includes("ออกแบบ") || combined.includes("design")) {
+    return "architecture_design";
+  }
+  if (combined.includes("นิติ") || combined.includes("กฎหมาย") || combined.includes("รัฐศาสตร์")) {
+    return "law_polsci";
+  }
+
+  return "general";
+}
+
+/**
+ * Generate 3 Ranked Priorities based on archetype
+ */
+function getRankedPrioritiesForArchetype(
+  archetype: string,
+  targetField: string
+): PlanPriorityItem[] {
+  switch (archetype) {
+    case "engineering":
+      return [
+        {
+          rank: 1,
+          title: "โปรเจกต์เชิงกลไก/วิศวกรรมจริง",
+          stars: 5,
+          description:
+            "เช่น ชิ้นงาน CAD 3D, โมเดลระบบส่งกำลัง/ช่วงล่าง, สิ่งประดิษฐ์กลไก หรือหุ่นยนต์ มีการคำนวณและชิ้นงานจริง",
+          tag: "โปรเจกต์หลักชูโรง",
+        },
+        {
+          rank: 2,
+          title: "เวทีแข่งด้านฟิสิกส์/สิ่งประดิษฐ์/กลไก",
+          stars: 4,
+          description:
+            "เช่น สอวน. ฟิสิกส์, โครงงานสิ่งประดิษฐ์คนรุ่นใหม่ (I-New Gen), หุ่นยนต์ ส.ส.ท. หรือ CanSat",
+          tag: "เวทีแข่งขัน",
+        },
+        {
+          rank: 3,
+          title: "ค่ายวิศวะที่ได้ลงมือทำจริงใน Lab",
+          stars: 3,
+          description:
+            "เช่น ค่าย 2B-KMUTT (มีโควตา TCAS1), ค่ายลานเกียร์ จุฬาฯ หรือค่ายเจาะลึกภาควิชา",
+          tag: "ค่ายมหาลัย",
+        },
+      ];
+
+    case "computer_science":
+      return [
+        {
+          rank: 1,
+          title: "โปรเจกต์ซอฟต์แวร์/AI ใช้งานได้จริง",
+          stars: 5,
+          description:
+            "เว็บแอป, โมเดล AI หรือระบบอัตโนมัติที่มีผู้ใช้งานจริงและขึ้น GitHub/Live Demo",
+          tag: "โปรเจกต์หลักชูโรง",
+        },
+        {
+          rank: 2,
+          title: "เวทีแข่งขัน Coding / Hackathon / NSC",
+          stars: 4,
+          description:
+            "เช่น NSC ครั้งที่ 28, Super AI Engineer, AI Builders, Thailand Cyber Top Talent",
+          tag: "เวทีแข่งขัน",
+        },
+        {
+          rank: 3,
+          title: "ค่ายเจาะลึกคอมพิวเตอร์ระดับมหาวิทยาลัย",
+          stars: 3,
+          description:
+            "เช่น ComCamp มจธ., NextGen AI สจล. หรือ Bangmod Hackathon",
+          tag: "ค่ายมหาลัย",
+        },
+      ];
+
+    case "health_medical":
+      return [
+        {
+          rank: 1,
+          title: "งานวิจัย/โครงงานวิทยาศาสตร์สุขภาพ & ชุมชน",
+          stars: 5,
+          description:
+            "โครงงานนวัตกรรมสุขภาพ, ชีวการแพทย์ หรือโปรเจกต์แก้ปัญหาสุขภาพชุมชนที่เก็บ Data จริง",
+          tag: "โปรเจกต์หลักชูโรง",
+        },
+        {
+          rank: 2,
+          title: "สอวน. ชีววิทยา / การประกวดโครงงาน YSC / JSTP",
+          stars: 5,
+          description:
+            "เวทีแข่งขันวิชาการและการประกวดโครงงานวิทยาศาสตร์ระดับประเทศ",
+          tag: "เวทีแข่งขัน",
+        },
+        {
+          rank: 3,
+          title: "ค่ายเจาะลึกสายแพทย์/เภสัช & กิจกรรมอาสา",
+          stars: 4,
+          description:
+            "เช่น ค่ายอยากเป็นหมอ MDCU, ค่าย Pharmacamp, ตอบปัญหาวิทยาศาสตร์การแพทย์ AMSci",
+          tag: "ค่ายมหาลัย",
+        },
+      ];
+
+    case "communication_arts":
+      return [
+        {
+          rank: 1,
+          title: "โปรเจกต์สื่อ/คอนเทนต์ที่มีผลงานและพัฒนาการจริง",
+          stars: 5,
+          description:
+            "เช่น คอนเทนต์ 2 ภาษา, บทความวิเคราะห์เจาะลึก, เพจ/ช่อง Podcast หรือสื่อมัลติมีเดีย",
+          tag: "โปรเจกต์หลักชูโรง",
+        },
+        {
+          rank: 2,
+          title: "เวทีประกวดนวัตกรรมสื่อและการสื่อสาร",
+          stars: 4,
+          description:
+            "เช่น ค่าย JWC (Junior Webmaster Camp - Web Content) หรือการแข่งขันสปีช/บทความ",
+          tag: "เวทีแข่งขัน",
+        },
+        {
+          rank: 3,
+          title: "ค่ายมหาลัยที่ได้ Workshop ผลงานจริงกลับมา",
+          stars: 3,
+          description:
+            "ค่ายนิเทศ/วารสารศาสตร์ที่ให้ทดลองผลิตสื่อจริง ไม่ใช่แค่ฟังบรรยาย",
+          tag: "ค่ายมหาลัย",
+        },
+      ];
+
+    case "business_econ":
+      return [
+        {
+          rank: 1,
+          title: "โปรเจกต์ธุรกิจจริง / Case Study ที่มี Traction",
+          stars: 5,
+          description:
+            "ทดลองทำธุรกิจขนาดเล็ก, แผนการตลาดดิจิทัล หรือโครงการแก้ปัญหาธุรกิจจริง",
+          tag: "โปรเจกต์หลักชูโรง",
+        },
+        {
+          rank: 2,
+          title: "การแข่งขัน Business Case / เศรษฐศาสตร์โอลิมปิก",
+          stars: 5,
+          description:
+            "เช่น TEO Thailand Economics Olympiad, ASPIRE Case Club มธ., SET INVESTORY",
+          tag: "เวทีแข่งขัน",
+        },
+        {
+          rank: 3,
+          title: "ค่ายบริหารธุรกิจและสตาร์ตอัปของมหาลัย",
+          stars: 3,
+          description:
+            "เวิร์กช็อป Business Model Canvas, Techstars Startup Weekend หรือ UniHack",
+          tag: "ค่ายมหาลัย",
+        },
+      ];
+
+    default:
+      return [
+        {
+          rank: 1,
+          title: `โปรเจกต์ชูโรงที่เกี่ยวข้องกับสาย ${targetField}`,
+          stars: 5,
+          description:
+            "ผลงานที่เป็นรูปธรรม 1 ชิ้น แสดงถึงความสนใจและทักษะเฉพาะทางที่ลึกซึ้ง",
+          tag: "โปรเจกต์หลักชูโรง",
+        },
+        {
+          rank: 2,
+          title: "การแข่งขัน/โครงงานระดับจังหวัดหรือระดับประเทศ",
+          stars: 4,
+          description:
+            "เวทีประกวดที่วัดทักษะเฉพาะทางและมีเกียรติบัตรรับรอง",
+          tag: "เวทีแข่งขัน",
+        },
+        {
+          rank: 3,
+          title: "ค่ายเจาะลึกวิชาชีพของมหาวิทยาลัย",
+          stars: 3,
+          description:
+            "ค่ายเชิงปฏิบัติการที่ได้ลงมือทำจริงร่วมกับอาจารย์และรุ่นพี่",
+          tag: "ค่ายมหาลัย",
+        },
+      ];
+  }
+}
+
+/**
+ * Format Value-First DM Copy
+ */
+export function formatPlanDmCopy(draft: {
+  studentName: string;
+  gradeLevel: string;
+  targetField: string;
+  rankedPriorities: PlanPriorityItem[];
+  stepOneAction: PlanStepOneAction;
+}): string {
+  const nameDisplay = draft.studentName ? `น้อง ${draft.studentName}` : "น้อง";
+
+  const priorityLines = draft.rankedPriorities
+    .map(
+      (p) =>
+        `${p.rank}. ${p.title} ${"★".repeat(p.stars)}${"☆".repeat(5 - p.stars)}\n   ${p.description}`
+    )
+    .join("\n\n");
+
+  return `จัดให้เลยครับ${nameDisplay}! 🎯 พี่ลองวางเป็นแนวทางสำหรับ **${draft.gradeLevel} ${draft.targetField}** ให้ก่อนนะ
+
+**3 อย่างที่พี่อยากให้น้องโฟกัส (เรียงตามน้ำหนักพอร์ต)**
+
+${priorityLines}
+
+**ช่วง 6 เดือนนี้**
+1. เริ่มจากทำโปรเจกต์ชิ้นแรกให้เสร็จสมบูรณ์ 1 ชิ้น
+2. ติดตามกำหนดการค่ายและเวทีแข่งที่ตรงสาย
+3. สรุปกระบวนการคิดและผลงานลง Portfolio พร้อมยื่น TCAS1
+
+ส่วนพี่อยากให้น้องเริ่มจากการ **ลองทำโปรเจกต์จริง 1 ชิ้นก่อน** จะได้รู้ด้วยว่าชอบสายนี้จริงไหม ไม่ใช่ทำพอร์ตไปเรื่อยๆ โดยยังไม่เห็นภาพงานจริง
+
+ถ้าน้องสนใจ เดี๋ยวพี่ช่วยดูต่อให้ได้ว่า **โปรเจกต์แรกควรเริ่มจากอะไรดี** ครับ 😊`;
+}
+
+/**
+ * Generate a complete, verified Plan Draft
+ */
+export async function generateDraftPlan(
+  req: PlanDraftRequest
+): Promise<GeneratedPlanDraft> {
+  const supabase = createAdminClient();
+
+  let studentName = req.studentName;
+  let gradeLevel = req.gradeLevel;
+  let targetField = req.targetField;
+  let interests = req.interests || [];
+
+  if (req.conversationId) {
+    try {
+      const { data: conv } = await supabase
+        .from("dm_conversations")
+        .select("*, dm_messages(body, direction)")
+        .eq("id", req.conversationId)
+        .maybeSingle();
+
+      if (conv) {
+        if (!studentName || studentName === "น้อง" || studentName === "นักเรียน") {
+          studentName = formatStudentDisplayName(conv.display_name, conv.username);
+        }
+        if (!gradeLevel || gradeLevel === "ม.5") {
+          gradeLevel = conv.grade_level || "ม.5";
+        }
+        if (conv.interests?.length && interests.length === 0) {
+          interests = conv.interests;
+        }
+
+        // Scan messages for specific subfield mentions
+        const inboundText = (conv.dm_messages || [])
+          .filter((m: { direction: string }) => m.direction === "inbound")
+          .map((m: { body: string }) => m.body)
+          .join("\n");
+
+        if (inboundText) {
+          const detectedSpecific = extractSpecificFieldFromText(inboundText, conv.interests || []);
+          if (detectedSpecific && (!targetField || targetField === "วิศวกรรมศาสตร์" || targetField === "ทั่วไป")) {
+            targetField = detectedSpecific;
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error inspecting conversation context:", err);
+    }
+  }
+
+  const archetype = getFieldArchetype(targetField, interests);
+
+  // Check if field is covered by an existing seed
+  const isCovered =
+    COVERED_FIELDS.has(targetField.trim()) ||
+    interests.some((i) => COVERED_FIELDS.has(i.trim()));
+
+  // 1. Fetch relevant competitions from DB
+  let matchedCompetitions: CompetitionRow[] = [];
+  try {
+    const { data } = await supabase
+      .from("competitions")
+      .select("*")
+      .eq("is_active", true)
+      .order("weight", { ascending: false });
+
+    if (data && data.length > 0) {
+      // Filter by archetype keywords
+      const fieldKeywords = [
+        targetField,
+        ...interests,
+      ].map((k) => k.toLowerCase());
+
+      matchedCompetitions = (data as CompetitionRow[]).filter((c) => {
+        const cFields = c.field.map((f) => f.toLowerCase());
+        const matchField =
+          cFields.some((cf) => fieldKeywords.some((fk) => cf.includes(fk) || fk.includes(cf))) ||
+          (archetype === "engineering" && cFields.some((cf) => cf.includes("วิศว"))) ||
+          (archetype === "computer_science" && cFields.some((cf) => cf.includes("คอม") || cf.includes("ซอฟต์"))) ||
+          (archetype === "health_medical" && cFields.some((cf) => cf.includes("แพทย์") || cf.includes("ชีว"))) ||
+          (archetype === "business_econ" && cFields.some((cf) => cf.includes("ธุรกิจ") || cf.includes("เศรษฐ")));
+
+        return matchField;
+      });
+    }
+  } catch (err) {
+    console.error("Error matching competitions from DB:", err);
+  }
+
+  // 2. Build 6-Month Timeline
+  const timeline: PlanTimelineItem[] = [];
+
+  // Step 1 timeline item
+  timeline.push({
+    month: "เดือนที่ 1",
+    title: `เริ่มทำโปรเจกต์ ${targetField} ชิ้นแรก (วางโครงสร้าง + สร้างชิ้นงานจริง)`,
+    deadline: "30 วันแรก",
+    weight: 5,
+    isVerified: true,
+  });
+
+  // Add up to 3 verified competitions if available
+  if (matchedCompetitions.length > 0) {
+    matchedCompetitions.slice(0, 3).forEach((comp) => {
+      timeline.push({
+        month: formatMonthTh(comp.application_opens || comp.deadline),
+        title: comp.name_th,
+        deadline: formatDeadlineTh(comp.deadline),
+        weight: comp.weight,
+        url: comp.url,
+        notes: comp.notes,
+        isVerified: true,
+      });
+    });
+  } else {
+    // Fallback standard timeline milestones
+    timeline.push(
+      {
+        month: "เดือนที่ 2–3",
+        title: "ค่ายเจาะลึกเฉพาะสาขา / เวิร์กช็อปมหาลัย",
+        deadline: "ช่วงเปิดรับสมัคร",
+        weight: 3,
+        isVerified: false,
+      },
+      {
+        month: "เดือนที่ 4–5",
+        title: "ส่งผลงานเข้าประกวดเวทีระดับภูมิภาค/ประเทศ",
+        deadline: "ตามรอบการแข่งขัน",
+        weight: 4,
+        isVerified: false,
+      },
+      {
+        month: "เดือนที่ 6",
+        title: "รวบรวมหลักฐาน + จัดรูปเล่ม Portfolio สรุป Impact",
+        deadline: "พร้อมยื่น TCAS1",
+        weight: 5,
+        isVerified: true,
+      }
+    );
+  }
+
+  // 3. Build Ranked Priorities
+  const rankedPriorities = getRankedPrioritiesForArchetype(
+    archetype,
+    targetField
+  );
+
+  // 4. Build Step 1 Action (PathLab) — framed as a 5-day path discovery:
+  // build one real project to find out whether this path truly fits,
+  // before committing months to competitions and portfolio building.
+  const isPresell = !isCovered;
+  const stepOneAction: PlanStepOneAction = {
+    title: `PathLab ${targetField}`,
+    subtitle: isPresell
+      ? "ทำโปรเจกต์จริง 5 วัน เพื่อค้นหาว่าสายนี้ใช่สำหรับน้องไหม (เปิดรอบแรกเร็วๆ นี้)"
+      : "ทำโปรเจกต์จริง 5 วัน เพื่อค้นหาว่าสายนี้ใช่สำหรับน้องไหม มีเมนเทอร์ดูแล",
+    duration: "5 วัน",
+    price: 299,
+    cohortDate: isPresell ? "รอบเปิดตัวเร็วๆ นี้ (จองสิทธิ์ล่วงหน้า)" : "รอบถัดไป เริ่มเร็วๆ นี้",
+    isPresell,
+    keyDeliverables: [
+      "คำตอบจากประสบการณ์จริงว่า “สายนี้ใช่สำหรับเราไหม”",
+      "โปรเจกต์ผลงานจริง 1 ชิ้นพร้อมขึ้นพอร์ต",
+      "เมนเทอร์ตรวจสอบงานวันแรกและวันสรุปผล",
+      "หน้าเว็บไซต์แสดงผลงานจริง (Live Project Page)",
+      "เกียรติบัตรรับรองการเข้าร่วม",
+      "สิทธิ์เข้าถึงแผนพอร์ต 6 เดือนฉบับเต็ม",
+    ],
+  };
+
+  const parentNotes = `แผนการเตรียมพอร์ตนี้ถูกออกแบบขึ้นเพื่อให้น้อง ${studentName || "นักเรียน"} มีทิศทางที่ชัดเจนในการเก็บผลงาน TCAS รอบที่ 1 โดยเน้นการสร้างผลงานเชิงลึกที่คณะกรรมการให้ความสำคัญสูงสุด (น้ำหนัก 5 ดาว) แทนการสะสมเกียรติบัตรทั่วไป`;
+
+  const customAdvice = `เน้นการบันทึกกระบวนการคิด การแก้ปัญหา และผลลัพธ์ที่จับต้องได้ลงในพอร์ต เพื่อสร้างความแตกต่างในการสอบสัมภาษณ์`;
+
+  const previewDraft = {
+    studentName,
+    gradeLevel,
+    targetField,
+    rankedPriorities,
+    stepOneAction,
+  };
+
+  const dmCopy = formatPlanDmCopy(previewDraft);
+
+  // Admin-assessed readiness from the DM conversation (1–8); defaults to 3
+  // when the admin has not signalled a level yet.
+  const readinessScore = Math.min(
+    8,
+    Math.max(1, Math.round(req.readinessScore ?? 3))
+  );
+
+  return {
+    token: `p5-${Math.random().toString(36).substring(2, 8)}`,
+    studentName,
+    gradeLevel,
+    targetField,
+    readinessScore,
+    rankedPriorities,
+    timeline,
+    stepOneAction,
+    parentNotes,
+    customAdvice,
+    dmCopy,
+    isPresell,
+  };
+}

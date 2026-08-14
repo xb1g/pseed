@@ -66,25 +66,12 @@ function parseFilters(raw: RawParams): DmLeadFilters {
   };
 }
 
-function buildHref(raw: RawParams, patch: Partial<RawParams>) {
-  const merged = { ...raw, ...patch };
-  const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(merged)) {
-    if (!value || value === "all") continue;
-    if (key === "sort" && value === "newest") continue;
-    params.set(key, value);
-  }
-  const qs = params.toString();
-  return qs ? `/admin/dm-leads?${qs}` : "/admin/dm-leads";
-}
-
-const PILL_BASE = "rounded-full border px-2.5 py-0.5 text-xs transition-colors";
-
 /**
  * Funnel health for the whole inbox, one compact strip. Failing metrics are
  * red — the point of the strip is to be uncomfortable when we go quiet.
  */
 function ScoreboardStrip({ scoreboard }: { scoreboard: FunnelScoreboard }) {
+
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border bg-muted/30 px-3 py-1.5 text-xs">
       <span className="text-muted-foreground">
@@ -116,54 +103,7 @@ function ScoreboardStrip({ scoreboard }: { scoreboard: FunnelScoreboard }) {
   );
 }
 
-/** Primary navigation: the playbook work order, highest-value bucket first. */
-function BucketPills({
-  raw,
-  activeBucket,
-  bucketCounts,
-  total,
-}: {
-  raw: RawParams;
-  activeBucket: DmLeadBucket | undefined;
-  bucketCounts: Record<DmLeadBucket, number>;
-  total: number;
-}) {
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Link
-        href={buildHref(raw, { bucket: undefined })}
-        className={cn(
-          PILL_BASE,
-          !activeBucket
-            ? "border-foreground bg-foreground text-background"
-            : "text-muted-foreground hover:border-foreground/40 hover:text-foreground"
-        )}
-      >
-        All
-        <span className={cn("ml-1.5 text-xs", !activeBucket ? "opacity-80" : "opacity-60")}>
-          {total}
-        </span>
-      </Link>
-      {BUCKET_ORDER.map((bucket) => {
-        const meta = BUCKET_META[bucket];
-        const isActive = activeBucket === bucket;
-        return (
-          <Link
-            key={bucket}
-            href={buildHref(raw, { bucket: isActive ? undefined : bucket })}
-            title={meta.why}
-            className={cn(PILL_BASE, isActive ? meta.activeClass : meta.idleClass)}
-          >
-            {meta.label}
-            <span className={cn("ml-1.5 text-xs", isActive ? "opacity-80" : "opacity-60")}>
-              {bucketCounts[bucket]}
-            </span>
-          </Link>
-        );
-      })}
-    </div>
-  );
-}
+import { BucketPills } from "@/components/admin/BucketPills";
 
 export default async function DmLeadsPage({
   searchParams,
@@ -194,11 +134,11 @@ export default async function DmLeadsPage({
       <ScoreboardStrip scoreboard={facets.scoreboard} />
 
       <BucketPills
-        raw={raw}
         activeBucket={filters.bucket}
         bucketCounts={facets.bucketCounts}
         total={facets.total}
       />
+
 
       <DmLeadFilterBar
         values={{

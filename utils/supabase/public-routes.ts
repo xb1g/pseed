@@ -23,6 +23,7 @@ const PUBLIC_ROUTE_PREFIXES = [
   "/business-model-canvas",
   "/radar",
   "/plan",
+  "/qr",
   "/pay",
   "/api/trials",
   "/faculty-radar",

@@ -6,6 +6,7 @@ import { DmLeadTagsEditor } from "@/components/admin/DmLeadTagsEditor";
 import { LeadNeedsSummary } from "@/components/admin/LeadNeedsSummary";
 import { LeadTagBadges } from "@/components/admin/LeadTagBadges";
 import { DmLeadConversation } from "@/components/admin/DmLeadConversation";
+import { PlanGeneratorModal } from "@/components/admin/PlanGeneratorModal";
 
 export const dynamic = "force-dynamic";
 
@@ -21,13 +22,18 @@ export default async function DmLeadDetailPage({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold">
-          {conversation.display_name || conversation.username || conversation.platform_user_id}
-        </h2>
-        <div className="mt-2 flex flex-wrap gap-2 text-sm">
-          <Badge variant="outline" className="capitalize">{conversation.platform}</Badge>
-          {conversation.grade_level && <Badge variant="outline">{conversation.grade_level}</Badge>}
-          <Badge variant="secondary">{conversation.stage}</Badge>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-semibold">
+              {conversation.display_name || conversation.username || conversation.platform_user_id}
+            </h2>
+            <div className="mt-2 flex flex-wrap gap-2 text-sm">
+              <Badge variant="outline" className="capitalize">{conversation.platform}</Badge>
+              {conversation.grade_level && <Badge variant="outline">{conversation.grade_level}</Badge>}
+              <Badge variant="secondary">{conversation.stage}</Badge>
+            </div>
+          </div>
+          <PlanGeneratorModal conversation={conversation} />
         </div>
         <div className="mt-2">
           <LeadTagBadges tags={conversation} />

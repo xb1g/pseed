@@ -1,5 +1,6 @@
-import { ExternalLink } from "lucide-react";
+import { AlertCircle, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isDeliveryBlockedByPrivacy, isDeliveryFailed } from "@/lib/dm-leads/delivery-status";
 import type { DmMessage } from "@/types/dm-leads";
 
 function formatDate(iso: string) {
@@ -19,13 +20,15 @@ function messageStatus(message: DmMessage): string | null {
 export function DmMessageBubble({ message }: { message: DmMessage }) {
   const inbound = message.direction === "inbound";
   const status = messageStatus(message);
+  const privacyBlocked = isDeliveryBlockedByPrivacy(message);
+  const failed = isDeliveryFailed(message);
 
   return (
     <div
       className={cn(
         "max-w-[75%] rounded-lg px-3 py-2 text-sm",
         inbound ? "mr-auto bg-muted" : "ml-auto bg-primary text-primary-foreground",
-        message.send_status === "failed" && "ring-2 ring-destructive/70"
+        failed && "border-2 border-destructive/70 bg-destructive/10 text-foreground"
       )}
     >
       {message.message_type !== "text" && (
@@ -34,6 +37,27 @@ export function DmMessageBubble({ message }: { message: DmMessage }) {
         </p>
       )}
       <p className="whitespace-pre-wrap">{message.body}</p>
+
+      {privacyBlocked && (
+        <div className="mt-2 rounded border border-destructive/40 bg-destructive/15 p-2 text-xs text-destructive">
+          <div className="flex items-center gap-1.5 font-semibold">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+            <span>ส่งไม่ถึง (ติด Instagram Privacy Settings)</span>
+          </div>
+          <p className="mt-0.5 text-[11px] opacity-90">
+            บัญชีนี้ตั้งค่าไม่รับ Message Requests จากบุคคลภายนอก ทำให้ข้อความ DM ถูกตีกลับ
+          </p>
+        </div>
+      )}
+
+      {!privacyBlocked && failed && (
+        <div className="mt-2 rounded border border-destructive/40 bg-destructive/15 p-2 text-xs text-destructive">
+          <div className="flex items-center gap-1.5 font-semibold">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+            <span>ส่งไม่สำเร็จ (Delivery Failed)</span>
+          </div>
+        </div>
+      )}
 
       {(message.dm_message_attachments ?? []).length > 0 && (
         <div className="mt-2 space-y-1.5">
@@ -76,8 +100,9 @@ export function DmMessageBubble({ message }: { message: DmMessage }) {
 
       <p className="mt-1 flex items-center justify-end gap-1.5 text-xs opacity-70">
         <span>{formatDate(message.sent_at)}</span>
-        {status && <span className="capitalize">· {status}</span>}
+        {status && <span className={cn("capitalize", failed && "font-semibold text-destructive")}>· {status}</span>}
       </p>
     </div>
   );
 }
+

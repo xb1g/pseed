@@ -8051,6 +8051,131 @@ summary:focus-visible .radar-expand-indicator {
 }
 
 /* ------------------------------------------------------------------ */
+/* Plan poster — self-contained Dawn sky for the 1080px export         */
+/* surface. `.dawn-scene` is position:fixed and cannot live inside an  */
+/* exported node, so the poster carries the same five layers,          */
+/* absolutely positioned, at the documented Dawn token values.         */
+/* The Y axis is unbounded: the poster grows with content and the      */
+/* gold horizon band stays anchored to the bottom.                     */
+/* ------------------------------------------------------------------ */
+
+.plan-poster {
+  position: relative;
+  overflow: hidden;
+  width: 1080px;
+  background: linear-gradient(
+    to bottom,
+    #000006 0%,
+    #01030e 18%,
+    #04061a 38%,
+    #080b28 58%,
+    #0d1136 74%,
+    #141a48 87%,
+    #1d2559 95%,
+    #27306a 100%
+  );
+}
+
+.plan-poster__cloud {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+.plan-poster__cloud--a {
+  top: -10rem;
+  left: -10rem;
+  width: 34rem;
+  height: 34rem;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.13) 0%, transparent 68%);
+  filter: blur(10px);
+  animation: dawn-drift-a 47s ease-in-out infinite;
+}
+
+.plan-poster__cloud--b {
+  top: 26%;
+  right: -12rem;
+  width: 36rem;
+  height: 36rem;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.11) 0%, transparent 68%);
+  filter: blur(10px);
+  animation: dawn-drift-b 59s ease-in-out infinite;
+}
+
+.plan-poster__cloud--c {
+  bottom: -4rem;
+  left: 18%;
+  width: 30rem;
+  height: 30rem;
+  background: radial-gradient(circle, rgba(217, 119, 87, 0.14) 0%, transparent 66%);
+  filter: blur(14px);
+  animation: dawn-drift-c 71s ease-in-out infinite;
+}
+
+.plan-poster__horizon {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 38%;
+  background: linear-gradient(
+    to top,
+    rgba(255, 196, 106, 0.24) 0%,
+    rgba(254, 217, 92, 0.11) 34%,
+    transparent 78%
+  );
+  filter: blur(58px);
+  pointer-events: none;
+}
+
+.plan-poster__motes {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 70%;
+  background-image:
+    radial-gradient(circle, rgba(254, 217, 92, 0.5) 0.5px, transparent 1px),
+    radial-gradient(circle, rgba(191, 219, 254, 0.45) 0.5px, transparent 1px);
+  background-size: 190px 190px, 290px 290px;
+  background-position: 0 0, 90px 140px;
+  opacity: 0.55;
+  animation: dawn-rise 61s linear infinite;
+  mask-image: linear-gradient(to top, black 0%, transparent 85%);
+  -webkit-mask-image: linear-gradient(to top, black 0%, transparent 85%);
+  pointer-events: none;
+}
+
+.plan-poster__stars {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgba(255, 255, 255, 0.28) 1px,
+    transparent 0
+  );
+  background-size: 38px 38px;
+  opacity: 0.35;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 72%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 72%);
+  pointer-events: none;
+}
+
+/* Glass card tuned for the poster's fixed 1080px design width. */
+.plan-poster__card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-poster__cloud,
+  .plan-poster__motes {
+    animation: none !important;
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* ProjectSeed hub nav — ภาพรวม / โปรเจกต์ / เวลา                      */
 /* Glass rail + active dawn glow. Hover-in builds via keyframes;       */
 /* hover-out snaps via short base transitions.                         */

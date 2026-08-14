@@ -356,6 +356,15 @@ const MESSAGE_PAGE_SIZE = 1000;
 
 export type DmLeadSignalMap = Map<string, DmLeadSignals>;
 
+let cachedSignals: { data: DmLeadSignalMap; timestamp: number } | null = null;
+let cachedScoreboard: { data: FunnelScoreboard; timestamp: number } | null = null;
+const CACHE_TTL_MS = 20_000; // 20 seconds
+
+export function invalidateDmLeadCache(): void {
+  cachedSignals = null;
+  cachedScoreboard = null;
+}
+
 /**
  * Every playbook signal for every conversation, in one pass over `dm_messages`.
  *
@@ -363,7 +372,12 @@ export type DmLeadSignalMap = Map<string, DmLeadSignals>;
  * moment the inbox grows. One paginated scan of three narrow columns stays
  * cheap well past the ~1,200 rows we have today.
  */
-export async function getDmLeadSignals(): Promise<DmLeadSignalMap> {
+export async function getDmLeadSignals(forceFresh = false): Promise<DmLeadSignalMap> {
+  const now = Date.now();
+  if (!forceFresh && cachedSignals && now - cachedSignals.timestamp < CACHE_TTL_MS) {
+    return cachedSignals.data;
+  }
+
   const supabase = createAdminClient();
   const rows: DmMessageSignalRow[] = [];
 
@@ -384,8 +398,11 @@ export async function getDmLeadSignals(): Promise<DmLeadSignalMap> {
     if (page.length < MESSAGE_PAGE_SIZE) break;
   }
 
-  return reduceMessagesToSignals(rows);
+  const signals = reduceMessagesToSignals(rows);
+  cachedSignals = { data: signals, timestamp: Date.now() };
+  return signals;
 }
+
 
 /**
  * Conversation IDs where any outbound message contains a /pathlab link.
@@ -510,8 +527,14 @@ const CONVERSATION_PAGE_SIZE = 1000;
  */
 async function computeScoreboard(
   supabase: ReturnType<typeof createAdminClient>,
-  signals: DmLeadSignalMap
+  signals: DmLeadSignalMap,
+  forceFresh = false
 ): Promise<FunnelScoreboard> {
+  const now = Date.now();
+  if (!forceFresh && cachedScoreboard && now - cachedScoreboard.timestamp < CACHE_TTL_MS) {
+    return cachedScoreboard.data;
+  }
+
   const scoreboard: FunnelScoreboard = { ...EMPTY_SCOREBOARD };
 
   for (let offset = 0; ; offset += CONVERSATION_PAGE_SIZE) {
@@ -539,8 +562,10 @@ async function computeScoreboard(
     if (page.length < CONVERSATION_PAGE_SIZE) break;
   }
 
+  cachedScoreboard = { data: scoreboard, timestamp: Date.now() };
   return scoreboard;
 }
+
 
 export async function getDmLeadFacets(
   filters: DmLeadFilters = {},
@@ -937,4 +962,7 @@ export async function sendAdminReply(
     console.error("Meta reply sent but dm_message state update failed:", sentError);
     throw new Error("Reply sent, but delivery state was not saved");
   }
+
+  invalidateDmLeadCache();
 }
+

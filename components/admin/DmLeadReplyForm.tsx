@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { replyToLead } from "@/app/admin/dm-leads/actions";
 import { contextFromConversation, getQuickReplies } from "@/lib/dm-leads/quick-replies";
+import { PlanGeneratorModal } from "@/components/admin/PlanGeneratorModal";
 import type { DmConversation } from "@/types/dm-leads";
 
 const TONE_STYLES: Record<string, string> = {
@@ -78,26 +79,33 @@ export function DmLeadReplyForm({
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Sparkles className="h-3 w-3" /> Quick replies
-        </span>
-        {suggestions.map((s, i) => (
-          <button
-            key={s.id}
-            type="button"
-            title={s.body}
-            onClick={() => setBody(s.body)}
-            disabled={isPending}
-            className={cn(
-              "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50",
-              TONE_STYLES[s.tone]
-            )}
-          >
-            <span className="mr-1 opacity-50">{i + 1}.</span>
-            {s.label}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Sparkles className="h-3 w-3" /> Quick replies
+          </span>
+          {suggestions.map((s, i) => (
+            <button
+              key={s.id}
+              type="button"
+              title={s.body}
+              onClick={() => setBody(s.body)}
+              disabled={isPending}
+              className={cn(
+                "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50",
+                TONE_STYLES[s.tone]
+              )}
+            >
+              <span className="mr-1 opacity-50">{i + 1}.</span>
+              {s.label}
+            </button>
+          ))}
+        </div>
+
+        <PlanGeneratorModal
+          conversation={conversation}
+          onInsertReply={(text) => setBody(text)}
+        />
       </div>
       <Textarea
         id={DM_REPLY_TEXTAREA_ID}

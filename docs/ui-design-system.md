@@ -416,6 +416,28 @@ One hue must not mean five things. Assign jobs:
 | `.dawn-keynote` | The one warm callout per page. Gold left bar + warm gradient. Do not use twice on one screen. |
 | `.dawn-list` | Gold dot markers. Use instead of typing `•` into copy. |
 
+### `.plan-poster` (export surfaces)
+
+For fixed-width export artifacts (e.g. the 1080px student plan poster in
+`components/plans/StudentPlanPoster.tsx`). `.dawn-scene` is `position: fixed`
+and cannot render inside a node captured by html-to-image, so the poster
+carries the same five Dawn layers absolutely positioned at the documented
+token values: `.plan-poster` (base gradient) + `__cloud--a/b/c`, `__horizon`,
+`__motes`, `__stars`, plus `__card` for glass panels.
+
+Rules:
+- **Fixed design width (1080px), unbounded Y.** Never set a height or aspect
+  ratio on an export poster — content flows naturally and the gold horizon
+  stays anchored to the bottom. Preview with `components/plans/PosterScaler.tsx`
+  (transform scale on a wrapper; the captured node itself is never transformed).
+- **No `line-clamp` / truncation inside posters.** If content does not fit,
+  the poster grows — that is the point of the unbounded Y axis.
+- Typography uses fixed px at the 1080px design width: Kodchasan display,
+  Bai Jamjuree body, Space Mono for micro-labels.
+- Foreground accent jobs are unchanged: gold for the single keynote
+  (Step 1 + importance weights), blue for informational chips, slate/white
+  for text.
+
 ### Accent Colors
 
 | Use Case | Dusk | Dawn |
