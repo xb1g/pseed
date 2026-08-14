@@ -25,10 +25,6 @@
     {
       "path": "/api/cron/parent-pathlab-updates",
       "schedule": "0 2 * * *"
-    },
-    {
-      "path": "/api/cron/meta-backfill",
-      "schedule": "0 3 * * *"
     }
   ]
 }

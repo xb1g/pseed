@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.ns", "deno.unstable", "dom", "esnext"]
+  },
+  "tasks": {
+    "check:meta-backfill": "deno check deno/meta-backfill/main.ts",
+    "test:meta-backfill": "deno test deno/meta-backfill/scheduler.test.ts"
+  },
+  "deploy": {
+    "org": "pseed",
+    "app": "meta-backfill"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.ns", "deno.unstable", "dom", "esnext"]
+  },
+  "deploy": {
+    "runtime": {
+      "type": "dynamic",
+      "entrypoint": "./main.ts",
+      "memory_limit": 512
+    },
+    "org": "pseed",
+    "app": "meta-backfill"
+  }
+}
