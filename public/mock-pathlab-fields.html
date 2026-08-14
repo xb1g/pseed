@@ -1,0 +1,967 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mockup — สายที่เปิดในตอนนี้ (inline expand)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@400;500;600;700&family=Kodchasan:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --cream: #fdf3e6;
+    --ink: #524746;
+    --accent: #c43e1d;
+    --muted: #756663;
+    --tension: cubic-bezier(0.05, 0.7, 0.35, 0.99);
+    --display: "Kodchasan", "Bai Jamjuree", sans-serif;
+    --body: "Bai Jamjuree", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: var(--body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .note {
+    max-width: 52rem;
+    margin: 2rem auto 0;
+    padding: 0.9rem 1.15rem;
+    border: 1px dashed rgba(196, 62, 29, 0.4);
+    border-radius: 0.9rem;
+    font-size: 0.9rem;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  /* ══════════════ SECTION ══════════════ */
+
+  .fields {
+    padding: clamp(3rem, 8vw, 5rem) clamp(1.25rem, 5vw, 4rem) clamp(5rem, 12vw, 9rem);
+    max-width: 82rem;
+    margin-inline: auto;
+  }
+
+  .fields__heading {
+    font-family: var(--display);
+    font-size: clamp(1.9rem, 5vw, 3.25rem);
+    line-height: 1.35;
+    font-weight: 600;
+    color: var(--accent);
+    text-align: center;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  /* The stage animates its own height so the section grows rather than
+     the panel popping in. JS measures and drives the value. */
+  .fields__stage {
+    position: relative;
+    transition: height 620ms var(--tension);
+  }
+
+  .fields__stage.is-measuring { transition: none; }
+
+  /* ══════════════ GRID ══════════════ */
+
+  .grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: clamp(1.5rem, 4vw, 3rem) clamp(1.25rem, 3.5vw, 3rem);
+    max-width: 52rem;
+    margin: clamp(2.25rem, 5vw, 3.5rem) auto 0;
+    list-style: none;
+    padding: 0;
+  }
+
+  .grid__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
+    flex: 0 1 min(42%, 14rem);
+    transition: opacity 320ms ease-out, transform 420ms var(--tension);
+  }
+
+  @media (min-width: 640px) {
+    .grid__item { flex-basis: 14rem; }
+  }
+
+  /* Non-selected cards clear out of the way on expand. */
+  .is-open .grid__item.is-dismissed {
+    opacity: 0;
+    transform: scale(0.88) translateY(12px);
+    pointer-events: none;
+  }
+
+  .grid__button {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    border-radius: 1.1rem;
+  }
+
+  .grid__button:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 4px;
+  }
+
+  .frame {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    border-radius: 1.1rem;
+    background: rgba(82, 71, 70, 0.08);
+    transition: transform 280ms var(--tension), box-shadow 280ms ease-out;
+  }
+
+  .frame img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 480ms var(--tension);
+  }
+
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .grid__item:not(.is-coming-soon):not(.is-ask) .grid__button:hover .frame {
+      transform: translateY(-6px);
+      box-shadow: 0 18px 36px rgba(82, 71, 70, 0.22);
+    }
+    .grid__item:not(.is-coming-soon):not(.is-ask) .grid__button:hover .frame img {
+      transform: scale(1.05);
+    }
+  }
+
+  /* Affordance that the open cards are actionable — the coming-soon ones
+     never get this, so "clickable" stays visually honest. */
+  .grid__cue {
+    position: absolute;
+    left: 50%;
+    bottom: 0.7rem;
+    translate: -50% 0;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.32rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(253, 243, 230, 0.94);
+    color: var(--accent);
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 220ms ease-out, transform 220ms var(--tension);
+  }
+
+  @media (hover: hover) {
+    .grid__button:hover .grid__cue,
+    .grid__button:focus-visible .grid__cue { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Touch has no hover, so the cue is simply always on. */
+  @media (hover: none) {
+    .grid__cue { opacity: 1; transform: translateY(0); }
+  }
+
+  .grid__label {
+    font-family: var(--display);
+    font-size: clamp(1.15rem, 2.6vw, 1.6rem);
+    line-height: 1.3;
+    color: var(--accent);
+    text-align: center;
+    margin: 0;
+  }
+
+  .is-coming-soon .frame img { filter: grayscale(1); opacity: 0.55; }
+  .is-coming-soon .grid__label { color: var(--muted); }
+
+  .badge {
+    position: absolute;
+    inset-inline: 0;
+    top: 50%;
+    translate: 0 -50%;
+    z-index: 1;
+    margin-inline: auto;
+    width: fit-content;
+    max-width: 88%;
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(82, 71, 70, 0.92);
+    color: var(--cream);
+    font-size: clamp(0.8rem, 1.8vw, 0.95rem);
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .ask {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(82, 71, 70, 0.92);
+    color: var(--cream);
+    font-family: var(--display);
+    font-size: 3rem;
+    text-decoration: none;
+  }
+
+  .grid__label-line { display: block; }
+
+  /* ══════════════ DETAIL PANEL ══════════════ */
+
+  .detail {
+    position: absolute;
+    inset: 0 0 auto;
+    max-width: 60rem;
+    margin-inline: auto;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(18px);
+    transition: opacity 320ms ease-out, transform 460ms var(--tension), visibility 0s linear 480ms;
+  }
+
+  .is-open .detail {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    transition: opacity 420ms ease-out 180ms, transform 560ms var(--tension) 180ms, visibility 0s;
+  }
+
+  .detail__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: clamp(1.5rem, 4vw, 2.25rem) 0 0;
+    padding: 0.55rem 1.05rem 0.55rem 0.85rem;
+    border: 1px solid rgba(82, 71, 70, 0.2);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.6);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 200ms ease-out, background 200ms ease-out, transform 200ms var(--tension);
+  }
+
+  .detail__back:hover {
+    border-color: rgba(196, 62, 29, 0.45);
+    background: rgba(255, 255, 255, 0.9);
+    transform: translateX(-3px);
+  }
+
+  .detail__back:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+  /* Header: the chosen card persists as a chip so the student keeps
+     their place — this is the card they clicked, not a new page. */
+  .detail__head {
+    display: flex;
+    align-items: center;
+    gap: clamp(1rem, 3vw, 1.6rem);
+    margin-top: clamp(1.25rem, 3vw, 1.75rem);
+  }
+
+  .detail__chip {
+    flex: 0 0 auto;
+    width: clamp(6.5rem, 16vw, 9.5rem);
+    aspect-ratio: 3 / 4;
+    border-radius: 1rem;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 12px 28px rgba(82, 71, 70, 0.18);
+  }
+
+  .detail__chip img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+  .detail__title {
+    font-family: var(--display);
+    font-size: clamp(1.8rem, 5vw, 2.9rem);
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--accent);
+    margin: 0 0 0.35rem;
+  }
+
+  .detail__tagline {
+    font-size: clamp(1rem, 2.2vw, 1.15rem);
+    line-height: 1.6;
+    color: var(--muted);
+    margin: 0;
+    max-width: 34ch;
+  }
+
+  .block { margin-top: clamp(2.5rem, 6vw, 3.5rem); }
+
+  .block__title {
+    font-family: var(--display);
+    font-size: clamp(1.25rem, 3vw, 1.65rem);
+    font-weight: 600;
+    color: var(--accent);
+    margin: 0 0 1.1rem;
+  }
+
+  /* ── Reality bullets: the hook ── */
+  .reality { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+
+  .reality li {
+    display: flex;
+    gap: 0.8rem;
+    padding: 1rem 1.15rem;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(82, 71, 70, 0.1);
+    line-height: 1.65;
+  }
+
+  .reality li::before {
+    content: "";
+    flex: 0 0 auto;
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-top: 0.62rem;
+    border-radius: 999px;
+    background: var(--accent);
+  }
+
+  /* ── Brief ── */
+  .brief {
+    padding: clamp(1.25rem, 3vw, 1.75rem);
+    border-radius: 1.25rem;
+    background: rgba(196, 62, 29, 0.07);
+    border: 1px solid rgba(196, 62, 29, 0.25);
+  }
+
+  .brief__text {
+    font-family: var(--display);
+    font-size: clamp(1.15rem, 3vw, 1.5rem);
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--ink);
+    margin: 0 0 0.6rem;
+  }
+
+  .brief__by { font-size: 0.92rem; color: var(--muted); margin: 0; }
+
+  /* ── 5-day timeline ── */
+  .days { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.85rem; }
+
+  @media (min-width: 720px) {
+    .days { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.7rem; }
+  }
+
+  .day {
+    position: relative;
+    display: flex;
+    gap: 0.9rem;
+    padding: 1.05rem 1.1rem;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(82, 71, 70, 0.12);
+  }
+
+  @media (min-width: 720px) {
+    .day { flex-direction: column; gap: 0.55rem; padding: 1.15rem 1rem 1.25rem; }
+    /* The card body grows so the "gets" chip can sit on the baseline of
+       every column, regardless of how long the day's copy runs. */
+    .day > div { display: flex; flex-direction: column; flex: 1; }
+    .day__gets { margin-top: auto; }
+    /* Connector between the day markers. */
+    .day:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      top: 2.05rem;
+      right: -0.7rem;
+      width: 0.7rem;
+      height: 1px;
+      background: rgba(82, 71, 70, 0.25);
+    }
+  }
+
+  .day__num {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 999px;
+    background: rgba(82, 71, 70, 0.1);
+    color: var(--ink);
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+
+  .day__title {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 1.02rem;
+    color: var(--accent);
+    margin: 0 0 0.28rem;
+  }
+
+  .day__doing { font-size: 0.9rem; line-height: 1.55; color: var(--ink); margin: 0 0 0.6rem; }
+
+  .day__gets {
+    align-self: flex-start;
+    max-width: 100%;
+    padding: 0.28rem 0.65rem;
+    border-radius: 0.7rem;
+    background: rgba(196, 62, 29, 0.1);
+    color: var(--accent);
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.4;
+    /* Day 5's payoff is the longest label; it must wrap, not spill. */
+    overflow-wrap: anywhere;
+  }
+
+  /* Day 5 is the payoff — it gets the weight. */
+  .day--final { background: #524746; border-color: #524746; }
+  .day--final .day__num { background: rgba(253, 243, 230, 0.2); color: var(--cream); }
+  .day--final .day__title { color: #f0a678; }
+  .day--final .day__doing { color: rgba(253, 243, 230, 0.9); }
+  .day--final .day__gets { background: rgba(253, 243, 230, 0.16); color: var(--cream); }
+
+  /* ── Outcomes ── */
+  .outcomes { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.7rem; }
+
+  .outcome {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 0.95rem 1.15rem;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(82, 71, 70, 0.1);
+    line-height: 1.6;
+  }
+
+  .outcome__tick {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 1.45rem;
+    height: 1.45rem;
+    margin-top: 0.1rem;
+    border-radius: 999px;
+    background: rgba(196, 62, 29, 0.12);
+    color: var(--accent);
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  /* The answered objection is "is this field right for me" — so the
+     self-discovery outcome outranks the portfolio artifact visually. */
+  .outcome--primary {
+    background: rgba(196, 62, 29, 0.09);
+    border-color: rgba(196, 62, 29, 0.35);
+    font-family: var(--display);
+    font-size: clamp(1.05rem, 2.6vw, 1.28rem);
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .outcome--primary .outcome__tick { background: var(--accent); color: var(--cream); }
+
+  /* ── Unblocker ── */
+  .unblock {
+    padding: clamp(1.25rem, 3vw, 1.6rem);
+    border-radius: 1.25rem;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(82, 71, 70, 0.12);
+  }
+
+  .unblock__answer {
+    font-family: var(--display);
+    font-size: clamp(1.15rem, 3vw, 1.45rem);
+    font-weight: 600;
+    color: var(--accent);
+    margin: 0 0 0.9rem;
+  }
+
+  .unblock__quote {
+    margin: 0;
+    padding-left: 1rem;
+    border-left: 3px solid rgba(196, 62, 29, 0.3);
+    line-height: 1.7;
+  }
+
+  .unblock__cite { display: block; margin-top: 0.55rem; font-size: 0.87rem; color: var(--muted); font-style: normal; }
+
+  /* ── CTA ── */
+  .cta {
+    margin-top: clamp(2.5rem, 6vw, 3.5rem);
+    padding: clamp(1.5rem, 4vw, 2.15rem);
+    border-radius: 1.5rem;
+    background: #524746;
+    color: var(--cream);
+    text-align: center;
+  }
+
+  .cta__button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.95rem 1.9rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--cream);
+    font-family: var(--display);
+    font-size: clamp(1.05rem, 2.6vw, 1.22rem);
+    font-weight: 600;
+    text-decoration: none;
+    transition: transform 240ms var(--tension), box-shadow 240ms ease-out;
+  }
+
+  .cta__button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.3), 0 0 40px rgba(232, 155, 96, 0.35);
+  }
+
+  .cta__price { margin: 0.95rem 0 0; font-size: 0.95rem; color: rgba(253, 243, 230, 0.75); }
+
+  /* ══════════════ STUB: price + contact below ══════════════ */
+
+  .price {
+    padding: 0 clamp(1.25rem, 5vw, 4rem) clamp(4rem, 10vw, 7rem);
+    max-width: 64rem;
+    margin-inline: auto;
+  }
+
+  .price__heading {
+    font-family: var(--display);
+    font-size: clamp(1.9rem, 5vw, 3.25rem);
+    font-weight: 600;
+    color: var(--accent);
+    text-align: center;
+    margin: 0;
+  }
+
+  .price__tiers {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    list-style: none;
+    margin: clamp(1.75rem, 4vw, 2.75rem) 0 0;
+    padding: 0;
+  }
+
+  @media (min-width: 720px) {
+    .price__tiers { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.15rem; }
+  }
+
+  .tier {
+    padding: 1.35rem 1.25rem 1.45rem;
+    border-radius: 1.25rem;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(82, 71, 70, 0.12);
+  }
+
+  .tier--free { background: rgba(253, 243, 230, 0.9); border-color: rgba(196, 62, 29, 0.28); }
+  .tier--group { background: #524746; border-color: #524746; color: var(--cream); }
+  .tier__label { font-family: var(--display); font-weight: 600; margin: 0 0 0.4rem; }
+  .tier__amount { font-family: var(--display); font-size: 2rem; font-weight: 700; color: var(--accent); margin: 0; }
+  .tier--group .tier__amount { color: #f0a678; }
+  .tier__unit { font-size: 0.85rem; color: var(--muted); margin: 0.2rem 0 0; }
+  .tier--group .tier__unit { color: rgba(253, 243, 230, 0.7); }
+
+  .contact { text-align: center; padding: 0 1.25rem clamp(5rem, 12vw, 8rem); }
+  .contact__line { font-family: var(--display); font-size: clamp(1.3rem, 3.5vw, 1.9rem); color: var(--accent); margin: 0 0 0.5rem; }
+  .contact__handle { font-size: 1.1rem; color: var(--ink); }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<p class="note">
+  Mockup — คลิกการ์ด Web Dev / Business / Game Dev เพื่อดูการขยายแบบ inline<br />
+  (การ์ด Coming soon และการ์ด “?” กดไม่ได้ตามที่ตกลงไว้)
+</p>
+
+<section class="fields" id="fields">
+  <h2 class="fields__heading">สายที่เปิดในตอนนี้</h2>
+
+  <div class="fields__stage" id="stage">
+    <ul class="grid" id="grid"></ul>
+    <div class="detail" id="detail" aria-hidden="true"></div>
+  </div>
+</section>
+
+<section class="price">
+  <h2 class="price__heading">เลือกทางเริ่มต้น</h2>
+  <ul class="price__tiers">
+    <li class="tier tier--free">
+      <p class="tier__label">Micro Pathlab</p>
+      <p class="tier__amount">ฟรี</p>
+      <p class="tier__unit">วันละ 1 ครั้ง · ~10 นาที</p>
+    </li>
+    <li class="tier">
+      <p class="tier__label">เดี่ยว</p>
+      <p class="tier__amount">฿299</p>
+      <p class="tier__unit">ต่อคน · รอบ 4–5 วัน</p>
+    </li>
+    <li class="tier tier--group">
+      <p class="tier__label">กลุ่ม 4 คน</p>
+      <p class="tier__amount">฿999</p>
+      <p class="tier__unit">ทั้งกลุ่ม · เลือกวันเริ่มได้</p>
+    </li>
+  </ul>
+</section>
+
+<section class="contact">
+  <p class="contact__line">สนใจทัก IG มาได้เลย</p>
+  <p class="contact__handle">passion_seed.th</p>
+</section>
+
+<script>
+"use strict";
+
+const IG = "https://instagram.com/passion_seed.th";
+
+/* Only fields with a `detail` are clickable. A field without one simply
+   renders as it does today — that is what lets the copy land field by field. */
+const FIELDS = [
+  {
+    src: "/pathlab/field-webdev.webp",
+    alt: "หน้าจอโค้ด HTML",
+    label: "Web Dev",
+    detail: {
+      tagline: "สร้างเว็บที่คนใช้จริงได้ ตั้งแต่หน้าจอจนถึงหลังบ้าน",
+      reality: [
+        "ถกกับคนใช้จริงว่าปุ่มควรอยู่ตรงไหน ไม่ใช่แค่นั่งเขียนโค้ดคนเดียว",
+        "งานพังตอนตีสองเป็นเรื่องปกติ การไล่หาสาเหตุคือทักษะหลักของสายนี้",
+        "โค้ดที่ดีคือโค้ดที่คนอื่นอ่านต่อได้ ไม่ใช่โค้ดที่ฉลาดที่สุด",
+      ],
+      brief: "ทำเว็บจองคิวร้านตัดผมให้ร้านจริง",
+      briefBy: "ออกแบบร่วมกับ Software Engineer ตัวจริงในสาย",
+      days: [
+        { title: "ตั้งโจทย์", doing: "คุยกับเจ้าของร้านจริง เข้าใจปัญหาก่อนลงมือ", gets: "โจทย์ที่ชัด" },
+        { title: "ออกแบบหน้าจอ", doing: "วาด flow แล้วต่อเป็นหน้าเว็บจริง", gets: "หน้าเว็บแรก" },
+        { title: "ต่อหลังบ้าน", doing: "เก็บข้อมูลการจองลงฐานข้อมูล", gets: "ระบบจองที่ใช้ได้" },
+        { title: "แก้ให้ใช้ได้จริง", doing: "เอาไปให้คนลองใช้แล้วแก้ตามที่เจอ", gets: "เวอร์ชันที่คนใช้ผ่าน" },
+        { title: "ส่งงาน + เล่าให้เป็น", doing: "เอาขึ้นออนไลน์แล้วซ้อมเล่าโปรเจกต์", gets: "ลิงก์จริง + สคริปต์เล่า Port" },
+      ],
+      outcomes: [
+        "รู้ว่าสายนี้ใช่ทางคุณไหม",
+        "ได้เว็บที่มีลิงก์จริง ลง Port ได้เลย",
+        "รู้ว่าถ้าจะไปต่อสายนี้ ต้องเตรียมอะไร",
+      ],
+      quote: "ถ้าไม่มีพื้นฐาน แค่พกใจมาก็พอ เริ่มจากศูนย์ ได้ลงมือเขียนโค้ดจริง ทำโปรเจกต์จริง และใช้ได้จริง",
+      cite: "IG:xn_z96x · รุ่นพี่จุฬาวังบูรพา สาขาวิชาวิทคอม",
+    },
+  },
+  {
+    src: "/pathlab/field-business.webp",
+    alt: "การประชุมวิเคราะห์ข้อมูลธุรกิจ",
+    label: "Business",
+    detail: {
+      tagline: "หาให้เจอว่าคนยอมจ่ายเพื่ออะไร แล้วพิสูจน์ด้วยตัวเลข",
+      reality: [
+        "งานส่วนใหญ่คือถามคนแปลกหน้าว่าเขามีปัญหาอะไร ไม่ใช่การนั่งทำสไลด์สวย ๆ",
+        "ไอเดียที่คุณรักที่สุด มักเป็นไอเดียที่ตลาดบอกว่าไม่เอา และต้องยอมทิ้งให้เป็น",
+        "ตัวเลขเล็ก ๆ ที่จริง มีค่ากว่าแผนใหญ่ ๆ ที่ยังไม่มีใครลองซื้อ",
+      ],
+      brief: "หาโอกาสธุรกิจจริงในย่านของคุณ แล้วทดสอบกับลูกค้าจริง",
+      briefBy: "ออกแบบร่วมกับผู้ก่อตั้งธุรกิจตัวจริง",
+      days: [
+        { title: "หาปัญหา", doing: "ลงพื้นที่ คุยกับคนจริงอย่างน้อย 5 คน", gets: "ปัญหาที่มีคนเดือดร้อนจริง" },
+        { title: "ตั้งสมมติฐาน", doing: "แปลงปัญหาเป็นข้อเสนอที่ทดสอบได้", gets: "สมมติฐานที่วัดผลได้" },
+        { title: "ทดสอบตลาด", doing: "ทำข้อเสนอง่าย ๆ แล้วเอาไปเสนอจริง", gets: "ผลตอบรับจากตลาด" },
+        { title: "อ่านตัวเลข", doing: "สรุปว่าอะไรเวิร์ก อะไรต้องทิ้ง", gets: "โมเดลที่ปรับแล้ว" },
+        { title: "พิตช์", doing: "เล่าให้คนนอกเข้าใจใน 3 นาที", gets: "เด็คพิตช์ + สคริปต์เล่า Port" },
+      ],
+      outcomes: [
+        "รู้ว่าสายนี้ใช่ทางคุณไหม",
+        "ได้เคสธุรกิจที่มีข้อมูลจริงรองรับ ลง Port ได้",
+        "รู้ว่าถ้าจะไปต่อสายนี้ ต้องเตรียมอะไร",
+      ],
+      quote: "สอนเข้าใจง่ายมาก เรียนสนุก นอกจากนี้ยังได้เจอเพื่อน ๆ และรุ่นพี่ในสายในวงการเดียวกัน",
+      cite: "IG:cathatput_02 · รุ่นพี่จุฬา CEDT",
+    },
+  },
+  {
+    src: "/pathlab/field-gamedev.webp",
+    alt: "นักพัฒนาเกมทำงานกับ Unity",
+    label: "Game Dev",
+    detail: {
+      tagline: "ทำให้คนเล่นรู้สึกบางอย่าง ด้วยระบบที่คุณออกแบบเอง",
+      reality: [
+        "เกมสนุกไม่ได้มาจากไอเดีย แต่มาจากการแก้ค่าทีละนิดหลังดูคนเล่นจริง",
+        "งานส่วนใหญ่คือทำของเล็ก ๆ ให้จบ ไม่ใช่ทำเกมใหญ่ที่ไม่มีวันเสร็จ",
+        "ศิลปะ โค้ด และเสียง ต้องคุยกันรู้เรื่อง ทีมที่คุยกันไม่ได้คือเกมที่ไม่ได้ออก",
+      ],
+      brief: "ทำเกมสั้น ๆ ที่เล่นจบใน 3 นาที แล้วเอาไปให้คนแปลกหน้าเล่น",
+      briefBy: "ออกแบบร่วมกับ Game Developer ตัวจริงในสาย",
+      days: [
+        { title: "หาแกนสนุก", doing: "ลองกลไกหลักบนกระดาษก่อนแตะโปรแกรม", gets: "แกนเกมที่ชัด" },
+        { title: "ต่อเป็นเกม", doing: "ทำให้เล่นได้จริงแม้จะยังไม่สวย", gets: "ตัวเล่นได้ตัวแรก" },
+        { title: "ใส่ความรู้สึก", doing: "เสียง เอฟเฟกต์ จังหวะ ที่ทำให้รู้สึกดี", gets: "เกมที่มีฟีล" },
+        { title: "ให้คนเล่นจริง", doing: "ดูคนเล่นเงียบ ๆ แล้วแก้ตามที่เห็น", gets: "เวอร์ชันที่คนเล่นรู้เรื่อง" },
+        { title: "ปล่อยเกม", doing: "ปล่อยขึ้นออนไลน์แล้วซ้อมเล่าโปรเจกต์", gets: "ลิงก์เล่นได้ + สคริปต์เล่า Port" },
+      ],
+      outcomes: [
+        "รู้ว่าสายนี้ใช่ทางคุณไหม",
+        "ได้เกมที่คนกดเล่นได้จริง ลง Port ได้เลย",
+        "รู้ว่าถ้าจะไปต่อสายนี้ ต้องเตรียมอะไร",
+      ],
+      quote: "มีอะไรสงสัยก็ช่วยกันเต็มที่ ไม่ปล่อยให้เรานั่งงงอยู่คนเดียว",
+      cite: "IG:victorchenspec · รุ่นพี่บางมด วิศวกรรมระบบปัญญาประดิษฐ์",
+    },
+  },
+  { src: "/pathlab/field-medical.webp", alt: "หูฟังแพทย์วางบนสมุดบันทึก", label: "Medical", comingSoon: true },
+  { src: "/pathlab/field-architect.webp", alt: "แบบแปลนสถาปัตยกรรม", label: "Architect", comingSoon: true },
+  { src: "/pathlab/field-commarts.webp", alt: "ภาพประกอบการออกแบบสีสันสดใส", label: "นิเทศ", comingSoon: true },
+  { src: "/pathlab/field-civil.webp", alt: "วิศวะกำลังสำรวจหน้างานก่อสร้าง", label: "วิศวะโยธา", comingSoon: true },
+  { src: "/pathlab/field-graphic.webp", alt: "งานออกแบบกราฟิกพื้นหลังสีเหลือง", label: "กราฟิกและแอนิเมชั่น", comingSoon: true },
+  { label: "หากไม่มีสายที่สนใจทัก IG\nพวกเรามาได้เลยนะ", ask: true },
+];
+
+const stage = document.getElementById("stage");
+const grid = document.getElementById("grid");
+const detail = document.getElementById("detail");
+
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+/* ── Grid ── */
+FIELDS.forEach((field, i) => {
+  const li = document.createElement("li");
+  li.className = "grid__item";
+  if (field.comingSoon) li.classList.add("is-coming-soon");
+  if (field.ask) li.classList.add("is-ask");
+
+  if (field.ask) {
+    li.innerHTML =
+      '<a class="frame ask" href="' + IG + '" target="_blank" rel="noopener noreferrer">' +
+        '<span aria-hidden="true">?</span><span class="sr-only">' + esc(field.label) + "</span>" +
+      "</a>" +
+      '<p class="grid__label">' +
+        field.label.split("\n").map((l) => '<span class="grid__label-line">' + esc(l) + "</span>").join("") +
+      "</p>";
+  } else {
+    const frame =
+      '<div class="frame">' +
+        '<img src="' + field.src + '" alt="' + esc(field.alt || "") + '" />' +
+        (field.comingSoon ? '<span class="badge">Coming soon</span>' : "") +
+        (field.detail ? '<span class="grid__cue" aria-hidden="true">ดู 5 วันนี้ →</span>' : "") +
+      "</div>";
+
+    /* Only a detailed field becomes a button; everything else stays inert. */
+    li.innerHTML = field.detail
+      ? '<button class="grid__button" type="button" data-index="' + i + '" ' +
+          'aria-expanded="false" aria-label="' + esc(field.label) + ' — ดูรายละเอียด 5 วัน">' +
+          frame + "</button>" +
+        '<p class="grid__label">' + esc(field.label) + "</p>"
+      : frame + '<p class="grid__label">' + esc(field.label) + "</p>";
+  }
+
+  grid.appendChild(li);
+});
+
+/* ── Detail rendering ── */
+function renderDetail(field) {
+  const d = field.detail;
+
+  const days = d.days
+    .map((day, n) =>
+      '<li class="day' + (n === 4 ? " day--final" : "") + '">' +
+        '<span class="day__num">' + (n + 1) + "</span>" +
+        "<div>" +
+          '<p class="day__title">' + esc(day.title) + "</p>" +
+          '<p class="day__doing">' + esc(day.doing) + "</p>" +
+          '<span class="day__gets">→ ' + esc(day.gets) + "</span>" +
+        "</div>" +
+      "</li>"
+    )
+    .join("");
+
+  const outcomes = d.outcomes
+    .map((o, n) =>
+      '<li class="outcome' + (n === 0 ? " outcome--primary" : "") + '">' +
+        '<span class="outcome__tick" aria-hidden="true">✓</span><span>' + esc(o) + "</span>" +
+      "</li>"
+    )
+    .join("");
+
+  detail.innerHTML =
+    '<button class="detail__back" type="button" id="back">← กลับไปดูสายอื่น</button>' +
+
+    '<div class="detail__head">' +
+      '<div class="detail__chip"><img src="' + field.src + '" alt="" /></div>' +
+      "<div>" +
+        '<h3 class="detail__title">' + esc(field.label) + "</h3>" +
+        '<p class="detail__tagline">' + esc(d.tagline) + "</p>" +
+      "</div>" +
+    "</div>" +
+
+    '<div class="block">' +
+      '<h4 class="block__title">คนสายนี้ทำอะไรจริง ๆ</h4>' +
+      '<ul class="reality">' + d.reality.map((r) => "<li><span>" + esc(r) + "</span></li>").join("") + "</ul>" +
+    "</div>" +
+
+    '<div class="block">' +
+      '<h4 class="block__title">โจทย์ของรอบนี้</h4>' +
+      '<div class="brief">' +
+        '<p class="brief__text">' + esc(d.brief) + "</p>" +
+        '<p class="brief__by">' + esc(d.briefBy) + "</p>" +
+      "</div>" +
+    "</div>" +
+
+    '<div class="block">' +
+      '<h4 class="block__title">5 วันนี้เป็นยังไง</h4>' +
+      '<ul class="days">' + days + "</ul>" +
+    "</div>" +
+
+    '<div class="block">' +
+      '<h4 class="block__title">จบแล้วคุณจะ…</h4>' +
+      '<ul class="outcomes">' + outcomes + "</ul>" +
+    "</div>" +
+
+    '<div class="block">' +
+      '<h4 class="block__title">ต้องมีพื้นฐานไหม?</h4>' +
+      '<div class="unblock">' +
+        '<p class="unblock__answer">ไม่ต้อง เริ่มจากศูนย์ได้</p>' +
+        "<blockquote class=\"unblock__quote\">" + esc(d.quote) +
+          '<cite class="unblock__cite">' + esc(d.cite) + "</cite>" +
+        "</blockquote>" +
+      "</div>" +
+    "</div>" +
+
+    '<div class="cta">' +
+      '<a class="cta__button" href="' + IG + '" target="_blank" rel="noopener noreferrer">' +
+        "ทัก IG ถามเรื่องสาย " + esc(field.label) +
+      "</a>" +
+      '<p class="cta__price">299฿ เดี่ยว · 999฿ กลุ่ม 4 คน · เลื่อนลงดูรายละเอียดราคา</p>' +
+    "</div>";
+}
+
+/* ── Height choreography ──
+   The stage owns its height so the section visibly grows and the price
+   section below is pushed down, rather than a panel appearing over it. */
+let openIndex = null;
+
+function measure(el) {
+  const prev = stage.style.height;
+  stage.classList.add("is-measuring");
+  stage.style.height = "auto";
+  const h = el.getBoundingClientRect().height;
+  stage.style.height = prev;
+  stage.offsetHeight; /* force reflow before re-enabling the transition */
+  stage.classList.remove("is-measuring");
+  return h;
+}
+
+function lockCurrentHeight() {
+  stage.style.height = stage.getBoundingClientRect().height + "px";
+}
+
+function open(index, trigger) {
+  const field = FIELDS[index];
+  if (!field.detail) return;
+
+  openIndex = index;
+  lockCurrentHeight();
+  renderDetail(field);
+
+  /* Everything but the clicked card clears out. */
+  [...grid.children].forEach((li, i) => li.classList.toggle("is-dismissed", i !== index));
+
+  stage.classList.add("is-open");
+  detail.setAttribute("aria-hidden", "false");
+  trigger.setAttribute("aria-expanded", "true");
+
+  /* The grid is gone once open, so the detail defines the height. */
+  grid.style.position = "absolute";
+  grid.style.inset = "0 0 auto";
+  grid.style.width = "100%";
+  grid.style.pointerEvents = "none";
+  grid.style.opacity = "0";
+
+  requestAnimationFrame(() => {
+    stage.style.height = measure(detail) + "px";
+  });
+
+  document.getElementById("back").addEventListener("click", () => close(index));
+  requestAnimationFrame(() => document.getElementById("back").focus({ preventScroll: true }));
+}
+
+function close(index) {
+  lockCurrentHeight();
+
+  stage.classList.remove("is-open");
+  detail.setAttribute("aria-hidden", "true");
+
+  grid.style.position = "";
+  grid.style.inset = "";
+  grid.style.width = "";
+  grid.style.pointerEvents = "";
+  grid.style.opacity = "";
+
+  [...grid.children].forEach((li) => li.classList.remove("is-dismissed"));
+
+  requestAnimationFrame(() => {
+    stage.style.height = measure(grid) + "px";
+  });
+
+  const trigger = grid.querySelector('[data-index="' + index + '"]');
+  if (trigger) {
+    trigger.setAttribute("aria-expanded", "false");
+    trigger.focus({ preventScroll: true });
+  }
+
+  openIndex = null;
+
+  /* Hand height back to content once the animation settles. */
+  window.setTimeout(() => {
+    if (openIndex === null) stage.style.height = "";
+  }, 660);
+}
+
+grid.addEventListener("click", (e) => {
+  const btn = e.target.closest(".grid__button");
+  if (btn) open(Number(btn.dataset.index), btn);
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && openIndex !== null) close(openIndex);
+});
+
+/* Re-measure on resize so a rotated phone does not clip the panel. */
+let resizeTimer;
+window.addEventListener("resize", () => {
+  window.clearTimeout(resizeTimer);
+  resizeTimer = window.setTimeout(() => {
+    if (openIndex !== null) stage.style.height = measure(detail) + "px";
+    else stage.style.height = "";
+  }, 150);
+});
+</script>
+
+</body>
+</html>
