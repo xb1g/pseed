@@ -241,12 +241,12 @@ export function ChecklistEditor({ assessment, onAssessmentChange }: ChecklistEdi
 
       {/* Instructions */}
       {checklistItems.length > 0 && (
-        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="p-4 bg-amber-200/[0.07] border border-amber-200/20 rounded-lg">
           <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+            <AlertCircle className="h-5 w-5 text-amber-300 mt-0.5" />
             <div className="text-sm">
-              <p className="font-medium text-blue-800 mb-1">How the checklist works:</p>
-              <ul className="text-blue-700 space-y-1 list-disc list-inside">
+              <p className="font-medium text-amber-100 mb-1">How the checklist works:</p>
+              <ul className="text-amber-100/70 space-y-1 list-disc list-inside">
                 <li>Students will see each task as a checkbox they can check off</li>
                 <li>They must check all items to complete the assessment</li>
                 <li>Once all items are checked, they can submit the assessment</li>

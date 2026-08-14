@@ -290,3 +290,49 @@ Three numbers on the wall, daily:
 | Threads ending on our message | 34% | 90% |
 
 Only after those are green does a conversion rate mean anything. **If we make 80 priced offers and sell zero, that's a product signal — then we change the product.** Right now zero sales is a sales-activity signal, nothing more.
+
+---
+
+## Addendum 2026-08-14 — Lessons from reading the top-12 threads end to end
+
+Every hot/warm thread (starred, pay-ready, wants_pathlab, active this week) was read in full. These five findings change how we reply; the playbook above stands unless contradicted here.
+
+### A. Bare link drops kill warm threads
+
+Three threads (`pat1107_nni`, `phuwxdx.n`, `peaceful22_8`) ended with a polite "ขอบคุณค่ะ💗" immediately after we sent a naked PathLab link with no personalization. The link isn't a reply — it's homework.
+
+**Rule: every link rides on one concrete first step written for that kid.** "ขั้นแรกของน้องคือ X" then the link. Never the link alone. This is now the enforcement of §4.5's "don't open with a link" for *mid-thread* drops too.
+
+### B. Group-of-4 pricing is a structural blocker, not a discount lever
+
+"ไม่มีเพื่อนสายเดียวกัน" stalled at least 3 threads. `gampun_inwza007` died exactly here: told group = 1,000฿/4, he had 2 people — "มีกันแค่ 2 คนจบเลย". A kid who can't find teammates can't use our pricing table.
+
+**Rule: default to quoting the 299 solo seat.** Mention the group rate only when they volunteer friends. (The loneliness is also a product signal — these kids want Community, and the classifier keeps missing it.)
+
+### C. The parent is the close — arm the kid, don't re-pitch them
+
+Hottest lead (`phichyachumwngs`, ~70 messages, accepted 299฿) is blocked on exactly one thing: "ยังเลยครับ หาโอกาสอยู่" — hasn't asked mom. Re-pitching him does nothing.
+
+**Move: send one forwardable message** — what PathLab is, 299฿, the waiver we promised, credibility proof (bizseed post, IG handle) — literally framed "ส่งให้คุณแม่ดูได้เลย". This operationalizes §4.8's parent row into a single artifact per lead.
+
+### D. Med/health is the biggest live demand cluster — and it ships this week
+
+4+ of the 12 active hot/warm leads are แพทย์/ทันตะ/สัตวะ/พยาบาล (`puynoonpn_3`, `peaceful22_8`, `potato_sweetheart8`, `studygimpi`). Med PathLab ships this week.
+
+**Rule: hold med leads with a dated promise, never "ยังไม่มีสายนั้น".** "สายแพทย์เปิดรอบแรกสัปดาห์นี้ครับ ฝากไว้ได้ที่แรก" — then actually follow up on launch day. We already owe `peaceful22_8` a build ("เดี๋ยวพี่จะสร้างให้") — follow-through is the trust asset.
+
+### E. Trust threads, not flags
+
+The auto-classifier produced confident garbage on this set:
+
+- `angpa0_a.m` flagged pay-ready because a message contained our own pasted sales playbook — that account is **our founder**. Now tagged `internal` and excluded from inbox/metrics (see `scripts/tag-internal-lead.ts`).
+- `studygimpi`, `peaceful22_8` classified `job_seeking` — they're ม.4–ม.5 building portfolios, years from jobs.
+- `wants_community: false` on kids whose literal stated pain is "ไม่มีเพื่อนสายเดียวกันเลย".
+- `last_message_direction` stale on at least one thread (said outbound; lead had replied twice).
+
+**Rule: before any close, read the last 10 messages.** Flags route, threads decide.
+
+### Ops notes
+
+- Duplicate auto-DM openers confirmed live (identical message 30 min apart on `potato_sweetheart8`, doubled greeting on `pat1107_nni`) — build-order item 8 is costing trust now, not later.
+- The private-account recovery path in §4.7 is now a button: `/admin/ig-comments` surfaces "missed by DM" comments (no conversation exists = our DM never landed) with a bulk public-reply action. Public comment replies have no 7-day Meta window — only private replies do — so the recovery net runs on a 30-day lookback.

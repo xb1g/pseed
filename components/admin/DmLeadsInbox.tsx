@@ -297,13 +297,17 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversation[
   };
 
   // Superhuman-style: send → mark replied locally → advance to the next lead.
-  const handleSent = () => {
+  // Skip the auto-advance when an attachment was sent, so the admin actually
+  // sees the image/video/file land in the thread instead of it rendering
+  // one lead too late.
+  const handleSent = (hadAttachment: boolean) => {
     if (!selected) return;
     setItems((prev) =>
       prev.map((c) =>
         c.id === selected.id ? { ...c, last_message_direction: "outbound" as const } : c
       )
     );
+    if (hadAttachment) return;
     const next = items[selectedIndex + 1] ?? items[selectedIndex - 1];
     if (next && next.id !== selected.id) setSelectedId(next.id);
   };

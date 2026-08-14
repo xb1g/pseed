@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   Controls,
   ReactFlow,
-  Background,
   MiniMap,
   useNodesState,
   useEdgesState,
@@ -62,7 +61,8 @@ import {
 } from "lucide-react";
 import FloatingEdge from "@/components/map/FloatingEdge";
 import { getNodeDepthMap } from "@/components/map/v2/layout";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile, useIsNarrowScreen } from "@/hooks/use-mobile";
+import { createPortal } from "react-dom";
 import { SeedCompletionModal } from "@/components/seeds/SeedCompletionModal";
 import { SeedLeaderboard } from "@/components/seeds/SeedLeaderboard";
 import {
@@ -73,6 +73,9 @@ import {
 import { isEditable } from "@/lib/dom/is-editable";
 import { useLobbyPresence } from "@/hooks/use-lobby-presence";
 import type { LobbyPresenceEntry } from "@/types/lobby";
+import { useMapViewMode } from "./map-view-mode";
+import { updateNode, deleteNode } from "@/lib/supabase/nodes";
+import { useToast } from "@/components/ui/use-toast";
 
 interface MapViewerProps {
   map: FullLearningMap;
@@ -94,6 +97,9 @@ interface MapViewerProps {
   // Back/title/edit bar, rendered scoped to the map canvas so it never
   // overlaps the resizable right-hand node panel.
   headerContent?: React.ReactNode;
+  // Server-computed permissions for the Preview/Edit/Grade mode system.
+  canEdit?: boolean;
+  canGrade?: boolean;
 }
 
 // Deterministic avatar color per user, so a given lobbymate always shows in
@@ -225,38 +231,38 @@ const edgeTypes = {
 
 const miniMapConfig = {
   position: "bottom-right" as const,
-  nodeBorderRadius: 8,
-  nodeStrokeWidth: 2,
+  nodeBorderRadius: 6,
+  nodeStrokeWidth: 1.5,
   nodeColor: (node: any) => {
     const progress = node.data?.progress;
-    if (!progress) return "#94a3b8"; // Default slate-400
+    if (!progress) return "#475569"; // Slate-600 (idle on night glass)
 
     switch (progress.status) {
       case "passed":
-        return "#22c55e"; // Green-500
+        return "#34d399"; // Emerald-400
       case "failed":
-        return "#ef4444"; // Red-500
+        return "#fb7185"; // Rose-400
       case "submitted":
-        return "#3b82f6"; // Blue-500
+        return "#60a5fa"; // Blue-400
       case "in_progress":
-        return "#f59e0b"; // Amber-500
+        return "#fbbf24"; // Amber-400
       default:
-        return "#94a3b8"; // Slate-400
+        return "#475569"; // Slate-600
     }
   },
   style: {
     transform: "scale(0.8)",
     transformOrigin: "bottom right",
   },
-  nodeStrokeColor: "#ffffff",
-  bgColor: "rgba(15, 23, 42, 0.8)", // slate-900 with opacity
-  maskColor: "rgba(255, 255, 255, 0.1)",
-  maskStrokeColor: "#ffffff",
-  maskStrokeWidth: 1,
+  nodeStrokeColor: "rgba(255, 255, 255, 0.35)",
+  bgColor: "rgba(7, 11, 33, 0.72)", // dawn night glass
+  maskColor: "rgba(4, 6, 26, 0.55)",
+  maskStrokeColor: "rgba(129, 140, 248, 0.75)", // indigo-400 viewport frame
+  maskStrokeWidth: 1.5,
   pannable: true,
   zoomable: true,
   ariaLabel: "Learning map overview",
-  offsetScale: 5,
+  offsetScale: 8,
 };
 
 export function MapViewer({
@@ -269,8 +275,12 @@ export function MapViewer({
   trailMode = false,
   initialPresence = [],
   headerContent,
+  canEdit = false,
+  canGrade = false,
 }: MapViewerProps) {
   const { presenceByNode } = useLobbyPresence(map.id, initialPresence);
+  const { mode: viewMode } = useMapViewMode();
+  const { toast } = useToast();
   const [nodes, setNodes, onNodesChange] = useNodesState<any>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<any>([]);
   const [selectedNode, setSelectedNode] = useState<any | null>(null);
@@ -303,6 +313,9 @@ export function MapViewer({
   // Trail mode (prototype): layout derived from the node_paths graph,
   // viewport centered on the student's current node once progress settles.
   const isMobile = useIsMobile();
+  // Phones AND tablets (< lg): the resizable side panel is too cramped, so
+  // the node panel becomes an overlaid sheet instead.
+  const isNarrowScreen = useIsNarrowScreen();
 
   // Measure the map container width so the zigzag and pan clamp can keep the
   // trail column filling (but never exceeding) the screen on any viewport.
@@ -449,6 +462,70 @@ export function MapViewer({
       nds.map((n) => (n.selected ? { ...n, selected: false } : n)),
     );
   }, [setNodes]);
+
+  // ---- Inline edit mode (admins/editors/instructors) ----
+  // Edits made in the side panel overlay onto the server-fetched map so the
+  // canvas reflects them immediately without a page reload.
+  const [nodeOverrides, setNodeOverrides] = useState<
+    Record<string, Partial<MapNode>>
+  >({});
+  const [deletedNodeIds, setDeletedNodeIds] = useState<string[]>([]);
+
+  const handleNodeDataChange = useCallback(
+    async (nodeId: string, data: Partial<MapNode>) => {
+      // Optimistic overlay for the canvas label/sprite/difficulty
+      setNodeOverrides((prev) => ({
+        ...prev,
+        [nodeId]: { ...prev[nodeId], ...data },
+      }));
+
+      // Relational fields (content, assessments, quiz questions) persist
+      // themselves inside ContentEditor/AssessmentEditor. Only scalar
+      // map_nodes columns go through updateNode here.
+      const {
+        node_content,
+        node_assessments,
+        node_paths_source,
+        node_paths_destination,
+        ...scalars
+      } = data as any;
+      delete (scalars as any).progress;
+      delete (scalars as any).quiz_questions;
+
+      if (Object.keys(scalars).length === 0) return;
+
+      try {
+        await updateNode(nodeId, scalars as Partial<MapNode>);
+      } catch (error) {
+        console.error("❌ [MapViewer] Failed to save node edit:", error);
+        toast({
+          title: "Failed to save changes",
+          description: "Your edit could not be saved. Please try again.",
+          variant: "destructive",
+        });
+      }
+    },
+    [toast],
+  );
+
+  const handleNodeDelete = useCallback(
+    async (nodeId: string) => {
+      try {
+        await deleteNode(nodeId);
+        setDeletedNodeIds((prev) => [...prev, nodeId]);
+        closeNodePanel();
+        toast({ title: "Node deleted" });
+      } catch (error) {
+        console.error("❌ [MapViewer] Failed to delete node:", error);
+        toast({
+          title: "Failed to delete node",
+          description: "The node could not be deleted. Please try again.",
+          variant: "destructive",
+        });
+      }
+    },
+    [closeNodePanel, toast],
+  );
 
   // Keyboard navigation (scoped to non-editable contexts)
   useEffect(() => {
@@ -1293,12 +1370,20 @@ export function MapViewer({
       }
     }
 
-    const transformedNodes = map.map_nodes.map((node) => {
+    // Edit mode: hide deleted nodes and overlay inline edits onto the
+    // server-fetched map data.
+    const deletedSet = new Set(deletedNodeIds);
+
+    const transformedNodes = map.map_nodes
+      .filter((node) => !deletedSet.has(node.id))
+      .map((node) => {
+      const mergedNode = { ...node, ...(nodeOverrides[node.id] ?? {}) };
+
       // Determine node type - check for node_type property
       let nodeType = "default"; // learning node
-      if ((node as any)?.node_type === "text") {
+      if ((mergedNode as any)?.node_type === "text") {
         nodeType = "text";
-      } else if ((node as any)?.node_type === "comment") {
+      } else if ((mergedNode as any)?.node_type === "comment") {
         nodeType = "comment";
       }
 
@@ -1306,7 +1391,7 @@ export function MapViewer({
         id: node.id,
         type: nodeType,
         data: {
-          ...node,
+          ...mergedNode,
           progress: progressMap[node.id],
           isCurrent: trailMode && node.id === currentTrailNodeId,
           // Real lobby presence shows in any mode; the mock fallback is
@@ -1336,7 +1421,10 @@ export function MapViewer({
 
     const transformedEdges: Edge[] = [];
     map.map_nodes.forEach((node) => {
+      if (deletedSet.has(node.id)) return;
       node.node_paths_source.forEach((path) => {
+        if (path.destination_node_id && deletedSet.has(path.destination_node_id))
+          return;
         // Add visual indicators for path states. Trail mode: only PASSED
         // sources get the active (green) path; in-progress/submitted stay
         // dim so completed progress reads at a glance.
@@ -1374,7 +1462,7 @@ export function MapViewer({
 
     setNodes(transformedNodes as any);
     setEdges(transformedEdges);
-  }, [map, progressMap, setNodes, setEdges, trailMode, trailLayout, currentTrailNodeId, currentUser, presenceByNode]);
+  }, [map, progressMap, setNodes, setEdges, trailMode, trailLayout, currentTrailNodeId, currentUser, presenceByNode, nodeOverrides, deletedNodeIds]);
 
   // Trail mode: pan the camera to a node, but clamp the destination to the
   // legal pan area (trailTranslateExtent) BEFORE animating. Raw setCenter can
@@ -1565,15 +1653,15 @@ export function MapViewer({
 
   if (!isMounted) {
     return (
-      <div className="h-full w-full bg-neutral-950 flex items-center justify-center">
+      <div className="h-full w-full bg-[#04061a] flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-500"></div>
       </div>
     );
   }
 
-  // Trail mode on narrow screens swaps the 70/30 resizable split for a
-  // full-width map plus a bottom sheet for the node panel.
-  const useMobileBottomSheet = trailMode && isMobile;
+  // Trail mode on narrow screens (phones + tablets) swaps the 70/30
+  // resizable split for a full-width map plus an overlaid sheet panel.
+  const useMobileBottomSheet = trailMode && isNarrowScreen;
 
   const mapCanvas = (
     <div className={trailMode ? "flex-1 trail-mode relative" : "flex-1 relative"}>
@@ -1596,15 +1684,21 @@ export function MapViewer({
         attributionPosition="bottom-left"
         aria-label="Interactive learning map"
       >
-        <Background gap={20} size={1} color="#94a3b8" />
+        {/* No dot grid: the Dawn sky scene behind the canvas is the background */}
         {(!trailMode || !isMobile) && (
           <MiniMap
             {...miniMapConfig}
+            className="dawn-minimap"
             style={{
               ...miniMapConfig.style,
-              background: "rgba(255, 255, 255, 0.9)",
-              border: "1px solid #e2e8f0",
-              borderRadius: "8px",
+              background:
+                "linear-gradient(160deg, rgba(20, 26, 72, 0.82) 0%, rgba(4, 6, 26, 0.9) 100%)",
+              backdropFilter: "blur(12px)",
+              border: "1px solid rgba(99, 102, 241, 0.28)",
+              borderRadius: "16px",
+              boxShadow:
+                "0 8px 32px rgba(0, 0, 0, 0.45), 0 0 24px rgba(99, 102, 241, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.06)",
+              transition: "box-shadow 200ms ease, border-color 200ms ease",
             }}
           />
         )}
@@ -1612,36 +1706,68 @@ export function MapViewer({
     </div>
   );
 
-  // Mobile bottom sheet (trail mode only): hidden until a node is tapped,
-  // closes via backdrop tap or the X button.
-  const bottomSheet = selectedNode ? (
-    <div className="fixed inset-0 z-[60]">
-      <div
-        className="absolute inset-0 bg-black/50 animate-in fade-in duration-200"
-        onClick={closeNodePanel}
-        aria-hidden="true"
-      />
-      <div className="absolute inset-0 overflow-y-auto bg-background shadow-2xl animate-in slide-in-from-bottom duration-300">
-        <button
-          onClick={closeNodePanel}
-          className="absolute top-2 right-2 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border rounded-lg p-2 shadow-lg hover:bg-muted/50 transition-colors"
-          aria-label="Close node panel"
+  // Sheet panel (trail mode on phones/tablets): portaled to <body> so it
+  // escapes the map's `relative z-10` stacking context — otherwise the
+  // sticky app navbar (z-50) paints over the sheet content. Positioned
+  // below the 64px navbar so nothing is ever covered. Phones get a
+  // full-width bottom sheet; tablets get a floating side card so line
+  // lengths stay readable.
+  const bottomSheet = selectedNode
+    ? createPortal(
+        <div
+          className="fixed inset-x-0 bottom-0 top-16 z-40"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Node details"
         >
-          <X className="h-4 w-4" />
-        </button>
-        <NodeViewPanel
-          key={selectedNode.id}
-          selectedNode={selectedNode}
-          mapId={map.id}
-          onProgressUpdate={loadAllProgress}
-          onNodeCompleted={trailMode ? handleTrailNodeCompleted : undefined}
-          isNodeUnlocked={isNodeUnlocked(selectedNode.id)}
-          userRole={userRole}
-          isInstructorOrTA={isInstructorOrTA && !forceStudentView}
-        />
-      </div>
-    </div>
-  ) : null;
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/55 backdrop-blur-[2px] animate-in fade-in duration-200"
+            onClick={closeNodePanel}
+            aria-hidden="true"
+          />
+
+          {/* Sheet surface — warm dawn glass, never blue-on-blue */}
+          <div className="dawn-panel absolute inset-0 flex flex-col overflow-hidden rounded-t-3xl border-t border-white/10 shadow-[0_-12px_48px_rgba(0,0,0,0.55)] animate-in slide-in-from-bottom duration-300 sm:left-auto sm:right-4 sm:top-2 sm:bottom-4 sm:w-[min(430px,calc(100vw-2rem))] sm:rounded-3xl sm:border sm:shadow-[0_24px_64px_rgba(0,0,0,0.6)]">
+            {/* Grabber (phones) + close button — dedicated row so the panel
+                content below is never overlapped */}
+            <div className="relative flex h-12 flex-shrink-0 items-center justify-center px-3 sm:h-14">
+              <div
+                className="h-1.5 w-11 rounded-full bg-white/15 sm:hidden"
+                aria-hidden="true"
+              />
+              <button
+                onClick={closeNodePanel}
+                className="absolute right-3 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-300 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/60"
+                aria-label="Close node panel"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Panel content — fills the sheet and scrolls internally */}
+            <div className="flex-1 min-h-0 pb-[env(safe-area-inset-bottom)]">
+              <NodeViewPanel
+                key={selectedNode.id}
+                selectedNode={selectedNode}
+                mapId={map.id}
+                onProgressUpdate={loadAllProgress}
+                onNodeCompleted={trailMode ? handleTrailNodeCompleted : undefined}
+                isNodeUnlocked={isNodeUnlocked(selectedNode.id)}
+                userRole={userRole}
+                isInstructorOrTA={isInstructorOrTA && !forceStudentView}
+                viewMode={viewMode}
+                canEdit={canEdit && !forceStudentView}
+                canGrade={canGrade && !forceStudentView}
+                onNodeDataChange={handleNodeDataChange}
+                onNodeDelete={handleNodeDelete}
+              />
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )
+    : null;
 
   const completionModal = showCompletionModal &&
     seedTitle &&
@@ -1671,6 +1797,24 @@ export function MapViewer({
       />
     );
 
+  // Bottom-left status pill: reflects the active Preview/Edit/Grade mode for
+  // privileged users, otherwise the legacy instructor notice.
+  const modeIndicator =
+    isInstructorOrTA || canEdit || canGrade ? (
+      <div className="absolute bottom-0 left-0 z-10 dawn-panel border border-white/10 border-b-0 border-l-0 text-slate-300 px-4 py-2 rounded-tr-xl shadow-lg flex items-center gap-2">
+        <Info className="h-4 w-4" />
+        <span className="text-xs font-medium">
+          {canEdit || canGrade
+            ? viewMode === "edit"
+              ? "Edit Mode - Select a node to edit"
+              : viewMode === "grade"
+                ? "Grade Mode - Select a node to grade"
+                : "Preview Mode - Viewing as a student"
+            : "Instructor View - All Nodes Unlocked"}
+        </span>
+      </div>
+    ) : null;
+
   return (
     <div className="h-full flex flex-col">
       {/* Completion Banner */}
@@ -1696,15 +1840,8 @@ export function MapViewer({
 
       {useMobileBottomSheet ? (
         <div className="flex-1 relative flex flex-col min-h-0">
-          {/* Instructor View Indicator */}
-          {isInstructorOrTA && (
-            <div className="absolute bottom-0 left-0 z-10 bg-gray-800 text-muted-foreground px-4 py-2 rounded-tr-lg shadow-lg flex items-center gap-2 ">
-              <Info className="h-4 w-4" />
-              <span className="text-xs font-medium">
-                Instructor View - All Nodes Unlocked
-              </span>
-            </div>
-          )}
+          {/* Mode / Instructor View Indicator */}
+          {modeIndicator}
 
           {/* Seed Leaderboard - Only show in seed rooms */}
           {seedRoomId && authUser?.id && (
@@ -1733,15 +1870,8 @@ export function MapViewer({
           maxSize={85}
           className="transition-all duration-300 ease-in-out relative flex flex-col"
         >
-          {/* Instructor View Indicator */}
-          {isInstructorOrTA && (
-            <div className="absolute bottom-0 left-0 z-10 bg-gray-800 text-muted-foreground px-4 py-2 rounded-tr-lg shadow-lg flex items-center gap-2 ">
-              <Info className="h-4 w-4" />
-              <span className="text-xs font-medium">
-                Instructor View - All Nodes Unlocked
-              </span>
-            </div>
-          )}
+          {/* Mode / Instructor View Indicator */}
+          {modeIndicator}
 
           {/* Seed Leaderboard - Only show in seed rooms */}
           {seedRoomId && authUser?.id && (
@@ -1946,6 +2076,11 @@ export function MapViewer({
                 }
                 userRole={userRole}
                 isInstructorOrTA={isInstructorOrTA && !forceStudentView}
+                viewMode={viewMode}
+                canEdit={canEdit && !forceStudentView}
+                canGrade={canGrade && !forceStudentView}
+                onNodeDataChange={handleNodeDataChange}
+                onNodeDelete={handleNodeDelete}
               />
             )}
           </div>
@@ -1969,6 +2104,9 @@ export function MapViewerWithProvider({
   forceStudentView,
   trailMode,
   initialPresence,
+  headerContent,
+  canEdit,
+  canGrade,
 }: MapViewerProps) {
   return (
     <ReactFlowProvider>
@@ -2156,6 +2294,27 @@ export function MapViewerWithProvider({
         }
 
         /* ================================
+     Minimap — dawn night glass
+     ================================ */
+        .dawn-minimap {
+          overflow: hidden;
+        }
+        .dawn-minimap:hover {
+          border-color: rgba(129, 140, 248, 0.5) !important;
+          box-shadow:
+            0 10px 36px rgba(0, 0, 0, 0.5),
+            0 0 40px rgba(99, 102, 241, 0.22),
+            inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+        }
+        .dawn-minimap .react-flow__minimap-mask {
+          stroke: rgba(129, 140, 248, 0.75);
+          stroke-width: 2;
+        }
+        .dawn-minimap .react-flow__minimap-node {
+          filter: drop-shadow(0 0 3px rgba(148, 163, 184, 0.25));
+        }
+
+        /* ================================
      Focus / Accessibility
      ================================ */
         .react-flow__node:focus {
@@ -2207,6 +2366,9 @@ export function MapViewerWithProvider({
         forceStudentView={forceStudentView}
         trailMode={trailMode}
         initialPresence={initialPresence}
+        headerContent={headerContent}
+        canEdit={canEdit}
+        canGrade={canGrade}
       />
     </ReactFlowProvider>
   );

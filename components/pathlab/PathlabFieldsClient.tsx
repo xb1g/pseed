@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { FieldCardTile } from "./FieldCardTile";
 import { FieldDetailPanel } from "./FieldDetailPanel";
 import {
+  COMING_SOON_CUE,
   FIELDS_HEADING,
   FIELDS_HINT,
   type FieldCard,
@@ -129,7 +130,9 @@ export function PathlabFieldsClient({ fields }: PathlabFieldsClientProps) {
       </h2>
       {/* Fades once a path is open: the instruction no longer applies, but
           its space stays reserved so the panel does not jump. */}
-      <p className="pathlab-fields__hint">{FIELDS_HINT}</p>
+      <p className="pathlab-fields__hint">
+        <span className="pathlab-note">{FIELDS_HINT}</span>
+      </p>
 
       <div ref={stageRef} className="pathlab-fields__stage">
         <ul ref={gridRef} className="pathlab-fields__grid">
@@ -163,6 +166,13 @@ export function PathlabFieldsClient({ fields }: PathlabFieldsClientProps) {
                 {field.detail && (
                   <p className="pathlab-fields__project">
                     {field.detail.briefShort}
+                  </p>
+                )}
+                {/* A field that is not open yet points at the DM door instead
+                    of sitting mute. */}
+                {field.comingSoon && (
+                  <p className="pathlab-fields__project pathlab-fields__soon-cue">
+                    {COMING_SOON_CUE}
                   </p>
                 )}
               </div>

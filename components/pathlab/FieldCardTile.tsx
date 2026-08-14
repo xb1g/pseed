@@ -1,5 +1,6 @@
 import Image from "next/image";
 import {
+  COMING_SOON_CUE,
   COMING_SOON_LABEL,
   CONTACT,
   FIELD_DETAIL_LABELS,
@@ -17,7 +18,8 @@ interface FieldCardTileProps {
 
 /**
  * One tile in the field grid. Three shapes: an openable path (a button), a
- * path not yet running (inert), and the closing "ask us" tile (a link).
+ * path not yet running (a link to DM — never a dead end), and the closing
+ * "ask us" tile (a link).
  */
 export function FieldCardTile({ field, onOpen, isOpen }: FieldCardTileProps) {
   if (field.ask) {
@@ -54,6 +56,22 @@ export function FieldCardTile({ field, onOpen, isOpen }: FieldCardTileProps) {
       )}
     </div>
   );
+
+  // A field that is not open yet still leads somewhere: tapping it opens a
+  // DM asking for that field, so "Coming soon" is an invitation, not a wall.
+  if (field.comingSoon) {
+    return (
+      <a
+        className="pathlab-fields__button pathlab-fields__button--soon"
+        href={CONTACT.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`${field.label}, ${COMING_SOON_LABEL}, ${COMING_SOON_CUE}`}
+      >
+        {frame}
+      </a>
+    );
+  }
 
   // Only a field with written copy can be opened; everything else stays inert
   // so "clickable" never promises something that is not there.

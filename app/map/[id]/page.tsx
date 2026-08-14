@@ -1,6 +1,4 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import {
   getMapWithNodesServer,
   getMapPreviewServer,
@@ -10,10 +8,12 @@ import { getLobbyJourneyOverride } from "@/lib/lobby-journeys";
 import { createClient } from "@/utils/supabase/server";
 import { isInstructor } from "@/lib/supabase/roles";
 import { MapViewerWithProvider as MapViewer } from "@/components/map/MapViewer";
+import { MapViewerHeader } from "@/components/map/MapViewerHeader";
+import { MapViewModeProvider } from "@/components/map/map-view-mode";
+import { DawnScene } from "@/components/projectseed/dawn-scene";
 import { MapEnrollmentTracker } from "@/components/map/MapEnrollmentTracker";
 import { LobbyCodeGateWrapper } from "@/components/map/LobbyCodeGate";
 import { getUserLobbyForMap, getLobbyPresence } from "@/lib/supabase/lobbies";
-import { ArrowLeft, Pencil, ClipboardCheck } from "lucide-react";
 
 export default async function MapViewerPage(props: {
   params: Promise<{ id: string }>;
@@ -140,59 +140,41 @@ export default async function MapViewerPage(props: {
     );
   }
 
-  const headerBar = (
-    <div className="absolute top-3 inset-x-3 z-10 flex items-center justify-between gap-2 sm:top-4 sm:inset-x-4">
-      <Button asChild variant="outline" size="sm" className="shrink-0 bg-background/80 backdrop-blur-sm">
-        {map.map_type === 'seed' && map.parent_seed_id ? (
-          <Link href={`/seeds/${map.parent_seed_id}`}>
-            <ArrowLeft className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Back to Seed</span>
-          </Link>
-        ) : (
-          <Link href="/map">
-            <ArrowLeft className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Back to Pathlabs</span>
-          </Link>
-        )}
-      </Button>
-
-      <div className="min-w-0 flex-1 rounded-full border border-border bg-background/80 px-4 py-1.5 text-center shadow-sm backdrop-blur-sm sm:flex-none sm:max-w-xs">
-        <p className="truncate text-sm font-semibold leading-tight">
-          {map.title}
-        </p>
-      </div>
-
-      <div className="flex shrink-0 gap-2">
-        {userCanEdit && (
-          <Button asChild variant="default" size="sm" className="bg-background/80 backdrop-blur-sm">
-            <Link href={`/map/${params.id}/edit`}>
-              <Pencil className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Edit Map</span>
-            </Link>
-          </Button>
-        )}
-        {userCanGrade && (
-          <Button asChild variant="secondary" size="sm" className="bg-background/80 backdrop-blur-sm">
-            <Link href={`/map/${params.id}/grading`}>
-              <ClipboardCheck className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Grade Submissions</span>
-            </Link>
-          </Button>
-        )}
-      </div>
-    </div>
-  );
+  const isSeedChild = map.map_type === "seed" && map.parent_seed_id;
+  const backHref = isSeedChild ? `/seeds/${map.parent_seed_id}` : "/map";
+  const backLabel = isSeedChild ? "Back to Seed" : "Back to Pathlabs";
 
   return (
     <MapEnrollmentTracker map={map}>
-      <div className="w-full" style={{ height: "calc(100vh - 65px)" }}>
-        <MapViewer
-          map={map}
-          trailMode
-          initialPresence={initialPresence}
-          headerContent={headerBar}
-        />
-      </div>
+      <MapViewModeProvider canEdit={!!userCanEdit} canGrade={!!userCanGrade}>
+        {/* Dawn sky behind the map canvas — the scene is fixed-position, so
+            the viewer above it must stay transparent (no dot grid, no flat
+            background) for the sky to read through. */}
+        <div className="dawn-theme">
+          <DawnScene />
+          <div
+            className="relative z-10 w-full"
+            style={{ height: "calc(100vh - 65px)" }}
+          >
+            <MapViewer
+              map={map}
+              trailMode
+              initialPresence={initialPresence}
+              canEdit={!!userCanEdit}
+              canGrade={!!userCanGrade}
+              headerContent={
+                <MapViewerHeader
+                  backHref={backHref}
+                  backLabel={backLabel}
+                  title={map.title}
+                  canEdit={!!userCanEdit}
+                  canGrade={!!userCanGrade}
+                />
+              }
+            />
+          </div>
+        </div>
+      </MapViewModeProvider>
     </MapEnrollmentTracker>
   );
 }

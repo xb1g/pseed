@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { OFFER_CARDS, OFFER_HEADING } from "@/lib/content/pathlab-page";
+import { NOTES, OFFER_CARDS, OFFER_HEADING } from "@/lib/content/pathlab-page";
 
 /**
  * "Pathlab เลยจะช่วยเริ่มต้นให้?" — the three things a Pathlab gives you.
@@ -64,6 +64,12 @@ export function PathlabOffer() {
           </li>
         ))}
       </ul>
+
+      <p className="pathlab-note-row">
+        <span className="pathlab-note pathlab-note--tilt-l-sm">
+          {NOTES.offer}
+        </span>
+      </p>
     </section>
   );
 }

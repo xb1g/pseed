@@ -131,8 +131,11 @@ export function FieldDetailPanel({
           {FIELD_DETAIL_LABELS.basis}
         </h4>
         <div className="pathlab-detail__unblock">
+          {/* The most reassuring sentence on the page gets the marker. */}
           <p className="pathlab-detail__unblock-answer">
-            {FIELD_DETAIL_LABELS.basisAnswer}
+            <span className="pathlab-note pathlab-note--tilt-r-sm">
+              {FIELD_DETAIL_LABELS.basisAnswer}
+            </span>
           </p>
           <blockquote className="pathlab-detail__quote">
             {detail.quote}

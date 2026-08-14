@@ -417,7 +417,7 @@ export function InstructorGradingPanel({
   }
 
   return (
-    <div className="h-full flex flex-col bg-background">
+    <div className="h-full flex flex-col dawn-panel">
       {/* Header */}
       <div className="flex-shrink-0 border-b p-4">
         <div className="flex items-center justify-between">

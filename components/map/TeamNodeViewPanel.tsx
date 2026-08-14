@@ -682,7 +682,7 @@ export function TeamNodeViewPanel({
 
   if (isLoading) {
     return (
-      <div className="h-full flex flex-col bg-background overflow-hidden">
+      <div className="h-full flex flex-col dawn-panel overflow-hidden">
         <div className="flex-shrink-0 border-b p-4">
           <div className="flex items-center gap-3 mb-3">
             <Skeleton className="w-12 h-12 rounded-full" />
@@ -710,7 +710,7 @@ export function TeamNodeViewPanel({
   // Handle text and comment nodes (same as individual)
   if (nodeData?.node_type === "text" || nodeData?.node_type === "comment") {
     return (
-      <div className="h-full flex flex-col bg-background overflow-hidden">
+      <div className="h-full flex flex-col dawn-panel overflow-hidden">
         <div className="flex-shrink-0 border-b">
           <NodeHeaderView
             nodeData={nodeData}
@@ -761,7 +761,7 @@ export function TeamNodeViewPanel({
   }
 
   return (
-    <div className="h-full flex flex-col bg-background overflow-hidden">
+    <div className="h-full flex flex-col dawn-panel overflow-hidden">
       {/* Header Section */}
       <div className="flex-shrink-0 border-b p-4">
         <div className="flex items-center justify-between mb-3">
@@ -895,7 +895,10 @@ export function TeamNodeViewPanel({
         {hasStarted ? (
           <div className="p-4 space-y-6 min-h-full">
             {/* Learning Content */}
-            <LearningContentView nodeContent={nodeData?.node_content || []} />
+            <LearningContentView
+              nodeContent={nodeData?.node_content || []}
+              nodeTitle={nodeData?.title}
+            />
 
             {/* Team Management Section (for leaders) */}
             {isTeamLeader && (

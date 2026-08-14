@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
 import { replyToComment, privateReplyToComment } from "@/lib/meta/graph";
-import { markCommentReplied } from "@/lib/supabase/ig-comments";
+import { getCommentsMissedByDm, markCommentReplied } from "@/lib/supabase/ig-comments";
+import { getDefaultPublicCommentReply } from "@/lib/dm-leads/delivery-status";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 async function getIgCommentId(commentId: string): Promise<string> {
@@ -56,4 +57,55 @@ export async function replyPrivately(commentId: string, message: string) {
 
   revalidatePath("/admin/ig-comments");
   return { ok: true, error: null };
+}
+
+/**
+ * Public replies have no 7-day Meta window (that limit is private replies
+ * only), so the batch sweeps a 30-day window.
+ */
+const BULK_REPLY_WINDOW_DAYS = 30;
+const BULK_REPLY_BATCH_CAP = 50;
+const BULK_REPLY_DELAY_MS = 1000;
+
+export interface BulkReplyResult {
+  sent: number;
+  failed: number;
+  /** Missed comments beyond the batch cap — not attempted this run. */
+  skipped: number;
+  errors: string[];
+}
+
+/**
+ * Sends the default "please DM us first" public reply to every comment the DM
+ * automation never reached. One failure never aborts the batch — the comment
+ * just stays unreplied and shows up again next run.
+ */
+export async function replyToAllMissedComments(): Promise<BulkReplyResult> {
+  await requireAdmin();
+
+  const missed = await getCommentsMissedByDm(BULK_REPLY_WINDOW_DAYS);
+  const batch = missed.slice(0, BULK_REPLY_BATCH_CAP);
+  const result: BulkReplyResult = {
+    sent: 0,
+    failed: 0,
+    skipped: missed.length - batch.length,
+    errors: [],
+  };
+
+  for (const comment of batch) {
+    const who = comment.username ?? comment.ig_comment_id;
+    try {
+      await replyToComment(comment.ig_comment_id, getDefaultPublicCommentReply(comment.username));
+      await markCommentReplied(comment.id);
+      result.sent += 1;
+    } catch (error) {
+      console.error(`replyToAllMissedComments failed for ${who}:`, error);
+      result.failed += 1;
+      result.errors.push(`${who}: ${error instanceof Error ? error.message : "unknown error"}`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, BULK_REPLY_DELAY_MS));
+  }
+
+  revalidatePath("/admin/ig-comments");
+  return result;
 }

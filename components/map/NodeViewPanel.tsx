@@ -33,7 +33,7 @@ import {
 import { getSubmissionGrade } from "@/lib/supabase/grading";
 import { InstructorGradingPanel } from "./InstructorGradingPanel";
 import { CommentNode } from "./CommentNode";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { NodeEditorPanel } from "./NodeEditorPanel";
 import { TeamNodeViewPanel } from "./TeamNodeViewPanel";
 import { InstructorTeamGradingPanel } from "./InstructorTeamGradingPanel";
 import {
@@ -53,6 +53,15 @@ interface NodeViewPanelProps {
   isNodeUnlocked?: boolean;
   userRole?: "instructor" | "TA" | "student" | "admin";
   isInstructorOrTA?: boolean;
+  // Current map view mode from the header toggle. Privileged users switch the
+  // panel between the student preview, an inline node editor, and grading.
+  viewMode?: "preview" | "edit" | "grade";
+  // Server-computed permissions (creator/editor/instructor/admin).
+  canEdit?: boolean;
+  canGrade?: boolean;
+  // Edit-mode persistence handlers, supplied by the viewer.
+  onNodeDataChange?: (nodeId: string, data: Partial<MapNode>) => void;
+  onNodeDelete?: (nodeId: string) => void;
 }
 
 interface SubmissionWithGrade {
@@ -68,6 +77,11 @@ export function NodeViewPanel({
   isNodeUnlocked = true,
   userRole = "student",
   isInstructorOrTA = false,
+  viewMode = "preview",
+  canEdit = false,
+  canGrade = false,
+  onNodeDataChange,
+  onNodeDelete,
 }: NodeViewPanelProps) {
   const [progress, setProgress] = useState<StudentProgress | null>(null);
   const [submissionsWithGrades, setSubmissionsWithGrades] = useState<
@@ -232,7 +246,9 @@ export function NodeViewPanel({
       isStarting ||
       hasStarted ||
       !isNodeUnlocked ||
-      isInstructorOrTA // instructors are reviewing, not taking the node
+      isInstructorOrTA || // instructors are reviewing, not taking the node
+      // edit/grade are work modes — never auto-start progress there
+      (viewMode !== "preview" && (canEdit || canGrade))
     ) {
       return;
     }
@@ -245,6 +261,9 @@ export function NodeViewPanel({
     hasStarted,
     isNodeUnlocked,
     isInstructorOrTA,
+    viewMode,
+    canEdit,
+    canGrade,
   ]);
 
   // Separate effect to clear state when no node is selected - optimize to only fire when needed
@@ -830,8 +849,20 @@ export function NodeViewPanel({
     }
   };
 
+  // Mode-driven panels for privileged users (no tabs — the header bar's
+  // Preview / Edit / Grade toggle decides what this panel renders).
+  const isLearningNode =
+    nodeData?.node_type !== "text" && nodeData?.node_type !== "comment";
+  const canUseEditMode = isInstructorOrTA || canEdit;
+  const canUseGradeMode = isInstructorOrTA || canGrade;
+  const isPrivilegedViewer = canUseEditMode || canUseGradeMode;
+
   if (!selectedNode) {
-    return <NoNodeSelectedView />;
+    return (
+      <NoNodeSelectedView
+        variant={isPrivilegedViewer ? viewMode : "preview"}
+      />
+    );
   }
 
   // Render team-specific components for team maps
@@ -839,52 +870,52 @@ export function NodeViewPanel({
     const isInstructorOrTAForTeam =
       classroomRole === "instructor" || classroomRole === "ta";
 
-    if (
-      isInstructorOrTAForTeam &&
-      selectedNode &&
-      nodeData?.node_type !== "text" &&
-      nodeData?.node_type !== "comment"
-    ) {
-      // Show team grading interface for instructors/TAs
+    if (isInstructorOrTAForTeam && selectedNode && isLearningNode) {
       // For instructors/TAs, we can pass any valid teamId from the classroom
       // or use a placeholder if needed by the component
       const effectiveTeamId = teamId || "placeholder"; // Placeholder for now
 
+      // Grade mode: team grading surface
+      if (viewMode === "grade") {
+        return (
+          <div className="h-full flex flex-col dawn-panel overflow-hidden">
+            <InstructorTeamGradingPanel
+              selectedNode={selectedNode}
+              mapId={mapId}
+              teamId={effectiveTeamId}
+              onGradingComplete={onProgressUpdate}
+            />
+          </div>
+        );
+      }
+
+      // Edit mode: inline node editor
+      if (viewMode === "edit" && canUseEditMode) {
+        return (
+          <div className="h-full flex flex-col dawn-panel overflow-hidden">
+            <NodeEditorPanel
+              selectedNode={selectedNode as any}
+              onNodeDataChange={(nodeId, data) =>
+                onNodeDataChange?.(nodeId, data)
+              }
+              onNodeDelete={onNodeDelete}
+            />
+          </div>
+        );
+      }
+
+      // Preview mode: the map as team members see it
       return (
-        <div className="h-full flex flex-col bg-background overflow-hidden">
-          <Tabs defaultValue="student-view" className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-2 mx-4 mt-4 mb-0">
-              <TabsTrigger value="student-view">Team View</TabsTrigger>
-              <TabsTrigger value="grading">Grade Team</TabsTrigger>
-            </TabsList>
-
-            <TabsContent
-              value="student-view"
-              className="flex-1 overflow-hidden mt-0"
-            >
-              <TeamNodeViewPanel
-                selectedNode={selectedNode}
-                mapId={mapId}
-                teamId={effectiveTeamId}
-                onProgressUpdate={onProgressUpdate}
-                isNodeUnlocked={isNodeUnlocked}
-                userRole={classroomRole as any}
-                isInstructorOrTA={isInstructorOrTAForTeam}
-              />
-            </TabsContent>
-
-            <TabsContent
-              value="grading"
-              className="flex-1 overflow-hidden mt-0"
-            >
-              <InstructorTeamGradingPanel
-                selectedNode={selectedNode}
-                mapId={mapId}
-                teamId={effectiveTeamId}
-                onGradingComplete={onProgressUpdate}
-              />
-            </TabsContent>
-          </Tabs>
+        <div className="h-full flex flex-col dawn-panel overflow-hidden">
+          <TeamNodeViewPanel
+            selectedNode={selectedNode}
+            mapId={mapId}
+            teamId={effectiveTeamId}
+            onProgressUpdate={onProgressUpdate}
+            isNodeUnlocked={isNodeUnlocked}
+            userRole={classroomRole as any}
+            isInstructorOrTA={isInstructorOrTAForTeam}
+          />
         </div>
       );
     }
@@ -908,7 +939,7 @@ export function NodeViewPanel({
   // Show loading skeleton while data is being fetched
   if (isLoading) {
     return (
-      <div className="h-full flex flex-col bg-background overflow-hidden">
+      <div className="h-full flex flex-col dawn-panel overflow-hidden">
         {/* Header Skeleton */}
         <div className="flex-shrink-0 border-b p-4">
           <div className="flex items-center gap-3 mb-3">
@@ -946,89 +977,95 @@ export function NodeViewPanel({
     );
   }
 
-  // For instructors/TAs viewing nodes, show grading interface for learning nodes
-  if (
-    isInstructorOrTA &&
-    selectedNode &&
-    nodeData?.node_type !== "text" &&
-    nodeData?.node_type !== "comment"
-  ) {
-    return (
-      <div className="h-full flex flex-col bg-background overflow-hidden">
-        <Tabs defaultValue="student-view" className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-2 mx-4 mt-4 mb-0">
-            <TabsTrigger value="student-view">Student View</TabsTrigger>
-            <TabsTrigger value="grading">
-              Grading ({selectedNode?.id ? "?" : "0"})
-            </TabsTrigger>
-          </TabsList>
+  // Privileged users (instructor/TA/admin/creator/editor) get mode-driven
+  // panels for learning nodes instead of the student flow.
+  if (isPrivilegedViewer && selectedNode && isLearningNode) {
+    // Grade mode: submission review + grading surface
+    if (viewMode === "grade" && canUseGradeMode) {
+      return (
+        <div className="h-full flex flex-col dawn-panel overflow-hidden">
+          <InstructorGradingPanel
+            mapId={mapId}
+            selectedNode={selectedNode}
+            userId={currentUser?.id || ""}
+            onGradingComplete={onProgressUpdate}
+          />
+        </div>
+      );
+    }
 
-          <TabsContent
-            value="student-view"
-            className="flex-1 overflow-hidden mt-0"
-          >
-            <div className="h-full flex flex-col bg-background overflow-hidden">
-              {/* Header Section - Fixed */}
-              <div className="flex-shrink-0 border-b">
-                <NodeHeaderView
-                  nodeData={nodeData}
-                  progress={progress as any}
-                  currentUser={currentUser}
-                  hasStarted={!!hasStarted}
-                  isStarting={isStarting}
-                  onStartNode={handleStartNode}
-                />
-              </div>
+    // Edit mode: inline node editor, persisted by the viewer
+    if (viewMode === "edit" && canUseEditMode) {
+      return (
+        <div className="h-full flex flex-col dawn-panel overflow-hidden">
+          <NodeEditorPanel
+            selectedNode={selectedNode as any}
+            onNodeDataChange={(nodeId, data) =>
+              onNodeDataChange?.(nodeId, data)
+            }
+            onNodeDelete={onNodeDelete}
+          />
+        </div>
+      );
+    }
 
-              {/* Content Section - Scrollable */}
-              <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                <div className="p-4 space-y-6 min-h-full">
-                  {/* Learning Content */}
-                  <LearningContentView
-                    nodeContent={memoizedNodeContent}
-                  />
-
-                  {/* Assessment Section */}
-                  {assessment && (
-                    <AssessmentSection
-                      nodeId={selectedNode.id}
-                      mapId={mapId}
-                      assessment={assessment}
-                      canResubmit={canResubmit}
-                      showAssessmentForm={false} // Instructors don't submit
-                      assessmentAnswer={assessmentAnswer}
-                      setAssessmentAnswer={setAssessmentAnswer}
-                      quizAnswers={quizAnswers}
-                      setQuizAnswers={setQuizAnswers}
-                      isSubmitting={isSubmitting}
-                      onSubmit={handleSubmitAssessment}
-                      submissionsWithGrades={submissionsWithGrades}
-                      progressStatus={progress?.status}
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="grading" className="flex-1 overflow-hidden mt-0">
-            <InstructorGradingPanel
-              mapId={mapId}
-              selectedNode={selectedNode}
-              userId={currentUser?.id || ""}
-              onGradingComplete={onProgressUpdate}
+    // Preview mode: instructors/TAs get the gate-free student preview (they
+    // never submit). Creators/editors without a teaching role fall through to
+    // the regular student flow below so they can play-test their own map.
+    if (isInstructorOrTA) {
+      return (
+        <div className="h-full flex flex-col dawn-panel overflow-hidden">
+          {/* Header Section - Fixed */}
+          <div className="flex-shrink-0 dawn-panel__header">
+            <NodeHeaderView
+              nodeData={nodeData}
+              progress={progress as any}
+              currentUser={currentUser}
+              hasStarted={!!hasStarted}
+              isStarting={isStarting}
+              onStartNode={handleStartNode}
             />
-          </TabsContent>
-        </Tabs>
-      </div>
-    );
+          </div>
+
+          {/* Content Section - Scrollable */}
+          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            <div className="p-4 space-y-6 min-h-full">
+              {/* Learning Content */}
+              <LearningContentView
+                nodeContent={memoizedNodeContent}
+                nodeTitle={selectedNode.data.title}
+              />
+
+              {/* Assessment Section */}
+              {assessment && (
+                <AssessmentSection
+                  nodeId={selectedNode.id}
+                  mapId={mapId}
+                  assessment={assessment}
+                  canResubmit={canResubmit}
+                  showAssessmentForm={false} // Instructors don't submit
+                  assessmentAnswer={assessmentAnswer}
+                  setAssessmentAnswer={setAssessmentAnswer}
+                  quizAnswers={quizAnswers}
+                  setQuizAnswers={setQuizAnswers}
+                  isSubmitting={isSubmitting}
+                  onSubmit={handleSubmitAssessment}
+                  submissionsWithGrades={submissionsWithGrades}
+                  progressStatus={progress?.status}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
   }
 
   // Regular student view (or text/comment nodes for instructors)
   return (
-    <div className="h-full flex flex-col bg-background overflow-hidden">
+    <div className="h-full flex flex-col dawn-panel overflow-hidden">
       {/* Header Section - Fixed */}
-      <div className="flex-shrink-0 border-b">
+      <div className="flex-shrink-0 dawn-panel__header">
         <NodeHeaderView
           nodeData={nodeData}
           progress={progress as any} // Type conversion - StudentProgress compatible with StudentNodeProgress
@@ -1089,6 +1126,7 @@ export function NodeViewPanel({
                 {/* Learning Content */}
                 <LearningContentView
                   nodeContent={memoizedNodeContent}
+                  nodeTitle={selectedNode.data.title}
                 />
 
                 {/* Mark as Complete Button for nodes without assessments */}

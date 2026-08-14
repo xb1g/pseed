@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/utils/supabase/admin";
+import type { MetaAttachmentType } from "@/lib/meta/graph";
 import {
   classifyBucket,
   getFieldCoverage,
@@ -320,6 +321,9 @@ function escapeIlike(term: string): string {
   return term.replace(/[%_,()"]/g, " ").trim();
 }
 
+/** Matches the value written by scripts/tag-internal-lead.ts. */
+const INTERNAL_TAG = "internal";
+
 /** Shared filter application so list + facet counts stay in sync. */
 function applyDmLeadFilters<T>(
   query: T,
@@ -332,7 +336,12 @@ function applyDmLeadFilters<T>(
     or: (expr: string) => typeof q;
     lte: (col: string, val: unknown) => typeof q;
     contains: (col: string, val: unknown) => typeof q;
+    not: (col: string, op: string, val: unknown) => typeof q;
   };
+
+  // Internal accounts (founder, team) are never leads — exclude unconditionally.
+  // admin_tags is NOT NULL DEFAULT '{}', so `not cs` never trips on nulls.
+  q = q.not("admin_tags", "cs", `{${INTERNAL_TAG}}`);
 
   if (filters.stage && !skipStage) q = q.eq("stage", filters.stage);
   if (filters.grade) {
@@ -568,6 +577,7 @@ async function computeScoreboard(
     const { data, error } = await supabase
       .from("dm_conversations")
       .select("id, last_message_direction")
+      .not("admin_tags", "cs", `{${INTERNAL_TAG}}`)
       .order("id", { ascending: true })
       .range(offset, offset + CONVERSATION_PAGE_SIZE - 1);
 
@@ -905,32 +915,35 @@ export async function applyClassification(
  * Insert-then-send: if the Send API call fails, the outbound message row is
  * still there so the admin UI shows it was attempted, not silently dropped.
  */
-export async function sendAdminReply(
+/**
+ * Sends one outbound message (text or a media attachment — the Send API
+ * accepts only one per call) and records it. Shared by sendAdminReply for
+ * both parts of a combined text+attachment reply.
+ */
+async function sendAndRecordOutboundMessage(
+  supabase: ReturnType<typeof createAdminClient>,
   conversationId: string,
-  body: string
-): Promise<void> {
-  const supabase = createAdminClient();
-
-  const { data: conversation, error: fetchError } = await supabase
-    .from("dm_conversations")
-    .select("platform, platform_user_id, last_message_at, last_message_direction")
-    .eq("id", conversationId)
-    .single();
-
-  if (fetchError || !conversation) {
-    console.error("Error fetching conversation for reply:", fetchError);
-    throw new Error("Conversation not found");
-  }
-
+  conversation: {
+    platform: DmPlatform;
+    platform_user_id: string;
+    last_message_at: string;
+    last_message_direction: DmMessageDirection | null;
+  },
+  input: { text?: string; attachmentUrl?: string; attachmentType?: MetaAttachmentType },
+  windowOpen: boolean
+): Promise<{ sentAt: string }> {
   const sentAt = new Date().toISOString();
+  const isAttachment = Boolean(input.attachmentUrl);
+  const attachmentType = input.attachmentType ?? "image";
+
   const { data: outboundMessage, error: insertError } = await supabase
     .from("dm_messages")
     .insert({
       conversation_id: conversationId,
       direction: "outbound" as DmMessageDirection,
       sender_type: "admin" as DmMessageSenderType,
-      body,
-      message_type: "text",
+      body: isAttachment ? input.text?.trim() || `[${attachmentType}]` : (input.text ?? ""),
+      message_type: (isAttachment ? "attachment" : "text") as DmMessageType,
       send_status: "pending",
       sent_at: sentAt,
     })
@@ -942,25 +955,50 @@ export async function sendAdminReply(
     throw new Error("Failed to record reply");
   }
 
+  if (isAttachment && input.attachmentUrl) {
+    const { error: attError } = await supabase.from("dm_message_attachments").insert({
+      message_id: outboundMessage.id,
+      attachment_type: attachmentType,
+      position: 0,
+      source_url: input.attachmentUrl,
+      title: attachmentType.charAt(0).toUpperCase() + attachmentType.slice(1),
+      payload: {},
+    });
+    if (attError) {
+      console.error("Error persisting outbound dm_message attachment:", attError);
+    }
+  }
+
   await supabase
     .from("dm_conversations")
     .update({ last_message_at: sentAt, last_message_direction: "outbound" })
     .eq("id", conversationId);
 
-  const { sendMetaMessage } = await import("@/lib/meta/graph");
+  const { sendMetaMessage, sendMetaAttachmentMessage } = await import("@/lib/meta/graph");
   let platformMessageId: string;
   try {
-    platformMessageId = await sendMetaMessage(
-      conversation.platform,
-      conversation.platform_user_id,
-      body
-    );
+    platformMessageId = isAttachment
+      ? await sendMetaAttachmentMessage(
+          conversation.platform,
+          conversation.platform_user_id,
+          input.attachmentUrl!,
+          attachmentType
+        )
+      : await sendMetaMessage(conversation.platform, conversation.platform_user_id, input.text ?? "");
   } catch (error) {
+    const rawMessage = error instanceof Error ? error.message : "unknown";
+    // The exact Graph API wording for a window-closed rejection varies, so
+    // don't pattern-match it — we already know from our own pre-check
+    // whether the 24h window was open, which is a much clearer signal.
+    const finalMessage = windowOpen
+      ? rawMessage
+      : `เกิน 24 ชม. จากข้อความล่าสุดของน้อง Instagram จึงปฏิเสธการส่ง (${rawMessage.slice(0, 200)})`;
+
     const { error: failedStateError } = await supabase
       .from("dm_messages")
       .update({
         send_status: "failed",
-        metadata: { send_error: error instanceof Error ? error.message.slice(0, 300) : "unknown" },
+        metadata: { send_error: finalMessage.slice(0, 300) },
       })
       .eq("id", outboundMessage.id);
     if (failedStateError) {
@@ -978,7 +1016,7 @@ export async function sendAdminReply(
     if (restoreConversationError) {
       console.error("Failed to restore conversation state after send failure:", restoreConversationError);
     }
-    throw error;
+    throw new Error(finalMessage);
   }
 
   const { error: sentError } = await supabase
@@ -988,6 +1026,176 @@ export async function sendAdminReply(
   if (sentError) {
     console.error("Meta reply sent but dm_message state update failed:", sentError);
     throw new Error("Reply sent, but delivery state was not saved");
+  }
+
+  return { sentAt };
+}
+
+export async function sendAdminReply(
+  conversationId: string,
+  input:
+    | string
+    | { text?: string; attachmentUrl?: string; attachmentType?: MetaAttachmentType }
+): Promise<void> {
+  const { text, attachmentUrl, attachmentType } =
+    typeof input === "string" ? { text: input, attachmentUrl: undefined, attachmentType: undefined } : input;
+
+  if (!text?.trim() && !attachmentUrl) {
+    throw new Error("Empty reply");
+  }
+
+  const supabase = createAdminClient();
+
+  const { data: conversation, error: fetchError } = await supabase
+    .from("dm_conversations")
+    .select("platform, platform_user_id, last_message_at, last_message_direction")
+    .eq("id", conversationId)
+    .single();
+
+  if (fetchError || !conversation) {
+    console.error("Error fetching conversation for reply:", fetchError);
+    throw new Error("Conversation not found");
+  }
+
+  const { data: lastInbound } = await supabase
+    .from("dm_messages")
+    .select("sent_at")
+    .eq("conversation_id", conversationId)
+    .eq("direction", "inbound")
+    .order("sent_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const { isWithinMessagingWindow } = await import("@/lib/dm-leads/messaging-window");
+  const windowOpen = isWithinMessagingWindow(lastInbound?.sent_at ?? null);
+
+  // Attachment and caption are sent as two separate Send API calls (the
+  // platform doesn't support a combined media+text message), so two
+  // dm_messages rows.
+  if (attachmentUrl) {
+    const { sentAt } = await sendAndRecordOutboundMessage(
+      supabase,
+      conversationId,
+      conversation,
+      { attachmentUrl, attachmentType },
+      windowOpen
+    );
+    if (text?.trim()) {
+      await sendAndRecordOutboundMessage(
+        supabase,
+        conversationId,
+        { ...conversation, last_message_at: sentAt, last_message_direction: "outbound" },
+        { text: text.trim() },
+        windowOpen
+      );
+    }
+  } else {
+    await sendAndRecordOutboundMessage(
+      supabase,
+      conversationId,
+      conversation,
+      { text: text!.trim() },
+      windowOpen
+    );
+  }
+
+  invalidateDmLeadCache();
+}
+
+/**
+ * Sends a text message with structured Meta quick-reply buttons (see
+ * lib/dm-leads/quick-reply-buttons.ts) and records it. Mirrors
+ * sendAdminReply's insert-then-send/rollback pattern, but as its own
+ * function since the payload shape (quick_replies array, no attachment)
+ * and message_type ("quick_reply") differ from a plain reply.
+ */
+export async function sendLeadQuickReplies(
+  conversationId: string,
+  text: string,
+  options: { title: string; payload: string }[]
+): Promise<void> {
+  if (!text.trim() || options.length === 0) {
+    throw new Error("Quick-reply message needs text and at least one option");
+  }
+
+  const supabase = createAdminClient();
+
+  const { data: conversation, error: fetchError } = await supabase
+    .from("dm_conversations")
+    .select("platform, platform_user_id, last_message_at, last_message_direction")
+    .eq("id", conversationId)
+    .single();
+
+  if (fetchError || !conversation) {
+    console.error("Error fetching conversation for quick-reply send:", fetchError);
+    throw new Error("Conversation not found");
+  }
+
+  const sentAt = new Date().toISOString();
+  const { data: outboundMessage, error: insertError } = await supabase
+    .from("dm_messages")
+    .insert({
+      conversation_id: conversationId,
+      direction: "outbound" as DmMessageDirection,
+      sender_type: "admin" as DmMessageSenderType,
+      body: text.trim(),
+      message_type: "quick_reply" as DmMessageType,
+      metadata: { quick_reply_options: options },
+      send_status: "pending",
+      sent_at: sentAt,
+    })
+    .select("id")
+    .single();
+
+  if (insertError) {
+    console.error("Error inserting outbound quick-reply dm_message:", insertError);
+    throw new Error("Failed to record quick-reply message");
+  }
+
+  await supabase
+    .from("dm_conversations")
+    .update({ last_message_at: sentAt, last_message_direction: "outbound" })
+    .eq("id", conversationId);
+
+  const { sendMetaQuickReplies } = await import("@/lib/meta/graph");
+  let platformMessageId: string;
+  try {
+    platformMessageId = await sendMetaQuickReplies(
+      conversation.platform,
+      conversation.platform_user_id,
+      text.trim(),
+      options
+    );
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "unknown";
+    const { error: failedStateError } = await supabase
+      .from("dm_messages")
+      .update({ send_status: "failed", metadata: { quick_reply_options: options, send_error: errorMessage.slice(0, 300) } })
+      .eq("id", outboundMessage.id);
+    if (failedStateError) {
+      console.error("Failed to persist failed quick-reply message state:", failedStateError);
+    }
+    const { error: restoreConversationError } = await supabase
+      .from("dm_conversations")
+      .update({
+        last_message_at: conversation.last_message_at,
+        last_message_direction: conversation.last_message_direction,
+      })
+      .eq("id", conversationId)
+      .eq("last_message_at", sentAt)
+      .eq("last_message_direction", "outbound");
+    if (restoreConversationError) {
+      console.error("Failed to restore conversation state after quick-reply send failure:", restoreConversationError);
+    }
+    throw error;
+  }
+
+  const { error: sentError } = await supabase
+    .from("dm_messages")
+    .update({ platform_message_id: platformMessageId, send_status: "sent" })
+    .eq("id", outboundMessage.id);
+  if (sentError) {
+    console.error("Quick-reply sent but dm_message state update failed:", sentError);
+    throw new Error("Message sent, but delivery state was not saved");
   }
 
   invalidateDmLeadCache();

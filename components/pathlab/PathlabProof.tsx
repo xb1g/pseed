@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { PROOF, PROOF_PROJECTS } from "@/lib/content/pathlab-page";
+import { NOTES, PROOF, PROOF_PROJECTS } from "@/lib/content/pathlab-page";
 
 const FIGURE_MATCH = PROOF.figure.match(/^(\d+)(.*)$/);
 const FIGURE_TARGET = FIGURE_MATCH ? Number(FIGURE_MATCH[1]) : null;
@@ -84,6 +84,11 @@ export function PathlabProof() {
         {PROOF.headline}
       </h2>
       <p className="pathlab-proof__sub">{PROOF.sub}</p>
+      <p className="pathlab-note-row">
+        <span className="pathlab-note pathlab-note--tilt-r-sm">
+          {NOTES.proof}
+        </span>
+      </p>
 
       <ul className="pathlab-proof__grid">
         {PROOF_PROJECTS.map((project, i) => (

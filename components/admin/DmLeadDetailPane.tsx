@@ -15,6 +15,7 @@ import {
   type FieldCoverage,
 } from "@/lib/dm-leads/playbook";
 import { deriveSignalsFromMessages } from "@/lib/dm-leads/signals";
+import { isWithinMessagingWindow } from "@/lib/dm-leads/messaging-window";
 import { BUCKET_NEXT_RUNG, RUNG_META } from "@/lib/dm-leads/scripts";
 import { DmLeadManageBar } from "@/components/admin/DmLeadManageBar";
 import { DM_REPLY_TEXTAREA_ID, DmLeadReplyForm } from "@/components/admin/DmLeadReplyForm";
@@ -87,7 +88,7 @@ interface DmLeadDetailPaneProps {
   conversation: DmConversation;
   body: string;
   onBodyChange: (body: string) => void;
-  onSent: () => void;
+  onSent: (hadAttachment: boolean) => void;
   /** Syncs manage-bar patches (star, status, …) into the inbox list state. */
   onMetaChange?: (patch: LeadMetaPatch) => void;
   /** Shared thread cache, lifted to the inbox so prefetched neighbors land here too. */
@@ -148,10 +149,22 @@ export function DmLeadDetailPane({
     if (el) el.scrollTop = el.scrollHeight;
   }, [thread, conversation.id]);
 
-  const handleSent = () => {
+  const handleSent = async (hadAttachment: boolean) => {
     // The cached thread is now missing the sent message — drop it.
     threadCache.current.delete(conversation.id);
-    onSent();
+    if (hadAttachment) {
+      // The inbox auto-advances to the next lead on send, which meant an
+      // attachment never actually rendered before the pane switched away.
+      // Refetch in place first so the image/video/file is visible here —
+      // conversation.id hasn't changed, so the load-on-select effect above
+      // won't refire on its own to pick up the new message.
+      const result = await getThread(conversation.id);
+      if (result) {
+        threadCache.current.set(conversation.id, result);
+        setThread(result);
+      }
+    }
+    onSent(hadAttachment);
   };
 
   // Signals need message history, which only exists here once the thread loads.
@@ -159,6 +172,13 @@ export function DmLeadDetailPane({
   const signals = useMemo(() => deriveSignalsFromMessages(thread?.dm_messages), [thread]);
   const bucket = classifyBucket(conversation, signals);
   const coverage = getFieldCoverage(conversation.interests);
+
+  const lastInboundMessageAt = useMemo(() => {
+    const inbound = (thread?.dm_messages ?? []).filter((m) => m.direction === "inbound");
+    if (inbound.length === 0) return null;
+    return inbound.reduce((latest, m) => (m.sent_at > latest ? m.sent_at : latest), inbound[0].sent_at);
+  }, [thread]);
+  const messagingWindowOpen = isWithinMessagingWindow(lastInboundMessageAt);
 
   /** Scripts drop straight into the reply box, then focus it for editing. */
   const insertScript = (script: string) => {
@@ -312,6 +332,11 @@ export function DmLeadDetailPane({
       </div>
 
       <div className="border-t px-3 py-2">
+        {!loading && !messagingWindowOpen && (
+          <p className="mb-1.5 rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+            ⚠️ เกิน 24 ชม. จากข้อความล่าสุดที่น้องทักมา — Instagram อาจปฏิเสธการส่งข้อความนี้
+          </p>
+        )}
         <DmLeadReplyForm
           conversation={conversation}
           body={body}

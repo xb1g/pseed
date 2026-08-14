@@ -382,7 +382,7 @@ const ContentForm = ({
             clearErrors();
           }}
           placeholder="e.g., Introduction Video, Week 1 Slides, Important Resource..."
-          className="h-11 border-2 border-slate-200 hover:border-slate-300 focus:border-blue-500 transition-colors"
+          className="h-11 border-2 border-white/15 bg-white/5 hover:border-white/25 focus:border-amber-200/70 transition-colors"
         />
       </div>
 
@@ -392,10 +392,10 @@ const ContentForm = ({
         <div className="space-y-3">
           <Label
             htmlFor="content_url"
-            className="text-sm font-semibold text-slate-700"
+            className="text-sm font-semibold text-stone-200"
           >
             URL <span className="text-red-500">*</span>
-            <span className="text-xs text-slate-500 ml-2 font-normal">
+            <span className="text-xs text-stone-400 ml-2 font-normal">
               ({config.hint})
             </span>
           </Label>
@@ -407,17 +407,17 @@ const ContentForm = ({
               clearErrors();
             }}
             placeholder={config.placeholder}
-            className={`h-11 border-2 border-slate-200 hover:border-slate-300 focus:border-blue-500 transition-colors truncate ${
+            className={`h-11 border-2 border-white/15 bg-white/5 hover:border-white/25 focus:border-amber-200/70 transition-colors truncate ${
               errors.some((e) => e.includes("URL"))
-                ? "border-red-400 focus:border-red-500"
+                ? "border-red-400/70 focus:border-red-400"
                 : ""
             }`}
           />
 
           {contentType === "video" && (
-            <div className="flex items-start gap-2 p-3 bg-green-50 border border-green-200 rounded-lg overflow-hidden">
-              <div className="text-green-600 mt-0.5 flex-shrink-0">🎯</div>
-              <div className="text-xs text-green-800 leading-relaxed break-words overflow-x-auto">
+            <div className="flex items-start gap-2 p-3 bg-emerald-300/10 border border-emerald-200/20 rounded-lg overflow-hidden">
+              <div className="text-emerald-300 mt-0.5 flex-shrink-0">🎯</div>
+              <div className="text-xs text-emerald-100/80 leading-relaxed break-words overflow-x-auto">
                 <strong>Supported platforms:</strong> YouTube, Vimeo,
                 SoundCloud, Twitter, Reddit, GIPHY, Flickr.
                 <br />
@@ -428,9 +428,9 @@ const ContentForm = ({
           )}
 
           {contentType === "resource_link" && (
-            <div className="flex items-start gap-2 p-3 bg-purple-50 border border-purple-200 rounded-lg overflow-hidden">
-              <div className="text-purple-600 mt-0.5 flex-shrink-0">📚</div>
-              <div className="text-xs text-purple-800 leading-relaxed break-words overflow-x-auto">
+            <div className="flex items-start gap-2 p-3 bg-amber-200/[0.07] border border-amber-200/20 rounded-lg overflow-hidden">
+              <div className="text-amber-300 mt-0.5 flex-shrink-0">📚</div>
+              <div className="text-xs text-amber-100/80 leading-relaxed break-words overflow-x-auto">
                 <strong>Examples:</strong> PDFs, Google Docs, GitHub repos,
                 books, articles, datasets, tools.
                 <br />
@@ -445,9 +445,9 @@ const ContentForm = ({
       {/* File Upload for Images */}
       {contentType === "image" && (
         <div className="space-y-3">
-          <Label className="text-sm font-semibold text-slate-700">
+          <Label className="text-sm font-semibold text-stone-200">
             Upload Image <span className="text-red-500">*</span>
-            <span className="text-xs text-slate-500 ml-2 font-normal">
+            <span className="text-xs text-stone-400 ml-2 font-normal">
               ({config.hint})
             </span>
           </Label>
@@ -460,11 +460,11 @@ const ContentForm = ({
             maxSize={10} // 10MB limit for images
             allowMultiple={false}
             uploadEndpoint="images"
-            className="border-2 border-dashed border-blue-200"
+            className="border-2 border-dashed border-white/15"
           />
           {contentUrl && (
             <div className="space-y-2">
-              <div className="text-xs text-green-600 bg-green-50 p-2 rounded flex items-center gap-2">
+              <div className="text-xs text-emerald-300 bg-emerald-400/10 border border-emerald-300/20 p-2 rounded flex items-center gap-2">
                 <span>✅ Image uploaded successfully</span>
                 {uploadedFileName && (
                   <span className="text-muted-foreground">
@@ -473,8 +473,8 @@ const ContentForm = ({
                 )}
               </div>
               {/* Image Preview */}
-              <div className="border-2 border-green-200 rounded-lg p-2 bg-green-50/30 overflow-hidden">
-                <p className="text-xs font-medium text-slate-700 mb-2">
+              <div className="border border-white/10 rounded-lg p-2 bg-white/5 overflow-hidden">
+                <p className="text-xs font-medium text-stone-300 mb-2">
                   Preview:
                 </p>
                 <div className="relative w-full overflow-x-auto">
@@ -498,9 +498,9 @@ const ContentForm = ({
       {/* File Upload for PDFs */}
       {contentType === "pdf" && (
         <div className="space-y-3">
-          <Label className="text-sm font-semibold text-slate-700">
+          <Label className="text-sm font-semibold text-stone-200">
             Upload PDF Document <span className="text-red-500">*</span>
-            <span className="text-xs text-slate-500 ml-2 font-normal">
+            <span className="text-xs text-stone-400 ml-2 font-normal">
               ({config.hint})
             </span>
           </Label>
@@ -513,10 +513,10 @@ const ContentForm = ({
             maxSize={40} // 40MB limit for PDFs
             allowMultiple={false}
             uploadEndpoint="documents"
-            className="border-2 border-dashed border-purple-200"
+            className="border-2 border-dashed border-white/15"
           />
           {(uploadedFileName || contentUrl) && (
-            <div className="text-xs text-green-600 bg-green-50 p-2 rounded">
+            <div className="text-xs text-emerald-300 bg-emerald-400/10 border border-emerald-300/20 p-2 rounded">
               ✅ PDF uploaded successfully
             </div>
           )}
@@ -577,9 +577,9 @@ const ContentForm = ({
       {/* Order Code Editor */}
       {contentType === "order_code" && (
         <div className="space-y-3">
-          <Label className="text-sm font-semibold text-slate-700">
+          <Label className="text-sm font-semibold text-stone-200">
             Code Blocks <span className="text-red-500">*</span>
-            <span className="text-xs text-slate-500 ml-2 font-normal">
+            <span className="text-xs text-stone-400 ml-2 font-normal">
               ({config.hint})
             </span>
           </Label>
@@ -608,13 +608,13 @@ const ContentForm = ({
                     }
                   }}
                   placeholder={`Code block ${index + 1}`}
-                  className="font-mono text-sm min-h-[60px] resize-none overflow-hidden bg-slate-900 text-slate-100 border-slate-700"
+                  className="font-mono text-sm min-h-[60px] resize-none overflow-hidden bg-[#171310] text-stone-200 border-white/10"
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="shrink-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                  className="shrink-0 text-red-400 hover:text-red-300 hover:bg-red-400/10"
                   onClick={() => {
                     const newBlocks = codeBlocks.filter((_, i) => i !== index);
                     setCodeBlocks(newBlocks);
@@ -641,7 +641,7 @@ const ContentForm = ({
             Add Code Block
           </Button>
 
-          <div className="text-xs text-muted-foreground bg-blue-50 p-3 rounded-lg text-blue-800">
+          <div className="text-xs bg-amber-200/[0.07] border border-amber-200/15 p-3 rounded-lg text-amber-100/80">
             🧩 <strong>How it works:</strong> Define the blocks in the{" "}
             <strong>exact order</strong> you want them to appear. Students can
             drag blocks to reorder them or nest them inside containers (blocks
@@ -791,7 +791,7 @@ const ContentPreviewDisplay = ({
     const embedUrl = getEmbedUrl(item.content_url);
     if (embedUrl) {
       return (
-        <div className="mt-3 rounded-lg overflow-hidden bg-black/5 border border-slate-200">
+        <div className="mt-3 rounded-lg overflow-hidden bg-black/30 border border-white/10">
           <iframe
             src={embedUrl}
             allowFullScreen
@@ -804,12 +804,12 @@ const ContentPreviewDisplay = ({
     } else {
       // Fallback for non-embeddable videos
       return (
-        <div className="mt-3 p-3 rounded-lg bg-slate-50 border border-slate-200">
+        <div className="mt-3 p-3 rounded-lg bg-white/5 border border-white/10">
           <a
             href={item.content_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:underline text-sm break-all"
+            className="text-amber-300 hover:underline text-sm break-all"
           >
             📹 Open video: {item.content_url}
           </a>
@@ -821,7 +821,7 @@ const ContentPreviewDisplay = ({
   // Canva slide content
   if (item.content_type === "canva_slide" && item.content_url) {
     return (
-      <div className="mt-3 rounded-lg overflow-hidden bg-slate-50 border border-slate-200">
+      <div className="mt-3 rounded-lg overflow-hidden bg-white/5 border border-white/10">
         <iframe
           src={item.content_url}
           allowFullScreen
@@ -847,13 +847,13 @@ const ContentPreviewDisplay = ({
     };
 
     return (
-      <div className="mt-3 rounded-lg overflow-hidden bg-slate-50 border border-slate-200">
+      <div className="mt-3 rounded-lg overflow-hidden bg-white/5 border border-white/10">
         {!isExpanded ? (
           <>
             {/* Collapsed preview - show rendered markdown (limited) */}
             <div className="p-3">
               <div
-                className="text-sm text-slate-700 line-clamp-3 prose prose-sm max-w-none"
+                className="text-sm text-stone-300 line-clamp-3 prose prose-sm max-w-none"
                 dangerouslySetInnerHTML={{
                   __html: renderMarkdown(item.content_body),
                 }}
@@ -861,7 +861,7 @@ const ContentPreviewDisplay = ({
               {hasMoreContent && (
                 <button
                   onClick={() => setExpandedTextId(item.id)}
-                  className="mt-2 text-xs text-blue-600 hover:underline font-medium"
+                  className="mt-2 text-xs text-amber-300 hover:underline font-medium"
                 >
                   Show full content →
                 </button>
@@ -873,14 +873,14 @@ const ContentPreviewDisplay = ({
             {/* Expanded full view */}
             <div className="p-3 max-h-96 overflow-y-auto">
               <div
-                className="text-sm text-slate-700 prose prose-sm max-w-none space-y-2"
+                className="text-sm text-stone-300 prose prose-sm max-w-none space-y-2"
                 dangerouslySetInnerHTML={{
                   __html: renderMarkdown(item.content_body),
                 }}
               />
               <button
                 onClick={() => setExpandedTextId(null)}
-                className="mt-3 text-xs text-blue-600 hover:underline font-medium"
+                className="mt-3 text-xs text-amber-300 hover:underline font-medium"
               >
                 ← Collapse
               </button>
@@ -895,10 +895,10 @@ const ContentPreviewDisplay = ({
   if (item.content_type === "pdf" && item.content_url) {
     const fileName = item.content_url.split("/").pop() || "Document";
     return (
-      <div className="mt-3 p-3 rounded-lg bg-purple-50 border border-purple-200">
+      <div className="mt-3 p-3 rounded-lg bg-amber-200/[0.07] border border-amber-200/15">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-lg">📄</span>
-          <span className="text-sm font-medium text-slate-700">
+          <span className="text-sm font-medium text-stone-200">
             PDF Document
           </span>
         </div>
@@ -906,7 +906,7 @@ const ContentPreviewDisplay = ({
           href={item.content_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-600 hover:underline text-sm break-all"
+          className="text-amber-300 hover:underline text-sm break-all"
         >
           📥 Download: {fileName}
         </a>
@@ -917,9 +917,9 @@ const ContentPreviewDisplay = ({
   // Resource link content
   if (item.content_type === "resource_link") {
     return (
-      <div className="mt-3 p-3 rounded-lg bg-blue-50 border border-blue-200">
+      <div className="mt-3 p-3 rounded-lg bg-white/5 border border-white/10">
         <div className="mb-2">
-          <p className="text-sm text-slate-700 break-words">
+          <p className="text-sm text-stone-300 break-words">
             {item.content_body}
           </p>
         </div>
@@ -928,7 +928,7 @@ const ContentPreviewDisplay = ({
             href={item.content_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:underline text-sm break-all inline-block"
+            className="text-amber-300 hover:underline text-sm break-all inline-block"
           >
             🔗 {item.content_url}
           </a>
@@ -1247,7 +1247,7 @@ export function ContentEditor({
     <div className="w-full overflow-x-hidden">
       {/* Add new content form */}
       {isAdding && (
-        <div className="border-2 border-dashed border-blue-300 rounded-lg p-1 max-h-[70vh] overflow-hidden w-full">
+        <div className="border-2 border-dashed border-amber-200/30 rounded-lg p-1 max-h-[70vh] overflow-hidden w-full">
           <div className="max-h-[65vh] overflow-y-auto w-full">
             <ContentForm
               nodeId={nodeId}
@@ -1264,11 +1264,11 @@ export function ContentEditor({
         {sortedContent.map((item, index) => (
           <Card
             key={item.id}
-            className="border-l-4 border-l-blue-500 overflow-hidden"
+            className="border-l-4 border-l-amber-300/70 bg-white/[0.03] overflow-hidden"
           >
             <CardContent className="p-3 w-full overflow-x-hidden">
               {editingId === item.id ? (
-                <div className="border border-yellow-300 rounded-lg p-1 bg-yellow-50 max-h-[65vh] overflow-hidden w-full">
+                <div className="border border-amber-200/40 rounded-lg p-1 bg-amber-200/5 max-h-[65vh] overflow-hidden w-full">
                   <div className="max-h-[60vh] overflow-y-auto w-full">
                     <ContentForm
                       nodeId={nodeId}
@@ -1289,7 +1289,7 @@ export function ContentEditor({
                           variant="ghost"
                           size="sm"
                           onClick={() => moveContentUp(index)}
-                          className="h-5 w-6 p-0 hover:bg-blue-100"
+                          className="h-5 w-6 p-0 hover:bg-amber-200/10"
                           disabled={index === 0 || !!isFormActive}
                           title="Move up"
                         >
@@ -1299,7 +1299,7 @@ export function ContentEditor({
                           variant="ghost"
                           size="sm"
                           onClick={() => moveContentDown(index)}
-                          className="h-5 w-6 p-0 hover:bg-blue-100"
+                          className="h-5 w-6 p-0 hover:bg-amber-200/10"
                           disabled={
                             index === sortedContent.length - 1 || !!isFormActive
                           }
@@ -1311,14 +1311,14 @@ export function ContentEditor({
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-medium flex-shrink-0">
+                          <span className="text-xs bg-amber-200/15 text-amber-200 border border-amber-200/20 px-2 py-0.5 rounded font-medium flex-shrink-0">
                             #{index + 1}
                           </span>
                           <span className="text-xs text-muted-foreground capitalize flex-shrink-0">
                             {item.content_type.replace("_", " ")}
                           </span>
                           {!item.content_url && !item.content_body && (
-                            <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded flex-shrink-0">
+                            <span className="text-xs bg-red-400/15 text-red-300 border border-red-400/25 px-2 py-0.5 rounded flex-shrink-0">
                               Missing Content
                             </span>
                           )}
@@ -1343,7 +1343,7 @@ export function ContentEditor({
                         variant="ghost"
                         size="sm"
                         onClick={() => confirmDelete(item.id)}
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-800"
+                        className="h-8 w-8 p-0 text-red-400 hover:text-red-300 hover:bg-red-400/10"
                         disabled={!!isFormActive}
                       >
                         <Trash2 className="h-3 w-3" />
@@ -1353,7 +1353,7 @@ export function ContentEditor({
 
                   {/* Image Preview in List */}
                   {item.content_type === "image" && item.content_url && (
-                    <div className="mt-2 border border-slate-200 rounded-md overflow-x-auto bg-slate-50">
+                    <div className="mt-2 border border-white/10 rounded-md overflow-x-auto bg-white/5">
                       <div className="inline-flex w-full">
                         <img
                           src={item.content_url}

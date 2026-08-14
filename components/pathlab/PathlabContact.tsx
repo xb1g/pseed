@@ -1,4 +1,4 @@
-import { CONTACT } from "@/lib/content/pathlab-page";
+import { CONTACT, NOTES } from "@/lib/content/pathlab-page";
 
 /**
  * Closing call to action.
@@ -17,14 +17,29 @@ export function PathlabContact() {
       <p id="pathlab-contact-line" className="pathlab-contact__line">
         {CONTACT.line}
       </p>
-      <a
-        className="pathlab-contact__handle"
-        href={CONTACT.href}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {CONTACT.handle}
-      </a>
+      {/* Two doors, same room: IG is where the audience already is, LINE OA
+          answers instantly and is easier to book through. */}
+      <div className="pathlab-contact__channels">
+        <a
+          className="pathlab-contact__handle"
+          href={CONTACT.href}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          IG: {CONTACT.handle}
+        </a>
+        <a
+          className="pathlab-contact__handle"
+          href={CONTACT.lineHref}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {CONTACT.lineLabel}
+        </a>
+      </div>
+      <p className="pathlab-note-row">
+        <span className="pathlab-note">{NOTES.contact}</span>
+      </p>
     </section>
   );
 }

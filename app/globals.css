@@ -7354,6 +7354,54 @@ summary:focus-visible .radar-expand-indicator {
   }
 }
 
+/* ── Dawn map panel ─────────────────────────────────────────────────────
+ * Warm horizon glass for the map side panel / mobile sheet. The canvas sky
+ * is indigo, so the panel answers with the warm side of dawn — charcoal
+ * amber glass, gold hairlines, warm gray text — and the two surfaces never
+ * merge. The full shadcn token set is overridden locally so every primitive
+ * inside the panel (cards, inputs, selects, badges, checkboxes, buttons)
+ * turns warm without touching each sub-component.
+ */
+.dawn-panel {
+  --background: 26 18% 9%;
+  --foreground: 40 24% 92%;
+  --card: 28 20% 12%;
+  --card-foreground: 40 24% 92%;
+  --popover: 28 22% 10%;
+  --popover-foreground: 40 24% 92%;
+  --primary: 43 90% 62%;
+  --primary-foreground: 28 45% 10%;
+  --secondary: 30 16% 18%;
+  --secondary-foreground: 40 24% 90%;
+  --muted: 30 14% 17%;
+  --muted-foreground: 35 12% 68%;
+  --accent: 38 24% 22%;
+  --accent-foreground: 43 90% 72%;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 36 24% 26%;
+  --input: 36 20% 24%;
+  --ring: 43 90% 62%;
+  background: linear-gradient(
+    165deg,
+    rgba(34, 26, 20, 0.82) 0%,
+    rgba(20, 16, 20, 0.9) 48%,
+    rgba(12, 10, 18, 0.94) 100%
+  );
+  backdrop-filter: blur(20px) saturate(1.05);
+  -webkit-backdrop-filter: blur(20px) saturate(1.05);
+}
+
+/* Gold-kissed header strip for panel tops (node title bars, editor bars). */
+.dawn-panel__header {
+  background: linear-gradient(
+    to bottom,
+    rgba(254, 217, 92, 0.07),
+    rgba(254, 217, 92, 0.015)
+  );
+  border-bottom: 1px solid rgba(254, 217, 92, 0.14);
+}
+
 /* ── My Path: Dawn journey home ──────────────────────────────────────────
  * `.ei-card` keeps its shared material and motion structure. The scoped
  * modifier below replaces Dusk amber with the student/parent Dawn palette.
@@ -8428,6 +8476,18 @@ summary:focus-visible .radar-expand-indicator {
   line-height: 1;
   color: #FDF3E6;
   white-space: nowrap;
+}
+
+/* Pathlab's strip runs Thai phrases: Instrument Serif has no Thai glyphs,
+   and line-height 1 clips the vowels/tone marks that stack above and below.
+   Kodchasan is the page's Thai display face; the extra leading keeps the
+   marks inside the strip. Scoped so /talent's Latin strip is untouched. */
+.pathlab-page .talent-marquee__item {
+  padding-block: 0.7rem;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 1.35rem;
+  font-weight: 500;
+  line-height: 1.6;
 }
 
 @keyframes talent-marquee {
@@ -9813,6 +9873,270 @@ summary:focus-visible .radar-expand-indicator {
   .pathlab-journey__frame:hover .pathlab-journey__img {
     transform: scale(1.02);
   }
+}
+
+/* ── Journey map: interactive island preview of the open paths ── */
+
+.pathlab-journey-map {
+  margin: clamp(1.5rem, 4vw, 2.5rem) auto 0;
+  max-width: 72rem;
+}
+
+/* Path switcher: one chip per open field. */
+.pathlab-journey-map__fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+}
+
+.pathlab-journey-map__field {
+  padding: 0.45rem 1.05rem;
+  border-radius: 999px;
+  border: 1.5px solid rgba(82, 71, 70, 0.25);
+  background: transparent;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #6a5c5a;
+  cursor: pointer;
+  transition: background 160ms ease-out, color 160ms ease-out,
+    border-color 160ms ease-out;
+}
+
+@media (hover: hover) {
+  .pathlab-journey-map__field:hover {
+    border-color: rgba(196, 62, 29, 0.5);
+    color: #c43e1d;
+  }
+}
+
+.pathlab-journey-map__field.is-active {
+  background: #c43e1d;
+  border-color: #c43e1d;
+  color: #fdf3e6;
+}
+
+.pathlab-journey-map__field:focus-visible {
+  outline: 2px solid #c43e1d;
+  outline-offset: 2px;
+}
+
+/* The canvas keeps the cream ground so it reads as part of the page, not an
+   embedded app. */
+.pathlab-journey-map__canvas {
+  height: clamp(21rem, 58vw, 27rem);
+  border-radius: 1.25rem;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(82, 71, 70, 0.14);
+  box-shadow: 0 18px 44px rgba(82, 71, 70, 0.14);
+}
+
+.pathlab-journey-map__canvas .react-flow__pane {
+  cursor: grab;
+}
+
+.pathlab-journey-map__canvas .react-flow__pane:active {
+  cursor: grabbing;
+}
+
+/* Controls and attribution borrow the page palette instead of React Flow's
+   default white/grey. */
+.pathlab-journey-map__canvas .react-flow__controls {
+  box-shadow: 0 6px 18px rgba(82, 71, 70, 0.18);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.pathlab-journey-map__canvas .react-flow__controls-button {
+  background: #fdf3e6;
+  border-bottom: 1px solid rgba(82, 71, 70, 0.12);
+  fill: #524746;
+}
+
+@media (hover: hover) {
+  .pathlab-journey-map__canvas .react-flow__controls-button:hover {
+    background: #f5e6d2;
+  }
+}
+
+.pathlab-journey-map__canvas .react-flow__attribution {
+  background: transparent;
+  color: rgba(82, 71, 70, 0.45);
+}
+
+.pathlab-journey-map__hint {
+  margin: 0.7rem 0 0;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #756663;
+  text-align: center;
+}
+
+/* Selected day, spelled out under the canvas. `aria-live` announces island
+   taps and chip presses alike. */
+.pathlab-journey-map__detail {
+  margin-top: 1rem;
+  padding: 1.1rem 1.25rem 1.25rem;
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(82, 71, 70, 0.12);
+}
+
+.pathlab-journey-map__days {
+  display: flex;
+  gap: 0.45rem;
+  margin-bottom: 0.8rem;
+}
+
+.pathlab-journey-map__day {
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 50%;
+  border: 1.5px solid rgba(82, 71, 70, 0.25);
+  background: transparent;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #6a5c5a;
+  cursor: pointer;
+  transition: background 160ms ease-out, color 160ms ease-out,
+    border-color 160ms ease-out;
+}
+
+@media (hover: hover) {
+  .pathlab-journey-map__day:hover {
+    border-color: rgba(196, 62, 29, 0.5);
+    color: #c43e1d;
+  }
+}
+
+.pathlab-journey-map__day.is-active {
+  background: #c43e1d;
+  border-color: #c43e1d;
+  color: #fdf3e6;
+}
+
+.pathlab-journey-map__day:focus-visible {
+  outline: 2px solid #c43e1d;
+  outline-offset: 2px;
+}
+
+.pathlab-journey-map__detail-heading {
+  margin: 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: clamp(1.05rem, 2.4vw, 1.25rem);
+  font-weight: 600;
+  line-height: 1.5;
+  color: #c43e1d;
+}
+
+.pathlab-journey-map__detail-doing {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: clamp(0.95rem, 2vw, 1.05rem);
+  line-height: 1.8;
+  color: #524746;
+  text-wrap: pretty;
+}
+
+/* Layout only: the marker look comes from .pathlab-note. */
+.pathlab-journey-map__detail-gets {
+  margin-top: 0.7rem;
+  font-size: 0.88rem;
+}
+
+/* ── Journey islands (React Flow custom node) ── */
+
+/* The node box is exactly the sprite; labels hang below so edges anchor at
+   the sprite's centre rather than through the text. */
+.journey-island {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  cursor: pointer;
+}
+
+.journey-island__handle {
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+}
+
+.journey-island__sprite {
+  display: block;
+  line-height: 0;
+  filter: drop-shadow(0 10px 14px rgba(82, 71, 70, 0.28));
+  transition: transform 220ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99)),
+    filter 220ms ease-out;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .journey-island__sprite {
+    animation: journey-island-float 5.3s ease-in-out infinite;
+  }
+}
+
+@keyframes journey-island-float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -6px;
+  }
+}
+
+.journey-island.is-selected .journey-island__sprite {
+  transform: scale(1.1);
+  filter: drop-shadow(0 14px 22px rgba(196, 62, 29, 0.4));
+}
+
+.journey-island__labels {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  width: max-content;
+  max-width: 11rem;
+  text-align: center;
+  pointer-events: none;
+}
+
+.journey-island__day {
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(82, 71, 70, 0.88);
+  color: #fdf3e6;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  transition: background 160ms ease-out;
+}
+
+.journey-island.is-selected .journey-island__day {
+  background: #c43e1d;
+}
+
+.journey-island__title {
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #524746;
+  text-wrap: balance;
 }
 
 /* ── Proof: social-proof figure + example projects ── */
@@ -11302,4 +11626,350 @@ summary:focus-visible .radar-expand-indicator {
 
 .pathlab-fields__label-line {
   display: block;
+}
+
+/* ── Margin notes: Basecamp-style highlighted asides ── */
+
+/* A short, friendly aside in highlighter, set at a casual angle so it reads
+   as a human jotting in the margin, not a system label. The hand-drawn
+   border-radius (uneven corners) keeps the marker from looking like a CSS
+   pill. Use for hints and reassurances; never for headings or body copy. */
+.pathlab-note {
+  display: inline-block;
+  padding: 0.14em 0.6em 0.3em;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 224, 138, 0.95),
+    rgba(255, 213, 97, 0.92)
+  );
+  border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-weight: 600;
+  color: #4a3e3c;
+  transform: rotate(-1.6deg);
+  /* Multi-line notes get the marker edge on every line, not just the box. */
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* Alternate tilts so neighbouring notes do not look stamped from a mould. */
+.pathlab-note--tilt-r {
+  transform: rotate(1.3deg);
+}
+
+.pathlab-note--tilt-l-sm {
+  transform: rotate(-0.8deg);
+}
+
+.pathlab-note--tilt-r-sm {
+  transform: rotate(0.7deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pathlab-note,
+  .pathlab-note--tilt-r,
+  .pathlab-note--tilt-l-sm,
+  .pathlab-note--tilt-r-sm {
+    transform: none;
+  }
+}
+
+/* Spacing/alignment for a note that sits under a section heading or block.
+   Centered, since most Pathlab sections are; left-aligned spots opt out. */
+.pathlab-note-row {
+  margin: 1rem 0 0;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: clamp(0.95rem, 2vw, 1.05rem);
+  line-height: 1.8;
+  text-align: center;
+}
+
+.pathlab-note-row--left {
+  text-align: left;
+}
+
+/* The reviews band is full-bleed with no section padding, so its note row
+   carries its own gutter. */
+.pathlab-reviews .pathlab-note-row {
+  padding-inline: clamp(1.25rem, 5vw, 4rem);
+}
+
+/* ── Conversion updates: hero CTAs, touch fan, sticky mobile bar ── */
+
+/* Hero actions: the first screen must answer "มีสายที่เราอยากเรียนไหม?" and
+   "ลองก่อนได้ไหม?" without scrolling. */
+.pathlab-hero__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 1.6rem;
+}
+
+.pathlab-hero__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.9rem;
+  padding: 0.65rem 1.4rem;
+  border-radius: 999px;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-decoration: none;
+  transition: background 180ms ease-out, translate 180ms ease-out,
+    border-color 180ms ease-out;
+}
+
+.pathlab-hero__cta--primary {
+  background: #c43e1d;
+  color: #fdf3e6;
+}
+
+.pathlab-hero__cta--secondary {
+  border: 1.5px solid rgba(196, 62, 29, 0.45);
+  color: #c43e1d;
+}
+
+@media (hover: hover) {
+  .pathlab-hero__cta--primary:hover {
+    background: #a83318;
+    translate: 0 -1px;
+  }
+
+  .pathlab-hero__cta--secondary:hover {
+    background: rgba(196, 62, 29, 0.08);
+    border-color: rgba(196, 62, 29, 0.7);
+    translate: 0 -1px;
+  }
+}
+
+.pathlab-hero__cta:focus-visible {
+  outline: 2px solid #c43e1d;
+  outline-offset: 3px;
+}
+
+/* Thumbs, not cursors: on phones both actions stack full-width. */
+@media (max-width: 480px) {
+  .pathlab-hero__ctas {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* Touch fan: the pointer-driven overlap collapses into three readable cards
+   side by side. On touch the fan never opens and the tilt never runs, so
+   without this the hero showed stacked cards with illegible labels. */
+@media (hover: none), (max-width: 640px) {
+  .pathlab-fan {
+    display: flex;
+    gap: 0.65rem;
+    width: 100%;
+    aspect-ratio: auto;
+  }
+
+  .pathlab-fan__card,
+  .pathlab-fan__card--left,
+  .pathlab-fan__card--right,
+  .pathlab-fan__card--front {
+    position: relative;
+    left: auto;
+    right: auto;
+    top: auto;
+    width: auto;
+    flex: 1 1 0;
+    transform: none;
+  }
+
+  /* A whisper of the fan's angle stays, so it still reads as cards. */
+  .pathlab-fan__card--left {
+    transform: rotate(-2.5deg);
+  }
+
+  .pathlab-fan__card--right {
+    transform: rotate(2.5deg);
+  }
+
+  .pathlab-fan__card--front {
+    transform: translateY(-4%);
+  }
+}
+
+/* Portfolio reassurance: sits under the heading, left-aligned like it. */
+.pathlab-portfolio__reassure {
+  margin: 0.9rem 0 0;
+  max-width: 40rem;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: clamp(1rem, 2.2vw, 1.15rem);
+  line-height: 1.8;
+  color: #524746;
+  text-wrap: pretty;
+}
+
+/* Coming-soon fields are links now, so the tile needs anchor affordance and
+   the caption carries the invitation in brand orange. */
+a.pathlab-fields__button {
+  text-decoration: none;
+  color: inherit;
+}
+
+@media (hover: hover) {
+  .pathlab-fields__button--soon:hover .pathlab-fields__frame {
+    translate: 0 -3px;
+  }
+}
+
+.pathlab-fields__button--soon:focus-visible {
+  outline: 3px solid #c43e1d;
+  outline-offset: 4px;
+}
+
+.pathlab-fields__soon-cue {
+  color: #c43e1d;
+  font-weight: 600;
+}
+
+/* Free tier's direct-play button. */
+.pathlab-price__tier-cta {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  margin-top: 0.7rem;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  background: #c43e1d;
+  color: #fdf3e6;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+  width: fit-content;
+  transition: background 180ms ease-out, translate 180ms ease-out;
+}
+
+@media (hover: hover) {
+  .pathlab-price__tier-cta:hover {
+    background: #a83318;
+    translate: 0 -1px;
+  }
+}
+
+.pathlab-price__tier-cta:focus-visible {
+  outline: 2px solid #c43e1d;
+  outline-offset: 3px;
+}
+
+/* Booking actions sit side by side under the price notes. */
+.pathlab-price__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.pathlab-price__ctas .pathlab-price__cta {
+  margin-top: 0.65rem;
+}
+
+/* LINE keeps the same pill shape but inverts: outlined on the dark notes
+   panel so the orange IG action stays primary. */
+.pathlab-price__cta--line {
+  background: transparent;
+  border: 1.5px solid rgba(253, 243, 230, 0.55);
+  color: #fdf3e6;
+}
+
+@media (hover: hover) {
+  .pathlab-price__cta--line:hover {
+    background: rgba(253, 243, 230, 0.12);
+    translate: 0 -1px;
+  }
+}
+
+/* Contact: the two channels share a row. */
+.pathlab-contact__channels {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0.35rem 1.6rem;
+}
+
+/* ── Sticky mobile action bar ── */
+
+.pathlab-mobile-cta {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.6rem 0.9rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
+  background: rgba(253, 243, 230, 0.94);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(82, 71, 70, 0.12);
+  transform: translateY(110%);
+  visibility: hidden;
+  transition: transform 320ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99)),
+    visibility 0s linear 320ms;
+}
+
+.pathlab-mobile-cta.is-visible {
+  transform: translateY(0);
+  visibility: visible;
+  transition: transform 320ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99)),
+    visibility 0s;
+}
+
+/* Desktop never sees the bar — gated on pointer capability, not width. */
+@media (hover: hover) and (pointer: fine) {
+  .pathlab-mobile-cta {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pathlab-mobile-cta {
+    transition: none;
+  }
+}
+
+.pathlab-mobile-cta__btn {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 999px;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  text-decoration: none;
+}
+
+.pathlab-mobile-cta__btn--primary {
+  background: #c43e1d;
+  color: #fdf3e6;
+}
+
+.pathlab-mobile-cta__btn--chat {
+  border: 1.5px solid rgba(82, 71, 70, 0.35);
+  background: rgba(255, 255, 255, 0.6);
+  color: #524746;
+}
+
+.pathlab-mobile-cta__btn:focus-visible {
+  outline: 2px solid #c43e1d;
+  outline-offset: 2px;
+}
+
+/* The bar covers the bottom ~4rem on touch; keep the closing contact section
+   clear of it. */
+@media (hover: none) {
+  .pathlab-contact {
+    padding-bottom: 10rem;
+  }
 }

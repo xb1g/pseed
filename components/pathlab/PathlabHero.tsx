@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { HERO, HERO_CARDS } from "@/lib/content/pathlab-page";
+import { HERO, HERO_CARDS, MICRO_PATHLAB, NOTES } from "@/lib/content/pathlab-page";
 
 /**
  * Hero: title + Thai subtitle left, interactive fan of field cards right.
@@ -71,6 +71,28 @@ export function PathlabHero() {
               </p>
             ))}
           </div>
+
+          {/* Above the fold on every device: the two questions a visitor
+              arrives with are "มีสายที่เราอยากเรียนไหม?" and "ลองก่อนได้ไหม?" */}
+          <div className="pathlab-hero__ctas">
+            <a
+              className="pathlab-hero__cta pathlab-hero__cta--primary"
+              href={HERO.ctas.primary.href}
+            >
+              {HERO.ctas.primary.label}
+            </a>
+            <a
+              className="pathlab-hero__cta pathlab-hero__cta--secondary"
+              href={MICRO_PATHLAB.mapHref ?? MICRO_PATHLAB.fallbackHref}
+            >
+              {HERO.ctas.secondary.label}
+            </a>
+          </div>
+
+          {/* The quiet thing the value prop cannot say formally. */}
+          <p className="pathlab-note-row pathlab-note-row--left">
+            <span className="pathlab-note">{NOTES.hero}</span>
+          </p>
         </div>
 
         <div

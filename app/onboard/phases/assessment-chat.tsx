@@ -172,6 +172,7 @@ export function AssessmentChatPhase({
             <TcasTargetPicker
               data={localData}
               language={language}
+              hideHeader
               onChange={(updates) => {
                 setLocalData((current) => ({ ...current, ...updates }));
               }}

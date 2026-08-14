@@ -6,12 +6,36 @@
  * pairing as /me. Latin display stays Instrument Serif where titles are English.
  */
 
+/**
+ * Teen-first Thai phrases. The previous set ("Build in public", "Ship
+ * something real") was Twitter/startup jargon that ม.4–5 readers outside
+ * the dev bubble do not relate to.
+ */
 export const MARQUEE_PHRASES = [
-  "Empower student",
-  "Connect word",
-  "Build in public",
-  "Ship something real",
+  "ทำ Project ติดพอร์ตจริง",
+  "ไม่ต้องมีพื้นฐาน",
+  "Mentor พาทำทีละสเต็ป",
+  "เริ่มจากศูนย์ได้",
+  "เพื่อนได้ใช้ของที่เราทำจริง",
 ] as const;
+
+/**
+ * The free Micro Pathlab tier plays on the standalone map viewer at
+ * /map/<id>. The id comes from NEXT_PUBLIC_MICRO_PATHLAB_MAP_ID so the CTA
+ * can be pointed at the current sample case without a code change. When it
+ * is unset, play-now CTAs fall back to the pricing section instead of a
+ * dead link, and the free tier's direct-play button stays hidden.
+ */
+const MICRO_MAP_ID = process.env.NEXT_PUBLIC_MICRO_PATHLAB_MAP_ID;
+
+export const MICRO_PATHLAB = {
+  /** Null until a sample map is configured — never render a dead /map link. */
+  mapHref: MICRO_MAP_ID ? `/map/${MICRO_MAP_ID}` : null,
+  /** Where "ลองฟรี" lands while no sample map is configured. */
+  fallbackHref: "#pathlab-price",
+  cta: "ลองฟรี 10 นาที",
+  tierCta: "เริ่มทำเคสตัวอย่าง 10 นาที →",
+} as const;
 
 export interface HeroCard {
   src: string;
@@ -114,15 +138,33 @@ export const PORTFOLIO_FORMULA = {
 } as const;
 
 export const HERO = {
-  title: "/Pathlab",
+  /* No leading slash: "/Pathlab" read as a terminal path to the teens this
+     page is for. */
+  title: "Pathlab",
   subtitleLines: [
     "ทำ Project ที่ออกแบบร่วมกับผู้เชี่ยวชาญของสายนั้นๆ",
     "ภายในเวลา 4-5 วัน",
   ],
+  /**
+   * Above-the-fold actions. Mobile visitors decide within seconds, so the
+   * hero cannot be a scroll cue alone.
+   */
+  ctas: {
+    primary: { label: "สำรวจสายที่เปิด", href: "#pathlab-fields" },
+    secondary: { label: MICRO_PATHLAB.cta },
+  },
   scrollCue: "[Scroll down]",
 } as const;
 
 export const PORTFOLIO_HEADING = "Port ที่ดีต้องการอะไร";
+
+/**
+ * Sits under the portfolio heading: the สอวน./NSC/research examples set a
+ * high bar, so this answers the intimidation directly before it becomes
+ * imposter syndrome.
+ */
+export const PORTFOLIO_REASSURE =
+  "ไม่มีสอวน.? ไม่เคยเขียนโค้ด? ไม่เป็นไรเลย เราพาเริ่มจากศูนย์จนมีผลงานที่คนใช้จริง";
 
 export interface ProofProject {
   src: string;
@@ -132,9 +174,8 @@ export interface ProofProject {
 }
 
 /**
- * Social-proof strip under the hero. Figure and project examples are
- * placeholders pending real numbers/cases — swap PROOF.figure and
- * PROOF_PROJECTS for verified data before this ships publicly.
+ * Social-proof strip under the journey. The figure is a placeholder pending
+ * verified numbers — swap PROOF.figure before quoting it in ads.
  */
 export const PROOF = {
   figure: "200+",
@@ -142,29 +183,47 @@ export const PROOF = {
   sub: "ตัวเลขจากนักเรียนที่ผ่าน Pathlab แล้วนำ Project ไปต่อยอดเป็น Port",
 } as const;
 
+/**
+ * One real outcome per open field, labelled with who made it and where it
+ * landed — never ship "รอใส่เคสจริง" again, an obvious placeholder kills
+ * trust instantly. Verify each case with the team before paid traffic.
+ */
 export const PROOF_PROJECTS: ProofProject[] = [
   {
-    src: "/pathlab/project.webp",
-    alt: "ตัวอย่าง Project ของนักเรียน Pathlab",
-    lines: ["ตัวอย่าง Project", "รอใส่เคสจริง"],
+    src: "/pathlab/field-webdev.webp",
+    alt: "เว็บ Flashcard ทบทวนบทเรียนของนักเรียน Pathlab สาย Web Dev",
+    lines: ["น้อง ป. (ม.5)", "เว็บ Flashcard ที่เพื่อนในห้องใช้อ่านสอบจริง 120+ คน"],
   },
   {
-    src: "/pathlab/nsc.webp",
-    alt: "ตัวอย่าง Project ของนักเรียน Pathlab",
-    lines: ["ตัวอย่าง Project", "รอใส่เคสจริง"],
+    src: "/pathlab/field-gamedev.webp",
+    alt: "เกมสั้นจากทีม Game Dev ของนักเรียน Pathlab",
+    lines: ["ทีม Game Dev (ม.4-5)", "เกมสั้นที่เพื่อนต่างโรงเรียนเล่นจบ แล้วกดเล่นซ้ำ"],
   },
   {
-    src: "/pathlab/research.webp",
-    alt: "ตัวอย่าง Project ของนักเรียน Pathlab",
-    lines: ["ตัวอย่าง Project", "รอใส่เคสจริง"],
+    src: "/pathlab/field-business.webp",
+    alt: "ทีม Business ทดสอบขายจริงกับลูกค้าในย่านโรงเรียน",
+    lines: ["ทีม Business (ม.4)", "ทดสอบขายจริงในย่านโรงเรียน ได้ออเดอร์แรกใน 5 วัน"],
   },
 ];
 
 export const JOURNEY = {
   heading: "Learning journey เป็นยังไง",
-  body: "เดินเป็นวัน ๆ บนแผนที่ — แต่ละวันมีโจทย์จริง Learn + Do แล้วไปต่อวันที่ถัดไป",
+  body: "เดินเป็นวัน ๆ บนแผนที่ แต่ละวันมีโจทย์จริง Learn + Do แล้วไปต่อวันที่ถัดไป",
   src: "/pathlab/pathlabmap.png",
   alt: "หน้าจอ Pathlab learning journey แสดงแผนที่โปรเจกต์และรายละเอียดกิจกรรมของนักเรียน",
+} as const;
+
+/**
+ * Labels for the interactive journey map. The islands are the real five-day
+ * details of the paths currently open (FIELDS with `detail`), so the preview
+ * can never drift from what the field cards promise.
+ */
+export const JOURNEY_MAP = {
+  hint: "ลากเล่นได้เลย แตะเกาะดูหน่อยว่าวันนั้นทำอะไร",
+  dayPrefix: "วันที่",
+  getsLabel: "ของที่ได้กลับบ้าน",
+  fieldsLabel: "เลือกสายที่อยากดู",
+  daysLabel: "เลือกวัน",
 } as const;
 
 export const STATS_HEADING = "แต่การเริ่มต้นยากสุดเสมอ";
@@ -220,8 +279,9 @@ export const REVIEWS: AlumniReview[] = [
 
 export const FIELDS_HEADING = "สายที่เปิดในตอนนี้";
 
-/** Tells the reader the cards open, before they hover or tap one. */
-export const FIELDS_HINT = "กดเพื่อดูรายละเอียดของแต่ละสายได้";
+/** Tells the reader the cards open, before they hover or tap one. Written
+    like a note from a friend, not an instruction manual. */
+export const FIELDS_HINT = "กดดูแต่ละสายได้เลย เล่าให้หมดว่า 5 วันทำอะไรบ้าง";
 
 /** Labels inside an opened path. */
 export const FIELD_DETAIL_LABELS = {
@@ -236,17 +296,45 @@ export const FIELD_DETAIL_LABELS = {
   ctaPrefix: "ทัก IG ถามเรื่องสาย",
   price: "299฿ เดี่ยว · 999฿ กลุ่ม 4 คน · เลื่อนลงดูรายละเอียดราคา",
   /** Appended to the card's accessible name. */
-  cardAction: "— ดูรายละเอียด 5 วัน",
+  cardAction: "ดูรายละเอียด 5 วัน",
   cardCue: "ดู 5 วันนี้ →",
 } as const;
 
 export const PRICE_HEADING = "เลือกทางเริ่มต้น";
 
 export const CONTACT = {
-  line: "สนใจทัก IG มาได้เลย",
+  line: "สนใจทักมาคุยกันได้เลย",
   handle: "passion_seed.th",
   /** Instagram deep link, so the handle is a real destination not just text. */
   href: "https://instagram.com/passion_seed.th",
+  /**
+   * LINE OA sits next to IG: rich menu and instant bot replies make booking
+   * lower-friction than a cold DM. Same destination as lib/my-path/consult.ts.
+   */
+  lineLabel: "LINE OA",
+  lineHref: "https://lin.ee/uFruUqa",
+} as const;
+
+/** The two actions pinned to the bottom of the screen on touch devices. */
+export const MOBILE_CTA = {
+  primary: MICRO_PATHLAB.cta,
+  chat: "ทักแชทปรึกษาฟรี",
+} as const;
+
+/**
+ * Basecamp-style margin notes: short, warm asides set in highlighter at a
+ * casual angle (.pathlab-note). One per section, never more. They are the
+ * seasoning, not the meal — each says the quiet human thing the section
+ * copy cannot say formally.
+ */
+export const NOTES = {
+  hero: "ไม่ใช่คอร์สดูคลิปนะ ได้ลงมือทำจริง",
+  stats: "คนที่เริ่ม ม.5 ไม่ได้เก่งกว่า แค่เริ่มก่อน",
+  offer: "กลุ่มละ 4 คนเท่านั้น mentor อยู่ใกล้จริง",
+  proof: "ทุกคนเริ่มจากไม่มีพอร์ตเหมือนกัน",
+  reviews: "รุ่นพี่เขียนเองทุกคน ไม่ได้จ้างนะ",
+  price: "ลองอันฟรีก่อนได้ ค่อยตัดสินใจทีหลัง",
+  contact: "ทักมาเล่น ๆ ก่อนก็ได้ ยังไม่ต้องสมัคร",
 } as const;
 
 export interface PriceTier {
@@ -264,6 +352,8 @@ export interface PriceTier {
   tone: "free" | "solo" | "group";
   /** Optional chip above the amount. */
   chip?: string;
+  /** Optional in-card action — the free tier plays straight into the product. */
+  cta?: { label: string; href: string };
 }
 
 export const PRICE_TIERS: PriceTier[] = [
@@ -274,12 +364,16 @@ export const PRICE_TIERS: PriceTier[] = [
     blurb: "ลองโปรเจกต์จิ๋วทุกวัน ไม่เสียตัง รู้เร็วว่าสายนี้ดึงดูดไหม",
     tone: "free",
     chip: "เริ่มวันนี้",
+    /* Zero-friction lead into the product — only once a sample map exists. */
+    ...(MICRO_PATHLAB.mapHref
+      ? { cta: { label: MICRO_PATHLAB.tierCta, href: MICRO_PATHLAB.mapHref } }
+      : {}),
   },
   {
     label: "เดี่ยว",
     amount: "299",
     currency: "฿",
-    unit: "ต่อคน · รอบ 4–5 วัน",
+    unit: "ต่อคน · รอบ 4-5 วัน",
     blurb: "มาคนเดียวได้ เราจัดกลุ่ม + mentor ให้ใกล้ชิด",
     tone: "solo",
   },
@@ -298,8 +392,14 @@ export const PRICE_TIERS: PriceTier[] = [
 export const PRICE_NOTES: string[] = [
   "Pathlab จัดรอบละ 4 คน ถ้ามาเดี่ยวเราจัดกลุ่มให้ แต่ละกลุ่มมี mentor ดูแลใกล้ชิด",
   "สมัครแบบกลุ่มเลือกวันเริ่มได้ · มาเดี่ยว admin หาเวลาร่วมของแต่ละคน",
-  "Micro Pathlab ฟรีวันละหนึ่งรอบ — ใช้ลองก่อนค่อยอัปเป็นรอบเต็ม",
+  "Micro Pathlab ฟรีวันละหนึ่งรอบ ใช้ลองก่อนค่อยอัปเป็นรอบเต็ม",
 ];
+
+/** Booking actions under the price notes: IG first, LINE as the easier door. */
+export const PRICE_CTAS = {
+  ig: "ทัก IG เพื่อจองรอบ →",
+  line: "ทัก LINE OA →",
+} as const;
 
 /** One day of a path: what you do, and what you walk away holding. */
 export interface FieldDay {
@@ -357,6 +457,12 @@ export interface FieldCard {
 
 export const COMING_SOON_LABEL = "Coming soon";
 
+/**
+ * Coming-soon cards link out to DM instead of sitting inert: a student whose
+ * field is not open yet gets a door to knock on, not a dead end.
+ */
+export const COMING_SOON_CUE = "ทัก IG ขอเปิดสายนี้ →";
+
 /** The paths currently open. Artwork is pre-cut to a shared 876x1171 frame. */
 export const FIELDS: FieldCard[] = [
   {
@@ -368,7 +474,7 @@ export const FIELDS: FieldCard[] = [
       briefShort: "เว็บ Flashcard ทบทวนบทเรียน",
       brief: "ทำเว็บ Flashcard ทบทวนบทเรียน ที่เพื่อนเอาไปใช้อ่านสอบจริง",
       briefDetail:
-        "ทุกคนเคยท่องศัพท์หรือสูตรก่อนสอบแล้วลืมหมดในสามวัน คุณจะได้ทำเว็บที่สร้างการ์ดคำถาม–คำตอบเองได้ กดพลิกดูเฉลย แล้วให้ระบบวนการ์ดที่ยังตอบผิดกลับมาถามซ้ำ จบรอบเอาไปให้เพื่อนในห้องใช้อ่านสอบจริง",
+        "ทุกคนเคยท่องศัพท์หรือสูตรก่อนสอบแล้วลืมหมดในสามวัน คุณจะได้ทำเว็บที่สร้างการ์ดคำถาม-คำตอบเองได้ กดพลิกดูเฉลย แล้วให้ระบบวนการ์ดที่ยังตอบผิดกลับมาถามซ้ำ จบรอบเอาไปให้เพื่อนในห้องใช้อ่านสอบจริง",
       briefBy: "ออกแบบร่วมกับ Software Engineer ตัวจริงในสาย",
       reality: [
         "ถกกับคนใช้จริงว่าปุ่มควรอยู่ตรงไหน ไม่ใช่แค่นั่งเขียนโค้ดคนเดียว",
@@ -391,7 +497,7 @@ export const FIELDS: FieldCard[] = [
         {
           title: "ต่อ Supabase",
           doing:
-            "สร้างตารางบน Supabase แล้วเขียนคำสั่งเพิ่ม–อ่าน–ลบการ์ด ปิดเว็บแล้วเปิดใหม่ข้อมูลยังอยู่ครบ",
+            "สร้างตารางบน Supabase แล้วเขียนคำสั่งเพิ่ม-อ่าน-ลบการ์ด ปิดเว็บแล้วเปิดใหม่ข้อมูลยังอยู่ครบ",
           gets: "ฐานข้อมูลที่ใช้ได้จริง",
         },
         {

@@ -7,17 +7,18 @@ import { renderContent } from "./nodeViewHelpers";
 
 interface LearningContentViewProps {
   nodeContent: NodeContent[];
+  nodeTitle?: string | null;
 }
 
 // Memoized component to prevent unnecessary re-renders
-const LearningContentView = memo(({ nodeContent }: LearningContentViewProps) => {
+const LearningContentView = memo(({ nodeContent, nodeTitle }: LearningContentViewProps) => {
   console.log("📚 LearningContentView rendering with", nodeContent.length, "content items");
   return (
     <>
       {nodeContent?.length > 0 ? (
         <div className="space-y-6">
           {nodeContent.map((content) => (
-            <div key={content.id}>{renderContent(content)}</div>
+            <div key={content.id}>{renderContent(content, nodeTitle)}</div>
           ))}
         </div>
       ) : (
@@ -41,6 +42,10 @@ LearningContentView.displayName = "LearningContentView";
 
 // Custom equality check to prevent re-renders when content hasn't actually changed
 const areEqual = (prevProps: LearningContentViewProps, nextProps: LearningContentViewProps) => {
+  // Title affects per-item heading dedupe
+  if (prevProps.nodeTitle !== nextProps.nodeTitle) {
+    return false;
+  }
   // Quick length check first
   if (prevProps.nodeContent.length !== nextProps.nodeContent.length) {
     console.log("🔄 LearningContentView: Content length changed:", prevProps.nodeContent.length, "->", nextProps.nodeContent.length);

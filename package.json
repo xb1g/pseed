@@ -16,6 +16,7 @@
     "backfill:ig-comments": "dotenv -e .env.local -o -- tsx scripts/backfill-ig-comments.ts",
     "backfill:dm-conversations": "dotenv -e .env.local -o -- tsx scripts/backfill-dm-conversations.ts",
     "list:dm-gap": "dotenv -e .env.local -o -- tsx scripts/list-dm-gap.ts",
+    "tag:internal-lead": "dotenv -e .env.local -o -- tsx scripts/tag-internal-lead.ts",
     "verify:dm-gap": "dotenv -e .env.local -o -- tsx scripts/verify-dm-gap.ts",
     "check:recent-webhook": "dotenv -e .env.local -o -- tsx scripts/check-recent-webhook.ts",
     "backfill:dm-usernames": "dotenv -e .env.local -o -- tsx scripts/backfill-dm-usernames.ts",

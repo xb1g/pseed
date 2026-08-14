@@ -637,6 +637,80 @@ The Dawn glow follows the same motion contract as the base card:
 
 ---
 
+### `.dawn-panel`
+
+Warm horizon glass for panels that float over the Dawn sky (map side panel,
+mobile node sheet). The sky is indigo, so the panel answers with the warm
+side of dawn — charcoal-amber glass, gold hairlines, warm gray text — and
+the two surfaces never merge into blue-on-blue.
+
+```css
+.dawn-panel {
+  /* Full warm-dark shadcn token scope: every primitive inside the panel
+     (cards, inputs, selects, badges, checkboxes, buttons) turns warm
+     without touching each sub-component. `--primary` becomes dawn gold. */
+  --background: 26 18% 9%;
+  --foreground: 40 24% 92%;
+  --card: 28 20% 12%;
+  --card-foreground: 40 24% 92%;
+  --popover: 28 22% 10%;
+  --popover-foreground: 40 24% 92%;
+  --primary: 43 90% 62%;
+  --primary-foreground: 28 45% 10%;
+  --secondary: 30 16% 18%;
+  --secondary-foreground: 40 24% 90%;
+  --muted: 30 14% 17%;
+  --muted-foreground: 35 12% 68%;
+  --accent: 38 24% 22%;
+  --accent-foreground: 43 90% 72%;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 36 24% 26%;
+  --input: 36 20% 24%;
+  --ring: 43 90% 62%;
+  background: linear-gradient(
+    165deg,
+    rgba(34, 26, 20, 0.82) 0%,
+    rgba(20, 16, 20, 0.9) 48%,
+    rgba(12, 10, 18, 0.94) 100%
+  );
+  backdrop-filter: blur(20px) saturate(1.05);
+}
+
+.dawn-panel__header {
+  /* Gold-kissed top strip for panel headers */
+  background: linear-gradient(to bottom, rgba(254, 217, 92, 0.07), rgba(254, 217, 92, 0.015));
+  border-bottom: 1px solid rgba(254, 217, 92, 0.14);
+}
+```
+
+**Usage:**
+```tsx
+<div className="dawn-panel h-full flex flex-col overflow-hidden">
+  <div className="dawn-panel__header flex-shrink-0">…</div>
+  <div className="flex-1 overflow-y-auto">…</div>
+</div>
+```
+
+**Rules:**
+- Use for any panel/sheet rendered above the Dawn map canvas; do not use
+  blue-tinted glass there — it merges into the sky.
+- Inside a `.dawn-panel`, never hardcode light-theme Tailwind colors
+  (`bg-blue-50`, `border-gray-300`, `text-slate-700`, …). Prefer tokens
+  (`bg-muted`, `border-border`, `text-foreground`) so the panel scope themes
+  it, or warm glass utilities: `bg-white/5`, `border-white/10`,
+  `text-stone-300`, accents `bg-amber-200/10 text-amber-200 border-amber-200/25`.
+- Shared widgets used both on light pages and inside panels (e.g.
+  `FileUpload`) must be token-driven (`text-primary`, `border-input`,
+  `bg-muted`) so they adapt to both scopes.
+- Mobile sheets pair it with `rounded-t-3xl`, a grabber pill, a dedicated
+  close row (44px+ touch target), and `pb-[env(safe-area-inset-bottom)]`.
+- Fixed overlays on the map page must portal to `document.body`: the map
+  container is `relative z-10`, so un-portaled `z-[60]` sheets stack under
+  the sticky app navbar (z-50).
+
+---
+
 ### `.ei-button-dusk`
 
 Primary CTA button for experts.
@@ -1263,6 +1337,44 @@ Tab navigation component.
     Content 2
   </TabsContent>
 </Tabs>
+```
+
+---
+
+### `.pathlab-note` (Pathlab landing page)
+
+Basecamp-style margin note for the cream marketing page (`/pathlab`): a short, friendly aside in highlighter, set at a casual angle so it reads as a human jotting, not a system label.
+
+```css
+.pathlab-note {
+  display: inline-block;
+  padding: 0.14em 0.6em 0.3em;
+  background: linear-gradient(100deg, rgba(255, 224, 138, 0.95), rgba(255, 213, 97, 0.92));
+  border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px; /* hand-drawn corners */
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-weight: 600;
+  color: #4a3e3c;
+  transform: rotate(-1.6deg);
+  box-decoration-break: clone; /* marker edge on every wrapped line */
+}
+
+.pathlab-note--tilt-r {
+  transform: rotate(1.3deg); /* alternate tilt, avoids the stamped look */
+}
+```
+
+**Rules:**
+- Use for hints, reassurances, and small captions ("กดดูได้เลย…"), never for headings or body copy
+- Copy stays short, warm, and humane — write it like a note from a friend
+- Alternate `-1.6deg` / `+1.3deg` tilts on neighbouring notes
+- `prefers-reduced-motion`: rotation is removed (a tilted highlight is layout, not essential)
+- Cream page only — Dawn/Dusk surfaces have their own annotation idioms
+
+**Usage:**
+```tsx
+<p className="pathlab-fields__hint">
+  <span className="pathlab-note">{FIELDS_HINT}</span>
+</p>
 ```
 
 ---

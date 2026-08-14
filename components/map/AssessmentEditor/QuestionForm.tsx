@@ -233,7 +233,7 @@ export function QuestionForm({
                               setCorrectOption(e.target.value);
                               clearErrors();
                             }}
-                            className="w-3 h-3 text-green-600"
+                            className="w-3 h-3 accent-emerald-400"
                           />
                           <Label className="text-xs text-muted-foreground">
                             Correct
@@ -247,7 +247,7 @@ export function QuestionForm({
                             variant="ghost"
                             size="sm"
                             onClick={() => removeOption(index)}
-                            className="text-red-600 hover:text-red-800 h-5 w-5 p-0"
+                            className="text-red-400 hover:text-red-300 h-5 w-5 p-0"
                           >
                             <X className="h-3 w-3" />
                           </Button>
@@ -266,7 +266,7 @@ export function QuestionForm({
               </div>
 
               {correctOption && (
-                <div className="text-xs text-green-600 flex items-center gap-1 mt-1">
+                <div className="text-xs text-emerald-300 flex items-center gap-1 mt-1">
                   <Check className="h-3 w-3" />
                   Answer: {correctOption.toUpperCase()}
                 </div>

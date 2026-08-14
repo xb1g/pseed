@@ -153,7 +153,7 @@ export function QuizEditor({ assessment, onQuestionChange, onBatchImportQuestion
 
       {/* Add new question form */}
       {isAdding && (
-        <div className="border-2 border-dashed border-blue-300 rounded-lg p-1">
+        <div className="border-2 border-dashed border-amber-200/30 rounded-lg p-1">
           <QuestionForm
             key={formKey}
             onSave={handleSaveQuestion}

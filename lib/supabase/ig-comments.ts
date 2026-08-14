@@ -91,17 +91,19 @@ export async function applyCommentClassification(
  * row exists for their ig_user_id at all. If it did, some message — inbound
  * or outbound — would have created one. Absence means the automation's send
  * silently failed (opted out, blocked, "not opted in" window, etc).
- * Only returns comments still inside the 7-day private-reply window.
+ * Only returns comments inside `maxAgeDays` — the 7-day default
+ * matches the private-reply window; public replies have no such limit, so the
+ * bulk-reply action passes a wider window.
  */
-export async function getCommentsMissedByDm(): Promise<IgComment[]> {
+export async function getCommentsMissedByDm(maxAgeDays = 7): Promise<IgComment[]> {
   const supabase = createAdminClient();
 
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const cutoff = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000).toISOString();
 
   const { data: comments, error } = await supabase
     .from("ig_comments")
     .select("*")
-    .gte("commented_at", sevenDaysAgo)
+    .gte("commented_at", cutoff)
     .is("replied_at", null)
     .not("ig_user_id", "is", null)
     .order("commented_at", { ascending: false });

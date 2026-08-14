@@ -9,9 +9,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getCommentsForAdmin } from "@/lib/supabase/ig-comments";
+import { getCommentsForAdmin, getCommentsMissedByDm } from "@/lib/supabase/ig-comments";
+import { getDefaultPublicCommentReply } from "@/lib/dm-leads/delivery-status";
 import { IgCommentReplyRow } from "@/components/admin/IgCommentReplyRow";
 import { LeadTagBadges } from "@/components/admin/LeadTagBadges";
+import { MissedCommentsCard } from "@/components/admin/MissedCommentsCard";
 import { RefreshButton } from "@/components/admin/RefreshButton";
 import type { DmLeadStage } from "@/types/dm-leads";
 
@@ -43,7 +45,12 @@ export default async function IgCommentsPage({
   searchParams: Promise<{ stage?: string }>;
 }) {
   const { stage } = await searchParams;
-  const comments = await getCommentsForAdmin(stage && stage !== "all" ? stage : undefined);
+  const [comments, missedComments] = await Promise.all([
+    getCommentsForAdmin(stage && stage !== "all" ? stage : undefined),
+    // Same 30-day window as the bulk-reply action, so the card lists exactly
+    // what the button would send to.
+    getCommentsMissedByDm(30),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -69,6 +76,16 @@ export default async function IgCommentsPage({
           </Link>
         ))}
       </div>
+
+      <MissedCommentsCard
+        comments={missedComments.map((c) => ({
+          id: c.id,
+          username: c.username,
+          text: c.text,
+          commented_at: c.commented_at,
+        }))}
+        messagePreview={getDefaultPublicCommentReply("username")}
+      />
 
       <Card>
         <CardContent className="pt-6">

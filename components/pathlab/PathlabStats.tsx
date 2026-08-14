@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { STATS, STATS_HEADING, type PathlabStat } from "@/lib/content/pathlab-page";
+import {
+  NOTES,
+  STATS,
+  STATS_HEADING,
+  type PathlabStat,
+} from "@/lib/content/pathlab-page";
 
 const RADIUS = 52;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
@@ -57,6 +62,11 @@ export function PathlabStats() {
           <StatRing key={stat.percent} stat={stat} shown={shown} index={i} />
         ))}
       </ul>
+
+      {/* The rings say "start early"; the note says it kindly. */}
+      <p className="pathlab-note-row">
+        <span className="pathlab-note pathlab-note--tilt-r">{NOTES.stats}</span>
+      </p>
     </section>
   );
 }

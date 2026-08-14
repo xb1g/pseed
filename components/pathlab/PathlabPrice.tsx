@@ -1,5 +1,7 @@
 import {
   CONTACT,
+  NOTES,
+  PRICE_CTAS,
   PRICE_HEADING,
   PRICE_NOTES,
   PRICE_TIERS,
@@ -19,6 +21,11 @@ export function PathlabPrice() {
       <h2 id="pathlab-price-heading" className="pathlab-price__heading">
         {PRICE_HEADING}
       </h2>
+      <p className="pathlab-note-row">
+        <span className="pathlab-note pathlab-note--tilt-l-sm">
+          {NOTES.price}
+        </span>
+      </p>
 
       <ul className="pathlab-price__tiers">
         {PRICE_TIERS.map((tier) => (
@@ -38,6 +45,11 @@ export function PathlabPrice() {
             </p>
             <p className="pathlab-price__tier-unit">{tier.unit}</p>
             <p className="pathlab-price__tier-blurb">{tier.blurb}</p>
+            {tier.cta && (
+              <a className="pathlab-price__tier-cta" href={tier.cta.href}>
+                {tier.cta.label}
+              </a>
+            )}
           </li>
         ))}
       </ul>
@@ -46,14 +58,24 @@ export function PathlabPrice() {
         {PRICE_NOTES.map((note) => (
           <p key={note}>{note}</p>
         ))}
-        <a
-          className="pathlab-price__cta"
-          href={CONTACT.href}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          ทัก IG เพื่อจองรอบ →
-        </a>
+        <div className="pathlab-price__ctas">
+          <a
+            className="pathlab-price__cta"
+            href={CONTACT.href}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {PRICE_CTAS.ig}
+          </a>
+          <a
+            className="pathlab-price__cta pathlab-price__cta--line"
+            href={CONTACT.lineHref}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {PRICE_CTAS.line}
+          </a>
+        </div>
       </div>
     </section>
   );

@@ -10,9 +10,10 @@ import { PathlabReviews } from "@/components/pathlab/PathlabReviews";
 import { PathlabFields } from "@/components/pathlab/PathlabFields";
 import { PathlabPrice } from "@/components/pathlab/PathlabPrice";
 import { PathlabContact } from "@/components/pathlab/PathlabContact";
+import { PathlabMobileCta } from "@/components/pathlab/PathlabMobileCta";
 import { MARQUEE_PHRASES } from "@/lib/content/pathlab-page";
 
-const PATHLAB_TITLE = "Pathlab — ทำ Project จริงกับผู้เชี่ยวชาญ";
+const PATHLAB_TITLE = "Pathlab: ทำ Project จริงกับผู้เชี่ยวชาญ";
 const PATHLAB_DESCRIPTION =
   "ทดสอบว่าทางนี้ใช่ทางของคุณไหม และเริ่มต้นเรียนรู้พื้นฐานของสายต่างๆ ผ่านการทำ Project ที่ออกแบบร่วมกับผู้เชี่ยวชาญ ภายในเวลา 4-5 วัน";
 
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
         url: "/og-pathlab.png",
         width: 1200,
         height: 630,
-        alt: "Pathlab — Passion Seed",
+        alt: "Pathlab by Passion Seed",
       },
     ],
   },
@@ -66,16 +67,24 @@ export default function PathlabPage() {
         </div>
       </div>
 
+      {/*
+        Section order follows the reader's first question — "มีสายที่เราอยาก
+        เรียนไหม?" — so Fields comes straight after the hero, not near the
+        footer. Portfolio → Stats → Offer keeps its narrative (what a port
+        needs → starting is hard → Pathlab starts you), then Journey, proof,
+        reviews, and the close.
+      */}
       <PathlabHero />
+      <PathlabFields />
       <PathlabPortfolio />
       <PathlabStats />
       <PathlabOffer />
       <PathlabJourney />
       <PathlabProof />
       <PathlabReviews />
-      <PathlabFields />
       <PathlabPrice />
       <PathlabContact />
+      <PathlabMobileCta />
     </main>
   );
 }

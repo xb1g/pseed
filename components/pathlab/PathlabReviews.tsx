@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { REVIEWS, REVIEWS_HEADING } from "@/lib/content/pathlab-page";
+import { NOTES, REVIEWS, REVIEWS_HEADING } from "@/lib/content/pathlab-page";
 
 /** Time between auto-advances, and the tolerance for "reached the end". */
 const AUTOPLAY_MS = 4000;
@@ -50,12 +50,16 @@ export function PathlabReviews() {
     return () => io.disconnect();
   }, []);
 
-  /* Auto-advance while the section is on screen. Reduced-motion users get a
-     still row; manual scrolling stays possible at all times. */
+  /* Auto-advance while the section is on screen — desktop only. Touch
+     devices get a still row: on a narrow screen the reader's thumb is
+     already scrolling, so content moving on its own is disorienting, not
+     helpful. Reduced-motion users get a still row everywhere; manual
+     scrolling stays possible at all times. */
   useEffect(() => {
     const track = trackRef.current;
     if (!inView || !track) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (window.matchMedia("(hover: none), (pointer: coarse)").matches) return;
 
     let paused = false;
     const pause = () => {
@@ -106,6 +110,12 @@ export function PathlabReviews() {
       <h2 id="pathlab-reviews-heading" className="pathlab-reviews__heading">
         {REVIEWS_HEADING}
       </h2>
+      {/* Disarming honesty, Basecamp-style: the quotes are volunteered. */}
+      <p className="pathlab-note-row">
+        <span className="pathlab-note pathlab-note--tilt-r">
+          {NOTES.reviews}
+        </span>
+      </p>
 
       <ul ref={trackRef} className="pathlab-reviews__track">
         {REVIEWS.map((review, i) => (

@@ -65,7 +65,7 @@ export function QuestionCard({
 
   if (isEditing) {
     return (
-      <Card className="border-l-4 border-l-blue-500 bg-blue-50/50">
+      <Card className="border-l-4 border-l-amber-300/70 bg-amber-200/[0.06]">
         <CardContent className="p-3 space-y-2">
           <div className="flex items-center justify-between mb-1">
             <Badge variant="outline" className="text-xs">
@@ -97,7 +97,7 @@ export function QuestionCard({
                         value={option.option}
                         checked={editedCorrect === option.option}
                         onChange={(e) => setEditedCorrect(e.target.value)}
-                        className="w-4 h-4 text-green-600"
+                        className="w-4 h-4 accent-emerald-400"
                       />
                       <span className="text-xs text-muted-foreground">Right answer</span>
                     </div>
@@ -140,7 +140,7 @@ export function QuestionCard({
 
   // Collapsed view
   return (
-    <Card className="border-l-4 border-l-green-500 hover:shadow-md transition-shadow">
+    <Card className="border-l-4 border-l-emerald-300/60 bg-white/[0.03] hover:bg-white/[0.05] transition-colors">
       <CardContent className="p-2.5">
         <div className="flex justify-between items-start gap-3">
           <div className="flex-1 min-w-0">
@@ -151,7 +151,10 @@ export function QuestionCard({
               <Badge variant="secondary" className="text-xs">
                 {getQuestionType()}
               </Badge>
-              <Badge variant="outline" className="text-xs text-green-600">
+              <Badge
+                variant="outline"
+                className="text-xs text-emerald-300 border-emerald-300/30"
+              >
                 ✓ {question.correct_option}
               </Badge>
             </div>
@@ -179,7 +182,7 @@ export function QuestionCard({
               variant="ghost"
               size="sm"
               onClick={() => onDelete(question.id)}
-              className="h-8 w-8 p-0 text-red-600 hover:text-red-800"
+              className="h-8 w-8 p-0 text-red-400 hover:text-red-300 hover:bg-red-400/10"
               disabled={disabled}
             >
               <Trash2 className="h-3 w-3" />

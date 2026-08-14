@@ -6,6 +6,7 @@ import {
   PORTFOLIO_FORMULA,
   PORTFOLIO_HEADING,
   PORTFOLIO_ITEMS,
+  PORTFOLIO_REASSURE,
 } from "@/lib/content/pathlab-page";
 
 /**
@@ -53,6 +54,13 @@ export function PathlabPortfolio() {
       <h2 id="pathlab-portfolio-heading" className="pathlab-portfolio__heading">
         {PORTFOLIO_HEADING}
       </h2>
+      {/* The examples below set a high bar; this line keeps it from reading
+          as "without สอวน. you don't belong here". */}
+      <p className="pathlab-portfolio__reassure">
+        <span className="pathlab-note pathlab-note--tilt-r">
+          {PORTFOLIO_REASSURE}
+        </span>
+      </p>
 
       <ul className="pathlab-portfolio__grid">
         {PORTFOLIO_ITEMS.map((item, i) => (

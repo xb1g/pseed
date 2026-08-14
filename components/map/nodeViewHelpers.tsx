@@ -347,7 +347,10 @@ const TextContent = memo(({ contentBody }: { contentBody: string }) => {
 TextContent.displayName = "TextContent";
 
 // Move renderContent here and optimize it
-export const renderContent = (content: NodeContent) => {
+export const renderContent = (
+  content: NodeContent,
+  nodeTitle?: string | null,
+) => {
   const contentUrl = content.content_url;
   const contentType = content.content_type;
   const contentTitle = content.content_title;
@@ -355,8 +358,17 @@ export const renderContent = (content: NodeContent) => {
   // Create a stable key based on content ID to prevent unnecessary remounts
   const contentKey = `content-${content.id}-${contentType}`;
 
-  // Render title if present
-  const TitleSection = contentTitle?.trim() ? (
+  // Render title if present — but never repeat the node title verbatim
+  // (generators often copy the node title onto the first content item,
+  // which reads as a duplicated heading under the panel header).
+  const trimmedTitle = contentTitle?.trim();
+  const isDuplicateOfNodeTitle =
+    !!trimmedTitle &&
+    !!nodeTitle?.trim() &&
+    trimmedTitle.localeCompare(nodeTitle.trim(), undefined, {
+      sensitivity: "accent",
+    }) === 0;
+  const TitleSection = trimmedTitle && !isDuplicateOfNodeTitle ? (
     <div className="mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
       <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
         {contentTitle}
@@ -426,7 +438,9 @@ export const renderContent = (content: NodeContent) => {
                 </div>
                 <div>
                   <span className="text-sm font-medium text-gray-900 block">
-                    {contentTitle?.trim() || fileName}
+                    {isDuplicateOfNodeTitle
+                      ? fileName
+                      : contentTitle?.trim() || fileName}
                   </span>
                   <span className="text-xs text-gray-500">
                     PDF Document

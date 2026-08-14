@@ -423,7 +423,7 @@ export function AssessmentEditor({
             <Button
               key={type}
               variant="outline"
-              className="h-auto p-3 flex flex-col gap-1"
+              className="h-auto p-3 flex flex-col gap-1 hover:border-amber-200/40 hover:bg-amber-200/5"
               onClick={() => handleAddAssessment(type as AssessmentType)}
             >
               <span className="text-lg">{config.icon}</span>
@@ -448,12 +448,12 @@ export function AssessmentEditor({
   }
 
   return (
-    <div className="p-2">
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div className="space-y-1">
-              <CardTitle className="capitalize text-lg flex items-center gap-2">
+    <div>
+      <Card className="bg-white/[0.04] border-white/10 shadow-none overflow-hidden">
+        <CardHeader className="dawn-panel__header p-4">
+          <div className="flex justify-between items-center gap-2">
+            <div className="space-y-1 min-w-0">
+              <CardTitle className="capitalize text-base flex items-center gap-2 text-amber-50">
                 <span className="text-xl">
                   {ASSESSMENT_TYPE_CONFIG[assessment.assessment_type]?.icon ||
                     "📝"}
@@ -471,7 +471,7 @@ export function AssessmentEditor({
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 p-4 pt-3">
           {/* Quiz Questions - Moved to top */}
           {assessment.assessment_type === "quiz" && (
             <>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { AlertCircle, Loader2 } from "lucide-react";
 
 import { PhaseShell } from "../components/phase-shell";
 import { requiresGuardianConsent } from "@/lib/profile-completion";
@@ -36,10 +36,9 @@ const EDUCATION_COPY = {
 } as const;
 
 const INPUT_CLASS =
-  "min-h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white placeholder:text-white/30 focus:border-blue-400/50 focus:outline-none";
+  "min-h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white placeholder:text-white/30 focus:border-blue-400/50 focus:outline-none transition";
 
 export function AccountPhase({ data, isAnonymous, goBack, prefill }: Props) {
-  const router = useRouter();
   const [fullName, setFullName] = useState(
     () => prefill?.full_name?.trim() || data.name?.trim() || ""
   );
@@ -56,37 +55,93 @@ export function AccountPhase({ data, isAnonymous, goBack, prefill }: Props) {
   const [guardianRelationship, setGuardianRelationship] = useState("");
   const [guardianApproved, setGuardianApproved] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
   const isEn = (data.language || "th") === "en";
   const educationCopy = EDUCATION_COPY[isEn ? "en" : "th"];
-  const needsGuardian = requiresGuardianConsent(dob);
+  const needsGuardian = Boolean(dob && requiresGuardianConsent(dob));
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setLoading(true);
-    setError("");
+  const validate = (): boolean => {
+    const errors: Record<string, string> = {};
 
-    if (needsGuardian) {
-      if (!guardianPhone.trim() || !guardianRelationship.trim()) {
-        setError(
-          isEn
-            ? "Please add parent or guardian contact details."
-            : "กรุณาใส่ข้อมูลผู้ปกครอง"
-        );
-        setLoading(false);
-        return;
+    if (!fullName.trim()) {
+      errors.fullName = isEn
+        ? "Please enter your full name."
+        : "กรุณากรอกชื่อ-นามสกุล";
+    }
+
+    if (!username.trim()) {
+      errors.username = isEn
+        ? "Please choose a username."
+        : "กรุณาตั้งชื่อผู้ใช้";
+    } else if (username.trim().length < 3) {
+      errors.username = isEn
+        ? "Username must be at least 3 characters."
+        : "ชื่อผู้ใช้ต้องมีอย่างน้อย 3 ตัวอักษร";
+    }
+
+    if (!dob) {
+      errors.dob = isEn
+        ? "Please select your date of birth."
+        : "กรุณาใส่วันเกิดของคุณ";
+    }
+
+    if (isAnonymous) {
+      if (!email.trim() || !email.includes("@")) {
+        errors.email = isEn
+          ? "Please enter a valid email address."
+          : "กรุณากรอกอีเมลที่ถูกต้อง";
       }
-      if (!guardianApproved) {
-        setError(
-          isEn
-            ? "Please confirm parent or guardian approval."
-            : "กรุณายืนยันการอนุญาตจากผู้ปกครอง"
-        );
-        setLoading(false);
-        return;
+      if (!password || password.length < 8) {
+        errors.password = isEn
+          ? "Password must be at least 8 characters."
+          : "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร";
       }
     }
+
+    if (needsGuardian) {
+      if (!guardianRelationship.trim()) {
+        errors.guardianRelationship = isEn
+          ? "Please enter relationship (e.g. Mom, Dad)."
+          : "กรุณาระบุความสัมพันธ์ (เช่น แม่, พ่อ)";
+      }
+      if (!guardianPhone.trim()) {
+        errors.guardianPhone = isEn
+          ? "Please enter guardian phone number."
+          : "กรุณากรอกเบอร์โทรผู้ปกครอง";
+      }
+      if (!guardianApproved) {
+        errors.guardianApproved = isEn
+          ? "Parent or guardian approval is required."
+          : "กรุณายืนยันการอนุญาตจากผู้ปกครอง";
+      }
+    }
+
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      setError(
+        isEn
+          ? "Please fill in all required fields."
+          : "กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน"
+      );
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async (event?: React.FormEvent) => {
+    if (event) {
+      event.preventDefault();
+    }
+
+    if (!validate()) {
+      return;
+    }
+
+    setLoading(true);
+    setError("");
 
     const collected = {
       ...data,
@@ -94,7 +149,7 @@ export function AccountPhase({ data, isAnonymous, goBack, prefill }: Props) {
     };
 
     const body: Record<string, unknown> = {
-      username,
+      username: username.trim().toLowerCase(),
       full_name: fullName.trim(),
       date_of_birth: dob,
       education_level: education,
@@ -104,7 +159,7 @@ export function AccountPhase({ data, isAnonymous, goBack, prefill }: Props) {
     };
 
     if (isAnonymous) {
-      body.email = email;
+      body.email = email.trim().toLowerCase();
       body.password = password;
     }
 
@@ -120,24 +175,42 @@ export function AccountPhase({ data, isAnonymous, goBack, prefill }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+
       const json = (await response.json().catch(() => null)) as {
         error?: string;
+        ok?: boolean;
       } | null;
 
       if (!response.ok) {
         if (response.status === 401) {
           setError(isEn ? "Wrong password." : "รหัสผ่านไม่ถูกต้อง");
+        } else if (response.status === 409) {
+          setError(
+            isEn
+              ? "This username is already taken. Please try another."
+              : "ชื่อผู้ใช้นี้ถูกใช้งานแล้ว กรุณาเลือกชื่ออื่น"
+          );
+          setFieldErrors((prev) => ({
+            ...prev,
+            username: isEn ? "Username taken" : "ชื่อผู้ใช้ซ้ำ",
+          }));
         } else {
           setError(
-            json?.error || (isEn ? "Something went wrong." : "เกิดข้อผิดพลาด")
+            json?.error ||
+              (isEn ? "Something went wrong. Please try again." : "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง")
           );
         }
         return;
       }
 
-      router.push("/me");
+      // Hard redirect to /me to ensure full reload of session cookies and profile
+      window.location.assign("/me");
     } catch {
-      setError(isEn ? "Something went wrong." : "เกิดข้อผิดพลาด");
+      setError(
+        isEn
+          ? "Network error. Please check your connection and try again."
+          : "เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง"
+      );
     } finally {
       setLoading(false);
     }
@@ -166,88 +239,167 @@ export function AccountPhase({ data, isAnonymous, goBack, prefill }: Props) {
       }}
       footer={
         <button
-          type="submit"
-          form="onboard-account-form"
-          disabled={loading || (needsGuardian && !guardianApproved)}
-          className="ei-button-dawn min-h-12 w-full justify-center py-3.5 text-base font-semibold disabled:opacity-40 sm:min-h-0 sm:py-3 sm:text-sm"
+          type="button"
+          onClick={() => void handleSubmit()}
+          disabled={loading}
+          className="ei-button-dawn min-h-12 w-full justify-center py-3.5 text-base font-semibold disabled:opacity-50 sm:min-h-0 sm:py-3 sm:text-sm"
         >
-          {loading
-            ? isEn
-              ? "Saving..."
-              : "กำลังบันทึก..."
-            : isEn
-              ? "Go to PassionSeed →"
-              : "ไปที่ PassionSeed →"}
+          {loading ? (
+            <span className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>{isEn ? "Saving..." : "กำลังบันทึก..."}</span>
+            </span>
+          ) : isEn ? (
+            "Go to PassionSeed →"
+          ) : (
+            "ไปที่ PassionSeed →"
+          )}
         </button>
       }
     >
       <form
         id="onboard-account-form"
-        onSubmit={handleSubmit}
-        className="flex flex-col gap-3.5"
+        noValidate
+        onSubmit={(e) => void handleSubmit(e)}
+        className="flex flex-col gap-4"
       >
+        {error && (
+          <div className="flex items-start gap-2.5 rounded-2xl border border-red-500/30 bg-red-500/10 p-3.5 text-sm text-red-200">
+            <AlertCircle className="h-4 w-4 shrink-0 text-red-400 mt-0.5" />
+            <p className="flex-1">{error}</p>
+          </div>
+        )}
+
         {isAnonymous ? (
           <>
-            <input
-              required
-              type="email"
-              autoComplete="email"
-              placeholder={isEn ? "Email" : "อีเมล"}
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className={INPUT_CLASS}
-            />
-            <input
-              required
-              type="password"
-              autoComplete="new-password"
-              minLength={8}
-              placeholder={
-                isEn
-                  ? "Password (min 8 characters)"
-                  : "รหัสผ่าน (อย่างน้อย 8 ตัว)"
-              }
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className={INPUT_CLASS}
-            />
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-white/60">
+                {isEn ? "Email" : "อีเมล"} <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="email"
+                autoComplete="email"
+                placeholder={isEn ? "name@example.com" : "อีเมลของคุณ"}
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  if (fieldErrors.email) {
+                    setFieldErrors((prev) => ({ ...prev, email: "" }));
+                  }
+                }}
+                className={`${INPUT_CLASS} ${
+                  fieldErrors.email ? "border-red-400/60 bg-red-500/5" : ""
+                }`}
+              />
+              {fieldErrors.email && (
+                <p className="text-xs text-red-400">{fieldErrors.email}</p>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-white/60">
+                {isEn ? "Password" : "รหัสผ่าน"} <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="password"
+                autoComplete="new-password"
+                placeholder={
+                  isEn
+                    ? "Password (min 8 characters)"
+                    : "รหัสผ่าน (อย่างน้อย 8 ตัว)"
+                }
+                value={password}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  if (fieldErrors.password) {
+                    setFieldErrors((prev) => ({ ...prev, password: "" }));
+                  }
+                }}
+                className={`${INPUT_CLASS} ${
+                  fieldErrors.password ? "border-red-400/60 bg-red-500/5" : ""
+                }`}
+              />
+              {fieldErrors.password && (
+                <p className="text-xs text-red-400">{fieldErrors.password}</p>
+              )}
+            </div>
           </>
         ) : null}
 
-        <input
-          required
-          autoComplete="name"
-          placeholder={isEn ? "Full name" : "ชื่อ-นามสกุล"}
-          value={fullName}
-          onChange={(event) => setFullName(event.target.value)}
-          className={INPUT_CLASS}
-        />
+        <div className="space-y-1">
+          <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-white/60">
+            {isEn ? "Full Name" : "ชื่อ-นามสกุล"} <span className="text-red-400">*</span>
+          </label>
+          <input
+            autoComplete="name"
+            placeholder={isEn ? "Your name" : "ชื่อและนามสกุล"}
+            value={fullName}
+            onChange={(event) => {
+              setFullName(event.target.value);
+              if (fieldErrors.fullName) {
+                setFieldErrors((prev) => ({ ...prev, fullName: "" }));
+              }
+            }}
+            className={`${INPUT_CLASS} ${
+              fieldErrors.fullName ? "border-red-400/60 bg-red-500/5" : ""
+            }`}
+          />
+          {fieldErrors.fullName && (
+            <p className="text-xs text-red-400">{fieldErrors.fullName}</p>
+          )}
+        </div>
 
-        <input
-          required
-          autoComplete="username"
-          placeholder={isEn ? "Username" : "ชื่อผู้ใช้"}
-          value={username}
-          onChange={(event) =>
-            setUsername(
-              event.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "")
-            )
-          }
-          className={INPUT_CLASS}
-        />
+        <div className="space-y-1">
+          <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-white/60">
+            {isEn ? "Username" : "ชื่อผู้ใช้"} <span className="text-red-400">*</span>
+          </label>
+          <input
+            autoComplete="username"
+            placeholder={isEn ? "username" : "ชื่อผู้ใช้ (ภาษาอังกฤษ/ตัวเลข)"}
+            value={username}
+            onChange={(event) => {
+              setUsername(
+                event.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "")
+              );
+              if (fieldErrors.username) {
+                setFieldErrors((prev) => ({ ...prev, username: "" }));
+              }
+            }}
+            className={`${INPUT_CLASS} ${
+              fieldErrors.username ? "border-red-400/60 bg-red-500/5" : ""
+            }`}
+          />
+          {fieldErrors.username && (
+            <p className="text-xs text-red-400">{fieldErrors.username}</p>
+          )}
+        </div>
 
-        <input
-          required
-          type="date"
-          value={dob}
-          onChange={(event) => setDob(event.target.value)}
-          className={`${INPUT_CLASS} [color-scheme:dark]`}
-        />
+        <div className="space-y-1">
+          <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-white/60">
+            {isEn ? "Date of Birth" : "วันเกิด"} <span className="text-red-400">*</span>
+          </label>
+          <input
+            type="date"
+            value={dob}
+            onChange={(event) => {
+              setDob(event.target.value);
+              if (fieldErrors.dob) {
+                setFieldErrors((prev) => ({ ...prev, dob: "" }));
+              }
+            }}
+            className={`${INPUT_CLASS} [color-scheme:dark] ${
+              fieldErrors.dob ? "border-red-400/60 bg-red-500/5" : ""
+            }`}
+          />
+          {fieldErrors.dob && (
+            <p className="text-xs text-red-400">{fieldErrors.dob}</p>
+          )}
+        </div>
 
         <div className="flex flex-col gap-2">
-          <p className="text-xs uppercase tracking-[0.2em] text-white/40">
+          <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-white/60">
             {isEn ? "Education level" : "ระดับการศึกษา"}
-          </p>
+          </label>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             {(["high_school", "university", "unaffiliated"] as const).map(
               (level) => (
@@ -259,7 +411,7 @@ export function AccountPhase({ data, isAnonymous, goBack, prefill }: Props) {
                     "min-h-12 rounded-2xl border px-3 py-2.5 text-sm font-medium transition-colors",
                     education === level
                       ? "border-blue-400/50 bg-blue-500/15 text-white"
-                      : "border-white/10 bg-white/[0.03] text-white/55",
+                      : "border-white/10 bg-white/[0.03] text-white/55 hover:bg-white/[0.06]",
                   ].join(" ")}
                 >
                   {educationCopy[level]}
@@ -270,56 +422,102 @@ export function AccountPhase({ data, isAnonymous, goBack, prefill }: Props) {
         </div>
 
         {needsGuardian ? (
-          <div className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-            <p className="dawn-eyebrow">
-              {isEn ? "Parent or guardian" : "ผู้ปกครอง"}
+          <div className="space-y-3 rounded-2xl border border-amber-400/20 bg-amber-500/[0.04] p-4">
+            <p className="dawn-eyebrow text-amber-300">
+              {isEn ? "Parent or guardian consent" : "ข้อมูลและคำยินยอมจากผู้ปกครอง"}
             </p>
-            <p className="text-xs leading-5 text-white/45">
+            <p className="text-xs leading-5 text-white/60">
               {isEn
                 ? "Required because you are 18 or under."
-                : "จำเป็นเพราะคุณอายุ 18 หรือต่ำกว่า"}
+                : "จำเป็นต้องระบุเนื่องจากอายุไม่เกิน 18 ปี"}
             </p>
-            <input
-              required
-              placeholder={
-                isEn ? "Relationship (mom, dad…)" : "ความสัมพันธ์ (แม่, พ่อ…)"
-              }
-              value={guardianRelationship}
-              onChange={(event) => setGuardianRelationship(event.target.value)}
-              maxLength={60}
-              className={INPUT_CLASS}
-            />
-            <input
-              required
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              placeholder={isEn ? "Phone number" : "เบอร์โทร"}
-              value={guardianPhone}
-              onChange={(event) => setGuardianPhone(event.target.value)}
-              pattern="[0-9+() .-]{7,24}"
-              className={INPUT_CLASS}
-            />
-            <label className="flex min-h-12 items-start gap-3 text-sm leading-5 text-white/70">
+            <div className="space-y-1">
               <input
-                type="checkbox"
-                checked={guardianApproved}
-                onChange={(event) => setGuardianApproved(event.target.checked)}
-                className="mt-1 h-5 w-5 shrink-0"
+                placeholder={
+                  isEn ? "Relationship (Mom, Dad…)" : "ความสัมพันธ์ (แม่, พ่อ…)"
+                }
+                value={guardianRelationship}
+                onChange={(event) => {
+                  setGuardianRelationship(event.target.value);
+                  if (fieldErrors.guardianRelationship) {
+                    setFieldErrors((prev) => ({
+                      ...prev,
+                      guardianRelationship: "",
+                    }));
+                  }
+                }}
+                maxLength={60}
+                className={`${INPUT_CLASS} ${
+                  fieldErrors.guardianRelationship
+                    ? "border-red-400/60 bg-red-500/5"
+                    : ""
+                }`}
               />
-              <span>
-                {isEn
-                  ? "My parent or guardian approves my use of PassionSeed and may be contacted at this number."
-                  : "ผู้ปกครองอนุญาตให้ใช้ PassionSeed และติดต่อได้ที่เบอร์นี้"}
-              </span>
-            </label>
-          </div>
-        ) : null}
+              {fieldErrors.guardianRelationship && (
+                <p className="text-xs text-red-400">
+                  {fieldErrors.guardianRelationship}
+                </p>
+              )}
+            </div>
 
-        {error ? (
-          <p className="text-center text-sm text-red-400">{error}</p>
+            <div className="space-y-1">
+              <input
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder={isEn ? "Phone number" : "เบอร์โทรศัพท์ผู้ปกครอง"}
+                value={guardianPhone}
+                onChange={(event) => {
+                  setGuardianPhone(event.target.value);
+                  if (fieldErrors.guardianPhone) {
+                    setFieldErrors((prev) => ({ ...prev, guardianPhone: "" }));
+                  }
+                }}
+                className={`${INPUT_CLASS} ${
+                  fieldErrors.guardianPhone
+                    ? "border-red-400/60 bg-red-500/5"
+                    : ""
+                }`}
+              />
+              {fieldErrors.guardianPhone && (
+                <p className="text-xs text-red-400">
+                  {fieldErrors.guardianPhone}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1 pt-1">
+              <label className="flex items-start gap-3 text-sm leading-5 text-white/80 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={guardianApproved}
+                  onChange={(event) => {
+                    setGuardianApproved(event.target.checked);
+                    if (fieldErrors.guardianApproved) {
+                      setFieldErrors((prev) => ({
+                        ...prev,
+                        guardianApproved: "",
+                      }));
+                    }
+                  }}
+                  className="mt-0.5 h-4 w-4 rounded border-white/20 bg-white/10 text-blue-500 focus:ring-blue-400 shrink-0"
+                />
+                <span className="text-xs sm:text-sm">
+                  {isEn
+                    ? "My parent or guardian approves my use of PassionSeed and may be contacted at this number."
+                    : "ผู้ปกครองอนุญาตให้ใช้ PassionSeed และยินยอมให้ติดต่อที่เบอร์นี้"}
+                </span>
+              </label>
+              {fieldErrors.guardianApproved && (
+                <p className="text-xs text-red-400">
+                  {fieldErrors.guardianApproved}
+                </p>
+              )}
+            </div>
+          </div>
         ) : null}
       </form>
     </PhaseShell>
   );
 }
+

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import Image from "next/image";
 
+/* Order matches the page: Fields leads because it is the first question a
+   visitor asks. */
 const NAV_LINKS = [
+  { href: "#pathlab-fields", label: "สาย" },
   { href: "#pathlab-portfolio", label: "Port" },
   { href: "#pathlab-journey", label: "Journey" },
-  { href: "#pathlab-fields", label: "สาย" },
   { href: "#pathlab-price", label: "Price" },
   { href: "#pathlab-contact", label: "ติดต่อ" },
 ] as const;

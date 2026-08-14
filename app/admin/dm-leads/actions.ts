@@ -4,23 +4,50 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
 import {
   sendAdminReply,
+  sendLeadQuickReplies,
   getConversationWithMessages,
   updateLeadMeta,
 } from "@/lib/supabase/dm-leads";
+import type { MetaAttachmentType, MetaQuickReplyOption } from "@/lib/meta/graph";
 import type { DmLeadStatus } from "@/types/dm-leads";
 
-export async function replyToLead(conversationId: string, body: string) {
+export async function replyToLead(
+  conversationId: string,
+  body: string,
+  attachmentUrl?: string,
+  attachmentType?: MetaAttachmentType
+) {
   await requireAdmin();
 
-  if (!body.trim()) {
+  if (!body.trim() && !attachmentUrl) {
     return { ok: false, error: "Message is empty" };
   }
 
   try {
-    await sendAdminReply(conversationId, body.trim());
+    await sendAdminReply(conversationId, { text: body.trim(), attachmentUrl, attachmentType });
   } catch (error) {
     console.error("replyToLead failed:", error);
     const message = error instanceof Error ? error.message : "Failed to send reply";
+    return { ok: false, error: message };
+  }
+
+  revalidatePath("/admin/dm-leads");
+  revalidatePath(`/admin/dm-leads/${conversationId}`);
+  return { ok: true, error: null };
+}
+
+export async function sendQuickReplyButtons(
+  conversationId: string,
+  text: string,
+  options: MetaQuickReplyOption[]
+) {
+  await requireAdmin();
+
+  try {
+    await sendLeadQuickReplies(conversationId, text, options);
+  } catch (error) {
+    console.error("sendQuickReplyButtons failed:", error);
+    const message = error instanceof Error ? error.message : "Failed to send quick replies";
     return { ok: false, error: message };
   }
 

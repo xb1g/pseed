@@ -765,9 +765,9 @@ export function FileUpload({
 
   const getFileIcon = (fileName: string, fileType?: string) => {
     if (isImageFile(fileName, fileType)) {
-      return <ImageIcon className="h-5 w-5 text-blue-600" />;
+      return <ImageIcon className="h-5 w-5 text-primary" />;
     }
-    return <File className="h-5 w-5 text-blue-600" />;
+    return <File className="h-5 w-5 text-primary" />;
   };
 
   const isUploading = uploadingFiles.size > 0;
@@ -785,16 +785,16 @@ export function FileUpload({
             {uploadedFiles.map((file, index) => (
               <div
                 key={index}
-                className="flex items-start gap-3 p-3 bg-green-50 border border-green-200 rounded-lg"
+                className="flex items-start gap-3 p-3 bg-emerald-500/10 border border-emerald-500/25 rounded-lg"
               >
                 <div className="flex-shrink-0">
-                  <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                  <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5" />
                 </div>
 
                 <div className="flex-1 min-w-0 space-y-2">
                   <div className="flex items-center gap-2">
                     {getFileIcon(file.originalName, file.type)}
-                    <p className="text-sm font-medium text-green-900 truncate">
+                    <p className="text-sm font-medium text-foreground truncate">
                       {file.originalName}
                     </p>
                   </div>
@@ -811,7 +811,7 @@ export function FileUpload({
                     </div>
                   )}
 
-                  <div className="flex items-center gap-2 text-xs text-green-700">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span>{formatFileSize(file.size)}</span>
                     <span>•</span>
                     <span>{file.type}</span>
@@ -820,7 +820,7 @@ export function FileUpload({
                       href={file.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-green-600 hover:text-green-800 hover:underline"
+                      className="text-primary hover:underline"
                     >
                       View file
                     </a>
@@ -832,7 +832,7 @@ export function FileUpload({
                   variant="ghost"
                   size="sm"
                   onClick={() => handleRemove(index)}
-                  className="text-green-600 hover:text-green-800 hover:bg-green-100 flex-shrink-0"
+                  className="text-muted-foreground hover:text-foreground hover:bg-muted flex-shrink-0"
                   disabled={disabled}
                 >
                   <X className="h-4 w-4" />
@@ -847,20 +847,20 @@ export function FileUpload({
           <div
             className={`p-6 border-2 rounded-lg ${
               hasError
-                ? "border-red-300 bg-red-50"
-                : "border-blue-300 bg-blue-50"
+                ? "border-red-400/40 bg-red-500/10"
+                : "border-primary/30 bg-primary/5"
             }`}
           >
             <div className="flex items-center gap-3 mb-4">
               {hasError ? (
-                <AlertTriangle className="h-6 w-6 text-red-600" />
+                <AlertTriangle className="h-6 w-6 text-red-500" />
               ) : (
-                <Cloud className="h-6 w-6 text-blue-600" />
+                <Cloud className="h-6 w-6 text-primary" />
               )}
               <div className="flex-1">
                 <p
                   className={`text-sm font-medium ${
-                    hasError ? "text-red-900" : "text-blue-900"
+                    hasError ? "text-red-500" : "text-foreground"
                   }`}
                 >
                   {uploadProgress?.message}
@@ -871,7 +871,7 @@ export function FileUpload({
                       value={uploadProgress?.percentage || 0}
                       className="h-2"
                     />
-                    <p className="text-xs text-blue-700 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       {uploadProgress?.percentage.toFixed(0)}% complete
                     </p>
                   </div>
@@ -922,10 +922,10 @@ export function FileUpload({
             <div
               className={`border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200 ${
                 isDragging
-                  ? "border-blue-400 bg-blue-50"
+                  ? "border-primary/60 bg-primary/10"
                   : disabled
-                    ? "border-gray-200 bg-gray-50"
-                    : "border-gray-300 hover:border-gray-400 cursor-pointer"
+                    ? "border-border bg-muted/50"
+                    : "border-input hover:border-primary/50 cursor-pointer"
               }`}
               onDrop={handleDrop}
               onDragOver={handleDragOver}
@@ -934,21 +934,21 @@ export function FileUpload({
             >
               <Upload
                 className={`h-8 w-8 mx-auto mb-4 ${
-                  disabled ? "text-gray-400" : "text-gray-500"
+                  disabled ? "text-muted-foreground/50" : "text-muted-foreground"
                 }`}
               />
 
               <div className="space-y-2">
                 <p
                   className={`text-sm font-medium ${
-                    disabled ? "text-gray-400" : "text-gray-700"
+                    disabled ? "text-muted-foreground/50" : "text-foreground"
                   }`}
                 >
                   {isDragging ? "Drop your file here" : "Upload your file"}
                 </p>
                 <p
                   className={`text-xs ${
-                    disabled ? "text-gray-300" : "text-gray-500"
+                    disabled ? "text-muted-foreground/40" : "text-muted-foreground"
                   }`}
                 >
                   Drag and drop or click to browse

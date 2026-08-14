@@ -354,9 +354,9 @@ export function NodeEditorPanel({
   }
 
   return (
-    <div className="h-full flex flex-col bg-background overflow-hidden node-editor-panel">
+    <div className="h-full flex flex-col dawn-panel overflow-hidden node-editor-panel">
       {/* Header - Fixed */}
-      <div className="flex-shrink-0 p-4 border-b bg-background">
+      <div className="flex-shrink-0 p-4 dawn-panel__header">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
             <MapPin className="h-4 w-4 text-primary" />
@@ -372,7 +372,7 @@ export function NodeEditorPanel({
 
       {/* Single-column editor mirroring the student view - Scrollable */}
       <div className="flex-1 overflow-hidden">
-        <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+        <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-white/15 scrollbar-track-transparent">
           <div className="p-4 space-y-6">
             {/* Title — inline-editable, styled like the student-view heading */}
             <Input
@@ -437,7 +437,7 @@ export function NodeEditorPanel({
                     (pathDays && pathDays.length > 0)) && (
                     <div className="space-y-3 pt-4 border-t">
                       <Label className="flex items-center gap-2 text-sm font-medium">
-                        <Clock className="h-4 w-4 text-blue-500" />
+                        <Clock className="h-4 w-4 text-amber-300" />
                         Assign to Path Days
                       </Label>
                       <div className="grid grid-cols-2 gap-2">
@@ -450,8 +450,8 @@ export function NodeEditorPanel({
                               key={day.id}
                               className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-all duration-200 ${
                                 isAssigned
-                                  ? "bg-blue-50 border-blue-200 text-blue-700 shadow-sm"
-                                  : "bg-muted/30 border-transparent text-muted-foreground hover:bg-muted/50"
+                                  ? "bg-amber-200/10 border-amber-200/40 text-amber-100 shadow-sm"
+                                  : "bg-white/[0.03] border-white/10 text-muted-foreground hover:bg-white/[0.06]"
                               }`}
                               onClick={() => {
                                 if (!onPathDaysChange || !pathDays) return;
@@ -474,12 +474,12 @@ export function NodeEditorPanel({
                               <div
                                 className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
                                   isAssigned
-                                    ? "bg-blue-500 border-blue-500"
+                                    ? "bg-amber-300 border-amber-300"
                                     : "bg-background border-muted-foreground/30"
                                 }`}
                               >
                                 {isAssigned && (
-                                  <Check className="h-3 w-3 text-white stroke-[3]" />
+                                  <Check className="h-3 w-3 text-[#3a2a10] stroke-[3]" />
                                 )}
                               </div>
                               <span className="text-xs font-semibold">
@@ -524,7 +524,7 @@ export function NodeEditorPanel({
                               });
                             }
                           }}
-                          className="w-full px-3 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-1 text-xs border border-white/15 bg-white/5 rounded focus:outline-none focus:ring-2 focus:ring-amber-200/60 focus:border-amber-200/60"
                         >
                           <option value="12px">12px</option>
                           <option value="14px">14px</option>
@@ -560,7 +560,7 @@ export function NodeEditorPanel({
                                 });
                               }
                             }}
-                            className="w-16 h-8 border border-gray-300 rounded cursor-pointer"
+                            className="w-16 h-8 border border-white/15 bg-white/5 rounded cursor-pointer"
                           />
                           <Input
                             value={
@@ -607,7 +607,7 @@ export function NodeEditorPanel({
                                 });
                               }
                             }}
-                            className="w-16 h-8 border border-gray-300 rounded cursor-pointer"
+                            className="w-16 h-8 border border-white/15 bg-white/5 rounded cursor-pointer"
                           />
                           <Input
                             value={
@@ -652,7 +652,7 @@ export function NodeEditorPanel({
                               });
                             }
                           }}
-                          className="w-full px-3 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-1 text-xs border border-white/15 bg-white/5 rounded focus:outline-none focus:ring-2 focus:ring-amber-200/60 focus:border-amber-200/60"
                         >
                           <option value="normal">Normal</option>
                           <option value="bold">Bold</option>
@@ -682,7 +682,7 @@ export function NodeEditorPanel({
                               });
                             }
                           }}
-                          className="w-full px-3 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-1 text-xs border border-white/15 bg-white/5 rounded focus:outline-none focus:ring-2 focus:ring-amber-200/60 focus:border-amber-200/60"
                         >
                           <option value="left">Left</option>
                           <option value="center">Center</option>
@@ -694,12 +694,15 @@ export function NodeEditorPanel({
                 )}
                 {/* Learning Materials — mirrors the student view section */}
                 {!isTextNode && (
-                  <section className="space-y-3 pt-4 border-t">
+                  <section className="space-y-3 pt-4 border-t border-white/10">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-foreground">
+                      <h3 className="text-base font-semibold text-amber-50">
                         Learning Materials
                       </h3>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge
+                        variant="outline"
+                        className="text-xs border-amber-200/25 bg-amber-200/10 text-amber-200"
+                      >
                         {selectedNode.data.node_content?.length || 0} item
                         {(selectedNode.data.node_content?.length || 0) !== 1
                           ? "s"
@@ -716,15 +719,15 @@ export function NodeEditorPanel({
 
                 {/* Assessment — mirrors the student view section */}
                 {!isTextNode && (
-                  <section className="space-y-3 pt-4 border-t">
+                  <section className="space-y-3 pt-4 border-t border-white/10">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-foreground">
+                      <h3 className="text-base font-semibold text-amber-50">
                         Assessment
                       </h3>
                       {selectedNode.data.node_assessments?.[0] && (
                         <Badge
                           variant="outline"
-                          className="text-xs capitalize"
+                          className="text-xs capitalize border-amber-200/25 bg-amber-200/10 text-amber-200"
                         >
                           {selectedNode.data.node_assessments[0].assessment_type.replace(
                             "_",
@@ -781,7 +784,7 @@ export function NodeEditorPanel({
                                 });
                               }
                             }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-white/15 bg-white/5 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-200/60 focus:border-amber-200/60"
                           >
                             <option value="learning">🎯 Learning Node</option>
                             <option value="text">📝 Text/Label</option>
@@ -842,7 +845,7 @@ export function NodeEditorPanel({
                                 htmlFor="requirement-single"
                                 className="flex items-center gap-2 cursor-pointer"
                               >
-                                <span className="text-blue-500">👤</span>
+                                <span className="text-amber-300">👤</span>
                                 Single Member
                                 <span className="text-xs text-muted-foreground">
                                   (Any team member can complete)
@@ -858,7 +861,7 @@ export function NodeEditorPanel({
                                 htmlFor="requirement-all"
                                 className="flex items-center gap-2 cursor-pointer"
                               >
-                                <span className="text-purple-500">👥</span>
+                                <span className="text-amber-200">👥</span>
                                 All Members
                                 <span className="text-xs text-muted-foreground">
                                   (All team members must complete)
@@ -873,7 +876,7 @@ export function NodeEditorPanel({
                           <Label htmlFor="sprite_url">Node Sprite</Label>
                           <div className="flex items-center gap-2">
                             {nodeData.sprite_url && (
-                              <div className="w-12 h-12 bg-gradient-to-br from-sky-100 to-blue-100 rounded-lg flex items-center justify-center p-1 border">
+                              <div className="w-12 h-12 bg-gradient-to-br from-amber-200/20 to-amber-400/10 rounded-lg flex items-center justify-center p-1 border border-white/10">
                                 <img
                                   src={nodeData.sprite_url}
                                   alt="Current sprite"
@@ -955,7 +958,7 @@ export function NodeEditorPanel({
                           onClick={handleDeleteNode}
                           variant="outline"
                           size="sm"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="text-red-400 hover:text-red-300 hover:bg-red-400/10 border-red-400/30"
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
                           Delete Node
@@ -978,12 +981,12 @@ export function NodeEditorPanel({
           pathDays.length > 0 &&
           selectedNode &&
           !isTextNode && (
-            <div className="border-t border-gray-700 p-4 space-y-3">
+            <div className="border-t border-white/10 p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-semibold">PathLab Days</Label>
-                <span className="text-xs text-gray-400">Assign to days</span>
+                <span className="text-xs text-stone-400">Assign to days</span>
               </div>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-stone-400">
                 Check which days should include this node
               </p>
               <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -996,8 +999,8 @@ export function NodeEditorPanel({
                       key={day.id}
                       className={`flex items-center gap-2 p-2 rounded border cursor-pointer transition-colors ${
                         isAssigned
-                          ? "border-blue-500 bg-blue-950/30"
-                          : "border-gray-700 hover:border-gray-600"
+                          ? "border-amber-200/50 bg-amber-200/10"
+                          : "border-white/10 hover:border-white/20"
                       }`}
                       onClick={async () => {
                         if (!onPathDaysChange || !seedInfo) return;
@@ -1062,7 +1065,7 @@ export function NodeEditorPanel({
                         className="h-4 w-4"
                       />
                       <span
-                        className={`text-sm ${isAssigned ? "text-white font-medium" : "text-gray-300"}`}
+                        className={`text-sm ${isAssigned ? "text-amber-50 font-medium" : "text-stone-300"}`}
                       >
                         Day {day.day_number}
                         {day.title ? `: ${day.title}` : ""}

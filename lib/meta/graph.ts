@@ -43,6 +43,69 @@ export async function sendMetaMessage(
   recipientPsid: string,
   text: string
 ): Promise<string> {
+  return sendMetaMessagePayload(platform, recipientPsid, { text });
+}
+
+export type MetaAttachmentType = "image" | "video" | "audio" | "file";
+
+/**
+ * Sends a media attachment to a lead via the Messenger Platform Send API.
+ * The Send API attachment payload is identical in shape for image/video/
+ * audio/file — only the `type` field changes. The message object accepts
+ * either `text` or `attachment`, never both in one call — a caption + media
+ * is two separate sendMetaMessage calls, not one.
+ */
+export async function sendMetaAttachmentMessage(
+  platform: DmPlatform,
+  recipientPsid: string,
+  url: string,
+  type: MetaAttachmentType
+): Promise<string> {
+  return sendMetaMessagePayload(platform, recipientPsid, {
+    attachment: { type, payload: { url, is_reusable: true } },
+  });
+}
+
+export interface MetaQuickReplyOption {
+  title: string;
+  payload: string;
+}
+
+const MAX_QUICK_REPLIES = 13;
+
+/**
+ * Sends a text message with structured quick-reply buttons. The lead's tap
+ * arrives back as a normal message webhook event with `message.text` set to
+ * the tapped button's title and `message.quick_reply.payload` set to its
+ * payload — already fully handled by the existing message.quick_reply path
+ * in lib/meta/webhook-events.ts / process-webhook-event.ts, and by
+ * classifyConversationText's grade/interest regexes if the title matches
+ * one of their patterns. No new receive-side plumbing needed.
+ */
+export async function sendMetaQuickReplies(
+  platform: DmPlatform,
+  recipientPsid: string,
+  text: string,
+  options: MetaQuickReplyOption[]
+): Promise<string> {
+  if (options.length === 0) {
+    throw new Error("sendMetaQuickReplies requires at least one option");
+  }
+  return sendMetaMessagePayload(platform, recipientPsid, {
+    text,
+    quick_replies: options.slice(0, MAX_QUICK_REPLIES).map((o) => ({
+      content_type: "text",
+      title: o.title,
+      payload: o.payload,
+    })),
+  });
+}
+
+async function sendMetaMessagePayload(
+  platform: DmPlatform,
+  recipientPsid: string,
+  message: Record<string, unknown>
+): Promise<string> {
   const accessToken = process.env.META_PAGE_ACCESS_TOKEN;
   if (!accessToken) {
     throw new Error("META_PAGE_ACCESS_TOKEN is not set");
@@ -55,13 +118,14 @@ export async function sendMetaMessage(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       recipient: { id: recipientPsid },
-      message: { text },
+      message,
       messaging_type: "RESPONSE",
     }),
   });
 
   if (!res.ok) {
-    throw new Error(`Meta Send API failed for ${platform} (${res.status})`);
+    const errBody = await res.text();
+    throw parseMetaErrorBody(errBody, res.status);
   }
 
   const json: { message_id?: string } = await res.json();

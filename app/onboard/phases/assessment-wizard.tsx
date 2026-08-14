@@ -68,8 +68,10 @@ const QUESTIONS: Record<
     subTh: "ไม่มีคำตอบผิด แค่ช่วยปรับจังหวะให้เหมาะกับคุณ",
   },
   tcas_target: {
-    en: "Let's pin down your target",
-    th: "มาลองระบุเป้าหมายให้ชัดขึ้น",
+    en: "Choose your target TCAS goal",
+    th: "เลือกเป้าหมาย TCAS ในใจ",
+    subEn: "If you have a university or program in mind, select them below (or skip for now).",
+    subTh: "ถ้าพอรู้แล้วว่าอยากไปที่ไหน เลือกมหาวิทยาลัยหรือสาขาไว้ได้เลย หรือจะข้ามไปก่อนก็ได้",
   },
   primary_blocker: {
     en: "What's the biggest friction right now?",
@@ -305,7 +307,11 @@ export function AssessmentWizardPhase({ data, advance, goBack }: Props) {
   };
 
   return (
-    <div className="mx-auto w-full max-w-lg">
+    <div
+      className={`mx-auto w-full transition-[max-width] duration-300 ${
+        currentField === "tcas_target" ? "max-w-2xl sm:max-w-3xl" : "max-w-lg"
+      }`}
+    >
       <div className="ei-card ei-card--static rounded-[22px] sm:rounded-[28px]">
         <div className="space-y-4 px-4 pb-4 pt-4 sm:space-y-5 sm:px-8 sm:pb-5 sm:pt-7">
           <div className="flex items-center justify-between gap-3">
@@ -348,6 +354,7 @@ export function AssessmentWizardPhase({ data, advance, goBack }: Props) {
             <TcasTargetPicker
               data={{ ...data, ...answers }}
               language={language}
+              hideHeader
               onChange={(updates) => {
                 setAnswers((current) => ({ ...current, ...updates }));
               }}
