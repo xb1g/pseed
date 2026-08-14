@@ -58,6 +58,25 @@
     margin: 0;
   }
 
+  /* Sits tight under the heading so it reads as part of it. The grid supplies
+     its own top margin, so this adds no spacing below itself. */
+  .fields__hint {
+    margin: 0.7rem 0 0;
+    font-size: clamp(0.95rem, 2.2vw, 1.08rem);
+    line-height: 1.6;
+    color: var(--muted);
+    text-align: center;
+    text-wrap: balance;
+    transition: opacity 260ms ease-out;
+  }
+
+  /* Once a path is open the instruction no longer applies, so it clears out
+     rather than telling the reader to do what they have already done. */
+  .fields.is-open .fields__hint {
+    opacity: 0;
+    pointer-events: none;
+  }
+
   /* The stage animates its own height so the section grows rather than
      the panel popping in. JS measures and drives the value. */
   .fields__stage {
@@ -179,6 +198,13 @@
     .grid__cue { opacity: 1; transform: translateY(0); }
   }
 
+  .grid__caption {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
   .grid__label {
     font-family: var(--display);
     font-size: clamp(1.15rem, 2.6vw, 1.6rem);
@@ -186,6 +212,21 @@
     color: var(--accent);
     text-align: center;
     margin: 0;
+  }
+
+  /* The project sits under the field name as a quiet second line — it has to
+     be readable without competing with the label above it. */
+  .grid__project {
+    margin: 0;
+    font-size: clamp(0.82rem, 1.9vw, 0.92rem);
+    line-height: 1.5;
+    color: var(--muted);
+    text-align: center;
+    text-wrap: balance;
+    max-width: 15rem;
+    /* Two lines are reserved whether the copy wraps or not, so the row of
+       cards below starts at the same y regardless of name length. */
+    min-height: calc(2 * 1.5em);
   }
 
   .is-coming-soon .frame img { filter: grayscale(1); opacity: 0.55; }
@@ -347,13 +388,21 @@
     border: 1px solid rgba(196, 62, 29, 0.25);
   }
 
-  .brief__text {
+  .brief__name {
     font-family: var(--display);
     font-size: clamp(1.15rem, 3vw, 1.5rem);
     font-weight: 600;
     line-height: 1.5;
     color: var(--ink);
     margin: 0 0 0.6rem;
+  }
+
+  /* Body copy under the project name: the situation and what you build. */
+  .brief__text {
+    font-size: clamp(1rem, 2.3vw, 1.12rem);
+    line-height: 1.75;
+    color: var(--ink);
+    margin: 0 0 0.75rem;
   }
 
   .brief__by { font-size: 0.92rem; color: var(--muted); margin: 0; }
@@ -607,6 +656,7 @@
 
 <section class="fields" id="fields">
   <h2 class="fields__heading">สายที่เปิดในตอนนี้</h2>
+  <p class="fields__hint" id="fields-hint">กดเพื่อดูรายละเอียดของแต่ละสายได้</p>
 
   <div class="fields__stage" id="stage">
     <ul class="grid" id="grid"></ul>
@@ -659,7 +709,11 @@ const FIELDS = [
         "งานพังตอนตีสองเป็นเรื่องปกติ การไล่หาสาเหตุคือทักษะหลักของสายนี้",
         "โค้ดที่ดีคือโค้ดที่คนอื่นอ่านต่อได้ ไม่ใช่โค้ดที่ฉลาดที่สุด",
       ],
+      /* Short form for the grid card; `brief` carries the full phrasing
+         inside the detail panel where there is room for it. */
+      briefShort: "เว็บจองคิวร้านตัดผม",
       brief: "ทำเว็บจองคิวร้านตัดผมให้ร้านจริง",
+      briefDetail: "ร้านตัดผมจริงในย่านหนึ่งรับจองคิวผ่าน LINE แล้วคิวชนกันแทบทุกสัปดาห์ คุณจะได้คุยกับเจ้าของร้าน แล้วทำเว็บที่ลูกค้ากดจองเองได้ และเจ้าของร้านเปิดดูคิวทั้งวันได้ในหน้าเดียว",
       briefBy: "ออกแบบร่วมกับ Software Engineer ตัวจริงในสาย",
       days: [
         { title: "ตั้งโจทย์", doing: "คุยกับเจ้าของร้านจริง เข้าใจปัญหาก่อนลงมือ", gets: "โจทย์ที่ชัด" },
@@ -688,7 +742,9 @@ const FIELDS = [
         "ไอเดียที่คุณรักที่สุด มักเป็นไอเดียที่ตลาดบอกว่าไม่เอา และต้องยอมทิ้งให้เป็น",
         "ตัวเลขเล็ก ๆ ที่จริง มีค่ากว่าแผนใหญ่ ๆ ที่ยังไม่มีใครลองซื้อ",
       ],
+      briefShort: "ทดสอบไอเดียธุรกิจกับลูกค้าจริง",
       brief: "หาโอกาสธุรกิจจริงในย่านของคุณ แล้วทดสอบกับลูกค้าจริง",
+      briefDetail: "ไม่ใช่การเขียนแผนธุรกิจส่งครู แต่คือการเดินออกไปถามคนจริงว่าเขาติดปัญหาอะไร แล้วลองเสนอขายจริงเพื่อดูว่ามีคนยอมจ่ายไหม จบรอบคุณจะมีตัวเลขจากตลาดจริง ไม่ใช่การเดา",
       briefBy: "ออกแบบร่วมกับผู้ก่อตั้งธุรกิจตัวจริง",
       days: [
         { title: "หาปัญหา", doing: "ลงพื้นที่ คุยกับคนจริงอย่างน้อย 5 คน", gets: "ปัญหาที่มีคนเดือดร้อนจริง" },
@@ -717,7 +773,9 @@ const FIELDS = [
         "งานส่วนใหญ่คือทำของเล็ก ๆ ให้จบ ไม่ใช่ทำเกมใหญ่ที่ไม่มีวันเสร็จ",
         "ศิลปะ โค้ด และเสียง ต้องคุยกันรู้เรื่อง ทีมที่คุยกันไม่ได้คือเกมที่ไม่ได้ออก",
       ],
+      briefShort: "เกมสั้นที่คนอื่นได้เล่นจริง",
       brief: "ทำเกมสั้น ๆ ที่เล่นจบใน 3 นาที แล้วเอาไปให้คนแปลกหน้าเล่น",
+      briefDetail: "เกมสั้นแต่ต้องจบจริง มีจุดเริ่ม จุดจบ และเหตุผลให้เล่นซ้ำ คุณจะได้นั่งดูคนที่ไม่เคยเห็นเกมคุณมาก่อนลองเล่น แล้วแก้ตามสิ่งที่เห็น ไม่ใช่ตามสิ่งที่คิดเอง",
       briefBy: "ออกแบบร่วมกับ Game Developer ตัวจริงในสาย",
       days: [
         { title: "หาแกนสนุก", doing: "ลองกลไกหลักบนกระดาษก่อนแตะโปรแกรม", gets: "แกนเกมที่ชัด" },
@@ -743,6 +801,7 @@ const FIELDS = [
   { label: "หากไม่มีสายที่สนใจทัก IG\nพวกเรามาได้เลยนะ", ask: true },
 ];
 
+const section = document.getElementById("fields");
 const stage = document.getElementById("stage");
 const grid = document.getElementById("grid");
 const detail = document.getElementById("detail");
@@ -777,8 +836,16 @@ FIELDS.forEach((field, i) => {
       ? '<button class="grid__button" type="button" data-index="' + i + '" ' +
           'aria-expanded="false" aria-label="' + esc(field.label) + ' — ดูรายละเอียด 5 วัน">' +
           frame + "</button>" +
-        '<p class="grid__label">' + esc(field.label) + "</p>"
-      : frame + '<p class="grid__label">' + esc(field.label) + "</p>";
+        '<div class="grid__caption">' +
+          '<p class="grid__label">' + esc(field.label) + "</p>" +
+          /* The concrete project, visible before the click — it is what
+             makes a field feel real rather than a category name. */
+          '<p class="grid__project">' + esc(field.detail.briefShort) + "</p>" +
+        "</div>"
+      : frame +
+        '<div class="grid__caption">' +
+          '<p class="grid__label">' + esc(field.label) + "</p>" +
+        "</div>";
   }
 
   grid.appendChild(li);
@@ -826,9 +893,10 @@ function renderDetail(field) {
     "</div>" +
 
     '<div class="block">' +
-      '<h4 class="block__title">โจทย์ของรอบนี้</h4>' +
+      '<h4 class="block__title">โจทย์ของเรารอบนี้</h4>' +
       '<div class="brief">' +
-        '<p class="brief__text">' + esc(d.brief) + "</p>" +
+        '<p class="brief__name">' + esc(d.brief) + "</p>" +
+        '<p class="brief__text">' + esc(d.briefDetail) + "</p>" +
         '<p class="brief__by">' + esc(d.briefBy) + "</p>" +
       "</div>" +
     "</div>" +
@@ -893,6 +961,7 @@ function open(index, trigger) {
   [...grid.children].forEach((li, i) => li.classList.toggle("is-dismissed", i !== index));
 
   stage.classList.add("is-open");
+  section.classList.add("is-open");
   detail.setAttribute("aria-hidden", "false");
   trigger.setAttribute("aria-expanded", "true");
 
@@ -915,6 +984,7 @@ function close(index) {
   lockCurrentHeight();
 
   stage.classList.remove("is-open");
+  section.classList.remove("is-open");
   detail.setAttribute("aria-hidden", "true");
 
   grid.style.position = "";

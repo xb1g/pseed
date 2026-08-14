@@ -220,6 +220,26 @@ export const REVIEWS: AlumniReview[] = [
 
 export const FIELDS_HEADING = "สายที่เปิดในตอนนี้";
 
+/** Tells the reader the cards open, before they hover or tap one. */
+export const FIELDS_HINT = "กดเพื่อดูรายละเอียดของแต่ละสายได้";
+
+/** Labels inside an opened path. */
+export const FIELD_DETAIL_LABELS = {
+  back: "← กลับไปดูสายอื่น",
+  reality: "คนสายนี้ทำอะไรจริง ๆ",
+  brief: "โจทย์ของเรารอบนี้",
+  days: "5 วันนี้เป็นยังไง",
+  outcomes: "จบแล้วคุณจะ…",
+  basis: "ต้องมีพื้นฐานไหม?",
+  basisAnswer: "ไม่ต้อง เริ่มจากศูนย์ได้",
+  /** Suffixed with the field label so the DM arrives with context. */
+  ctaPrefix: "ทัก IG ถามเรื่องสาย",
+  price: "299฿ เดี่ยว · 999฿ กลุ่ม 4 คน · เลื่อนลงดูรายละเอียดราคา",
+  /** Appended to the card's accessible name. */
+  cardAction: "— ดูรายละเอียด 5 วัน",
+  cardCue: "ดู 5 วันนี้ →",
+} as const;
+
 export const PRICE_HEADING = "เลือกทางเริ่มต้น";
 
 export const CONTACT = {
@@ -281,6 +301,43 @@ export const PRICE_NOTES: string[] = [
   "Micro Pathlab ฟรีวันละหนึ่งรอบ — ใช้ลองก่อนค่อยอัปเป็นรอบเต็ม",
 ];
 
+/** One day of a path: what you do, and what you walk away holding. */
+export interface FieldDay {
+  title: string;
+  /** One line on the day's work. */
+  doing: string;
+  /** The artefact the day produces, shown as a chip. */
+  gets: string;
+}
+
+/**
+ * The expanded view of a path. Optional on FieldCard: a field without one
+ * renders as a plain tile and cannot be opened, so copy can land field by
+ * field without a code change.
+ */
+export interface FieldDetail {
+  /** The field in a sentence, under the title. */
+  tagline: string;
+  /** Short project name for the grid card, where space is tight. */
+  briefShort: string;
+  /** The project stated in full, as the brief block's headline. */
+  brief: string;
+  /** The situation and what gets built. */
+  briefDetail: string;
+  /** Who the project was designed with. */
+  briefBy: string;
+  /** Three concrete, non-obvious truths about the work. */
+  reality: string[];
+  /** Exactly five days. */
+  days: FieldDay[];
+  /** Three outcomes; the first is the self-discovery one and leads. */
+  outcomes: string[];
+  /** An alumni quote answering "do I need a background for this?". */
+  quote: string;
+  /** Attribution for the quote, as written. */
+  cite: string;
+}
+
 export interface FieldCard {
   /** Omitted on the "ask us" tile, which is drawn rather than photographed. */
   src?: string;
@@ -294,6 +351,8 @@ export interface FieldCard {
    * to two lines.
    */
   ask?: boolean;
+  /** Present only on fields whose five-day copy is written. */
+  detail?: FieldDetail;
 }
 
 export const COMING_SOON_LABEL = "Coming soon";
@@ -302,43 +361,196 @@ export const COMING_SOON_LABEL = "Coming soon";
 export const FIELDS: FieldCard[] = [
   {
     src: "/pathlab/field-webdev.webp",
-    alt: "หน้าจอโค้ด HTML",
+    alt: "หน้าจอเว็บ Flashcard ทบทวนบทเรียนบนมือถือ",
     label: "Web Dev",
+    detail: {
+      tagline: "สร้างเว็บที่คนใช้จริงได้ ตั้งแต่หน้าจอจนถึงหลังบ้าน",
+      briefShort: "เว็บ Flashcard ทบทวนบทเรียน",
+      brief: "ทำเว็บ Flashcard ทบทวนบทเรียน ที่เพื่อนเอาไปใช้อ่านสอบจริง",
+      briefDetail:
+        "ทุกคนเคยท่องศัพท์หรือสูตรก่อนสอบแล้วลืมหมดในสามวัน คุณจะได้ทำเว็บที่สร้างการ์ดคำถาม–คำตอบเองได้ กดพลิกดูเฉลย แล้วให้ระบบวนการ์ดที่ยังตอบผิดกลับมาถามซ้ำ จบรอบเอาไปให้เพื่อนในห้องใช้อ่านสอบจริง",
+      briefBy: "ออกแบบร่วมกับ Software Engineer ตัวจริงในสาย",
+      reality: [
+        "ถกกับคนใช้จริงว่าปุ่มควรอยู่ตรงไหน ไม่ใช่แค่นั่งเขียนโค้ดคนเดียว",
+        "งานพังตอนตีสองเป็นเรื่องปกติ การไล่หาสาเหตุคือทักษะหลักของสายนี้",
+        "ของที่ทำเสร็จแล้วมีคนใช้ ดีกว่าของที่สวยแต่ยังไม่ได้ปล่อย",
+      ],
+      days: [
+        {
+          title: "ตั้งเครื่องมือ + วางโครง",
+          doing:
+            "ลง OpenCode ต่อ GitHub แล้วเปิดโปรเจกต์ Next.js ตัวแรก วางโครงหน้าการ์ดด้วย HTML/CSS",
+          gets: "โปรเจกต์บน GitHub",
+        },
+        {
+          title: "เขียนโค้ดให้กดได้",
+          doing:
+            "ใช้ JavaScript ใน React ดักการคลิกแล้วสั่งให้การ์ดพลิกดูเฉลย รู้จัก state และ event",
+          gets: "การ์ดที่กดพลิกได้",
+        },
+        {
+          title: "ต่อ Supabase",
+          doing:
+            "สร้างตารางบน Supabase แล้วเขียนคำสั่งเพิ่ม–อ่าน–ลบการ์ด ปิดเว็บแล้วเปิดใหม่ข้อมูลยังอยู่ครบ",
+          gets: "ฐานข้อมูลที่ใช้ได้จริง",
+        },
+        {
+          title: "เขียนระบบทบทวน",
+          doing:
+            "เขียนเงื่อนไขให้ระบบจำว่าการ์ดไหนตอบผิด แล้ววนกลับมาถามซ้ำถี่กว่าการ์ดที่ตอบถูก",
+          gets: "ระบบที่ช่วยจำได้จริง",
+        },
+        {
+          title: "Deploy ด้วย Vercel",
+          doing:
+            "ต่อ GitHub เข้ากับ Vercel กด deploy จนได้ลิงก์ที่ส่งให้ใครเปิดก็ได้ แล้วซ้อมเล่าโปรเจกต์",
+          gets: "ลิงก์จริง + สคริปต์เล่า Port",
+        },
+      ],
+      outcomes: [
+        "รู้ว่าสายนี้ใช่ทางคุณไหม",
+        "ได้เว็บที่มีลิงก์จริง เพื่อนใช้อ่านสอบได้ ลง Port ได้เลย",
+        "รู้ว่าถ้าจะไปต่อสายนี้ ต้องเตรียมอะไร",
+      ],
+      quote:
+        "ถ้าไม่มีพื้นฐาน แค่พกใจมาก็พอ เริ่มจากศูนย์ ได้ลงมือเขียนโค้ดจริง ทำโปรเจกต์จริง และใช้ได้จริง",
+      cite: "IG:xn_z96x · รุ่นพี่จุฬาวังบูรพา สาขาวิชาวิทคอม",
+    },
   },
   {
     src: "/pathlab/field-business.webp",
     alt: "การประชุมวิเคราะห์ข้อมูลธุรกิจ",
     label: "Business",
+    detail: {
+      tagline: "หาให้เจอว่าคนยอมจ่ายเพื่ออะไร แล้วพิสูจน์ด้วยตัวเลข",
+      briefShort: "ทดสอบไอเดียธุรกิจกับลูกค้าจริง",
+      brief: "หาโอกาสธุรกิจจริงในย่านของคุณ แล้วทดสอบกับลูกค้าจริง",
+      briefDetail:
+        "ไม่ใช่การเขียนแผนธุรกิจส่งครู แต่คือการเดินออกไปถามคนจริงว่าเขาติดปัญหาอะไร แล้วลองเสนอขายจริงเพื่อดูว่ามีคนยอมจ่ายไหม จบรอบคุณจะมีตัวเลขจากตลาดจริง ไม่ใช่การเดา",
+      briefBy: "ออกแบบร่วมกับผู้ก่อตั้งธุรกิจตัวจริง",
+      reality: [
+        "งานส่วนใหญ่คือถามคนแปลกหน้าว่าเขามีปัญหาอะไร ไม่ใช่การนั่งทำสไลด์สวย ๆ",
+        "ไอเดียที่คุณรักที่สุด มักเป็นไอเดียที่ตลาดบอกว่าไม่เอา และต้องยอมทิ้งให้เป็น",
+        "ตัวเลขเล็ก ๆ ที่จริง มีค่ากว่าแผนใหญ่ ๆ ที่ยังไม่มีใครลองซื้อ",
+      ],
+      days: [
+        {
+          title: "หาปัญหา",
+          doing: "ลงพื้นที่ คุยกับคนจริงอย่างน้อย 5 คน",
+          gets: "ปัญหาที่มีคนเดือดร้อนจริง",
+        },
+        {
+          title: "ตั้งสมมติฐาน",
+          doing: "แปลงปัญหาเป็นข้อเสนอที่ทดสอบได้",
+          gets: "สมมติฐานที่วัดผลได้",
+        },
+        {
+          title: "ทดสอบตลาด",
+          doing: "ทำข้อเสนอง่าย ๆ แล้วเอาไปเสนอจริง",
+          gets: "ผลตอบรับจากตลาด",
+        },
+        {
+          title: "อ่านตัวเลข",
+          doing: "สรุปว่าอะไรเวิร์ก อะไรต้องทิ้ง",
+          gets: "โมเดลที่ปรับแล้ว",
+        },
+        {
+          title: "พิตช์",
+          doing: "เล่าให้คนนอกเข้าใจใน 3 นาที",
+          gets: "เด็คพิตช์ + สคริปต์เล่า Port",
+        },
+      ],
+      outcomes: [
+        "รู้ว่าสายนี้ใช่ทางคุณไหม",
+        "ได้เคสธุรกิจที่มีข้อมูลจริงรองรับ ลง Port ได้",
+        "รู้ว่าถ้าจะไปต่อสายนี้ ต้องเตรียมอะไร",
+      ],
+      quote:
+        "สอนเข้าใจง่ายมาก เรียนสนุก นอกจากนี้ยังได้เจอเพื่อน ๆ และรุ่นพี่ในสายในวงการเดียวกัน",
+      cite: "IG:cathatput_02 · รุ่นพี่จุฬา CEDT",
+    },
   },
   {
     src: "/pathlab/field-gamedev.webp",
     alt: "นักพัฒนาเกมทำงานกับ Unity",
     label: "Game Dev",
+    detail: {
+      tagline: "ทำให้คนเล่นรู้สึกบางอย่าง ด้วยระบบที่คุณออกแบบเอง",
+      briefShort: "เกมสั้นที่คนอื่นได้เล่นจริง",
+      brief: "ทำเกมสั้น ๆ ที่เล่นจบใน 3 นาที แล้วเอาไปให้คนแปลกหน้าเล่น",
+      briefDetail:
+        "เกมสั้นแต่ต้องจบจริง มีจุดเริ่ม จุดจบ และเหตุผลให้เล่นซ้ำ คุณจะได้นั่งดูคนที่ไม่เคยเห็นเกมคุณมาก่อนลองเล่น แล้วแก้ตามสิ่งที่เห็น ไม่ใช่ตามสิ่งที่คิดเอง",
+      briefBy: "ออกแบบร่วมกับ Game Developer ตัวจริงในสาย",
+      reality: [
+        "เกมสนุกไม่ได้มาจากไอเดีย แต่มาจากการแก้ค่าทีละนิดหลังดูคนเล่นจริง",
+        "งานส่วนใหญ่คือทำของเล็ก ๆ ให้จบ ไม่ใช่ทำเกมใหญ่ที่ไม่มีวันเสร็จ",
+        "ศิลปะ โค้ด และเสียง ต้องคุยกันรู้เรื่อง ทีมที่คุยกันไม่ได้คือเกมที่ไม่ได้ออก",
+      ],
+      days: [
+        {
+          title: "หาแกนสนุก",
+          doing: "ลองกลไกหลักบนกระดาษก่อนแตะโปรแกรม",
+          gets: "แกนเกมที่ชัด",
+        },
+        {
+          title: "ต่อเป็นเกม",
+          doing: "ทำให้เล่นได้จริงแม้จะยังไม่สวย",
+          gets: "ตัวเล่นได้ตัวแรก",
+        },
+        {
+          title: "ใส่ความรู้สึก",
+          doing: "เสียง เอฟเฟกต์ จังหวะ ที่ทำให้รู้สึกดี",
+          gets: "เกมที่มีฟีล",
+        },
+        {
+          title: "ให้คนเล่นจริง",
+          doing: "ดูคนเล่นเงียบ ๆ แล้วแก้ตามที่เห็น",
+          gets: "เวอร์ชันที่คนเล่นรู้เรื่อง",
+        },
+        {
+          title: "ปล่อยเกม",
+          doing: "ปล่อยขึ้นออนไลน์แล้วซ้อมเล่าโปรเจกต์",
+          gets: "ลิงก์เล่นได้ + สคริปต์เล่า Port",
+        },
+      ],
+      outcomes: [
+        "รู้ว่าสายนี้ใช่ทางคุณไหม",
+        "ได้เกมที่คนกดเล่นได้จริง ลง Port ได้เลย",
+        "รู้ว่าถ้าจะไปต่อสายนี้ ต้องเตรียมอะไร",
+      ],
+      quote: "มีอะไรสงสัยก็ช่วยกันเต็มที่ ไม่ปล่อยให้เรานั่งงงอยู่คนเดียว",
+      cite: "IG:victorchenspec · รุ่นพี่บางมด วิศวกรรมระบบปัญญาประดิษฐ์",
+    },
   },
   {
     src: "/pathlab/field-medical.webp",
     alt: "หูฟังแพทย์วางบนสมุดบันทึก",
     label: "Medical",
+    comingSoon: true,
   },
   {
     src: "/pathlab/field-architect.webp",
     alt: "แบบแปลนสถาปัตยกรรม",
     label: "Architect",
+    comingSoon: true,
   },
   {
     src: "/pathlab/field-commarts.webp",
     alt: "ภาพประกอบการออกแบบสีสันสดใส",
     label: "นิเทศ",
+    comingSoon: true,
   },
   {
     src: "/pathlab/field-civil.webp",
     alt: "วิศวะกำลังสำรวจหน้างานก่อสร้าง",
     label: "วิศวะโยธา",
+    comingSoon: true,
   },
   {
     src: "/pathlab/field-graphic.webp",
     alt: "งานออกแบบกราฟิกพื้นหลังสีเหลือง",
     label: "กราฟิกและแอนิเมชั่น",
+    comingSoon: true,
   },
   {
     label: "หากไม่มีสายที่สนใจทัก IG\nพวกเรามาได้เลยนะ",

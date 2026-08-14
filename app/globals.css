@@ -10380,6 +10380,64 @@ summary:focus-visible .radar-expand-indicator {
   }
 }
 
+/* The button is a bare wrapper: the frame inside it carries all the visuals,
+   so it contributes no box of its own beyond the focus ring. */
+.pathlab-fields__button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 1.1rem;
+}
+
+.pathlab-fields__button:focus-visible {
+  outline: 3px solid #c43e1d;
+  outline-offset: 4px;
+}
+
+/* Says the card opens, before anyone hovers or taps it. */
+.pathlab-fields__cue {
+  position: absolute;
+  left: 50%;
+  bottom: 0.7rem;
+  translate: -50% 0;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.32rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(253, 243, 230, 0.94);
+  color: #c43e1d;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 220ms ease-out,
+    transform 220ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99));
+}
+
+@media (hover: hover) {
+  .pathlab-fields__button:hover .pathlab-fields__cue,
+  .pathlab-fields__button:focus-visible .pathlab-fields__cue {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Touch has no hover state to reveal the cue, so it simply stays on. */
+@media (hover: none) {
+  .pathlab-fields__cue {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .pathlab-fields__label {
   font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
   font-size: clamp(1.15rem, 2.6vw, 1.6rem);
@@ -10421,6 +10479,477 @@ summary:focus-visible .radar-expand-indicator {
   line-height: 1.3;
   text-align: center;
   white-space: nowrap;
+}
+
+/* Sits tight under the heading so it reads as part of it. The grid supplies
+   its own top margin, so this adds no spacing below itself. */
+.pathlab-fields__hint {
+  margin: 0.7rem 0 0;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: clamp(0.95rem, 2.2vw, 1.08rem);
+  line-height: 1.6;
+  color: #756663;
+  text-align: center;
+  text-wrap: balance;
+  transition: opacity 260ms ease-out;
+}
+
+/* Once a path is open the instruction no longer applies. It fades rather
+   than unmounts, so the space stays reserved and nothing jumps. */
+.pathlab-fields.is-open .pathlab-fields__hint {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Field expansion ── */
+
+/* The stage animates its own height so the section visibly grows and pushes
+   the price section down, instead of a panel appearing above it. */
+.pathlab-fields__stage {
+  position: relative;
+  transition: height 620ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99));
+}
+
+.pathlab-fields__caption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* The project under the field name: readable, but never competing with the
+   label above it. Two lines are reserved whether the copy wraps or not, so
+   the next row of cards starts at the same y regardless of name length. */
+.pathlab-fields__project {
+  margin: 0;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: clamp(0.82rem, 1.9vw, 0.92rem);
+  line-height: 1.5;
+  color: #756663;
+  text-align: center;
+  text-wrap: balance;
+  max-width: 15rem;
+  min-height: calc(2 * 1.5em);
+}
+
+/* Everything but the chosen card clears out of the way. */
+.pathlab-fields__item {
+  transition: opacity 320ms ease-out,
+    transform 420ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99));
+}
+
+.pathlab-fields__item.is-dismissed {
+  opacity: 0;
+  transform: scale(0.88) translateY(12px);
+  pointer-events: none;
+}
+
+/* The grid leaves the flow once a path is open, so the detail alone defines
+   the stage height. It stays rendered so it can be measured on the way back. */
+.pathlab-fields.is-open .pathlab-fields__grid {
+  position: absolute;
+  inset: 0 0 auto;
+  width: 100%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pathlab-detail {
+  position: absolute;
+  inset: 0 0 auto;
+  max-width: 60rem;
+  margin-inline: auto;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(18px);
+  transition: opacity 320ms ease-out,
+    transform 460ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99)),
+    visibility 0s linear 480ms;
+}
+
+.pathlab-fields.is-open .pathlab-detail {
+  position: relative;
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition: opacity 420ms ease-out 180ms,
+    transform 560ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99)) 180ms,
+    visibility 0s;
+}
+
+.pathlab-detail__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: clamp(1.5rem, 4vw, 2.25rem) 0 0;
+  padding: 0.55rem 1.05rem 0.55rem 0.85rem;
+  border: 1px solid rgba(82, 71, 70, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  color: #524746;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 200ms ease-out, background 200ms ease-out,
+    transform 200ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99));
+}
+
+.pathlab-detail__back:hover {
+  border-color: rgba(196, 62, 29, 0.45);
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateX(-3px);
+}
+
+.pathlab-detail__back:focus-visible {
+  outline: 3px solid #c43e1d;
+  outline-offset: 3px;
+}
+
+/* The chosen card persists as a chip: the expansion is the same object
+   opening, not a new page. */
+.pathlab-detail__head {
+  display: flex;
+  align-items: center;
+  gap: clamp(1rem, 3vw, 1.6rem);
+  margin-top: clamp(1.25rem, 3vw, 1.75rem);
+}
+
+.pathlab-detail__chip {
+  position: relative;
+  flex: 0 0 auto;
+  width: clamp(6.5rem, 16vw, 9.5rem);
+  aspect-ratio: 3 / 4;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 12px 28px rgba(82, 71, 70, 0.18);
+}
+
+.pathlab-detail__chip img {
+  object-fit: cover;
+}
+
+.pathlab-detail__title {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: clamp(1.8rem, 5vw, 2.9rem);
+  font-weight: 600;
+  line-height: 1.2;
+  color: #c43e1d;
+  margin: 0 0 0.35rem;
+}
+
+.pathlab-detail__tagline {
+  font-size: clamp(1rem, 2.2vw, 1.15rem);
+  line-height: 1.6;
+  color: #756663;
+  margin: 0;
+  max-width: 34ch;
+}
+
+.pathlab-detail__block {
+  margin-top: clamp(2.5rem, 6vw, 3.5rem);
+}
+
+.pathlab-detail__block-title {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: clamp(1.25rem, 3vw, 1.65rem);
+  font-weight: 600;
+  color: #c43e1d;
+  margin: 0 0 1.1rem;
+}
+
+.pathlab-detail__reality {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.pathlab-detail__reality li {
+  display: flex;
+  gap: 0.8rem;
+  padding: 1rem 1.15rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(82, 71, 70, 0.1);
+  line-height: 1.65;
+}
+
+.pathlab-detail__reality li::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-top: 0.62rem;
+  border-radius: 999px;
+  background: #c43e1d;
+}
+
+.pathlab-detail__brief {
+  padding: clamp(1.25rem, 3vw, 1.75rem);
+  border-radius: 1.25rem;
+  background: rgba(196, 62, 29, 0.07);
+  border: 1px solid rgba(196, 62, 29, 0.25);
+}
+
+.pathlab-detail__brief-name {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: clamp(1.15rem, 3vw, 1.5rem);
+  font-weight: 600;
+  line-height: 1.5;
+  color: #524746;
+  margin: 0 0 0.6rem;
+}
+
+.pathlab-detail__brief-text {
+  font-size: clamp(1rem, 2.3vw, 1.12rem);
+  line-height: 1.75;
+  color: #524746;
+  margin: 0 0 0.75rem;
+}
+
+.pathlab-detail__brief-by {
+  font-size: 0.92rem;
+  color: #756663;
+  margin: 0;
+}
+
+.pathlab-detail__days {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.85rem;
+}
+
+@media (min-width: 720px) {
+  .pathlab-detail__days {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.7rem;
+  }
+}
+
+.pathlab-detail__day {
+  position: relative;
+  display: flex;
+  gap: 0.9rem;
+  padding: 1.05rem 1.1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(82, 71, 70, 0.12);
+}
+
+@media (min-width: 720px) {
+  .pathlab-detail__day {
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 1.15rem 1rem 1.25rem;
+  }
+
+  /* The body grows so the "gets" chip sits on the same baseline in every
+     column, however long the day's copy runs. */
+  .pathlab-detail__day > div {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .pathlab-detail__day-gets {
+    margin-top: auto;
+  }
+
+  .pathlab-detail__day:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 2.05rem;
+    right: -0.7rem;
+    width: 0.7rem;
+    height: 1px;
+    background: rgba(82, 71, 70, 0.25);
+  }
+}
+
+.pathlab-detail__day-num {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 999px;
+  background: rgba(82, 71, 70, 0.1);
+  color: #524746;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.pathlab-detail__day-title {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-weight: 600;
+  font-size: 1.02rem;
+  color: #c43e1d;
+  margin: 0 0 0.28rem;
+}
+
+.pathlab-detail__day-doing {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: #524746;
+  margin: 0 0 0.6rem;
+}
+
+.pathlab-detail__day-gets {
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 0.28rem 0.65rem;
+  border-radius: 0.7rem;
+  background: rgba(196, 62, 29, 0.1);
+  color: #c43e1d;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.4;
+  /* The last day's payoff is the longest label; it wraps rather than spills. */
+  overflow-wrap: anywhere;
+}
+
+/* The last day carries the payoff, so it takes the weight. */
+.pathlab-detail__day.is-final {
+  background: #524746;
+  border-color: #524746;
+}
+
+.pathlab-detail__day.is-final .pathlab-detail__day-num {
+  background: rgba(253, 243, 230, 0.2);
+  color: #fdf3e6;
+}
+
+.pathlab-detail__day.is-final .pathlab-detail__day-title {
+  color: #f0a678;
+}
+
+.pathlab-detail__day.is-final .pathlab-detail__day-doing {
+  color: rgba(253, 243, 230, 0.9);
+}
+
+.pathlab-detail__day.is-final .pathlab-detail__day-gets {
+  background: rgba(253, 243, 230, 0.16);
+  color: #fdf3e6;
+}
+
+.pathlab-detail__outcomes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.pathlab-detail__outcome {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.95rem 1.15rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(82, 71, 70, 0.1);
+  line-height: 1.6;
+}
+
+.pathlab-detail__tick {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  margin-top: 0.1rem;
+  border-radius: 999px;
+  background: rgba(196, 62, 29, 0.12);
+  color: #c43e1d;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+/* The question being answered is "is this field right for me", so the
+   self-discovery outcome outranks the portfolio artefact. */
+.pathlab-detail__outcome.is-primary {
+  background: rgba(196, 62, 29, 0.09);
+  border-color: rgba(196, 62, 29, 0.35);
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: clamp(1.05rem, 2.6vw, 1.28rem);
+  font-weight: 600;
+  color: #c43e1d;
+}
+
+.pathlab-detail__outcome.is-primary .pathlab-detail__tick {
+  background: #c43e1d;
+  color: #fdf3e6;
+}
+
+.pathlab-detail__unblock {
+  padding: clamp(1.25rem, 3vw, 1.6rem);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(82, 71, 70, 0.12);
+}
+
+.pathlab-detail__unblock-answer {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: clamp(1.15rem, 3vw, 1.45rem);
+  font-weight: 600;
+  color: #c43e1d;
+  margin: 0 0 0.9rem;
+}
+
+.pathlab-detail__quote {
+  margin: 0;
+  padding-left: 1rem;
+  border-left: 3px solid rgba(196, 62, 29, 0.3);
+  line-height: 1.7;
+}
+
+.pathlab-detail__cite {
+  display: block;
+  margin-top: 0.55rem;
+  font-size: 0.87rem;
+  color: #756663;
+  font-style: normal;
+}
+
+.pathlab-detail__cta {
+  margin-top: clamp(2.5rem, 6vw, 3.5rem);
+  padding: clamp(1.5rem, 4vw, 2.15rem);
+  border-radius: 1.5rem;
+  background: #524746;
+  color: #fdf3e6;
+  text-align: center;
+}
+
+.pathlab-detail__cta-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.95rem 1.9rem;
+  border-radius: 999px;
+  background: #c43e1d;
+  color: #fdf3e6;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: clamp(1.05rem, 2.6vw, 1.22rem);
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 240ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99)),
+    box-shadow 240ms ease-out;
+}
+
+.pathlab-detail__cta-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.3), 0 0 40px rgba(232, 155, 96, 0.35);
+}
+
+.pathlab-detail__cta-price {
+  margin: 0.95rem 0 0;
+  font-size: 0.95rem;
+  color: rgba(253, 243, 230, 0.75);
 }
 
 /* ── Price ── */
