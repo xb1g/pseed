@@ -178,12 +178,24 @@ export interface AlumniReview {
   quote: string;
   /** Instagram handle, shown as written. */
   ig: string;
-  /** Who is speaking — school year and faculty. */
-  by: string;
+  /** Who is speaking — school year and faculty. Omitted when not given. */
+  by?: string;
 }
 
 /** "Review จากรุ่นพี่" — alumni comments. More are added as they come in. */
 export const REVIEWS: AlumniReview[] = [
+  {
+    quote:
+      "ถ้าไม่มีพื้นฐาน แค่พกใจมาก็พอ เริ่มจากศูนย์ ได้ลงมือเขียนโค้ดจริง ทำโปรเจกต์จริง และใช้ได้จริง",
+    ig: "IG:xn_z96x",
+    by: "รุ่นพี่จุฬาวังบูรพา สาขาวิชาวิทคอม",
+  },
+  {
+    quote:
+      "สอนเข้าใจง่ายมาก เรียนสนุก นอกจากนี้ยังได้เจอเพื่อนๆ และรุ่นพี่ในสายในวงการเดียวกัน เรียนเสร็จเลยได้กำลังใจ แรงบันดาลใจมาเต็มเลย",
+    ig: "IG:cathatput_02",
+    by: "รุ่นพี่จุฬา CEDT",
+  },
   {
     quote:
       "ถ้าอยากแลของหรอย ๆ อยากเรียน Tech แบบเข้าใจง่าย ๆ แนะนำให้มาแล Techseed กันตะพี่บ่าวทั้งหลาย เขาสอนดีนิ อธิบายเข้าใจง่าย",
@@ -195,6 +207,14 @@ export const REVIEWS: AlumniReview[] = [
       "มีอะไรสงสัยก็ช่วยกันเต็มที่ ไม่ปล่อยให้เรานั่งงงอยู่คนเดียว ใครกำลังหาที่เรียน Tech ดี ๆ ลองมาแล Techseed กันหล่าว",
     ig: "IG:victorchenspec",
     by: "รุ่นพี่บางมด วิศวะกรรมระบบปัญญาประดิษฐ์",
+  },
+  {
+    quote: "โคตรโหดโคตรมันส์โคตรฮา💯",
+    ig: "IG:_ppangkorn",
+  },
+  {
+    quote: "ของดีคับ 🤫 🤫 🤫 🐄",
+    ig: "IG:how_to_fried_a_chicken",
   },
 ];
 
