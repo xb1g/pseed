@@ -1,10 +1,13 @@
 {
+  "imports": {
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.95.3"
+  },
   "compilerOptions": {
     "lib": ["deno.ns", "deno.unstable", "dom", "esnext"]
   },
   "tasks": {
     "check:meta-backfill": "deno check deno/meta-backfill/main.ts",
-    "test:meta-backfill": "deno test deno/meta-backfill/scheduler.test.ts"
+    "test:meta-backfill": "deno test deno/meta-backfill/*_test.ts"
   },
   "deploy": {
     "org": "pseed",
