@@ -185,9 +185,19 @@ function TestimonialCard({
   );
 }
 
-export function LandingTestimonials() {
+export function LandingTestimonials({
+  studentCount,
+}: {
+  /** Real onboarded-student count from the DB, via app/page.tsx. */
+  studentCount?: number | null;
+}) {
   const { language } = useLanguage();
   const t = content[language];
+
+  /* The students stat is live data; the static 20 is only a fallback for
+     when the count could not be fetched. */
+  const studentsValue =
+    studentCount && studentCount > 0 ? studentCount : t.stats.students.value;
 
   return (
     <section className="py-24 bg-[#0d0d0d] relative overflow-hidden border-t border-white/[0.03]">
@@ -243,7 +253,7 @@ export function LandingTestimonials() {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12">
           <StatCard
-            value={t.stats.students.value}
+            value={studentsValue}
             suffix={t.stats.students.suffix}
             label={t.stats.students.label}
             icon={Users}

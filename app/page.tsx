@@ -1,13 +1,41 @@
 import { LandingPageWrapper } from "@/components/landing-page-wrapper";
 import { isAnonymousUser } from "@/lib/supabase/auth";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient } from "@/utils/supabase/server";
 import { redirect, unstable_rethrow } from "next/navigation";
+import { unstable_cache } from "next/cache";
 import {
   isProfileComplete,
   PROFILE_COMPLETION_SELECT,
 } from "@/lib/profile-completion";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * The real "น้องๆ ที่เราได้ดูแล" figure for the landing testimonials:
+ * onboarded profiles, one per student. The service role is required because
+ * profiles RLS reads for authenticated users only, while the landing page is
+ * public. Only the count ever leaves the server. Cached for an hour so the
+ * public page does not hit the database on every visit; a null result tells
+ * the section to fall back to its static copy.
+ */
+const getOnboardedStudentCount = unstable_cache(
+  async (): Promise<number | null> => {
+    try {
+      const supabase = createAdminClient();
+      const { count, error } = await supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("is_onboarded", true);
+      if (error) return null;
+      return count;
+    } catch {
+      return null;
+    }
+  },
+  ["onboarded-student-count"],
+  { revalidate: 3600 }
+);
 
 export default async function Home() {
   try {
@@ -61,5 +89,7 @@ export default async function Home() {
     // Supabase unreachable or auth error — show landing page
   }
 
-  return <LandingPageWrapper />;
+  const studentCount = await getOnboardedStudentCount();
+
+  return <LandingPageWrapper studentCount={studentCount} />;
 }

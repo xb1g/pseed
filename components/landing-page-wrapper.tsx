@@ -21,9 +21,12 @@ import type { User } from "@supabase/supabase-js";
 
 interface LandingPageWrapperProps {
   children?: React.ReactNode;
+  /** Real onboarded-student count from the server; null means fall back to
+      the static figure in the testimonials copy. */
+  studentCount?: number | null;
 }
 
-export function LandingPageWrapper({ children }: LandingPageWrapperProps) {
+export function LandingPageWrapper({ children, studentCount }: LandingPageWrapperProps) {
   const { language, setLanguage } = useLanguage();
   const [isBannerVisible, setIsBannerVisible] = useState(true);
   const [headerHeight, setHeaderHeight] = useState(64);
@@ -141,7 +144,7 @@ export function LandingPageWrapper({ children }: LandingPageWrapperProps) {
         {/* Atmospheric fade from hero to next section */}
         <div className="h-24 bg-gradient-to-b from-transparent via-[#0d0d0d]/40 to-[#0d0d0d]" />
         <LandingLogos />
-        <LandingTestimonials />
+        <LandingTestimonials studentCount={studentCount} />
         <LandingFeatures />
         <LandingCareerRadar />
         <LandingExpertCta />
