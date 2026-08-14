@@ -10841,6 +10841,16 @@ summary:focus-visible .radar-expand-indicator {
   gap: 0.3rem;
 }
 
+/* Two lines are reserved for the label as well as the project, so a
+   two-word field name does not push its project line out of step with the
+   single-word names beside it. */
+.pathlab-fields__item:not(.is-ask) .pathlab-fields__label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(2 * 1.3em);
+}
+
 /* The project under the field name: readable, but never competing with the
    label above it. Two lines are reserved whether the copy wraps or not, so
    the next row of cards starts at the same y regardless of name length. */
@@ -11047,9 +11057,11 @@ summary:focus-visible .radar-expand-indicator {
   gap: 0.85rem;
 }
 
+/* Column count follows the day count rather than assuming five, since paths
+   run different lengths. */
 @media (min-width: 720px) {
   .pathlab-detail__days {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--day-count, 5), minmax(0, 1fr));
     gap: 0.7rem;
   }
 }
