@@ -247,7 +247,7 @@ export const StudentPlanPoster = React.forwardRef<
         {/* Readiness */}
         <ReadinessMeter score={data.readinessScore ?? 3} />
 
-        {/* 3 Priorities */}
+        {/* 3 Priorities + 6-month timeline — one combined plan section */}
         <section style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           <div
             style={{
@@ -257,20 +257,25 @@ export const StudentPlanPoster = React.forwardRef<
             }}
           >
             <span className="dawn-eyebrow" style={{ fontFamily: font.thai, fontSize: 16 }}>
-              3 อย่างที่ต้องทำ · เรียงตามน้ำหนัก TCAS1
+              3 โฟกัส & ปฏิทิน 6 เดือน · เรียงตามน้ำหนัก TCAS1
             </span>
             <span style={{ fontFamily: font.thai, fontSize: 15, color: ink.faint }}>
               น้ำหนัก
             </span>
           </div>
 
-          {priorities.map((item) => (
-            <div
-              key={item.rank}
-              className="plan-poster__card"
-              style={{ padding: "20px 24px" }}
-            >
-              <div style={{ display: "flex", gap: 18, alignItems: "flex-start" }}>
+          <div className="plan-poster__card" style={{ padding: "8px 24px 4px" }}>
+            {priorities.map((item) => (
+              <div
+                key={item.rank}
+                style={{
+                  display: "flex",
+                  gap: 18,
+                  alignItems: "flex-start",
+                  padding: "16px 0",
+                  borderBottom: "1px solid rgba(255,255,255,0.06)",
+                }}
+              >
                 <span
                   style={{
                     flexShrink: 0,
@@ -302,7 +307,7 @@ export const StudentPlanPoster = React.forwardRef<
                     <h3
                       style={{
                         fontFamily: font.display,
-                        fontSize: 23,
+                        fontSize: 22,
                         fontWeight: 600,
                         color: "#ffffff",
                         margin: 0,
@@ -315,7 +320,7 @@ export const StudentPlanPoster = React.forwardRef<
                       aria-label={`น้ำหนัก ${item.stars} จาก 5`}
                       style={{
                         flexShrink: 0,
-                        fontSize: 18,
+                        fontSize: 17,
                         letterSpacing: 2,
                         color: ink.gold,
                         textShadow: "0 0 10px rgba(254,217,92,0.35)",
@@ -330,26 +335,50 @@ export const StudentPlanPoster = React.forwardRef<
                   <p
                     style={{
                       fontFamily: font.thai,
-                      fontSize: 18,
-                      lineHeight: 1.65,
+                      fontSize: 17,
+                      lineHeight: 1.6,
                       color: ink.secondary,
-                      margin: "8px 0 0",
+                      margin: "6px 0 0",
                     }}
                   >
                     {item.description}
                   </p>
                 </div>
               </div>
-            </div>
-          ))}
-        </section>
+            ))}
 
-        {/* Timeline — every entry, the poster grows to fit */}
-        <section style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-          <span className="dawn-eyebrow" style={{ fontFamily: font.thai, fontSize: 16 }}>
-            ปฏิทิน 6 เดือน & กำหนดการจริง
-          </span>
-          <div className="plan-poster__card" style={{ padding: "8px 24px" }}>
+            {/* Timeline — same card, separated by a labelled divider */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                padding: "16px 0 4px",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: font.thai,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                  color: ink.blue,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                ปฏิทิน 6 เดือน & กำหนดการจริง
+              </span>
+              <span
+                style={{
+                  flex: 1,
+                  height: 1,
+                  background:
+                    "linear-gradient(to right, rgba(147,197,253,0.35) 0%, rgba(255,255,255,0.05) 100%)",
+                }}
+              />
+            </div>
+
             {timeline.map((item, idx) => (
               <div
                 key={idx}
@@ -372,20 +401,24 @@ export const StudentPlanPoster = React.forwardRef<
                       fontFamily: font.thai,
                       fontSize: 15,
                       fontWeight: 600,
-                      color: ink.blue,
-                      background: "rgba(59,130,246,0.12)",
-                      border: "1px solid rgba(147,197,253,0.3)",
+                      color: item.isVerified ? ink.blue : "rgba(226,232,240,0.55)",
+                      background: item.isVerified
+                        ? "rgba(59,130,246,0.12)"
+                        : "transparent",
+                      border: item.isVerified
+                        ? "1px solid rgba(147,197,253,0.3)"
+                        : "1px dashed rgba(148,163,184,0.4)",
                       borderRadius: 8,
                       padding: "5px 12px",
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {item.month}
+                    {item.isVerified ? item.month : "🔍 " + item.month}
                   </span>
                   <span
                     style={{
                       fontFamily: font.thai,
-                      fontSize: 18,
+                      fontSize: 17,
                       color: ink.primary,
                       lineHeight: 1.5,
                     }}
@@ -398,7 +431,7 @@ export const StudentPlanPoster = React.forwardRef<
                     flexShrink: 0,
                     fontFamily: font.thai,
                     fontSize: 15,
-                    color: ink.blue,
+                    color: item.isVerified ? ink.blue : "rgba(226,232,240,0.55)",
                     whiteSpace: "nowrap",
                   }}
                 >
@@ -516,7 +549,7 @@ export const StudentPlanPoster = React.forwardRef<
                 lineHeight: 1.4,
               }}
             >
-              ลองทำโปรเจกต์จริง 5 วัน
+              ลองทำโปรเจกต์จริง {data.stepOneAction.duration}
               <br />
               ค้นหาว่าเส้นทางนี้ใช่สำหรับน้องไหม
             </p>

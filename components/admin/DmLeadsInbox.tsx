@@ -386,13 +386,20 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversation[
               const isSelected = c.id === selected?.id;
               const myTurn = c.last_message_direction === "inbound";
               return (
-                <button
+                <div
                   key={c.id}
                   id={`dm-lead-item-${c.id}`}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleSelect(c)}
+                  onKeyDown={(e) => {
+                    if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) {
+                      e.preventDefault();
+                      handleSelect(c);
+                    }
+                  }}
                   className={cn(
-                    "w-full px-3 py-2.5 text-left transition-colors",
+                    "w-full cursor-pointer px-3 py-2.5 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-foreground/20",
                     isSelected
                       ? "bg-accent ring-2 ring-inset ring-foreground/20"
                       : "hover:bg-muted/60",
@@ -479,7 +486,7 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversation[
                       </span>
                     )}
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -494,7 +501,6 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversation[
               onSent={handleSent}
               onMetaChange={syncMeta}
               threadCache={threadCache}
-              onSync={handleSyncChat}
               isSyncing={syncingId === selected.id}
             />
           )}

@@ -224,6 +224,40 @@ export interface GraphDmMessage {
   attachments?: { data: GraphDmAttachment[] };
 }
 
+export class MetaGraphApiError extends Error {
+  isRateLimited: boolean;
+  isTokenExpired: boolean;
+  code?: number;
+  statusCode: number;
+
+  constructor(message: string, statusCode: number = 500, isRateLimited: boolean = false, isTokenExpired: boolean = false, code?: number) {
+    super(message);
+    this.name = "MetaGraphApiError";
+    this.statusCode = statusCode;
+    this.isRateLimited = isRateLimited;
+    this.isTokenExpired = isTokenExpired;
+    this.code = code;
+  }
+}
+
+function parseMetaErrorBody(errBody: string, status: number): MetaGraphApiError {
+  try {
+    const parsed = JSON.parse(errBody) as { error?: { message?: string; code?: number; error_subcode?: number; type?: string } };
+    const err = parsed.error;
+    const code = err?.code;
+    const message = err?.message || errBody;
+    const isRateLimited = code === 4 || code === 17 || code === 32 || code === 613 || status === 429 || /rate limit|request limit/i.test(message);
+    const isTokenExpired = code === 190;
+    return new MetaGraphApiError(message, status, isRateLimited, isTokenExpired, code);
+  } catch {
+    const isRateLimited = status === 429 || /rate limit|request limit/i.test(errBody);
+    return new MetaGraphApiError(errBody, status, isRateLimited, false);
+  }
+}
+
+// In-memory cache for participant -> IG Graph conversation ID to eliminate redundant API calls
+const userToGraphConvoCache = new Map<string, string>();
+
 /**
  * Lists DM conversations for the IG account. The underlying inbox is shared
  * by whatever sent through it — our webhook, a third-party automation, the
@@ -242,10 +276,15 @@ export async function listInstagramConversations(igUserId: string): Promise<Grap
     const res = await fetch(url);
     if (!res.ok) {
       const errBody = await res.text();
-      throw new Error(`Failed to list IG conversations (${res.status}): ${errBody}`);
+      throw parseMetaErrorBody(errBody, res.status);
     }
     const json: { data: GraphConversationSummary[]; paging?: { next?: string } } = await res.json();
-    conversations.push(...json.data);
+    for (const convo of json.data) {
+      conversations.push(convo);
+      for (const p of convo.participants?.data ?? []) {
+        userToGraphConvoCache.set(p.id, convo.id);
+      }
+    }
     url = json.paging?.next ?? null;
   }
 
@@ -260,18 +299,27 @@ export async function findInstagramConversationForUser(
   igUserId: string,
   targetUserId: string
 ): Promise<string | null> {
+  const cached = userToGraphConvoCache.get(targetUserId);
+  if (cached) return cached;
+
   const accessToken = requireAccessToken();
   let url: string | null =
     `${IG_GRAPH_HOST}/${GRAPH_API_VERSION}/${igUserId}/conversations` +
     `?platform=instagram&fields=participants&limit=50&access_token=${encodeURIComponent(accessToken)}`;
 
   let pages = 0;
-  while (url && pages < 5) {
+  while (url && pages < 3) {
     pages++;
     const res = await fetch(url);
-    if (!res.ok) break;
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw parseMetaErrorBody(errBody, res.status);
+    }
     const json: { data: GraphConversationSummary[]; paging?: { next?: string } } = await res.json();
     for (const convo of json.data) {
+      for (const p of convo.participants?.data ?? []) {
+        userToGraphConvoCache.set(p.id, convo.id);
+      }
       const match = convo.participants?.data.some((p) => p.id === targetUserId);
       if (match) return convo.id;
     }
@@ -294,7 +342,7 @@ export async function getConversationMessages(conversationId: string): Promise<G
     const res = await fetch(url);
     if (!res.ok) {
       const errBody = await res.text();
-      throw new Error(`Failed to fetch messages for conversation ${conversationId} (${res.status}): ${errBody}`);
+      throw parseMetaErrorBody(errBody, res.status);
     }
     const json: { data: GraphDmMessage[]; paging?: { next?: string } } = await res.json();
     messages.push(...json.data);

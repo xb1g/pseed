@@ -123,6 +123,12 @@ export async function syncLeadMessages(conversationId: string) {
       throw new Error("Conversation not found");
     }
 
+    let isRateLimited = false;
+    let isTokenExpired = false;
+    let metaFound = false;
+    let messagesSynced = 0;
+    let metaWarning: string | null = null;
+
     if (
       conv.platform === "instagram" &&
       process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID &&
@@ -142,6 +148,7 @@ export async function syncLeadMessages(conversationId: string) {
         const graphConvoId = await findInstagramConversationForUser(igUserId, targetUserId);
 
         if (graphConvoId) {
+          metaFound = true;
           const messages = await getConversationMessages(graphConvoId);
           const inboundBodies: string[] = [];
 
@@ -181,6 +188,7 @@ export async function syncLeadMessages(conversationId: string) {
               attachments,
             });
 
+            messagesSynced += 1;
             if (direction === "inbound" && bodyText) inboundBodies.push(bodyText);
           }
 
@@ -188,20 +196,42 @@ export async function syncLeadMessages(conversationId: string) {
             const classification = classifyConversationText(inboundBodies);
             await applyClassification(conversationId, classification);
           }
+        } else {
+          metaWarning = "ไม่พบบทสนทนานี้ในรายการล่าสุดของ Instagram Graph API";
         }
       } catch (metaErr) {
         console.error("Meta Graph API sync error for conversation:", metaErr);
+        const { MetaGraphApiError } = await import("@/lib/meta/graph");
+        if (metaErr instanceof MetaGraphApiError) {
+          isRateLimited = metaErr.isRateLimited;
+          isTokenExpired = metaErr.isTokenExpired;
+          metaWarning = isRateLimited
+            ? "ติด Meta API Rate Limit (กำลังใช้งานเกินโควตา Instagram API ชั่วคราว)"
+            : isTokenExpired
+              ? "Meta Access Token หมดอายุ"
+              : metaErr.message;
+        } else {
+          metaWarning = metaErr instanceof Error ? metaErr.message : "Graph API error";
+        }
       }
     }
 
     const updated = await getConversationWithMessages(conversationId);
     revalidatePath("/admin/dm-leads");
     revalidatePath(`/admin/dm-leads/${conversationId}`);
-    return { ok: true, conversation: updated, error: null };
+    return {
+      ok: !isRateLimited && !isTokenExpired,
+      conversation: updated,
+      error: metaWarning,
+      isRateLimited,
+      isTokenExpired,
+      metaFound,
+      messagesSynced,
+    };
   } catch (error) {
     console.error("syncLeadMessages failed:", error);
     const message = error instanceof Error ? error.message : "Failed to sync conversation";
-    return { ok: false, conversation: null, error: message };
+    return { ok: false, conversation: null, error: message, isRateLimited: false };
   }
 }
 

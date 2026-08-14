@@ -92,8 +92,6 @@ interface DmLeadDetailPaneProps {
   onMetaChange?: (patch: LeadMetaPatch) => void;
   /** Shared thread cache, lifted to the inbox so prefetched neighbors land here too. */
   threadCache: React.RefObject<Map<string, DmConversationWithMessages>>;
-  /** Sync newest content from Meta/DB */
-  onSync?: (conversationId: string) => Promise<void> | void;
   isSyncing?: boolean;
 }
 
@@ -109,24 +107,28 @@ export function DmLeadDetailPane({
   onSent,
   onMetaChange,
   threadCache,
-  onSync,
   isSyncing: propIsSyncing,
 }: DmLeadDetailPaneProps) {
   const [thread, setThread] = useState<DmConversationWithMessages | null>(null);
   const [loading, setLoading] = useState(true);
   const [internalSyncing, setInternalSyncing] = useState(false);
   const isSyncing = propIsSyncing ?? internalSyncing;
+  const [syncNotice, setSyncNotice] = useState<{ message: string; type: "warning" | "error" | "info" } | null>(null);
   const [scriptsOpen, setScriptsOpen] = useState(false);
   const threadRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let cancelled = false;
+    setSyncNotice(null);
+
+    // Instantly display from cache if available, or fetch from local DB
     const cached = threadCache.current.get(conversation.id);
     if (cached) {
       setThread(cached);
       setLoading(false);
       return;
     }
-    let cancelled = false;
+
     setLoading(true);
     getThread(conversation.id).then((result) => {
       if (cancelled) return;
@@ -134,6 +136,7 @@ export function DmLeadDetailPane({
       setThread(result);
       setLoading(false);
     });
+
     return () => {
       cancelled = true;
     };
@@ -164,16 +167,32 @@ export function DmLeadDetailPane({
   };
 
   const handleSync = async () => {
-    if (onSync) {
-      await onSync(conversation.id);
-      const updated = threadCache.current.get(conversation.id);
-      if (updated) setThread(updated);
-      return;
-    }
-
     setInternalSyncing(true);
+    setSyncNotice(null);
     try {
       const res = await syncLeadMessages(conversation.id);
+      if (res.isRateLimited) {
+        setSyncNotice({
+          message: "⚠️ ติด Meta API Rate Limit (กำลังใช้งานเกินโควตา Instagram API ชั่วคราว)",
+          type: "warning",
+        });
+      } else if (res.isTokenExpired) {
+        setSyncNotice({
+          message: "❌ Meta Access Token หมดอายุ",
+          type: "error",
+        });
+      } else if (res.error) {
+        setSyncNotice({
+          message: `ℹ️ ${res.error}`,
+          type: "info",
+        });
+      } else if (res.ok && res.messagesSynced !== undefined) {
+        setSyncNotice({
+          message: res.messagesSynced > 0 ? `✓ ซิงค์เรียบร้อย (พบ ${res.messagesSynced} ข้อความใหม่)` : "✓ ข้อความล่าสุดแล้ว",
+          type: "info",
+        });
+      }
+
       if (res.ok && res.conversation) {
         threadCache.current.set(conversation.id, res.conversation);
         setThread(res.conversation);
@@ -235,6 +254,26 @@ export function DmLeadDetailPane({
         </div>
         <DmLeadTagsEditor conversation={conversation} onChange={onMetaChange} />
       </div>
+
+      {syncNotice && (
+        <div
+          className={cn(
+            "flex items-center justify-between gap-2 px-3 py-1.5 text-xs font-medium border-b",
+            syncNotice.type === "warning" && "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+            syncNotice.type === "error" && "bg-destructive/10 text-destructive border-destructive/20",
+            syncNotice.type === "info" && "bg-muted text-muted-foreground border-border"
+          )}
+        >
+          <span>{syncNotice.message}</span>
+          <button
+            type="button"
+            onClick={() => setSyncNotice(null)}
+            className="text-xs opacity-70 hover:opacity-100"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <div className="shrink-0 border-b bg-muted/30 px-3 py-1.5">
         <RoutingHeader bucket={bucket} coverage={coverage} />

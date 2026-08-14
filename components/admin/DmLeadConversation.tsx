@@ -1,6 +1,6 @@
 "use client";
 
-import { useOptimistic, useState, useTransition } from "react";
+import { useEffect, useOptimistic, useState, useTransition } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { DmMessageBubble } from "@/components/admin/DmMessageBubble";
 import { DmLeadReplyForm } from "@/components/admin/DmLeadReplyForm";
@@ -11,8 +11,14 @@ export function DmLeadConversation({ conversation }: { conversation: DmConversat
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [messages, setMessages] = useState<DmMessage[]>(conversation.dm_messages ?? []);
+
+  useEffect(() => {
+    setMessages(conversation.dm_messages ?? []);
+  }, [conversation.dm_messages]);
+
   const [optimisticMessages, addOptimisticMessage] = useOptimistic(
-    conversation.dm_messages,
+    messages,
     (state, message: DmMessage) => [...state, message]
   );
 

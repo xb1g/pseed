@@ -98,6 +98,7 @@ export function PlanGeneratorModal({
     setReadinessScore(
       deriveReadinessScore({
         stage: conversation.stage,
+        grade_level: conversation.grade_level,
         has_hands_on_experience: conversation.has_hands_on_experience,
         activities_summary: conversation.activities_summary,
         interests: conversation.interests,

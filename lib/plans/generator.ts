@@ -156,71 +156,30 @@ export function formatStudentDisplayName(rawName?: string | null, username?: str
 }
 
 /**
+ * Keyword bank per archetype. Shared by getFieldArchetype (student field ->
+ * archetype) and the DB competition matcher (competition.field[] ->
+ * archetype), so widening a field's coverage only means editing one list.
+ */
+const ARCHETYPE_KEYWORDS: Record<string, string[]> = {
+  engineering: ["วิศว", "หุ่นยนต์", "ยานยนต์", "เครื่องกล", "โยธา", "ไฟฟ้า", "การบิน"],
+  computer_science: ["คอม", "ซอฟต์แวร์", "ai", "ไอที", "cyber", "เว็บ", "data"],
+  health_medical: ["แพทย์", "หมอ", "ทันตะ", "เภสัช", "พยาบาล", "ชีว", "สุขภาพ"],
+  business_econ: ["ธุรกิจ", "บริหาร", "เศรษฐศาสตร์", "การตลาด", "startup", "การเงิน", "bba"],
+  communication_arts: ["นิเทศ", "สื่อ", "ภาษา", "วารสาร", "คอนเทนต์", "อักษร", "ศิลปศาสตร์"],
+  architecture_design: ["สถาปัตย์", "ออกแบบ", "design", "interior"],
+  law_polsci: ["นิติ", "กฎหมาย", "รัฐศาสตร์"],
+};
+
+/**
  * Identify Field Archetype for ranked priorities
  */
 function getFieldArchetype(field: string, interests: string[] = []): string {
   const combined = `${field} ${interests.join(" ")}`.toLowerCase();
 
-  if (
-    combined.includes("วิศว") ||
-    combined.includes("หุ่นยนต์") ||
-    combined.includes("ยานยนต์") ||
-    combined.includes("เครื่องกล") ||
-    combined.includes("โยธา") ||
-    combined.includes("ไฟฟ้า") ||
-    combined.includes("การบิน")
-  ) {
-    return "engineering";
-  }
-  if (
-    combined.includes("คอม") ||
-    combined.includes("ซอฟต์แวร์") ||
-    combined.includes("ai") ||
-    combined.includes("ไอที") ||
-    combined.includes("cyber") ||
-    combined.includes("เว็บ") ||
-    combined.includes("data")
-  ) {
-    return "computer_science";
-  }
-  if (
-    combined.includes("แพทย์") ||
-    combined.includes("หมอ") ||
-    combined.includes("ทันตะ") ||
-    combined.includes("เภสัช") ||
-    combined.includes("พยาบาล") ||
-    combined.includes("ชีว") ||
-    combined.includes("สุขภาพ")
-  ) {
-    return "health_medical";
-  }
-  if (
-    combined.includes("ธุรกิจ") ||
-    combined.includes("บริหาร") ||
-    combined.includes("เศรษฐศาสตร์") ||
-    combined.includes("การตลาด") ||
-    combined.includes("startup") ||
-    combined.includes("การเงิน") ||
-    combined.includes("bba")
-  ) {
-    return "business_econ";
-  }
-  if (
-    combined.includes("นิเทศ") ||
-    combined.includes("สื่อ") ||
-    combined.includes("ภาษา") ||
-    combined.includes("วารสาร") ||
-    combined.includes("คอนเทนต์") ||
-    combined.includes("อักษร") ||
-    combined.includes("ศิลปศาสตร์")
-  ) {
-    return "communication_arts";
-  }
-  if (combined.includes("สถาปัตย์") || combined.includes("ออกแบบ") || combined.includes("design")) {
-    return "architecture_design";
-  }
-  if (combined.includes("นิติ") || combined.includes("กฎหมาย") || combined.includes("รัฐศาสตร์")) {
-    return "law_polsci";
+  for (const [archetype, keywords] of Object.entries(ARCHETYPE_KEYWORDS)) {
+    if (keywords.some((k) => combined.includes(k))) {
+      return archetype;
+    }
   }
 
   return "general";
@@ -405,6 +364,123 @@ function getRankedPrioritiesForArchetype(
 }
 
 /**
+ * Fallback 2 timeline items (camp + competition slot) used when no live DB
+ * competition matched the student's field. Named real camps/contests per
+ * archetype instead of the generic "ค่ายเจาะลึกเฉพาะสาขา" placeholder.
+ */
+function getFallbackTimelineForArchetype(
+  archetype: string,
+  targetField: string
+): PlanTimelineItem[] {
+  // No confirmed month/deadline exists for these — none are pulled from the
+  // DB competitions table. Leave month/deadline as a search prompt instead
+  // of inventing a range; isVerified:false tells the UI to render this as a
+  // "find the real date yourself" line, not a scheduled date.
+  const titles: Record<string, [string, string]> = {
+    engineering: [
+      "ค่าย 2B-KMUTT / ค่ายลานเกียร์ จุฬาฯ / ค่ายเจาะลึกภาควิชาวิศวะ",
+      "โครงงานสิ่งประดิษฐ์คนรุ่นใหม่ (I-New Gen) / หุ่นยนต์ ส.ส.ท. / CanSat",
+    ],
+    computer_science: [
+      "ค่าย ComCamp มจธ. / NextGen AI สจล. / Bangmod Hackathon",
+      "NSC / Super AI Engineer / Thailand Cyber Top Talent",
+    ],
+    health_medical: [
+      "ค่ายอยากเป็นหมอ MDCU / ค่าย Pharmacamp / ตอบปัญหาวิทยาศาสตร์การแพทย์ AMSci",
+      "สอวน. ชีววิทยา / YSC / JSTP",
+    ],
+    business_econ: [
+      "Business Model Canvas Workshop / Techstars Startup Weekend / UniHack",
+      "TEO Thailand Economics Olympiad / ASPIRE Case Club มธ. / SET INVESTORY",
+    ],
+    communication_arts: [
+      "ค่ายนิเทศ/วารสารศาสตร์ที่ให้ทดลองผลิตสื่อจริง",
+      "ค่าย JWC (Junior Webmaster Camp) / การแข่งขันสปีช-บทความระดับประเทศ",
+    ],
+    architecture_design: [
+      "ค่ายสถาปัตย์จุฬาฯ / ค่ายเตรียมสถาปัตย์ลาดกระบัง / Workshop ออกแบบเชิงปฏิบัติ",
+      "ประกวดออกแบบสถาปัตยกรรม/ผลิตภัณฑ์ระดับนักเรียน",
+    ],
+    law_polsci: [
+      "ค่ายนิติศาสตร์/รัฐศาสตร์จำลอง (Moot Court, Model UN)",
+      "การแข่งขันโต้วาที / เขียนบทความกฎหมาย-รัฐศาสตร์ระดับประเทศ",
+    ],
+  };
+
+  const [campTitle, competitionTitle] = titles[archetype] || [
+    `ค่ายเจาะลึกสาย ${targetField} ของมหาวิทยาลัย`,
+    `เวทีประกวดสาย ${targetField} ระดับภูมิภาค/ประเทศ`,
+  ];
+
+  return [
+    {
+      month: "ค้นหาวันที่",
+      title: campTitle,
+      deadline: "ยังไม่ยืนยันรอบ — เช็กเว็บทางการก่อนยื่น",
+      weight: 3,
+      isVerified: false,
+    },
+    {
+      month: "ค้นหาวันที่",
+      title: competitionTitle,
+      deadline: "ยังไม่ยืนยันรอบ — เช็กเว็บทางการก่อนยื่น",
+      weight: 4,
+      isVerified: false,
+    },
+  ];
+}
+
+/**
+ * Month-6 bookend copy depends on how far the student actually is from
+ * TCAS1. Most leads are ม.4/ม.5 (66 + 39 of 119 known-grade conversations
+ * vs. 14 ม.6 — checked against dm_conversations), so "พร้อมยื่น TCAS1" as a
+ * fixed month-6 goal is wrong for the majority: they aren't submitting
+ * anything in 6 months. Only ม.6 is actually submitting TCAS1 this cycle.
+ */
+function getMonth6MilestoneForGrade(gradeLevel: string): PlanTimelineItem {
+  const grade = normalizeGrade(gradeLevel);
+
+  if (grade === "ม.6") {
+    return {
+      month: "เดือนที่ 6",
+      title: "รวบรวมหลักฐาน + จัดรูปเล่ม Portfolio สรุป Impact",
+      deadline: "พร้อมยื่น TCAS1",
+      weight: 5,
+      isVerified: true,
+    };
+  }
+
+  if (grade === "ม.5") {
+    return {
+      month: "เดือนที่ 6",
+      title: "รวบรวมหลักฐาน + จัดรูปเล่ม Portfolio ชิ้นแรกให้เป็นระบบ",
+      deadline: "พร้อมต่อยอดตอนขึ้น ม.6 ปีหน้า",
+      weight: 5,
+      isVerified: true,
+    };
+  }
+
+  if (grade === "ม.3" || grade === "ม.4") {
+    return {
+      month: "เดือนที่ 6",
+      title: "รวบรวมหลักฐาน + จัดรูปเล่ม Portfolio ชิ้นแรกให้เป็นระบบ",
+      deadline: "สะสมผลงานต่อเนื่องก่อนถึงปี TCAS",
+      weight: 5,
+      isVerified: true,
+    };
+  }
+
+  // Unrecognized grade string (e.g. "ปี 1") — university-track framing.
+  return {
+    month: "เดือนที่ 6",
+    title: "รวบรวมหลักฐาน + จัดรูปเล่ม Portfolio ให้เป็นระบบ",
+    deadline: "พร้อมใช้สมัครฝึกงาน/ทุนต่อยอด",
+    weight: 5,
+    isVerified: true,
+  };
+}
+
+/**
  * Format Value-First DM Copy
  */
 export function formatPlanDmCopy(draft: {
@@ -437,6 +513,28 @@ ${priorityLines}
 ส่วนพี่อยากให้น้องเริ่มจากการ **ลองทำโปรเจกต์จริง 1 ชิ้นก่อน** จะได้รู้ด้วยว่าชอบสายนี้จริงไหม ไม่ใช่ทำพอร์ตไปเรื่อยๆ โดยยังไม่เห็นภาพงานจริง
 
 ถ้าน้องสนใจ เดี๋ยวพี่ช่วยดูต่อให้ได้ว่า **โปรเจกต์แรกควรเริ่มจากอะไรดี** ครับ 😊`;
+}
+
+/**
+ * Normalize grade strings ("ม.5", "ม5", "Grade 11") for comparing against
+ * competitions.grade_levels entries like "ม.5".
+ */
+function normalizeGrade(g: string): string {
+  const m = g.match(/ม\.?\s*([1-6])/);
+  if (m) return `ม.${m[1]}`;
+  const e = g.match(/grade\s*(1[0-2])\b/i);
+  if (e) return `ม.${Number(e[1]) - 6}`;
+  return g.trim();
+}
+
+/**
+ * Extract up to 2 distinct interest fields. Kids often list 2–3 interests;
+ * the plan should test the top paths side by side instead of forcing one.
+ */
+function extractDistinctFields(targetField: string, interests: string[]): string[] {
+  const raw = interests.length > 0 ? interests : targetField.split(/[/,|]+/);
+  const fields = raw.map((f) => f.trim()).filter(Boolean);
+  return [...new Set(fields)].slice(0, 2);
 }
 
 /**
@@ -490,20 +588,28 @@ export async function generateDraftPlan(
   }
 
   const archetype = getFieldArchetype(targetField, interests);
+  const distinctFields = extractDistinctFields(targetField, interests);
 
   // Check if field is covered by an existing seed
   const isCovered =
     COVERED_FIELDS.has(targetField.trim()) ||
     interests.some((i) => COVERED_FIELDS.has(i.trim()));
 
-  // 1. Fetch relevant competitions from DB
+  // 1. Fetch relevant competitions from DB.
+  //    Defense in depth against stale rows: even though a weekly cron expires
+  //    past-deadline rows, the generator only considers competitions whose
+  //    deadline is still in the future, so a poster can never advertise a
+  //    competition that is already over. Rows without a deadline (TBC) are
+  //    excluded — a plan needs real dates.
   let matchedCompetitions: CompetitionRow[] = [];
   try {
+    const today = new Date().toISOString().slice(0, 10);
     const { data } = await supabase
       .from("competitions")
       .select("*")
       .eq("is_active", true)
-      .order("weight", { ascending: false });
+      .gte("deadline", today)
+      .order("deadline", { ascending: true });
 
     if (data && data.length > 0) {
       // Filter by archetype keywords
@@ -512,26 +618,38 @@ export async function generateDraftPlan(
         ...interests,
       ].map((k) => k.toLowerCase());
 
+      const studentGrade = gradeLevel ? normalizeGrade(gradeLevel) : null;
+
+      const archetypeKeywords = ARCHETYPE_KEYWORDS[archetype] || [];
+
       matchedCompetitions = (data as CompetitionRow[]).filter((c) => {
         const cFields = c.field.map((f) => f.toLowerCase());
         const matchField =
           cFields.some((cf) => fieldKeywords.some((fk) => cf.includes(fk) || fk.includes(cf))) ||
-          (archetype === "engineering" && cFields.some((cf) => cf.includes("วิศว"))) ||
-          (archetype === "computer_science" && cFields.some((cf) => cf.includes("คอม") || cf.includes("ซอฟต์"))) ||
-          (archetype === "health_medical" && cFields.some((cf) => cf.includes("แพทย์") || cf.includes("ชีว"))) ||
-          (archetype === "business_econ" && cFields.some((cf) => cf.includes("ธุรกิจ") || cf.includes("เศรษฐ")));
+          cFields.some((cf) => archetypeKeywords.some((ak) => cf.includes(ak)));
 
-        return matchField;
+        if (!matchField) return false;
+
+        // Only show competitions the student's grade can actually enter
+        if (
+          studentGrade &&
+          c.grade_levels.length > 0 &&
+          !c.grade_levels.includes(studentGrade)
+        ) {
+          return false;
+        }
+
+        return true;
       });
     }
   } catch (err) {
     console.error("Error matching competitions from DB:", err);
   }
 
-  // 2. Build 6-Month Timeline
+  // 2. Build 6-Month Timeline — project bookends + real competition dates
+  //    in chronological order.
   const timeline: PlanTimelineItem[] = [];
 
-  // Step 1 timeline item
   timeline.push({
     month: "เดือนที่ 1",
     title: `เริ่มทำโปรเจกต์ ${targetField} ชิ้นแรก (วางโครงสร้าง + สร้างชิ้นงานจริง)`,
@@ -540,7 +658,6 @@ export async function generateDraftPlan(
     isVerified: true,
   });
 
-  // Add up to 3 verified competitions if available
   if (matchedCompetitions.length > 0) {
     matchedCompetitions.slice(0, 3).forEach((comp) => {
       timeline.push({
@@ -554,31 +671,11 @@ export async function generateDraftPlan(
       });
     });
   } else {
-    // Fallback standard timeline milestones
-    timeline.push(
-      {
-        month: "เดือนที่ 2–3",
-        title: "ค่ายเจาะลึกเฉพาะสาขา / เวิร์กช็อปมหาลัย",
-        deadline: "ช่วงเปิดรับสมัคร",
-        weight: 3,
-        isVerified: false,
-      },
-      {
-        month: "เดือนที่ 4–5",
-        title: "ส่งผลงานเข้าประกวดเวทีระดับภูมิภาค/ประเทศ",
-        deadline: "ตามรอบการแข่งขัน",
-        weight: 4,
-        isVerified: false,
-      },
-      {
-        month: "เดือนที่ 6",
-        title: "รวบรวมหลักฐาน + จัดรูปเล่ม Portfolio สรุป Impact",
-        deadline: "พร้อมยื่น TCAS1",
-        weight: 5,
-        isVerified: true,
-      }
-    );
+    // Fallback: archetype-specific real camp/competition names, not generic text
+    timeline.push(...getFallbackTimelineForArchetype(archetype, targetField));
   }
+
+  timeline.push(getMonth6MilestoneForGrade(gradeLevel));
 
   // 3. Build Ranked Priorities
   const rankedPriorities = getRankedPrioritiesForArchetype(
@@ -589,25 +686,50 @@ export async function generateDraftPlan(
   // 4. Build Step 1 Action (PathLab) — framed as a 5-day path discovery:
   // build one real project to find out whether this path truly fits,
   // before committing months to competitions and portfolio building.
+  // Kids with 2+ distinct interests get a dual-path test: one PathLab per
+  // field, so the plan answers "which of these paths fits" with evidence.
   const isPresell = !isCovered;
-  const stepOneAction: PlanStepOneAction = {
-    title: `PathLab ${targetField}`,
-    subtitle: isPresell
-      ? "ทำโปรเจกต์จริง 5 วัน เพื่อค้นหาว่าสายนี้ใช่สำหรับน้องไหม (เปิดรอบแรกเร็วๆ นี้)"
-      : "ทำโปรเจกต์จริง 5 วัน เพื่อค้นหาว่าสายนี้ใช่สำหรับน้องไหม มีเมนเทอร์ดูแล",
-    duration: "5 วัน",
-    price: 299,
-    cohortDate: isPresell ? "รอบเปิดตัวเร็วๆ นี้ (จองสิทธิ์ล่วงหน้า)" : "รอบถัดไป เริ่มเร็วๆ นี้",
-    isPresell,
-    keyDeliverables: [
-      "คำตอบจากประสบการณ์จริงว่า “สายนี้ใช่สำหรับเราไหม”",
-      "โปรเจกต์ผลงานจริง 1 ชิ้นพร้อมขึ้นพอร์ต",
-      "เมนเทอร์ตรวจสอบงานวันแรกและวันสรุปผล",
-      "หน้าเว็บไซต์แสดงผลงานจริง (Live Project Page)",
-      "เกียรติบัตรรับรองการเข้าร่วม",
-      "สิทธิ์เข้าถึงแผนพอร์ต 6 เดือนฉบับเต็ม",
-    ],
-  };
+  const stepOneAction: PlanStepOneAction =
+    distinctFields.length >= 2
+      ? {
+          title: `PathLab ${distinctFields[0]} + ${distinctFields[1]}`,
+          subtitle:
+            "ทดลองทำโปรเจกต์จริง 2 สาย (สายละ 5 วัน) เพื่อเทียบว่าทางไหนใช่สำหรับน้อง",
+          duration: "5 วัน × 2 สาย",
+          price: 299,
+          cohortDate: isPresell
+            ? "รอบเปิดตัวเร็วๆ นี้ (จองสิทธิ์ล่วงหน้า)"
+            : "รอบถัดไป เริ่มเร็วๆ นี้",
+          isPresell,
+          keyDeliverables: [
+            `คำตอบเทียบ 2 สาย (${distinctFields[0]} vs ${distinctFields[1]}) ว่าทางไหนใช่สำหรับน้อง`,
+            "โปรเจกต์ผลงานจริงอย่างน้อย 1 ชิ้นพร้อมขึ้นพอร์ต",
+            "เมนเทอร์ตรวจสอบงานวันแรกและวันสรุปผล",
+            "หน้าเว็บไซต์แสดงผลงานจริง (Live Project Page)",
+            "เกียรติบัตรรับรองการเข้าร่วม",
+            "สิทธิ์เข้าถึงแผนพอร์ต 6 เดือนฉบับเต็ม",
+          ],
+        }
+      : {
+          title: `PathLab ${targetField}`,
+          subtitle: isPresell
+            ? "ทำโปรเจกต์จริง 5 วัน เพื่อค้นหาว่าสายนี้ใช่สำหรับน้องไหม (เปิดรอบแรกเร็วๆ นี้)"
+            : "ทำโปรเจกต์จริง 5 วัน เพื่อค้นหาว่าสายนี้ใช่สำหรับน้องไหม มีเมนเทอร์ดูแล",
+          duration: "5 วัน",
+          price: 299,
+          cohortDate: isPresell
+            ? "รอบเปิดตัวเร็วๆ นี้ (จองสิทธิ์ล่วงหน้า)"
+            : "รอบถัดไป เริ่มเร็วๆ นี้",
+          isPresell,
+          keyDeliverables: [
+            "คำตอบจากประสบการณ์จริงว่า “สายนี้ใช่สำหรับเราไหม”",
+            "โปรเจกต์ผลงานจริง 1 ชิ้นพร้อมขึ้นพอร์ต",
+            "เมนเทอร์ตรวจสอบงานวันแรกและวันสรุปผล",
+            "หน้าเว็บไซต์แสดงผลงานจริง (Live Project Page)",
+            "เกียรติบัตรรับรองการเข้าร่วม",
+            "สิทธิ์เข้าถึงแผนพอร์ต 6 เดือนฉบับเต็ม",
+          ],
+        };
 
   const parentNotes = `แผนการเตรียมพอร์ตนี้ถูกออกแบบขึ้นเพื่อให้น้อง ${studentName || "นักเรียน"} มีทิศทางที่ชัดเจนในการเก็บผลงาน TCAS รอบที่ 1 โดยเน้นการสร้างผลงานเชิงลึกที่คณะกรรมการให้ความสำคัญสูงสุด (น้ำหนัก 5 ดาว) แทนการสะสมเกียรติบัตรทั่วไป`;
 
