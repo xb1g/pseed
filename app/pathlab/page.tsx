@@ -6,6 +6,7 @@ import { PathlabProof } from "@/components/pathlab/PathlabProof";
 import { PathlabJourney } from "@/components/pathlab/PathlabJourney";
 import { PathlabStats } from "@/components/pathlab/PathlabStats";
 import { PathlabOffer } from "@/components/pathlab/PathlabOffer";
+import { PathlabReviews } from "@/components/pathlab/PathlabReviews";
 import { PathlabFields } from "@/components/pathlab/PathlabFields";
 import { PathlabPrice } from "@/components/pathlab/PathlabPrice";
 import { PathlabContact } from "@/components/pathlab/PathlabContact";
@@ -66,11 +67,12 @@ export default function PathlabPage() {
       </div>
 
       <PathlabHero />
-      <PathlabProof />
       <PathlabPortfolio />
-      <PathlabJourney />
       <PathlabStats />
       <PathlabOffer />
+      <PathlabJourney />
+      <PathlabProof />
+      <PathlabReviews />
       <PathlabFields />
       <PathlabPrice />
       <PathlabContact />

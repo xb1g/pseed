@@ -10185,6 +10185,126 @@ summary:focus-visible .radar-expand-indicator {
   text-wrap: pretty;
 }
 
+/* ── Reviews: alumni comments on a dark band ── */
+
+/* Full-bleed brown band inverts the cream ground so the orange cards are the
+   loudest element on the page — the words of alumni should be. The bottom
+   margin restores the rhythm the following section expects (sections here
+   space themselves with bottom padding only). */
+.pathlab-reviews {
+  padding: clamp(3.5rem, 9vw, 6.5rem) 0 clamp(4rem, 10vw, 7rem);
+  margin-bottom: clamp(5rem, 12vw, 9rem);
+  background: #524746;
+}
+
+.pathlab-reviews__heading {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: clamp(1.9rem, 5vw, 3.25rem);
+  line-height: 1.35;
+  font-weight: 600;
+  color: #fdf3e6;
+  text-align: center;
+  text-wrap: balance;
+  padding-inline: clamp(1.25rem, 5vw, 4rem);
+}
+
+/* Sideways scroll with snap: the row grows as more reviews arrive without
+   the layout changing, and the peeking neighbours hint there is more. */
+.pathlab-reviews__track {
+  display: flex;
+  gap: clamp(1.25rem, 3vw, 2rem);
+  margin-top: clamp(2.25rem, 5vw, 3.5rem);
+  /* Vertical padding keeps the reveal offset and shadow inside the scroller. */
+  padding: 1.25rem clamp(1.25rem, 5vw, 4rem);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  list-style: none;
+  scrollbar-width: none;
+}
+
+.pathlab-reviews__track::-webkit-scrollbar {
+  display: none;
+}
+
+/* Cards stretch to the tallest in the row (track default), so mixed quote
+   lengths still read as a matched set. */
+.pathlab-reviews__card {
+  flex: 0 0 min(24rem, 82vw);
+  scroll-snap-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.9rem;
+  padding: clamp(1.75rem, 3.5vw, 2.5rem) clamp(1.5rem, 3vw, 2.25rem);
+  border-radius: 1.25rem;
+  background: #c43e1d;
+  text-align: center;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+}
+
+/* Rise + opacity, staggered on scroll reveal — matches PathlabOffer. */
+@media (prefers-reduced-motion: no-preference) {
+  .pathlab-reviews__card {
+    opacity: 0;
+    transform: translateY(18px);
+    transition:
+      opacity 620ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99)),
+      transform 620ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99));
+    transition-delay: calc(var(--i, 0) * 100ms);
+  }
+
+  .pathlab-reviews__card.is-shown {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.pathlab-reviews__body {
+  position: relative;
+}
+
+.pathlab-reviews__mark {
+  position: absolute;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: clamp(2.25rem, 5vw, 3rem);
+  line-height: 1;
+  color: #fdf3e6;
+  pointer-events: none;
+}
+
+.pathlab-reviews__mark--open {
+  top: -1.1rem;
+  left: -0.35rem;
+}
+
+.pathlab-reviews__mark--close {
+  bottom: -0.85rem;
+  right: -0.35rem;
+}
+
+.pathlab-reviews__quote {
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: clamp(1rem, 2.2vw, 1.15rem);
+  /* Thai stacks marks above and below, so it needs the extra leading. */
+  line-height: 1.9;
+  color: #fdf3e6;
+  text-wrap: pretty;
+}
+
+.pathlab-reviews__ig {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: clamp(0.95rem, 2vw, 1.05rem);
+  line-height: 1.5;
+  color: #fdf3e6;
+}
+
+.pathlab-reviews__by {
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: clamp(0.9rem, 2vw, 1rem);
+  line-height: 1.75;
+  color: rgba(253, 243, 230, 0.82);
+}
+
 /* ── Fields: the paths currently open ── */
 
 .pathlab-fields {

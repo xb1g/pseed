@@ -171,6 +171,33 @@ export const STATS_HEADING = "แต่การเริ่มต้นยา�
 
 export const OFFER_HEADING = "Pathlab เลยจะช่วยเริ่มต้นให้?";
 
+export const REVIEWS_HEADING = "Review จากรุ่นพี่";
+
+export interface AlumniReview {
+  /** The quote itself, verbatim as sent by the alumnus. */
+  quote: string;
+  /** Instagram handle, shown as written. */
+  ig: string;
+  /** Who is speaking — school year and faculty. */
+  by: string;
+}
+
+/** "Review จากรุ่นพี่" — alumni comments. More are added as they come in. */
+export const REVIEWS: AlumniReview[] = [
+  {
+    quote:
+      "ถ้าอยากแลของหรอย ๆ อยากเรียน Tech แบบเข้าใจง่าย ๆ แนะนำให้มาแล Techseed กันตะพี่บ่าวทั้งหลาย เขาสอนดีนิ อธิบายเข้าใจง่าย",
+    ig: "IG:victorchenspec",
+    by: "รุ่นพี่บางมด วิศวะกรรมระบบปัญญาประดิษฐ์",
+  },
+  {
+    quote:
+      "มีอะไรสงสัยก็ช่วยกันเต็มที่ ไม่ปล่อยให้เรานั่งงงอยู่คนเดียว ใครกำลังหาที่เรียน Tech ดี ๆ ลองมาแล Techseed กันหล่าว",
+    ig: "IG:victorchenspec",
+    by: "รุ่นพี่บางมด วิศวะกรรมระบบปัญญาประดิษฐ์",
+  },
+];
+
 export const FIELDS_HEADING = "สายที่เปิดในตอนนี้";
 
 export const PRICE_HEADING = "เลือกทางเริ่มต้น";
@@ -272,13 +299,26 @@ export const FIELDS: FieldCard[] = [
     src: "/pathlab/field-medical.webp",
     alt: "หูฟังแพทย์วางบนสมุดบันทึก",
     label: "Medical",
-    comingSoon: true,
   },
   {
     src: "/pathlab/field-architect.webp",
     alt: "แบบแปลนสถาปัตยกรรม",
     label: "Architect",
-    comingSoon: true,
+  },
+  {
+    src: "/pathlab/field-commarts.webp",
+    alt: "ภาพประกอบการออกแบบสีสันสดใส",
+    label: "นิเทศ",
+  },
+  {
+    src: "/pathlab/field-civil.webp",
+    alt: "วิศวะกำลังสำรวจหน้างานก่อสร้าง",
+    label: "วิศวะโยธา",
+  },
+  {
+    src: "/pathlab/field-graphic.webp",
+    alt: "งานออกแบบกราฟิกพื้นหลังสีเหลือง",
+    label: "กราฟิกและแอนิเมชั่น",
   },
   {
     label: "หากไม่มีสายที่สนใจทัก IG\nพวกเรามาได้เลยนะ",
