@@ -25,6 +25,7 @@ export async function replyToLead(conversationId: string, body: string) {
   }
 
   revalidatePath("/admin/dm-leads");
+  revalidatePath(`/admin/dm-leads/${conversationId}`);
   return { ok: true, error: null };
 }
 

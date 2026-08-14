@@ -1,13 +1,11 @@
 import { notFound } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getConversationWithMessages } from "@/lib/supabase/dm-leads";
 import { DmLeadManageBar } from "@/components/admin/DmLeadManageBar";
-import { DmLeadReplyForm } from "@/components/admin/DmLeadReplyForm";
 import { DmLeadTagsEditor } from "@/components/admin/DmLeadTagsEditor";
 import { LeadNeedsSummary } from "@/components/admin/LeadNeedsSummary";
 import { LeadTagBadges } from "@/components/admin/LeadTagBadges";
-import { DmMessageBubble } from "@/components/admin/DmMessageBubble";
+import { DmLeadConversation } from "@/components/admin/DmLeadConversation";
 
 export const dynamic = "force-dynamic";
 
@@ -48,15 +46,7 @@ export default async function DmLeadDetailPage({
         </div>
       </div>
 
-      <Card>
-        <CardContent className="space-y-3 pt-6">
-          {conversation.dm_messages.map((message) => (
-            <DmMessageBubble key={message.id} message={message} />
-          ))}
-        </CardContent>
-      </Card>
-
-      <DmLeadReplyForm conversation={conversation} />
+      <DmLeadConversation conversation={conversation} />
     </div>
   );
 }
