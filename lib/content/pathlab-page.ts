@@ -208,22 +208,20 @@ export const PROOF_PROJECTS: ProofProject[] = [
 
 export const JOURNEY = {
   heading: "Learning journey เป็นยังไง",
-  body: "เดินเป็นวัน ๆ บนแผนที่ แต่ละวันมีโจทย์จริง Learn + Do แล้วไปต่อวันที่ถัดไป",
+  body: "นี่คือแผนที่จริงจาก PathLab ที่นักเรียนกำลังเดินอยู่ตอนนี้ ลาก ซูม แล้วแตะแต่ละจุดดูได้เลยว่าแต่ละก้าวทำอะไร",
   src: "/pathlab/pathlabmap.png",
   alt: "หน้าจอ Pathlab learning journey แสดงแผนที่โปรเจกต์และรายละเอียดกิจกรรมของนักเรียน",
 } as const;
 
 /**
- * Labels for the interactive journey map. The islands are the real five-day
- * details of the paths currently open (FIELDS with `detail`), so the preview
- * can never drift from what the field cards promise.
+ * Labels for the live journey map. The map itself is a real published
+ * PathLab fetched from /api/maps/public-preview, so the preview can never
+ * drift from the product.
  */
 export const JOURNEY_MAP = {
-  hint: "ลากเล่นได้เลย แตะเกาะดูหน่อยว่าวันนั้นทำอะไร",
-  dayPrefix: "วันที่",
-  getsLabel: "ของที่ได้กลับบ้าน",
-  fieldsLabel: "เลือกสายที่อยากดู",
-  daysLabel: "เลือกวัน",
+  mapLabel: "แผนที่จริง",
+  hint: "ลากเล่นได้เลย แตะแต่ละจุดว่าก้าวนั้นทำอะไร",
+  ctaLabel: "ลองเดินแผนที่นี้จริง ๆ →",
 } as const;
 
 export const STATS_HEADING = "แต่การเริ่มต้นยากสุดเสมอ";
@@ -343,6 +341,7 @@ export const NOTES = {
   stats: "คนที่เริ่ม ม.5 ไม่ได้เก่งกว่า แค่เริ่มก่อน",
   offer: "กลุ่มละ 4 คนเท่านั้น mentor อยู่ใกล้จริง",
   proof: "ทุกคนเริ่มจากไม่มีพอร์ตเหมือนกัน",
+  journey: "แผนที่จริงที่น้อง ๆ ใช้อยู่ตอนนี้เลย",
   reviews: "รุ่นพี่เขียนเองทุกคน ไม่ได้จ้างนะ",
   price: "ลองอันฟรีก่อนได้ ค่อยตัดสินใจทีหลัง",
   contact: "ทักมาเล่น ๆ ก่อนก็ได้ ยังไม่ต้องสมัคร",
