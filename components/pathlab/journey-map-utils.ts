@@ -1,5 +1,3 @@
-import type { Edge, Node } from "@xyflow/react";
-
 /** Response shape of GET /api/maps/public-preview/:id. */
 export interface JourneyPreviewNode {
   id: string;
@@ -22,47 +20,41 @@ export interface JourneyPreview {
   edges: JourneyPreviewEdge[];
 }
 
-/**
- * Fallback trail for nodes without a stored canvas position: a gentle
- * left/right wander walking downward, echoing the real viewer's trailMode.
- */
-const FALLBACK_GAP_X = 180;
-const FALLBACK_STEP_Y = 140;
+export interface TrailStop {
+  id: string;
+  title: string;
+  spriteUrl: string; // never null; fallback applied
+  snippet: string | null;
+  xPct: number; // 18 | 50 | 82 cycling
+  row: number; // 0-based row index
+}
 
-export function toFlowNodes(
-  preview: JourneyPreview,
-  selectedId: string | null
-): Node[] {
+export const TRAIL_X_PCT = [18, 50, 82, 50] as const;
+export const TRAIL_ROW_PX = 120;
+export const FALLBACK_SPRITE = "/islands/crystal.png";
+
+/**
+ * Lay the preview's nodes out as a vertical zigzag trail: one 120px row per
+ * node, wandering left/center/right so the marketing page shows the map's
+ * shape without any canvas chrome.
+ */
+export function toTrailStops(preview: JourneyPreview): TrailStop[] {
   return preview.nodes.map((node, i) => ({
     id: node.id,
-    type: "journeyGame",
-    position: node.position ?? {
-      x: (i % 2) * FALLBACK_GAP_X,
-      y: i * FALLBACK_STEP_Y,
-    },
-    draggable: false,
-    data: {
-      id: node.id,
-      title: node.title,
-      node_type: node.nodeType,
-      sprite_url: node.spriteUrl,
-      snippet: node.snippet,
-      selected: node.id === selectedId,
-    },
-    /* GameNode paints its own card; the React Flow wrapper stays invisible. */
-    style: { backgroundColor: "transparent", border: "none", padding: 0 },
+    title: node.title,
+    spriteUrl: node.spriteUrl ?? FALLBACK_SPRITE,
+    snippet: node.snippet,
+    xPct: TRAIL_X_PCT[i % TRAIL_X_PCT.length],
+    row: i,
   }));
 }
 
-export function toFlowEdges(preview: JourneyPreview): Edge[] {
-  return preview.edges.map((edge) => ({
-    id: edge.id,
-    source: edge.source,
-    target: edge.target,
-    style: {
-      stroke: "rgba(196, 62, 29, 0.4)",
-      strokeWidth: 2,
-      strokeDasharray: "7 7",
-    },
-  }));
+/** Smooth dashed connector through stop centers, in viewBox units (100 wide, 12 per row). */
+export function trailPathD(stops: TrailStop[]): string {
+  if (stops.length < 2) return "";
+  const pts = stops.map((s) => ({ x: s.xPct, y: s.row * 12 + 6 }));
+  return pts.reduce(
+    (d, p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `${d} L ${p.x} ${p.y}`),
+    ""
+  );
 }

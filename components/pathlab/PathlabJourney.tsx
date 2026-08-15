@@ -5,14 +5,13 @@ import Image from "next/image";
 import { JOURNEY } from "@/lib/content/pathlab-page";
 
 /**
- * Shows what a Pathlab learning journey looks like — now as the real thing:
- * an interactive island map of each open path's five days, instead of a
- * screenshot of it.
+ * Shows what a Pathlab learning journey looks like: a live preview of a real
+ * learning map, fetched from /api/maps/public-preview and rendered as a
+ * lightweight zigzag island trail instead of a static screenshot.
  *
- * The map is React Flow, which is far too heavy for the landing bundle, so
- * it loads client-only and the old screenshot stands in while the chunk
- * arrives (and whenever the chunk fails, the visitor still sees something
- * truthful).
+ * The map loads client-only so the landing bundle stays light; the old
+ * screenshot stands in while the chunk arrives (and whenever the fetch
+ * fails, the visitor still sees something truthful).
  */
 const PathlabJourneyMap = dynamic(() => import("./PathlabJourneyMap"), {
   ssr: false,

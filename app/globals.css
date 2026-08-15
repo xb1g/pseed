@@ -10084,6 +10084,60 @@ summary:focus-visible .radar-expand-indicator {
   text-underline-offset: 3px;
 }
 
+/* Zigzag trail variant: plain-DOM live map, no canvas chrome. */
+.pathlab-journey-map__trail {
+  position: relative;
+  margin: 0 auto;
+  max-width: 26rem;
+}
+
+.pathlab-journey-map__trail-path {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.pathlab-journey-map__stop {
+  position: absolute;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: 7.5rem;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 999px;
+  transition: filter 160ms ease;
+}
+
+.pathlab-journey-map__stop.is-selected {
+  filter: drop-shadow(0 0 14px rgba(196, 62, 29, 0.55));
+}
+
+.pathlab-journey-map__stop-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.pathlab-journey-map__map-chip {
+  display: inline-block;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(196, 62, 29, 0.12);
+  color: #c43e1d;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 /* ── Journey islands (React Flow custom node) ── */
 
 /* The node box is exactly the sprite; labels hang below so edges anchor at

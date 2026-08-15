@@ -1,7 +1,9 @@
 import {
-  toFlowEdges,
-  toFlowNodes,
+  FALLBACK_SPRITE,
+  toTrailStops,
+  trailPathD,
   type JourneyPreview,
+  type TrailStop,
 } from "@/components/pathlab/journey-map-utils";
 
 const preview: JourneyPreview = {
@@ -31,6 +33,14 @@ const preview: JourneyPreview = {
       position: null,
       snippet: null,
     },
+    {
+      id: "d",
+      title: "Delta",
+      nodeType: "learning",
+      spriteUrl: "/sprites/d.png",
+      position: null,
+      snippet: "fourth",
+    },
   ],
   edges: [
     { id: "e1", source: "a", target: "b" },
@@ -38,30 +48,54 @@ const preview: JourneyPreview = {
   ],
 };
 
-it("keeps stored positions and falls back to a wandering trail", () => {
-  const nodes = toFlowNodes(preview, null);
-  expect(nodes[0].position).toEqual({ x: 10, y: 20 });
-  // Index 1: right lane; index 2: left lane, one step lower.
-  expect(nodes[1].position).toEqual({ x: 180, y: 140 });
-  expect(nodes[2].position).toEqual({ x: 0, y: 280 });
-  expect(nodes.every((n) => n.draggable === false)).toBe(true);
-});
+describe("toTrailStops", () => {
+  it("cycles xPct 18, 50, 82 and restarts at 50 on the 4th node", () => {
+    const stops = toTrailStops(preview);
+    expect(stops.map((s) => s.xPct)).toEqual([18, 50, 82, 50]);
+  });
 
-it("marks only the selected node and shapes data for GameNode", () => {
-  const nodes = toFlowNodes(preview, "b");
-  expect(nodes.map((n) => n.data.selected)).toEqual([false, true, false]);
-  expect(nodes[0].data).toMatchObject({
-    id: "a",
-    title: "Alpha",
-    node_type: "learning",
-    sprite_url: "/sprites/a.png",
-    snippet: "first",
+  it("assigns consecutive 0-based rows", () => {
+    const stops = toTrailStops(preview);
+    expect(stops.map((s) => s.row)).toEqual([0, 1, 2, 3]);
+  });
+
+  it("falls back to the crystal sprite when spriteUrl is null", () => {
+    const stops = toTrailStops(preview);
+    expect(stops[1].spriteUrl).toBe(FALLBACK_SPRITE);
+    expect(stops[0].spriteUrl).toBe("/sprites/a.png");
+  });
+
+  it("passes snippet through untouched", () => {
+    const stops = toTrailStops(preview);
+    expect(stops.map((s) => s.snippet)).toEqual([
+      "first",
+      null,
+      null,
+      "fourth",
+    ]);
   });
 });
 
-it("maps edges with the dashed journey style", () => {
-  const edges = toFlowEdges(preview);
-  expect(edges).toHaveLength(2);
-  expect(edges[0]).toMatchObject({ id: "e1", source: "a", target: "b" });
-  expect(edges[0].style).toMatchObject({ strokeDasharray: "7 7" });
+describe("trailPathD", () => {
+  it("returns an empty path for zero or one stop", () => {
+    expect(trailPathD([])).toBe("");
+    const single: TrailStop[] = [
+      {
+        id: "a",
+        title: "Alpha",
+        spriteUrl: "/sprites/a.png",
+        snippet: null,
+        xPct: 18,
+        row: 0,
+      },
+    ];
+    expect(trailPathD(single)).toBe("");
+  });
+
+  it("walks from the first stop centre to the next row", () => {
+    const stops = toTrailStops(preview).slice(0, 2);
+    const d = trailPathD(stops);
+    expect(d.startsWith("M 18 6")).toBe(true);
+    expect(d).toContain("L 50 18");
+  });
 });

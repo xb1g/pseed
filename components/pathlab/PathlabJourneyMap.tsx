@@ -4,71 +4,39 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  Background,
-  Controls,
-  ReactFlow,
-  ReactFlowProvider,
-  type NodeProps,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import { GameNode } from "@/components/map/MapViewer/components/GameNode";
-import {
   JOURNEY,
   JOURNEY_MAP,
 } from "@/lib/content/pathlab-page";
 import {
-  toFlowEdges,
-  toFlowNodes,
+  toTrailStops,
+  trailPathD,
+  TRAIL_ROW_PX,
   type JourneyPreview,
 } from "@/components/pathlab/journey-map-utils";
 
 /**
  * "Learning journey เป็นยังไง": a live, read-only preview of a real PathLab
- * map (the same GameNode the actual map viewer renders), fetched from
- * /api/maps/public-preview so it always matches the product.
+ * map fetched from /api/maps/public-preview, rendered as a plain-DOM zigzag
+ * trail of island sprites so it always matches the product without any
+ * React Flow chrome.
  *
- * Loaded via next/dynamic (ssr: false) from PathlabJourney: React Flow is
- * heavy and this section is below the fold, so it stays out of the landing
- * bundle and the static screenshot shows while the chunk loads. The same
- * screenshot covers the in-component loading and error states.
+ * Loaded via next/dynamic (ssr: false) from PathlabJourney: this section is
+ * below the fold, so it stays out of the landing bundle and the static
+ * screenshot shows while the chunk loads. The same screenshot covers the
+ * in-component loading and error states.
  */
 
 const DEMO_MAP_ID = "00000000-0000-0000-0000-000000000020";
 
-function JourneyGameNode({ data }: NodeProps) {
-  return (
-    <div
-      className={`pathlab-journey-map__game-node${
-        data.selected ? " is-selected" : ""
-      }`}
-    >
-      <GameNode
-        data={data as never}
-        selected={false}
-        isUnlocked={true}
-        isCompleted={false}
-        /* GameNodeProps types this non-null; the badge it drives only renders
-           when isTeamMap is true, so the value is never shown here. */
-        requirement="single"
-        isTeamMap={false}
-        isInstructorOrTA={false}
-        allSubmissions={[]}
-      />
-    </div>
-  );
-}
-
-/* Defined once at module scope: a new object per render would remount every
-   node on each selection change. */
-const nodeTypes = { journeyGame: JourneyGameNode };
+const STOP_SPRITE_PX = 64;
 
 function ScreenshotFallback() {
   return (
     <Image
       src={JOURNEY.src}
       alt={JOURNEY.alt}
-      width={1200}
-      height={800}
+      width={2538}
+      height={1342}
       className="pathlab-journey-map__screenshot"
     />
   );
@@ -98,14 +66,11 @@ export default function PathlabJourneyMap() {
     };
   }, []);
 
-  const nodes = useMemo(
-    () => (preview ? toFlowNodes(preview, selectedId) : []),
-    [preview, selectedId]
-  );
-  const edges = useMemo(
-    () => (preview ? toFlowEdges(preview) : []),
+  const stops = useMemo(
+    () => (preview ? toTrailStops(preview) : []),
     [preview]
   );
+  const pathD = useMemo(() => trailPathD(stops), [stops]);
 
   if (failed) {
     return (
@@ -127,36 +92,69 @@ export default function PathlabJourneyMap() {
     );
   }
 
-  const selected = preview.nodes.find((n) => n.id === selectedId) ?? null;
+  const selected = stops.find((s) => s.id === selectedId) ?? null;
 
   return (
     <div className="pathlab-journey-map">
       <p className="pathlab-journey-map__map-title">
-        <span className="pathlab-note">{JOURNEY_MAP.mapLabel}</span>{" "}
+        <span className="pathlab-journey-map__map-chip">
+          {JOURNEY_MAP.mapLabel}
+        </span>{" "}
         {preview.map.title}
       </p>
 
-      <div className="pathlab-journey-map__canvas">
-        <ReactFlowProvider>
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            nodeTypes={nodeTypes}
-            fitView
-            fitViewOptions={{ padding: 0.28, maxZoom: 1 }}
-            minZoom={0.45}
-            maxZoom={1.5}
-            nodesDraggable={false}
-            nodesConnectable={false}
-            zoomOnScroll={false}
-            zoomOnPinch
-            panOnDrag
-            onNodeClick={(_, node) => setSelectedId(node.id)}
-          >
-            <Background gap={26} size={2} color="rgba(82, 71, 70, 0.14)" />
-            <Controls showInteractive={false} position="bottom-right" />
-          </ReactFlow>
-        </ReactFlowProvider>
+      <div
+        className="pathlab-journey-map__trail"
+        style={{ height: stops.length * TRAIL_ROW_PX }}
+      >
+        <svg
+          className="pathlab-journey-map__trail-path"
+          viewBox={`0 0 100 ${stops.length * 12}`}
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <path
+            d={pathD}
+            fill="none"
+            stroke="rgba(196, 62, 29, 0.4)"
+            strokeWidth={2}
+            strokeDasharray="7 7"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+        {stops.map((stop) => {
+          const isSelected = stop.id === selectedId;
+          return (
+            <button
+              key={stop.id}
+              type="button"
+              aria-pressed={isSelected}
+              className={`pathlab-journey-map__stop${
+                isSelected ? " is-selected" : ""
+              }`}
+              style={{
+                left: `${stop.xPct}%`,
+                /* Sprite centre lands on the row's midpoint, matching the
+                   connector path's stop centres (row * 12 + 6 viewBox). */
+                top:
+                  stop.row * TRAIL_ROW_PX +
+                  (TRAIL_ROW_PX - STOP_SPRITE_PX) / 2,
+              }}
+              onClick={() => setSelectedId(stop.id)}
+            >
+              <Image
+                src={stop.spriteUrl}
+                alt=""
+                width={STOP_SPRITE_PX}
+                height={STOP_SPRITE_PX}
+                className="pathlab-journey-map__stop-sprite"
+              />
+              <span className="pathlab-journey-map__stop-title">
+                {stop.title}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <p className="pathlab-journey-map__hint">

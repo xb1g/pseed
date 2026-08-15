@@ -82,9 +82,16 @@ export async function GET(
     }))
   );
 
-  return NextResponse.json({
-    map: { id: data.id, title: data.title, description: data.description },
-    nodes,
-    edges,
-  });
+  return NextResponse.json(
+    {
+      map: { id: data.id, title: data.title, description: data.description },
+      nodes,
+      edges,
+    },
+    {
+      headers: {
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+      },
+    }
+  );
 }
