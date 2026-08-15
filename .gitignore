@@ -55,22 +55,34 @@ coverage
 .agent/
 .agents/
 .augment/
+.antigravitycli/
 .claude/*
 !.claude/skills/
 .claude/skills/*
 !.claude/skills/radar-research/
+.cursor/
 .factory/
 .gstack/
-.impeccable/live/
+.impeccable/
 .jules/
 .kilocode/mcp.json
 .mcp.json
+.mission-readiness/
 .sisyphus/
 .superpowers/
 .superset/
 .trae/
 .vscode/settings.json
 .windsurf/
+
+# personal tooling state / scratch, not project source
+archived/
+examples/
+artifacts/
+test-genai*.js
+test.txt
+scratch.tsx
+request.json
 
 # Generated / binary files that shouldn't be in source control
 *.pdf
