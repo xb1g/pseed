@@ -101,6 +101,8 @@ export interface DmConversationWithMessages extends DmConversation {
  * Structurally a `DmConversation`, so it can be passed anywhere one is expected.
  */
 export interface DmConversationWithBucket extends DmConversation {
+  /** Derived from dm_messages, not stored on dm_conversations. */
+  last_inbound_message_at: string | null;
   bucket: DmLeadBucket;
   coverage: FieldCoverage;
 }

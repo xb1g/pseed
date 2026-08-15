@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/utils/supabase/admin";
 import type { MetaAttachmentType } from "@/lib/meta/graph";
+import type { MessagingWindowMode } from "@/lib/dm-leads/messaging-window";
 import {
   classifyBucket,
   getFieldCoverage,
@@ -420,7 +421,7 @@ export async function getDmLeadSignals(forceFresh = false): Promise<DmLeadSignal
   for (let offset = 0; ; offset += MESSAGE_PAGE_SIZE) {
     const { data, error } = await supabase
       .from("dm_messages")
-      .select("conversation_id, direction, body")
+      .select("conversation_id, direction, body, sent_at")
       .order("id", { ascending: true })
       .range(offset, offset + MESSAGE_PAGE_SIZE - 1);
 
@@ -458,9 +459,11 @@ function withBucket(
   conversation: DmConversation,
   signals: DmLeadSignalMap
 ): DmConversationWithBucket {
+  const conversationSignals = signalsFor(signals, conversation.id);
   return {
     ...conversation,
-    bucket: classifyBucket(conversation, signalsFor(signals, conversation.id)),
+    last_inbound_message_at: conversationSignals.lastInboundMessageAt,
+    bucket: classifyBucket(conversation, conversationSignals),
     coverage: getFieldCoverage(conversation.interests),
   };
 }
@@ -930,7 +933,7 @@ async function sendAndRecordOutboundMessage(
     last_message_direction: DmMessageDirection | null;
   },
   input: { text?: string; attachmentUrl?: string; attachmentType?: MetaAttachmentType },
-  windowOpen: boolean
+  windowMode: MessagingWindowMode
 ): Promise<{ sentAt: string }> {
   const sentAt = new Date().toISOString();
   const isAttachment = Boolean(input.attachmentUrl);
@@ -982,17 +985,24 @@ async function sendAndRecordOutboundMessage(
           conversation.platform,
           conversation.platform_user_id,
           input.attachmentUrl!,
-          attachmentType
+          attachmentType,
+          windowMode
         )
-      : await sendMetaMessage(conversation.platform, conversation.platform_user_id, input.text ?? "");
+      : await sendMetaMessage(
+          conversation.platform,
+          conversation.platform_user_id,
+          input.text ?? "",
+          windowMode
+        );
   } catch (error) {
     const rawMessage = error instanceof Error ? error.message : "unknown";
     // The exact Graph API wording for a window-closed rejection varies, so
-    // don't pattern-match it — we already know from our own pre-check
-    // whether the 24h window was open, which is a much clearer signal.
-    const finalMessage = windowOpen
-      ? rawMessage
-      : `เกิน 24 ชม. จากข้อความล่าสุดของน้อง Instagram จึงปฏิเสธการส่ง (${rawMessage.slice(0, 200)})`;
+    // don't pattern-match it — we already know from our own pre-check which
+    // window the thread is in, which is a much clearer signal.
+    const finalMessage =
+      windowMode === "closed"
+        ? `เกิน 7 วันจากข้อความล่าสุดของน้อง ส่งผ่านระบบไม่ได้แล้ว ตอบมือใน Instagram แทนได้ (${rawMessage.slice(0, 160)})`
+        : rawMessage;
 
     const { error: failedStateError } = await supabase
       .from("dm_messages")
@@ -1065,8 +1075,8 @@ export async function sendAdminReply(
     .order("sent_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  const { isWithinMessagingWindow } = await import("@/lib/dm-leads/messaging-window");
-  const windowOpen = isWithinMessagingWindow(lastInbound?.sent_at ?? null);
+  const { getMessagingWindowMode } = await import("@/lib/dm-leads/messaging-window");
+  const windowMode = getMessagingWindowMode(lastInbound?.sent_at ?? null);
 
   // Attachment and caption are sent as two separate Send API calls (the
   // platform doesn't support a combined media+text message), so two
@@ -1077,7 +1087,7 @@ export async function sendAdminReply(
       conversationId,
       conversation,
       { attachmentUrl, attachmentType },
-      windowOpen
+      windowMode
     );
     if (text?.trim()) {
       await sendAndRecordOutboundMessage(
@@ -1085,7 +1095,7 @@ export async function sendAdminReply(
         conversationId,
         { ...conversation, last_message_at: sentAt, last_message_direction: "outbound" },
         { text: text.trim() },
-        windowOpen
+        windowMode
       );
     }
   } else {
@@ -1094,7 +1104,7 @@ export async function sendAdminReply(
       conversationId,
       conversation,
       { text: text!.trim() },
-      windowOpen
+      windowMode
     );
   }
 
@@ -1130,6 +1140,17 @@ export async function sendLeadQuickReplies(
     throw new Error("Conversation not found");
   }
 
+  const { data: lastInbound } = await supabase
+    .from("dm_messages")
+    .select("sent_at")
+    .eq("conversation_id", conversationId)
+    .eq("direction", "inbound")
+    .order("sent_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const { getMessagingWindowMode } = await import("@/lib/dm-leads/messaging-window");
+  const windowMode = getMessagingWindowMode(lastInbound?.sent_at ?? null);
+
   const sentAt = new Date().toISOString();
   const { data: outboundMessage, error: insertError } = await supabase
     .from("dm_messages")
@@ -1163,7 +1184,8 @@ export async function sendLeadQuickReplies(
       conversation.platform,
       conversation.platform_user_id,
       text.trim(),
-      options
+      options,
+      windowMode
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "unknown";
@@ -1200,4 +1222,3 @@ export async function sendLeadQuickReplies(
 
   invalidateDmLeadCache();
 }
-

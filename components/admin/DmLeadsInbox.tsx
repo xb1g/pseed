@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { Bell, Flame, Inbox, Keyboard, Maximize2, Minimize2, RefreshCw, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { isWithinMessagingWindow } from "@/lib/dm-leads/messaging-window";
 import { contextFromConversation, getQuickReplies } from "@/lib/dm-leads/quick-replies";
+import { deriveSignalsFromMessages } from "@/lib/dm-leads/signals";
 import { getThread, syncLeadMessages, updateLead, type LeadMetaPatch } from "@/app/admin/dm-leads/actions";
 import { DmLeadDetailPane } from "@/components/admin/DmLeadDetailPane";
 import { DM_REPLY_TEXTAREA_ID } from "@/components/admin/DmLeadReplyForm";
@@ -14,7 +16,12 @@ import {
   followUpTomorrow,
   isFollowUpDue,
 } from "@/components/admin/DmLeadManageBar";
-import type { DmConversation, DmConversationWithMessages, DmLeadStage } from "@/types/dm-leads";
+import type {
+  DmConversation,
+  DmConversationWithBucket,
+  DmConversationWithMessages,
+  DmLeadStage,
+} from "@/types/dm-leads";
 
 const STAGE_LABEL: Record<DmLeadStage, string> = {
   unknown: "Unknown",
@@ -58,6 +65,33 @@ function Kbd({ children }: { children: React.ReactNode }) {
   );
 }
 
+function MessagingWindowBadge({ lastInboundMessageAt }: { lastInboundMessageAt: string | null }) {
+  const isOpen = isWithinMessagingWindow(lastInboundMessageAt);
+
+  return (
+    <Badge
+      variant="outline"
+      className={cn(
+        "gap-1 px-1.5 py-0 text-[10px]",
+        isOpen
+          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+          : "border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300"
+      )}
+      title={
+        isOpen
+          ? "ยังตอบได้ใน Meta 24-hour messaging window"
+          : "เกิน Meta 24-hour messaging window แล้ว"
+      }
+    >
+      <span
+        aria-hidden="true"
+        className={cn("h-1.5 w-1.5 rounded-full", isOpen ? "bg-emerald-500" : "bg-red-500")}
+      />
+      {isOpen ? "ตอบได้ <24h" : "เกิน 24h"}
+    </Badge>
+  );
+}
+
 /**
  * Split-pane DM inbox optimized for big-screen, keyboard-first triage:
  *   j/k or ↑/↓  move between leads
@@ -71,7 +105,7 @@ function Kbd({ children }: { children: React.ReactNode }) {
 const VIM_MODE_STORAGE_KEY = "dm-leads-vim-mode";
 const HALF_PAGE = 5;
 
-export function DmLeadsInbox({ conversations }: { conversations: DmConversation[] }) {
+export function DmLeadsInbox({ conversations }: { conversations: DmConversationWithBucket[] }) {
   const router = useRouter();
   const [items, setItems] = useState(conversations);
   const [selectedId, setSelectedId] = useState<string | null>(conversations[0]?.id ?? null);
@@ -80,6 +114,7 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversation[
   const [editorMode, setEditorMode] = useState<"normal" | "insert">("normal");
   const [fullscreen, setFullscreen] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [, refreshMessagingWindows] = useState(0);
   const pendingG = useRef(false);
   const threadCache = useRef(new Map<string, DmConversationWithMessages>());
 
@@ -89,9 +124,16 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversation[
       const res = await syncLeadMessages(conversationId);
       if (res.ok && res.conversation) {
         const updated = res.conversation;
+        const lastInboundMessageAt = deriveSignalsFromMessages(
+          updated.dm_messages
+        ).lastInboundMessageAt;
         threadCache.current.set(conversationId, updated);
         setItems((prev) =>
-          prev.map((c) => (c.id === conversationId ? { ...c, ...updated } : c))
+          prev.map((c) =>
+            c.id === conversationId
+              ? { ...c, ...updated, last_inbound_message_at: lastInboundMessageAt }
+              : c
+          )
         );
       }
     } catch (error) {
@@ -105,6 +147,12 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversation[
   // avoid a server/client hydration mismatch.
   useEffect(() => {
     if (localStorage.getItem(VIM_MODE_STORAGE_KEY) === "1") setVimModeState(true);
+  }, []);
+
+  // A thread can cross the 24-hour boundary while this triage view stays open.
+  useEffect(() => {
+    const timer = window.setInterval(() => refreshMessagingWindows((value) => value + 1), 60_000);
+    return () => window.clearInterval(timer);
   }, []);
 
   const setVimMode = (on: boolean) => {
@@ -470,6 +518,9 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversation[
                     <Badge variant={STAGE_VARIANT[c.stage]} className="px-1.5 py-0 text-[10px]">
                       {STAGE_LABEL[c.stage]}
                     </Badge>
+                    <MessagingWindowBadge
+                      lastInboundMessageAt={c.last_inbound_message_at}
+                    />
                     {c.lead_status !== "new" && (
                       <Badge
                         variant={c.lead_status === "converted" ? "default" : "outline"}

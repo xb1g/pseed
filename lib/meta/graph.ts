@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import type { MessagingWindowMode } from "@/lib/dm-leads/messaging-window";
 import type { DmPlatform } from "@/types/dm-leads";
 
 const GRAPH_API_VERSION = "v21.0";
@@ -37,13 +38,18 @@ export function verifyMetaSignature(rawBody: string, signatureHeader: string | n
 /**
  * Sends a text message to a lead via the Messenger Platform Send API.
  * Same endpoint shape for both Facebook Page and Instagram threads.
+ *
+ * Pass `windowMode` (from `getMessagingWindowMode`) when the thread may be
+ * older than 24h. Without it every send goes out as a standard RESPONSE and
+ * Meta rejects anything past the 24-hour window.
  */
 export async function sendMetaMessage(
   platform: DmPlatform,
   recipientPsid: string,
-  text: string
+  text: string,
+  windowMode: MessagingWindowMode = "standard"
 ): Promise<string> {
-  return sendMetaMessagePayload(platform, recipientPsid, { text });
+  return sendMetaMessagePayload(platform, recipientPsid, { text }, windowMode);
 }
 
 export type MetaAttachmentType = "image" | "video" | "audio" | "file";
@@ -59,11 +65,15 @@ export async function sendMetaAttachmentMessage(
   platform: DmPlatform,
   recipientPsid: string,
   url: string,
-  type: MetaAttachmentType
+  type: MetaAttachmentType,
+  windowMode: MessagingWindowMode = "standard"
 ): Promise<string> {
-  return sendMetaMessagePayload(platform, recipientPsid, {
-    attachment: { type, payload: { url, is_reusable: true } },
-  });
+  return sendMetaMessagePayload(
+    platform,
+    recipientPsid,
+    { attachment: { type, payload: { url, is_reusable: true } } },
+    windowMode
+  );
 }
 
 export interface MetaQuickReplyOption {
@@ -86,26 +96,51 @@ export async function sendMetaQuickReplies(
   platform: DmPlatform,
   recipientPsid: string,
   text: string,
-  options: MetaQuickReplyOption[]
+  options: MetaQuickReplyOption[],
+  windowMode: MessagingWindowMode = "standard"
 ): Promise<string> {
   if (options.length === 0) {
     throw new Error("sendMetaQuickReplies requires at least one option");
   }
-  return sendMetaMessagePayload(platform, recipientPsid, {
-    text,
-    quick_replies: options.slice(0, MAX_QUICK_REPLIES).map((o) => ({
-      content_type: "text",
-      title: o.title,
-      payload: o.payload,
-    })),
-  });
+  return sendMetaMessagePayload(
+    platform,
+    recipientPsid,
+    {
+      text,
+      quick_replies: options.slice(0, MAX_QUICK_REPLIES).map((o) => ({
+        content_type: "text",
+        title: o.title,
+        payload: o.payload,
+      })),
+    },
+    windowMode
+  );
+}
+
+/**
+ * Thrown instead of attempting a send Meta is guaranteed to reject, so the
+ * caller can show "this lead has to message first" rather than an opaque
+ * Graph API error code.
+ */
+export class MessagingWindowClosedError extends Error {
+  constructor() {
+    super(
+      "Messaging window closed: the lead has not messaged in over 7 days, so no Send API route is available. Reply by hand in the Instagram app, or wait for them to message first."
+    );
+    this.name = "MessagingWindowClosedError";
+  }
 }
 
 async function sendMetaMessagePayload(
   platform: DmPlatform,
   recipientPsid: string,
-  message: Record<string, unknown>
+  message: Record<string, unknown>,
+  windowMode: MessagingWindowMode = "standard"
 ): Promise<string> {
+  if (windowMode === "closed") {
+    throw new MessagingWindowClosedError();
+  }
+
   const accessToken = process.env.META_PAGE_ACCESS_TOKEN;
   if (!accessToken) {
     throw new Error("META_PAGE_ACCESS_TOKEN is not set");
@@ -113,13 +148,20 @@ async function sendMetaMessagePayload(
 
   const url = `${IG_GRAPH_HOST}/${GRAPH_API_VERSION}/me/messages?access_token=${encodeURIComponent(accessToken)}`;
 
+  // Past 24h, a plain RESPONSE is rejected. HUMAN_AGENT buys 7 days and is
+  // only valid because these sends are typed by a human in the admin inbox.
+  const tagging =
+    windowMode === "human_agent"
+      ? { messaging_type: "MESSAGE_TAG", tag: "HUMAN_AGENT" }
+      : { messaging_type: "RESPONSE" };
+
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       recipient: { id: recipientPsid },
       message,
-      messaging_type: "RESPONSE",
+      ...tagging,
     }),
   });
 

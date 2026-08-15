@@ -75,6 +75,8 @@ export type DmLeadBucket =
 export interface DmLeadSignals {
   /** Lead has sent at least one message. */
   hasInbound: boolean;
+  /** Most recent inbound message timestamp, used for Meta's reply window. */
+  lastInboundMessageAt: string | null;
   /** We sent a /pathlab link at any point. */
   pathlabLinkSent: boolean;
   /** A price appeared in the thread, from either side. */
@@ -85,6 +87,7 @@ export interface DmLeadSignals {
 
 export const EMPTY_SIGNALS: DmLeadSignals = {
   hasInbound: false,
+  lastInboundMessageAt: null,
   pathlabLinkSent: false,
   priceMentioned: false,
   offerMade: false,

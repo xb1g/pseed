@@ -15,6 +15,18 @@ export interface DmMessageSignalRow {
   conversation_id: string;
   direction: DmMessageDirection;
   body: string | null;
+  sent_at: string | null;
+}
+
+function latestTimestamp(
+  current: string | null,
+  candidate: string | null
+): string | null {
+  if (!candidate) return current;
+  const candidateTime = Date.parse(candidate);
+  if (Number.isNaN(candidateTime)) return current;
+  if (!current || candidateTime > Date.parse(current)) return candidate;
+  return current;
 }
 
 /**
@@ -61,7 +73,13 @@ export function reduceMessagesToSignals(
     const body = row.body ?? "";
     const outbound = row.direction === "outbound";
 
-    if (row.direction === "inbound") current.hasInbound = true;
+    if (row.direction === "inbound") {
+      current.hasInbound = true;
+      current.lastInboundMessageAt = latestTimestamp(
+        current.lastInboundMessageAt,
+        row.sent_at
+      );
+    }
     if (outbound && mentionsPathlabLink(body)) current.pathlabLinkSent = true;
     // Price counts from either side — the lead asking "เท่าไหร่ครับ" means the
     // number is on the table, which is what the "hot" bucket is about.
@@ -92,7 +110,7 @@ export function signalsFor(
  * the bulk path, so a lead's bucket cannot differ between list and detail.
  */
 export function deriveSignalsFromMessages(
-  messages: Pick<DmMessageSignalRow, "direction" | "body">[] | undefined
+  messages: Pick<DmMessageSignalRow, "direction" | "body" | "sent_at">[] | undefined
 ): DmLeadSignals {
   if (!messages?.length) return EMPTY_SIGNALS;
 
