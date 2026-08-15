@@ -4,22 +4,24 @@ Documentation index. Files are organized by purpose, not by date.
 
 ---
 
-## 📁 `project/` — Product & Project Definition
+## Core Docs (this directory)
 
 | File | Purpose |
 |------|---------|
-| [PRODUCT.md](project/PRODUCT.md) | Product purpose, user segments, JTBD |
-| [FEATURES.md](project/FEATURES.md) | Short summary of all products and features |
-| [PROJECTSEED-SAFEGUARDING.md](project/PROJECTSEED-SAFEGUARDING.md) | Required conduct, communication, escalation, and launch gate for ProjectSeed mentors working with minors |
-| [VALIDATION_MASTER.md](project/VALIDATION_MASTER.md) | Master validation evidence, hypotheses, and next tests before business model canvas |
-| [BUSINESS_MODEL_CANVAS.md](project/BUSINESS_MODEL_CANVAS.md) | Business Model Canvas v0.1 with Ikigai, yearly subscription, and alumni model hypotheses |
+| [ui-design-system.md](ui-design-system.md) | The Dawn/Dusk design system spec — **read before touching UI** |
+| [map_system_overview.md](map_system_overview.md) | Learning Map system overview |
+| [map_creation_guideline.md](map_creation_guideline.md) | How to author learning maps |
+| [pathlab-design-doctrine.md](pathlab-design-doctrine.md) | PathLab design principles |
+| [npc-conversation-json-format.md](npc-conversation-json-format.md) | NPC conversation content format |
+| [google-oauth-setup-guide.md](google-oauth-setup-guide.md) | Google OAuth setup |
+| [setup-gemini-api.md](setup-gemini-api.md) | Gemini API setup |
 
 ## 📁 `architecture/` — Design, Schema & System Architecture
 
 | File | Purpose |
 |------|---------|
 | [DESIGN.md](architecture/DESIGN.md) | Design system: colors, typography, spacing, tokens |
-| [system-prompt.md](architecture/system-prompt.md) | Supabase Auth SSR implementation rules (AI guidance) |
+| [system-prompt.md](architecture/system-prompt.md) | Supabase Auth SSR implementation rules |
 | [gemini.md](architecture/gemini.md) | Supabase data access patterns & architecture standards |
 | [map-db.md](architecture/map-db.md) | Learning Map database schema |
 | [map-plan.md](architecture/map-plan.md) | Learning Map feature plan & core concepts |
@@ -83,9 +85,18 @@ Documentation index. Files are organized by purpose, not by date.
 
 ---
 
+## Moved out
+
+Product strategy, business model, validation, Founder Institute, and dated
+design/plan docs now live in the private
+[passionseed/internal](https://github.com/passionseed/internal) repo.
+The public safeguarding policy is at
+[project/PROJECTSEED-SAFEGUARDING.md](project/PROJECTSEED-SAFEGUARDING.md)
+(rendered live at [/projectseed/safeguarding](https://www.passionseed.org/projectseed/safeguarding)).
+
 ## Files in Repository Root
 
-These files stay in the repository root because they are read by AI coding tools (Codex, Claude Code) that look for them at the project root:
+These files stay in the repository root because they are read by AI coding tools that look for them at the project root:
 
 - `AGENTS.md` — Codex AI guidance
 - `CLAUDE.md` — Claude Code AI guidance
