@@ -19,7 +19,16 @@ interface DocPageProps {
 
 function getDocContent(slug: string[]): { content: string; title: string } | null {
   const docsDir = path.join(process.cwd(), "docs", "fi");
-  const filePath = path.join(docsDir, ...slug) + ".md";
+
+  // Reject path traversal: no ".." segments, and the resolved path must stay
+  // inside docsDir. Next can pass encoded "%2E%2E" through to the catch-all.
+  if (slug.some((seg) => seg === ".." || seg.includes("..") || seg.includes("/") || seg.includes("\\"))) {
+    return null;
+  }
+  const filePath = path.resolve(docsDir, ...slug) + ".md";
+  if (!filePath.startsWith(path.resolve(docsDir) + path.sep)) {
+    return null;
+  }
 
   try {
     const content = fs.readFileSync(filePath, "utf-8");

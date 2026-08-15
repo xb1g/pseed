@@ -1,33 +1,26 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
+import { requireAdmin } from "@/lib/security/route-guards";
 
 /**
  * Test endpoint to verify Discord bot configuration
  * GET /api/test-discord?discord_uid=YOUR_DISCORD_UID
+ *
+ * Admin-only: this route can send DMs as the site bot, so it must not be
+ * reachable by arbitrary authenticated users.
  */
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const testDiscordUid = searchParams.get("discord_uid");
 
-    // Check if user is authenticated
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const admin = await requireAdmin();
+    if (!admin.ok) return admin.response;
 
-    if (!user) {
-        return NextResponse.json(
-            { error: "Not authenticated" },
-            { status: 401 }
-        );
-    }
-
-    // Check bot token configuration
+    // Check bot token configuration (do not disclose token length/prefix).
     const botToken = process.env.DISCORD_BOT_TOKEN;
     const checks = {
-        botTokenExists: !!botToken,
-        botTokenLength: botToken ? botToken.length : 0,
-        botTokenPrefix: botToken ? botToken.substring(0, 10) + "..." : "NOT SET",
+        botTokenConfigured: !!botToken,
         testDiscordUidProvided: !!testDiscordUid,
-        authenticatedUser: user.email,
+        authenticatedUser: admin.value.userId,
     };
 
     console.log("[Discord Test] Configuration check:", checks);
@@ -70,7 +63,7 @@ export async function GET(request: Request) {
             const testMessage = `🧪 **Discord Bot Test**\n\n` +
                 `This is a test message from your PassionSeed application.\n` +
                 `If you received this, the Discord bot is configured correctly!\n\n` +
-                `Tested by: ${user.email}\n` +
+                `Tested by admin: ${admin.value.userId}\n` +
                 `Time: ${new Date().toLocaleString()}`;
 
             const sendMessageResponse = await fetch(`https://discord.com/api/v10/channels/${dmChannel.id}/messages`, {

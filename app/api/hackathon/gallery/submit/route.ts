@@ -9,8 +9,11 @@ const ALLOWED_TAG_SET = new Set(ALLOWED_TAGS as unknown as string[]);
 
 function isValidUrl(value: string): boolean {
   try {
-    new URL(value);
-    return true;
+    const url = new URL(value);
+    // Only allow web-safe schemes. javascript:, data:, vbscript: etc. parse
+    // fine with `new URL()` but execute/navigate dangerously when rendered as
+    // an <a href> or <img src>.
+    return url.protocol === "https:" || url.protocol === "http:";
   } catch {
     return false;
   }

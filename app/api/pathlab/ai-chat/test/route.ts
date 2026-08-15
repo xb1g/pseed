@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 
-const AI_API_URL = 'https://ai.passionseed.org/v1/chat/completions';
-const AI_API_KEY = 'REMOVED_API_KEY';
+const AI_API_URL = process.env.AI_GATEWAY_URL ?? 'https://ai.passionseed.org/v1/chat/completions';
+// Credential moved to an env var. The previously hardcoded key is in git
+// history on a public repo and must be treated as compromised — rotate it.
+const AI_API_KEY = process.env.AI_GATEWAY_API_KEY;
 
 /**
  * POST /api/pathlab/ai-chat/test
@@ -10,6 +12,13 @@ const AI_API_KEY = 'REMOVED_API_KEY';
  */
 export async function POST(request: NextRequest) {
   try {
+    if (!AI_API_KEY) {
+      return NextResponse.json(
+        { error: 'AI gateway key not configured' },
+        { status: 500 }
+      );
+    }
+
     const supabase = await createClient();
 
     const {
