@@ -56,10 +56,7 @@ coverage
 .agents/
 .augment/
 .antigravitycli/
-.claude/*
-!.claude/skills/
-.claude/skills/*
-!.claude/skills/radar-research/
+.claude/
 .cursor/
 .factory/
 .gstack/
