@@ -20,7 +20,10 @@ function firstSnippet(content: any[] | null): string | null {
     (c) => c.content_type === "text" && c.content_body
   )?.content_body;
   if (!text) return null;
-  const clean = String(text).replace(/\s+/g, " ").trim();
+  const clean = String(text)
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
   return clean.length > 140 ? `${clean.slice(0, 140)}…` : clean;
 }
 

@@ -35,7 +35,7 @@ const dbMap = {
       metadata: { position: { x: 0, y: 0 } },
       node_paths_source: [{ id: "path-1", destination_node_id: "node-2" }],
       node_content: [
-        { content_type: "text", content_body: "  สัมภาษณ์\nคนจริง 3 คน  " },
+        { content_type: "text", content_body: "  <p>สัมภาษณ์</p>\n<strong>คนจริง 3 คน</strong>  " },
       ],
     },
     {
