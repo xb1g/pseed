@@ -67,8 +67,9 @@ export default function InterestDialog({
   // Contact panel shown after success (direct) or always (contact mode)
   const ContactPanel = () => (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-      {/* Demo link — direct mode */}
-      {testMode === "direct" && demoUrl && (
+      {/* Demo link — direct mode. Render only http(s) URLs so a stored
+          javascript:/data: value can never execute in this origin. */}
+      {testMode === "direct" && demoUrl && /^https?:\/\//i.test(demoUrl) && (
         <a
           href={demoUrl}
           target="_blank"
