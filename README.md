@@ -1,142 +1,78 @@
-# PassionSeed :fire:
+<p align="center">
+  <img src="public/passionseed-logo.svg" alt="PassionSeed" width="120" />
+</p>
 
-> Discover Your Passion, Ignite Your Potential
+<h1 align="center">PassionSeed</h1>
 
-PassionSeed is a Next.js learning platform where students explore career paths through immersive, real-world challenges designed by actual professionals. Features include interactive learning maps, AI-guided expert interviews, hackathon simulations, team collaboration, and classroom management.
+<p align="center">
+  <strong>Discover your passion. Ignite your potential.</strong>
+</p>
 
-## Tech Stack
+<p align="center">
+  <a href="https://www.passionseed.org">Website</a> ·
+  <a href="https://www.passionseed.org/hackathon/gallery">Hackathon Gallery</a> ·
+  <a href="docs/README.md">Docs</a>
+</p>
 
-- **Framework**: [Next.js 15](https://nextjs.org/) (App Router, Turbopack)
-- **Language**: TypeScript
-- **Styling**: TailwindCSS + [Shadcn/ui](https://ui.shadcn.com/)
-- **Database**: [Supabase](https://supabase.com/) (PostgreSQL)
-- **Auth**: Supabase Auth with SSR cookie sessions
-- **Maps**: [React Flow](https://reactflow.dev/) for interactive learning map visualization
-- **AI**: Vercel AI SDK (OpenAI, Anthropic, Google, DeepSeek)
-- **Deployment**: Vercel
+---
 
-## Quick Start
+Most career guidance tells students what jobs exist. PassionSeed lets them **try the work**.
 
-### Prerequisites
+Students don't pick a career from a list — they spend days inside simulated ones. They interview professionals (AI-facilitated, real humans behind the curriculum), build actual products in 5-day hackathons, and figure out what "I want to be a data scientist" actually feels like before they commit years to it.
 
-- Node.js 20+
-- [pnpm](https://pnpm.io/)
-- [Supabase CLI](https://supabase.com/docs/guides/cli)
+Built in Thailand, for Thai students first. Bilingual throughout.
 
-### Installation
+## What's inside
+
+**Learning Maps** — Node-based learning paths with real content and assessments. Students unlock the next node by finishing the last, like a skill tree for a career.
+
+**Hackathons** — Our flagship. 5-day team events where students build health-tech products that real judges score. Past teams shipped air-quality monitors, preventive-health tools, and more. [See what they built →](https://www.passionseed.org/hackathon/gallery)
+
+**Expert Interviews** — Structured career conversations with professionals, guided by AI so every student gets a deep interview, not whoever raised their hand.
+
+**Direction Finder** — An AI recommender that matches students to paths based on how they actually work, not a personality quiz.
+
+**Classrooms** — Instructors get join codes, team management, and progress dashboards. Students get structure without babysitting.
+
+## The design system
+
+Students and experts see different skies:
+
+- **Dawn** — student-facing. Cool blues warming into gold. Optimistic, exploratory.
+- **Dusk** — expert-facing. Deep violets cooling into amber. Warm, authoritative.
+
+Both share the same DNA: fluid, luminous components that respond like living things. Full spec in [docs/ui-design-system.md](docs/ui-design-system.md).
+
+## Running it locally
+
+You'll need Node.js 20+, [pnpm](https://pnpm.io/), and the [Supabase CLI](https://supabase.com/docs/guides/cli).
 
 ```bash
-# Install dependencies
-pnpm install
-
-# Set up local secrets (creates .env.local)
-./scripts/setup-local-secrets.sh
-
-# Start Supabase locally
-npx supabase start
-
-# Start the dev server (with Turbopack)
-pnpm dev
+pnpm install                      # dependencies
+./scripts/setup-local-secrets.sh  # creates .env.local
+npx supabase start                # local database
+pnpm dev                          # dev server on :3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
-
-### Other Commands
-
-| Command | Description |
-|---------|-------------|
+| Command | What it does |
+|---|---|
 | `pnpm build` | Production build |
-| `pnpm build:analyze` | Build with bundle analyzer |
-| `pnpm lint` | Run ESLint |
-| `pnpm test` | Run Jest tests |
-| `pnpm test:watch` | Run Jest in watch mode |
-| `pnpm optimize:images` | Convert PNGs to WebP |
+| `pnpm test` | Jest tests |
+| `pnpm lint` | ESLint |
 
----
+## Stack
 
-## Architecture
+Next.js 15 (App Router) · TypeScript · TailwindCSS + shadcn/ui · Supabase (Postgres, Auth, RLS) · React Flow · Vercel AI SDK · Deployed on Vercel
 
-### Key Directories
+## For contributors
 
-| Directory | Purpose |
-|-----------|---------|
-| `app/` | Next.js App Router pages and API routes |
-| `components/` | Reusable React components |
-| `components/ui/` | Shadcn/ui primitives (50+ components) |
-| `lib/` | Application logic — Supabase wrappers, hooks, AI services |
-| `lib/supabase/` | Database operations and queries |
-| `lib/ai/` | AI generation services (direction finder, quiz, etc.) |
-| `utils/supabase/` | Browser + server Supabase client configuration |
-| `types/` | Shared TypeScript type definitions |
-| `supabase/migrations/` | Database schema migrations |
-| `docs/` | Project documentation (see [docs/README.md](docs/README.md)) |
-| `scripts/` | Utility scripts (SQL imports, debug, etc.) |
+A few house rules that will save you a code review round-trip:
 
-### Core Domains
-
-1. **Learning Maps** — Gamified node-based learning paths with content, assessments, and progress tracking. Students unlock nodes as they complete prerequisites.
-2. **Expert Interviews** — AI-facilitated career exploration through structured conversations with professionals.
-3. **Hackathons** — 5-day simulation events with team formation, challenges, submissions, and AI-assisted grading.
-4. **Classrooms** — Instructor-created environments with join codes, assignments, team management, and progress dashboards.
-5. **Direction Finder** — AI-powered career recommendation system based on student profiles.
-
-### Authentication
-
-Supabase Auth with SSR. Uses `@supabase/ssr` with `getAll()`/`setAll()` cookie methods only. See `utils/supabase/server.ts` and `utils/supabase/client.ts` for implementation patterns.
-
-### Design System
-
-PassionSeed uses two atmospheric themes:
-
-- **Dawn** — Student-facing. Cool blues warming into gold. Optimistic, exploratory.
-- **Dusk** — Expert-facing. Deep purples cooling into amber. Warm, authoritative.
-
-Both share the same structural DNA: fluid, luminous components that glow and respond like living things. See [docs/architecture/DESIGN.md](docs/architecture/DESIGN.md) for the full design system specification.
-
----
-
-## Database
-
-Local development uses the Supabase CLI. Migrations live in `supabase/migrations/` and are applied with:
-
-```bash
-npx supabase db push --local
-```
-
-The `supabase/schema.sql` file contains the complete schema for reference.
-
----
-
-## Documentation
-
-All documentation is organized in `docs/`:
-
-| Category | Path |
-|----------|------|
-| Product & Project | [docs/project/](docs/project/) |
-| Architecture & Schema | [docs/architecture/](docs/architecture/) |
-| Feature Guides | [docs/features/](docs/features/) |
-| Hackathon | [docs/hackathon/](docs/hackathon/) |
-| Operations & Deployment | [docs/operations/](docs/operations/) |
-| Testing | [docs/testing/](docs/testing/) |
-| Reference | [docs/reference/](docs/reference/) |
-
-See [docs/README.md](docs/README.md) for the full index.
-
----
-
-## AI Assistant Guidelines
-
-When working in this codebase:
-
-- **Follow the Supabase SSR pattern** in `utils/supabase/server.ts` — use `getAll()`/`setAll()` only, never individual cookie methods
-- **Use `lib/supabase/` for all database queries** — don't query Supabase directly from components
-- **Respect the design system** — Dawn for students, Dusk for experts. See `docs/architecture/DESIGN.md`
-- **Read `AGENTS.md`** for Codex-specific guidance
-- **Read `CLAUDE.md`** for Claude Code-specific guidance
-
----
+- **Auth:** we use `@supabase/ssr` with `getAll()`/`setAll()` cookie methods only. See `utils/supabase/server.ts` for the pattern — please copy it exactly.
+- **Queries:** all database access goes through `lib/supabase/`. Don't query Supabase from components directly.
+- **Migrations:** additive and idempotent only (`ADD COLUMN IF NOT EXISTS`, nullable columns). They apply straight to production.
+- **Design:** Dawn is for students, Dusk is for experts, and glow animations animate `clip-path` + `opacity` + `filter` together. The rules live in `docs/ui-design-system.md` and `CLAUDE.md`.
 
 ## License
 
-Private. All rights reserved.
+All rights reserved. The code is public for transparency and education — if you want to reuse something, talk to us first: hi@passionseed.org
