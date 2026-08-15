@@ -88,7 +88,7 @@ export default async function Home() {
     // Supabase unreachable or auth error — show landing page
   }
 
-  const studentCount = await getOnboardedStudentCount();
+  const studentCount = await getStudentCount().catch(() => null);
 
   return <LandingPageWrapper studentCount={studentCount} />;
 }

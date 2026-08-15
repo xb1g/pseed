@@ -36,7 +36,10 @@ const spaceMono = Space_Mono({
 });
 
 const libreFranklin = Libre_Franklin({
-  weight: ["400", "700"],
+  /* 500 is loaded because headings set Medium: without it the browser falls
+     back to 400 for Latin while Thai renders true 500, so a mixed heading
+     reads two different weights. */
+  weight: ["400", "500", "700"],
   subsets: ["latin"],
   variable: "--font-libre-franklin",
 });
