@@ -10048,6 +10048,42 @@ summary:focus-visible .radar-expand-indicator {
   font-size: 0.88rem;
 }
 
+/* Live-map variant: GameNode cards, real-map title, peek card CTA. */
+.pathlab-journey-map__map-title {
+  margin: 0 0 0.75rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.pathlab-journey-map__game-node {
+  border-radius: 999px;
+  transition: filter 160ms ease;
+}
+
+.pathlab-journey-map__game-node.is-selected {
+  filter: drop-shadow(0 0 14px rgba(196, 62, 29, 0.55));
+}
+
+.pathlab-journey-map__canvas.is-fallback {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.pathlab-journey-map__screenshot {
+  max-width: 100%;
+  height: auto;
+  border-radius: 1rem;
+}
+
+.pathlab-journey-map__cta {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* ── Journey islands (React Flow custom node) ── */
 
 /* The node box is exactly the sprite; labels hang below so edges anchor at

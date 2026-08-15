@@ -1,92 +1,58 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   Background,
   Controls,
-  Handle,
-  Position,
   ReactFlow,
   ReactFlowProvider,
-  type Edge,
-  type Node,
   type NodeProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { GameNode } from "@/components/map/MapViewer/components/GameNode";
 import {
-  FIELDS,
+  JOURNEY,
   JOURNEY_MAP,
-  type FieldDetail,
 } from "@/lib/content/pathlab-page";
+import {
+  toFlowEdges,
+  toFlowNodes,
+  type JourneyPreview,
+} from "@/components/pathlab/journey-map-utils";
 
 /**
- * Interactive "Learning journey เป็นยังไง": the real five days of each open
- * path rendered as floating islands the visitor can pan, zoom, and tap.
- *
- * Data comes straight from FIELDS (the same source the field cards read), so
- * the preview always matches what a path promises. Selection starts on day 1
- * — the first island — and a row of day chips mirrors island taps so the
- * detail card stays reachable even when the canvas is zoomed out on a phone.
+ * "Learning journey เป็นยังไง": a live, read-only preview of a real PathLab
+ * map (the same GameNode the actual map viewer renders), fetched from
+ * /api/maps/public-preview so it always matches the product.
  *
  * Loaded via next/dynamic (ssr: false) from PathlabJourney: React Flow is
  * heavy and this section is below the fold, so it stays out of the landing
- * bundle and the static screenshot shows while the chunk loads.
+ * bundle and the static screenshot shows while the chunk loads. The same
+ * screenshot covers the in-component loading and error states.
  */
 
-/** Island artwork cycles so no two neighbouring days share a landscape. */
-const SPRITES = [
-  "/islands/crystal.webp",
-  "/islands/desert.webp",
-  "/islands/winter.webp",
-] as const;
+const DEMO_MAP_ID = "00000000-0000-0000-0000-000000000020";
 
-const SPRITE_SIZE = 96;
-/** Horizontal pitch between days, and the drop that makes the path wander. */
-const GAP_X = 210;
-const STEP_Y = 130;
-
-interface IslandData extends Record<string, unknown> {
-  dayIndex: number;
-  title: string;
-  sprite: string;
-  selected: boolean;
-}
-
-type IslandNode = Node<IslandData>;
-
-function JourneyIslandNode({ data }: NodeProps<IslandNode>) {
+function JourneyGameNode({ data }: NodeProps) {
   return (
-    <div className={`journey-island${data.selected ? " is-selected" : ""}`}>
-      <Handle
-        type="target"
-        position={Position.Left}
-        className="journey-island__handle"
-      />
-      <span
-        className="journey-island__sprite"
-        /* Prime-ish stagger keeps the float from syncing across islands. */
-        style={{ animationDelay: `${data.dayIndex * 0.83}s` }}
-      >
-        <Image
-          src={data.sprite}
-          alt=""
-          width={SPRITE_SIZE}
-          height={SPRITE_SIZE}
-        />
-      </span>
-      {/* Labels hang below the node box so edges anchor at the sprite's
-          centre, not somewhere through the text. */}
-      <span className="journey-island__labels">
-        <span className="journey-island__day">
-          {JOURNEY_MAP.dayPrefix} {data.dayIndex + 1}
-        </span>
-        <span className="journey-island__title">{data.title}</span>
-      </span>
-      <Handle
-        type="source"
-        position={Position.Right}
-        className="journey-island__handle"
+    <div
+      className={`pathlab-journey-map__game-node${
+        data.selected ? " is-selected" : ""
+      }`}
+    >
+      <GameNode
+        data={data as never}
+        selected={false}
+        isUnlocked={true}
+        isCompleted={false}
+        /* GameNodeProps types this non-null; the badge it drives only renders
+           when isTeamMap is true, so the value is never shown here. */
+        requirement="single"
+        isTeamMap={false}
+        isInstructorOrTA={false}
+        allSubmissions={[]}
       />
     </div>
   );
@@ -94,81 +60,85 @@ function JourneyIslandNode({ data }: NodeProps<IslandNode>) {
 
 /* Defined once at module scope: a new object per render would remount every
    node on each selection change. */
-const nodeTypes = { journeyIsland: JourneyIslandNode };
+const nodeTypes = { journeyGame: JourneyGameNode };
 
-function buildNodes(detail: FieldDetail, selected: number): IslandNode[] {
-  return detail.days.map((day, i) => ({
-    id: `day-${i}`,
-    type: "journeyIsland",
-    position: { x: i * GAP_X, y: i % 2 === 0 ? 0 : STEP_Y },
-    draggable: false,
-    data: {
-      dayIndex: i,
-      title: day.title,
-      sprite: SPRITES[i % SPRITES.length],
-      selected: i === selected,
-    },
-  }));
+function ScreenshotFallback() {
+  return (
+    <Image
+      src={JOURNEY.src}
+      alt={JOURNEY.alt}
+      width={1200}
+      height={800}
+      className="pathlab-journey-map__screenshot"
+    />
+  );
 }
-
-function buildEdges(detail: FieldDetail): Edge[] {
-  return detail.days.slice(0, -1).map((_, i) => ({
-    id: `path-${i}`,
-    source: `day-${i}`,
-    target: `day-${i + 1}`,
-    style: {
-      stroke: "rgba(196, 62, 29, 0.4)",
-      strokeWidth: 2,
-      strokeDasharray: "7 7",
-    },
-  }));
-}
-
-/** Paths with written five-day copy — the ones a visitor can actually join. */
-const OPEN_FIELDS = FIELDS.filter((field) => field.detail);
 
 export default function PathlabJourneyMap() {
-  const [fieldIndex, setFieldIndex] = useState(0);
-  const [dayIndex, setDayIndex] = useState(0);
+  const [preview, setPreview] = useState<JourneyPreview | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const field = OPEN_FIELDS[fieldIndex];
-  const detail = field.detail as FieldDetail;
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/maps/public-preview/${DEMO_MAP_ID}`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`preview ${res.status}`);
+        return res.json();
+      })
+      .then((data: JourneyPreview) => {
+        if (!cancelled) setPreview(data);
+      })
+      .catch((err) => {
+        console.error("journey preview failed:", err);
+        if (!cancelled) setFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  const nodes = useMemo(() => buildNodes(detail, dayIndex), [detail, dayIndex]);
-  const edges = useMemo(() => buildEdges(detail), [detail]);
+  const nodes = useMemo(
+    () => (preview ? toFlowNodes(preview, selectedId) : []),
+    [preview, selectedId]
+  );
+  const edges = useMemo(
+    () => (preview ? toFlowEdges(preview) : []),
+    [preview]
+  );
 
-  const day = detail.days[dayIndex];
+  if (failed) {
+    return (
+      <div className="pathlab-journey-map">
+        <div className="pathlab-journey-map__canvas is-fallback">
+          <ScreenshotFallback />
+        </div>
+      </div>
+    );
+  }
+
+  if (!preview) {
+    return (
+      <div className="pathlab-journey-map" aria-busy="true">
+        <div className="pathlab-journey-map__canvas is-fallback">
+          <ScreenshotFallback />
+        </div>
+      </div>
+    );
+  }
+
+  const selected = preview.nodes.find((n) => n.id === selectedId) ?? null;
 
   return (
     <div className="pathlab-journey-map">
-      <div
-        className="pathlab-journey-map__fields"
-        aria-label={JOURNEY_MAP.fieldsLabel}
-      >
-        {OPEN_FIELDS.map((f, i) => (
-          <button
-            key={f.label}
-            type="button"
-            aria-pressed={i === fieldIndex}
-            className={`pathlab-journey-map__field${
-              i === fieldIndex ? " is-active" : ""
-            }`}
-            /* A new path always opens on its first island. */
-            onClick={() => {
-              setFieldIndex(i);
-              setDayIndex(0);
-            }}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
+      <p className="pathlab-journey-map__map-title">
+        <span className="pathlab-note">{JOURNEY_MAP.mapLabel}</span>{" "}
+        {preview.map.title}
+      </p>
 
       <div className="pathlab-journey-map__canvas">
         <ReactFlowProvider>
-          {/* Remount per field so fitView reframes the new chain. */}
           <ReactFlow
-            key={field.label}
             nodes={nodes}
             edges={edges}
             nodeTypes={nodeTypes}
@@ -181,9 +151,7 @@ export default function PathlabJourneyMap() {
             zoomOnScroll={false}
             zoomOnPinch
             panOnDrag
-            onNodeClick={(_, node) =>
-              setDayIndex(Number(node.id.replace("day-", "")))
-            }
+            onNodeClick={(_, node) => setSelectedId(node.id)}
           >
             <Background gap={26} size={2} color="rgba(82, 71, 70, 0.14)" />
             <Controls showInteractive={false} position="bottom-right" />
@@ -196,31 +164,20 @@ export default function PathlabJourneyMap() {
       </p>
 
       <div className="pathlab-journey-map__detail" aria-live="polite">
-        <div
-          className="pathlab-journey-map__days"
-          aria-label={JOURNEY_MAP.daysLabel}
-        >
-          {detail.days.map((d, i) => (
-            <button
-              key={`${field.label}-${d.title}`}
-              type="button"
-              aria-pressed={i === dayIndex}
-              className={`pathlab-journey-map__day${
-                i === dayIndex ? " is-active" : ""
-              }`}
-              onClick={() => setDayIndex(i)}
-            >
-              {i + 1}
-            </button>
-          ))}
-        </div>
         <p className="pathlab-journey-map__detail-heading">
-          {JOURNEY_MAP.dayPrefix} {dayIndex + 1}: {day.title}
+          {selected ? selected.title : preview.map.title}
         </p>
-        <p className="pathlab-journey-map__detail-doing">{day.doing}</p>
-        <span className="pathlab-note pathlab-note--tilt-r pathlab-journey-map__detail-gets">
-          {JOURNEY_MAP.getsLabel}: {day.gets}
-        </span>
+        <p className="pathlab-journey-map__detail-doing">
+          {selected
+            ? (selected.snippet ?? preview.map.description ?? "")
+            : (preview.map.description ?? "")}
+        </p>
+        <Link
+          href={`/map/${preview.map.id}`}
+          className="pathlab-journey-map__cta"
+        >
+          {JOURNEY_MAP.ctaLabel}
+        </Link>
       </div>
     </div>
   );
