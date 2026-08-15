@@ -45,13 +45,17 @@ export function FieldCardTile({ field, onOpen, isOpen }: FieldCardTileProps) {
         sizes={IMAGE_SIZES}
       />
       {/* Real text, not a pseudo-element: the status has to reach screen
-          readers, not just sighted users. */}
-      {field.comingSoon && (
+          readers, not just sighted users. A path whose plan is written
+          carries no badge: it has something to show, and the panel states
+          plainly that the round is not open yet. */}
+      {field.comingSoon && !field.detail && (
         <span className="pathlab-fields__badge">{COMING_SOON_LABEL}</span>
       )}
       {field.detail && (
         <span className="pathlab-fields__cue" aria-hidden="true">
-          {FIELD_DETAIL_LABELS.cardCue}
+          {field.comingSoon
+            ? FIELD_DETAIL_LABELS.soonCardCue
+            : FIELD_DETAIL_LABELS.cardCue}
         </span>
       )}
     </div>
@@ -59,7 +63,9 @@ export function FieldCardTile({ field, onOpen, isOpen }: FieldCardTileProps) {
 
   // A field that is not open yet still leads somewhere: tapping it opens a
   // DM asking for that field, so "Coming soon" is an invitation, not a wall.
-  if (field.comingSoon) {
+  // Unless its copy is written — then it opens like any other path, because
+  // reading the days is what makes someone want to ask for it.
+  if (field.comingSoon && !field.detail) {
     return (
       <a
         className="pathlab-fields__button pathlab-fields__button--soon"

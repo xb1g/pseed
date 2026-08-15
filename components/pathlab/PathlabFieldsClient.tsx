@@ -5,6 +5,7 @@ import { FieldCardTile } from "./FieldCardTile";
 import { FieldDetailPanel } from "./FieldDetailPanel";
 import {
   COMING_SOON_CUE,
+  FIELD_DETAIL_LABELS,
   FIELDS_HEADING,
   FIELDS_HINT,
   type FieldCard,
@@ -140,8 +141,11 @@ export function PathlabFieldsClient({ fields }: PathlabFieldsClientProps) {
             <li
               key={field.label}
               data-field-index={index}
+              // Greyed out only when there is nothing to look at. A path
+              // whose plan is written reads as live on the grid; the panel
+              // is where it says the round has not opened yet.
               className={`pathlab-fields__item${
-                field.comingSoon ? " is-coming-soon" : ""
+                field.comingSoon && !field.detail ? " is-coming-soon" : ""
               }${field.ask ? " is-ask" : ""}${
                 isOpen && openIndex !== index ? " is-dismissed" : ""
               }`}
@@ -169,10 +173,13 @@ export function PathlabFieldsClient({ fields }: PathlabFieldsClientProps) {
                   </p>
                 )}
                 {/* A field that is not open yet points at the DM door instead
-                    of sitting mute. */}
+                    of sitting mute. Once its plan is written, the invitation
+                    is to read that first: the plan is what earns the DM. */}
                 {field.comingSoon && (
                   <p className="pathlab-fields__project pathlab-fields__soon-cue">
-                    {COMING_SOON_CUE}
+                    {field.detail
+                      ? FIELD_DETAIL_LABELS.soonCardCue
+                      : COMING_SOON_CUE}
                   </p>
                 )}
               </div>

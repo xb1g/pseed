@@ -299,6 +299,16 @@ export const FIELD_DETAIL_LABELS = {
   /** Appended to the card's accessible name. */
   cardAction: "ดูรายละเอียด 5 วัน",
   cardCue: "ดู 5 วันนี้ →",
+  /**
+   * A path whose copy is written but which is not running yet: it opens and
+   * reads like any other, but the closing ask is "tell us you want it"
+   * rather than "book a round".
+   */
+  soonCardCue: "ดูแพลน แล้วบอกเราว่าอยากได้ →",
+  soonCtaPrefix: "ทัก IG บอกว่าอยากให้เปิดสาย",
+  soonPrice: "ยังไม่เปิดรอบ ทักมาบอกได้ว่าสนใจ เราจะเปิดให้เมื่อมีคนพอ",
+  /** Sits above the days so the plan is never mistaken for a live round. */
+  soonNotice: "สายนี้ยังไม่เปิดรอบ นี่คือแพลนที่เราออกแบบไว้",
 } as const;
 
 export const PRICE_HEADING = "เลือกทางเริ่มต้น";
@@ -436,10 +446,14 @@ export interface FieldDetail {
   days: FieldDay[];
   /** Three outcomes; the first is the self-discovery one and leads. */
   outcomes: string[];
-  /** An alumni quote answering "do I need a background for this?". */
-  quote: string;
+  /**
+   * An alumni quote answering "do I need a background for this?". Omitted on
+   * a path that has not run yet: inventing a testimonial for a round nobody
+   * has taken would be a lie, so the block simply drops it.
+   */
+  quote?: string;
   /** Attribution for the quote, as written. */
-  cite: string;
+  cite?: string;
 }
 
 export interface FieldCard {
@@ -641,6 +655,65 @@ export const FIELDS: FieldCard[] = [
       ],
       quote: "มีอะไรสงสัยก็ช่วยกันเต็มที่ ไม่ปล่อยให้เรานั่งงงอยู่คนเดียว",
       cite: "IG:victorchenspec · รุ่นพี่บางมด วิศวกรรมระบบปัญญาประดิษฐ์",
+    },
+  },
+  {
+    src: "/pathlab/field-aviation.webp",
+    alt: "วิศวกรกำลังตรวจสอบปีกเครื่องบินพร้อมคลิปบอร์ดจดบันทึก",
+    label: "วิศวะการบิน",
+    // Written but not running: the panel opens and sells the plan, and the
+    // closing ask is "tell us you want it" rather than "book a round".
+    comingSoon: true,
+    detail: {
+      tagline: "ออกแบบสิ่งที่ต้องบินได้จริง แล้วพิสูจน์ด้วยตัวเลขว่ามันไม่ตก",
+      briefShort: "ออกแบบปีกเครื่องบินส่งของ",
+      brief: "ออกแบบปีกเครื่องบินส่งของข้ามเกาะ ให้บินได้ไกลที่สุดด้วยพลังงานที่มีจำกัด",
+      briefDetail:
+        "โจทย์คือเครื่องบินส่งของที่ต้องแบกน้ำหนักข้ามเกาะ โดยมีพลังงานจำกัด คุณจะได้ออกแบบปีกใน XFLR5 ซึ่งเป็นโปรแกรมวิเคราะห์อากาศพลศาสตร์ที่วิศวกรและคนทำเครื่องบินเล็กใช้จริง แล้วทดสอบซ้ำจนหาจุดที่บินได้ไกลที่สุด ทุกการตัดสินใจต้องมีตัวเลขรองรับ ไม่ใช่เพราะมันดูสวย",
+      briefBy: "ออกแบบจากโจทย์จริงที่วิศวกรการบินต้องเจอ",
+      reality: [
+        "งานจริงคือคำนวณและทดสอบซ้ำ ๆ ไม่ใช่การได้ขับเครื่องบิน",
+        "ทุกอย่างต้องแลกกัน ปีกใหญ่ยกของได้ดีขึ้นแต่ก็ต้านลมมากขึ้นด้วย",
+        "ของที่พังตอนทดสอบดีกว่าพังตอนใช้จริง วิศวกรเลยตั้งใจทำให้มันพังก่อน",
+      ],
+      days: [
+        {
+          title: "ทำไมมันถึงบินได้",
+          doing:
+            "เรียนแรงสี่แรง lift drag thrust weight แล้วลงโปรแกรม XFLR5 ลองปีกต้นแบบจนเห็นว่าค่าไหนทำให้มันร่วง",
+          gets: "อ่านกราฟการบินเป็น",
+        },
+        {
+          title: "ออกแบบปีก",
+          doing:
+            "ลองเปลี่ยนรูปทรง airfoil ความยาวปีก และมุมปะทะ แล้วจดว่าแต่ละค่าทำให้แรงยกกับแรงต้านเปลี่ยนยังไง",
+          gets: "ปีกที่ยกน้ำหนักได้",
+        },
+        {
+          title: "ชนกำแพง tradeoff",
+          doing:
+            "เพิ่มน้ำหนักของที่ต้องส่งจนเครื่องบินไม่ไหว แล้วตัดสินใจว่าจะยอมแลกอะไรกับอะไร พร้อมเหตุผล",
+          gets: "สเปกที่ยอมแลกอย่างมีเหตุผล",
+        },
+        {
+          title: "ทดสอบจนพัง",
+          doing:
+            "รันทดสอบหลายรอบ เก็บตัวเลขทุกรอบลงตาราง แล้วไล่หาว่าตัวแปรไหนทำให้ระยะทางตก",
+          gets: "ตารางข้อมูลการทดสอบ",
+        },
+        {
+          title: "Design Review",
+          doing:
+            "ทำเอกสารสรุปแบบพร้อมกราฟ แล้วซ้อมตอบคำถามว่าทำไมถึงเลือกแบบนี้ เหมือนที่วิศวกรต้องป้องกันแบบของตัวเอง",
+          gets: "แบบ + กราฟ + สคริปต์เล่า Port",
+        },
+      ],
+      outcomes: [
+        "รู้ว่าสายนี้ใช่ทางคุณไหม",
+        "ได้แบบปีกพร้อมข้อมูลทดสอบจริง ลง Port ได้",
+        "รู้ว่าถ้าจะไปต่อสายนี้ ต้องแข็งฟิสิกส์กับเลขตรงไหน",
+      ],
+      // No quote: this path has not run, so there is no alumnus to quote.
     },
   },
   {

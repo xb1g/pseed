@@ -26,6 +26,10 @@ export function FieldDetailPanel({
   const detail = field.detail;
   if (!detail) return null;
 
+  // A written-but-unopened path sells the idea rather than a bookable round,
+  // so its notice, ask, and price line all change.
+  const isSoon = Boolean(field.comingSoon);
+
   return (
     <>
       <button
@@ -84,6 +88,11 @@ export function FieldDetailPanel({
         <h4 className="pathlab-detail__block-title">
           {detail.days.length} {FIELD_DETAIL_LABELS.daysPrefix}
         </h4>
+        {isSoon && (
+          <p className="pathlab-detail__soon-notice">
+            {FIELD_DETAIL_LABELS.soonNotice}
+          </p>
+        )}
         <ol
           className="pathlab-detail__days"
           style={
@@ -144,10 +153,16 @@ export function FieldDetailPanel({
               {FIELD_DETAIL_LABELS.basisAnswer}
             </span>
           </p>
-          <blockquote className="pathlab-detail__quote">
-            {detail.quote}
-            <cite className="pathlab-detail__cite">{detail.cite}</cite>
-          </blockquote>
+          {/* A path that has not run has no alumnus to quote, so the
+              reassurance stands on its own rather than on a fake voice. */}
+          {detail.quote && (
+            <blockquote className="pathlab-detail__quote">
+              {detail.quote}
+              {detail.cite && (
+                <cite className="pathlab-detail__cite">{detail.cite}</cite>
+              )}
+            </blockquote>
+          )}
         </div>
       </div>
 
@@ -159,9 +174,14 @@ export function FieldDetailPanel({
           target="_blank"
           rel="noopener noreferrer"
         >
-          {FIELD_DETAIL_LABELS.ctaPrefix} {field.label}
+          {isSoon
+            ? FIELD_DETAIL_LABELS.soonCtaPrefix
+            : FIELD_DETAIL_LABELS.ctaPrefix}{" "}
+          {field.label}
         </a>
-        <p className="pathlab-detail__cta-price">{FIELD_DETAIL_LABELS.price}</p>
+        <p className="pathlab-detail__cta-price">
+          {isSoon ? FIELD_DETAIL_LABELS.soonPrice : FIELD_DETAIL_LABELS.price}
+        </p>
       </div>
     </>
   );
