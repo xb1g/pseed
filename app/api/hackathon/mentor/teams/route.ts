@@ -77,17 +77,20 @@ export async function GET(req: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const teamSubsByTeamId = new Map<string, any[]>();
   for (const s of teamSubsResult.data ?? []) {
-    const arr = teamSubsByTeamId.get(s.team_id) ?? [];
-    arr.push(s);
-    teamSubsByTeamId.set(s.team_id, arr);
+    arr2push(teamSubsByTeamId, s.team_id, s);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const individualSubsByParticipantId = new Map<string, any[]>();
   for (const s of individualSubsResult.data ?? []) {
-    const arr = individualSubsByParticipantId.get(s.participant_id) ?? [];
-    arr.push(s);
-    individualSubsByParticipantId.set(s.participant_id, arr);
+    arr2push(individualSubsByParticipantId, s.participant_id, s);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function arr2push(map: Map<string, any[]>, key: string, val: any) {
+    const arr = map.get(key) ?? [];
+    arr.push(val);
+    map.set(key, arr);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -95,9 +98,27 @@ export async function GET(req: NextRequest) {
     return assessment?.metadata?.prompt ?? assessment?.metadata?.submission_label ?? null;
   }
 
-  // Assemble teams
+  // Assemble teams. Mentors only receive member PII and submission content for
+  // teams they are assigned to; unassigned teams are reduced to a stub so the
+  // mentor cannot read other teams' submissions or contact details.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const allTeams = (teamsResult.data ?? []).map((team: any) => {
+    const isAssigned = assignedTeamIds.has(team.id);
+
+    if (!isAssigned) {
+      return {
+        id: team.id,
+        name: team.name,
+        lobby_code: team.lobby_code,
+        owner_id: team.owner_id,
+        member_count: (team.hackathon_team_members ?? []).length,
+        members: [],
+        is_assigned: false,
+        team_submissions: [],
+        individual_submissions: [],
+      };
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const members = (team.hackathon_team_members ?? []).filter((m: any) => m.hackathon_participants != null).map((m: any, idx: number) => ({
       participant_id: m.participant_id as string,
@@ -131,7 +152,6 @@ export async function GET(req: NextRequest) {
       submitted_by_name: s.hackathon_participants?.name ?? null,
     }));
 
-     
     const individualSubmissions = memberIds.flatMap((pid: string) =>
       (individualSubsByParticipantId.get(pid) ?? []).map((s: any) => ({
         id: s.id,
@@ -160,7 +180,7 @@ export async function GET(req: NextRequest) {
       owner_id: team.owner_id,
       member_count: members.length,
       members,
-      is_assigned: assignedTeamIds.has(team.id),
+      is_assigned: true,
       team_submissions: teamSubmissions,
       individual_submissions: individualSubmissions,
     };

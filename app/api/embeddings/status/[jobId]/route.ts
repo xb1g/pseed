@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { getJob } from "@/lib/embeddings/jobs";
+import { requireUser } from "@/lib/security/route-guards";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ jobId: string }> }
 ) {
   try {
+    const user = await requireUser();
+    if (!user.ok) return user.response;
+
     const { jobId } = await params;
     const job = await getJob(jobId);
 

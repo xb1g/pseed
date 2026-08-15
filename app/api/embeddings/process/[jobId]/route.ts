@@ -1,12 +1,33 @@
 import { NextResponse } from "next/server";
 import { getJob, claimJob, completeJob, failJob } from "@/lib/embeddings/jobs";
 import { createTeamDirectionSnapshot } from "@/lib/embeddings/team-direction";
+import { requireAdmin } from "@/lib/security/route-guards";
+
+/**
+ * Executes a queued embedding job (runs paid LLM/embedding calls).
+ *
+ * Authenticated callers must be admins. The internal worker authenticates
+ * with the shared CRON_SECRET bearer token.
+ */
+async function authorize(request: Request): Promise<boolean> {
+  const cronSecret = process.env.CRON_SECRET;
+  const authorization = request.headers.get("authorization");
+  if (cronSecret && authorization === `Bearer ${cronSecret}`) {
+    return true;
+  }
+  const admin = await requireAdmin();
+  return admin.ok;
+}
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ jobId: string }> }
 ) {
   try {
+    if (!(await authorize(request))) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { jobId } = await params;
     const job = await getJob(jobId);
 

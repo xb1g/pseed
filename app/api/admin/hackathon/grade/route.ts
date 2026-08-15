@@ -6,16 +6,68 @@ import path from "path";
 import os from "os";
 import { Readable } from "stream";
 import { GRADER_SYSTEM_INSTRUCTION } from "@/agents/graderPrompt";
+import { requireAdmin } from "@/lib/security/route-guards";
 
 export const runtime = "nodejs";
 
+/**
+ * Hosts the server is allowed to fetch grader attachments from.
+ * Anything else (including RFC1918 / link-local / cloud-metadata IPs) is
+ * rejected to prevent SSRF.
+ */
+const ALLOWED_FETCH_HOSTS = new Set([
+  "drive.google.com",
+  "docs.google.com",
+  "storage.googleapis.com",
+]);
+
+function isPrivateOrLinkLocal(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  if (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "::1" ||
+    host === "169.254.169.254" ||
+    host.endsWith(".internal") ||
+    host.endsWith(".local")
+  ) {
+    return true;
+  }
+  const ipv4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
+  if (ipv4) {
+    const [a, b] = [Number(ipv4[1]), Number(ipv4[2])];
+    if (a === 10) return true; // 10.0.0.0/8
+    if (a === 127) return true; // loopback
+    if (a === 169 && b === 254) return true; // link-local
+    if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
+    if (a === 192 && b === 168) return true; // 192.168.0.0/16
+    if (a === 0) return true;
+  }
+  return false;
+}
+
+function isFetchableUrl(link: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(link);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:" && url.protocol !== "http:") return false;
+  if (isPrivateOrLinkLocal(url.hostname)) return false;
+  return ALLOWED_FETCH_HOSTS.has(url.hostname.toLowerCase());
+}
+
 export async function POST(req: Request) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    const admin = await requireAdmin();
+    if (!admin.ok) return admin.response;
+
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: "Missing Gemini API Key. Please restart the dev server to load the .env.local file." }, { status: 500 });
+      return NextResponse.json({ error: "Missing Gemini API Key." }, { status: 500 });
     }
-    
+
     // Initialize Gemini Client
     const ai = new GoogleGenAI({ apiKey });
     const body = await req.json();
@@ -43,6 +95,11 @@ export async function POST(req: Request) {
     const allLinks = [image_url, ...(file_urls || [])].filter(Boolean);
     
     for (const link of allLinks) {
+      if (typeof link === "string" && !isFetchableUrl(link) && link.startsWith("http")) {
+        // Reject non-allowlisted / internal hosts outright (SSRF guard).
+        contents.push(`\nAttached Link: (omitted - host not permitted)`);
+        continue;
+      }
       if (link.includes("drive.google.com") || link.includes("docs.google.com")) {
         console.log(`Fetching from Google Drive: ${link}`);
         try {

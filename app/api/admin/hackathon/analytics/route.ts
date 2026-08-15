@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { requireAdmin } from "@/lib/security/route-guards";
 
 /**
  * Get hackathon page analytics for admin dashboard
@@ -7,16 +8,10 @@ import { createClient } from "@/utils/supabase/server";
  */
 export async function GET(request: NextRequest) {
   try {
+    const admin = await requireAdmin();
+    if (!admin.ok) return admin.response;
+
     const supabase = await createClient();
-
-    // Check if user is authenticated (could add admin role check here)
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
