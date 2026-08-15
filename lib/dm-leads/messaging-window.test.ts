@@ -1,4 +1,6 @@
-import { isWithinMessagingWindow } from "./messaging-window";
+import { getMessagingWindowMode, isWithinMessagingWindow } from "./messaging-window";
+
+const hoursAgo = (h: number) => new Date(Date.now() - h * 60 * 60 * 1000).toISOString();
 
 describe("isWithinMessagingWindow", () => {
   it("returns false when there is no inbound message yet", () => {
@@ -18,5 +20,27 @@ describe("isWithinMessagingWindow", () => {
 
   it("returns false for an invalid timestamp", () => {
     expect(isWithinMessagingWindow("not-a-date")).toBe(false);
+  });
+});
+
+describe("getMessagingWindowMode", () => {
+  it("uses the standard RESPONSE window inside 24h", () => {
+    expect(getMessagingWindowMode(hoursAgo(3))).toBe("standard");
+    expect(getMessagingWindowMode(hoursAgo(23))).toBe("standard");
+  });
+
+  it("falls back to the human agent tag between 24h and 7 days", () => {
+    expect(getMessagingWindowMode(hoursAgo(25))).toBe("human_agent");
+    expect(getMessagingWindowMode(hoursAgo(24 * 6))).toBe("human_agent");
+  });
+
+  it("is closed past 7 days", () => {
+    expect(getMessagingWindowMode(hoursAgo(24 * 8))).toBe("closed");
+  });
+
+  it("treats a missing or unparseable timestamp as closed, never as open", () => {
+    expect(getMessagingWindowMode(null)).toBe("closed");
+    expect(getMessagingWindowMode(undefined)).toBe("closed");
+    expect(getMessagingWindowMode("not-a-date")).toBe("closed");
   });
 });
