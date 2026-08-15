@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import Groq from "groq-sdk";
+import { createClient } from "@/utils/supabase/server";
+
+// Whisper billing scales with audio minutes; cap uploads to bound cost and
+// prevent memory exhaustion from huge multipart bodies.
+const MAX_AUDIO_BYTES = 10 * 1024 * 1024; // 10 MB ≈ several minutes of audio
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -51,6 +56,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Require an authenticated caller — this route spends Groq Whisper + LLM
+  // credits, so it must not be reachable anonymously.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const formData = await request.formData();
     const audioBlob = formData.get("audio") as Blob | null;
@@ -61,6 +76,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "No audio provided" },
         { status: 400 }
+      );
+    }
+
+    if (audioBlob.size > MAX_AUDIO_BYTES) {
+      return NextResponse.json(
+        { error: "Audio file too large" },
+        { status: 413 }
       );
     }
 

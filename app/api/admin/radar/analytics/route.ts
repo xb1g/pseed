@@ -1,19 +1,17 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/security/route-guards";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const supabase = await createClient();
+  // Auth check — only admins (service-role client is used below, so the role
+  // check must happen before any privileged query runs).
+  const adminCheck = await requireAdmin();
+  if (!adminCheck.ok) return adminCheck.response;
 
-  // Auth check — only admins
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const supabase = await createClient();
 
   const days = Math.min(
     Number(req.nextUrl.searchParams.get("days") || 30),

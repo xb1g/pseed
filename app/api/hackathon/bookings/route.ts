@@ -1,18 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { findMentorById, createBooking } from "@/lib/hackathon/mentor-db";
 import { sendMentorBookingNotification } from "@/lib/hackathon/line";
+import { extractHackathonToken } from "@/lib/hackathon/auth";
+import { getSessionParticipant } from "@/lib/hackathon/db";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { mentor_id, slot_datetime, duration_minutes, notes, booker_name } = body;
+    // Require an authenticated hackathon participant session — this endpoint
+    // triggers a LINE notification to the mentor and creates a booking row, so
+    // it must not be callable anonymously with an attacker-controlled name.
+    const token = extractHackathonToken(req);
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const participant = await getSessionParticipant(token);
+    if (!participant) {
+      return NextResponse.json({ error: "Invalid or expired session" }, { status: 401 });
+    }
 
-    if (!mentor_id || !slot_datetime || !booker_name) {
+    const body = await req.json();
+    const { mentor_id, slot_datetime, duration_minutes, notes } = body;
+
+    if (!mentor_id || !slot_datetime) {
       return NextResponse.json(
-        { error: "mentor_id, slot_datetime, and booker_name are required" },
+        { error: "mentor_id and slot_datetime are required" },
         { status: 400 }
       );
     }
+
+    // Derive the booker identity from the authenticated session, not the body.
+    const booker_name = participant.name;
 
     const mentor = await findMentorById(mentor_id);
     if (!mentor) return NextResponse.json({ error: "Mentor not found" }, { status: 404 });
@@ -28,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     const booking = await createBooking({
       mentor_id,
-      student_id: null,
+      student_id: participant.id,
       slot_datetime,
       duration_minutes: duration_minutes ?? 30,
       notes,
