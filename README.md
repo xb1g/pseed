@@ -49,7 +49,7 @@ You'll need Node.js 20+, [pnpm](https://pnpm.io/), and the [Supabase CLI](https:
 
 ```bash
 pnpm install                      # dependencies
-./scripts/setup-local-secrets.sh  # creates .env.local
+./scripts/setup-local-secrets.sh  # creates .env.local from .env.example
 npx supabase start                # local database
 pnpm dev                          # dev server on :3000
 ```
@@ -73,6 +73,10 @@ A few house rules that will save you a code review round-trip:
 - **Migrations:** additive and idempotent only (`ADD COLUMN IF NOT EXISTS`, nullable columns). They apply straight to production.
 - **Design:** Dawn is for students, Dusk is for experts, and glow animations animate `clip-path` + `opacity` + `filter` together. The rules live in `docs/ui-design-system.md` and `CLAUDE.md`.
 
+## Security
+
+Found something? Please report it privately — see [SECURITY.md](SECURITY.md).
+
 ## License
 
-All rights reserved. The code is public for transparency and education — if you want to reuse something, talk to us first: hi@passionseed.org
+All rights reserved — see [LICENSE](LICENSE). The code is public for transparency and education; if you want to reuse something, talk to us first: hi@passionseed.org

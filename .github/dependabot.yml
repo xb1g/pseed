@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Bangkok
+    open-pull-requests-limit: 10
+    versioning-strategy: increase
+    labels:
+      - dependencies
+    # Security updates are always opened regardless of the schedule.
+    groups:
+      # Patch/minor dev tooling in one PR instead of ten
+      dev-dependencies:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch

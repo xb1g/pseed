@@ -75,14 +75,6 @@ Documentation index. Files are organized by purpose, not by date.
 | [TEST_STATUS.md](testing/TEST_STATUS.md) | Test setup status *(deprecated)* |
 | [QUICK_TEST_GUIDE.md](testing/QUICK_TEST_GUIDE.md) | Quick 10-user test *(deprecated)* |
 
-## 📁 `reference/` — Historical & Generated Reference
-
-| File | Purpose |
-|------|---------|
-| [all_migrations.md](reference/all_migrations.md) | All SQL migrations combined *(auto-generated)* |
-| [note.md](reference/note.md) | Random notes *(angpao IDs)* |
-| [plan.md](reference/plan.md) | Old performance optimization plan |
-
 ---
 
 ## Moved out
