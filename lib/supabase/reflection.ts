@@ -512,7 +512,7 @@ export async function getGraphData(): Promise<{
 export async function getReflectionCalendar(
   year: number,
   month?: number
-): Promise<{ created_at: string; emotion?: string }[]> {
+): Promise<{ id?: string; created_at: string; emotion?: string }[]> {
   const supabase = createClient();
   const {
     data: { user },
@@ -530,7 +530,7 @@ export async function getReflectionCalendar(
   // Fetch from old reflections table
   const { data: oldReflections, error: oldError } = await supabase
     .from("reflections")
-    .select("created_at, emotion")
+    .select("id, created_at, emotion")
     .eq("user_id", user.id)
     .gte("created_at", startDate.toISOString())
     .lt("created_at", endDate.toISOString());
@@ -561,10 +561,22 @@ export async function getReflectionCalendar(
   return combined;
 }
 
+// getMonthlyInsights currently returns curated/mock insight fields only — not a
+// full MonthlyInsight row (id, user_id, etc. come from the DB in a real impl).
+export type MonthlyInsightResult = Pick<
+  MonthlyInsight,
+  | "currentStreak"
+  | "lastReflectionDate"
+  | "bestDay"
+  | "mostCommonEmotion"
+  | "topTopics"
+  | "insights"
+>;
+
 export async function getMonthlyInsights(
   year: number,
   month: number
-): Promise<MonthlyInsight | null> {
+): Promise<MonthlyInsightResult | null> {
   // This is a placeholder. In a real app, you would fetch this from your backend.
   console.log(`Fetching insights for ${year}-${month}`);
   return {

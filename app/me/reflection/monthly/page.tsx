@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getMonthlyInsights, getReflectionCalendar } from '@/lib/supabase/reflection';
-import { MonthlyInsight, CalendarDay } from '@/types/reflection';
+import { ReflectionCalendarDay } from '@/types/reflection';
+import type { MonthlyInsightResult } from '@/lib/supabase/reflection';
 
 // Emotion color mapping
 const EMOTION_COLORS: Record<string, string> = {
@@ -61,8 +62,8 @@ export default function MonthlyReviewPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [calendarDays, setCalendarDays] = useState<CalendarDay[]>([]);
-  const [insights, setInsights] = useState<MonthlyInsight | null>(null);
+  const [calendarDays, setCalendarDays] = useState<ReflectionCalendarDay[]>([]);
+  const [insights, setInsights] = useState<MonthlyInsightResult | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
 
   // Get the first and last day of the current month view
@@ -76,11 +77,26 @@ export default function MonthlyReviewPage() {
       setIsLoading(true);
       try {
         const [calendarData, insightsData] = await Promise.all([
-          getReflectionCalendar(monthStart, monthEnd),
+          // getReflectionCalendar takes (year, month) — month is 1-based.
+          getReflectionCalendar(selectedDate.getFullYear(), selectedDate.getMonth() + 1),
           getMonthlyInsights(selectedDate.getFullYear(), selectedDate.getMonth() + 1)
         ]);
         
-        setCalendarDays(calendarData);
+        // getReflectionCalendar returns raw { created_at, emotion? } rows (one
+        // per reflection); map them into the per-day shape the calendar renders.
+        const dayMap = new Map<string, ReflectionCalendarDay>();
+        for (const row of calendarData) {
+          const date = row.created_at.slice(0, 10); // YYYY-MM-DD
+          const existing = dayMap.get(date);
+          dayMap.set(date, {
+            date,
+            emotion: (row.emotion as ReflectionCalendarDay['emotion']) ?? existing?.emotion ?? null,
+            hasReflection: true,
+            tags: existing?.tags ?? [],
+            reflectionId: row.id ?? existing?.reflectionId,
+          });
+        }
+        setCalendarDays(Array.from(dayMap.values()));
         setInsights(insightsData);
       } catch (error) {
         console.error('Error fetching monthly data:', error);

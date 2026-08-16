@@ -71,6 +71,12 @@ export interface MonthlyInsight {
     count: number;
     averageScore: number;
   }[];
+  // Free-form pattern insights surfaced by getMonthlyInsights.
+  insights?: {
+    title: string;
+    description: string;
+    suggestion?: string;
+  }[];
 }
 
 export interface ReflectionFormData {
@@ -88,6 +94,8 @@ export interface ReflectionCalendarDay {
   emotion: EmotionType | null;
   hasReflection: boolean;
   tags: string[];
+  // Set when the calendar can deep-link to a specific reflection record.
+  reflectionId?: string;
 }
 
 export interface ReflectionTimelineNode extends Omit<ReflectionBase, 'content'> {
