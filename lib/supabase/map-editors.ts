@@ -45,7 +45,8 @@ export async function getMapEditors(mapId: string): Promise<MapEditor[]> {
     throw new Error("Failed to fetch map editors");
   }
 
-  return data as MapEditor[];
+  // The nested select returns profiles as an array; cast to the declared shape.
+  return data as unknown as MapEditor[];
 }
 
 /**
@@ -156,7 +157,7 @@ export async function addMapEditorByEmail(
   return {
     success: true,
     message: `Successfully added ${targetUser.username || targetUser.email} as an editor`,
-    editor: newEditor as MapEditor,
+    editor: newEditor as unknown as MapEditor,
   };
 }
 
