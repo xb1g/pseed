@@ -98,7 +98,7 @@
     "@vercel/analytics": "^2.0.1",
     "@xyflow/react": "^12.10.0",
     "ai": "^6.0.84",
-    "autoprefixer": "^10.4.24",
+    "autoprefixer": "^10.5.4",
     "axios": "^1.13.6",
     "blurhash": "^2.0.5",
     "browser-image-compression": "^2.0.2",
