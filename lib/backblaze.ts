@@ -352,7 +352,10 @@ class BackblazeB2 {
         Key: fileName,
       });
 
-      return await getSignedUrl(this.s3Client, command, { expiresIn });
+      // @aws-sdk/s3-request-presigner (3.1109) is a major ahead of client-s3
+      // (3.989), so the presigner's expected Client type differs structurally
+      // from our S3Client. Runtime-compatible; realigned in the dependency task.
+      return await getSignedUrl(this.s3Client as any, command, { expiresIn });
     } catch (error) {
       console.error("Backblaze B2 signed URL error:", error);
       throw new Error(
@@ -414,7 +417,7 @@ class BackblazeB2 {
         },
       });
 
-      const presignedUrl = await getSignedUrl(this.s3Client, command, {
+      const presignedUrl = await getSignedUrl(this.s3Client as any, command, {
         expiresIn,
       });
 

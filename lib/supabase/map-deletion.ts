@@ -123,15 +123,23 @@ export const deleteMapSafely = async (mapId: string): Promise<DeletionResult> =>
 
     stats.assessmentIds = assessments?.map(a => a.id) || [];
 
+    // Resolve submission IDs up front — Supabase's .in() does not accept a query
+    // builder as its values, so the subquery must be awaited separately.
+    const { data: submissionRows } = stats.assessmentIds.length > 0
+      ? await supabase
+          .from("assessment_submissions")
+          .select("id")
+          .in("assessment_id", stats.assessmentIds)
+      : { data: [] };
+    const submissionIds = (submissionRows ?? []).map((s: { id: string }) => s.id);
+
     // Step 2: Count what will be deleted (for logging and UI feedback)
     const counts = await Promise.all([
       // Count submission grades
-      stats.assessmentIds.length > 0 ? supabase
+      submissionIds.length > 0 ? supabase
         .from("submission_grades")
         .select("id", { count: "exact", head: true })
-        .in("submission_id", 
-          supabase.from("assessment_submissions").select("id").in("assessment_id", stats.assessmentIds)
-        ) : null,
+        .in("submission_id", submissionIds) : null,
       
       // Count assessment submissions
       stats.assessmentIds.length > 0 ? supabase
@@ -176,13 +184,11 @@ export const deleteMapSafely = async (mapId: string): Promise<DeletionResult> =>
     const deletionSteps = [
       // Delete submission grades first (deepest dependency)
       async () => {
-        if (stats.assessmentIds.length === 0) return;
+        if (submissionIds.length === 0) return;
         const { error } = await supabase
           .from("submission_grades")
           .delete()
-          .in("submission_id", 
-            supabase.from("assessment_submissions").select("id").in("assessment_id", stats.assessmentIds)
-          );
+          .in("submission_id", submissionIds);
         if (error) throw new Error(`Failed to delete submission grades: ${error.message}`);
         deleteLogger.info("Deleted submission grades", { mapId, count: stats.submissionGrades });
       },

@@ -205,7 +205,9 @@ export async function getParticipantMatchingState(
   };
 }
 
-function ensureEventEditable(event: HackathonMatchingEvent | null) {
+function ensureEventEditable(
+  event: HackathonMatchingEvent | null
+): asserts event is HackathonMatchingEvent {
   if (!event) {
     throw new Error("No active matching event");
   }
