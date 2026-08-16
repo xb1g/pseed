@@ -469,4 +469,23 @@ class BackblazeB2 {
   }
 }
 
-export const b2 = new BackblazeB2();
+// Lazy singleton: the BackblazeB2 constructor throws when B2_* env vars are
+// absent, and Next.js imports route modules during `next build` page-data
+// collection where those vars are intentionally unset. Constructing on first
+// use defers that validation to request time.
+let b2Instance: BackblazeB2 | undefined;
+
+function getB2(): BackblazeB2 {
+  if (!b2Instance) {
+    b2Instance = new BackblazeB2();
+  }
+  return b2Instance;
+}
+
+export const b2 = new Proxy({} as BackblazeB2, {
+  get(_target, prop, receiver) {
+    const instance = getB2() as unknown as Record<PropertyKey, unknown>;
+    const value = Reflect.get(instance, prop, receiver);
+    return typeof value === "function" ? value.bind(instance) : value;
+  },
+});
