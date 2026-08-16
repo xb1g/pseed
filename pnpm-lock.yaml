@@ -408,6 +408,9 @@ importers:
       eslint-config-next:
         specifier: 15.3.2
         version: 15.3.2(eslint@9.39.2(jiti@1.21.7))(typescript@5.9.3)
+      eslint-plugin-react-hooks:
+        specifier: ^5.0.0
+        version: 5.2.0(eslint@9.39.2(jiti@1.21.7))
       glob:
         specifier: ^11.1.0
         version: 11.1.0
@@ -6914,7 +6917,7 @@ packages:
     resolution: {integrity: sha512-RVZSIV5IG10Hk3enotrhvz0T9em6cyHBLkH/YAZuKqd8hRkKhSfCGIcP2KUY0EPxndzANBmNllzWPwak+bheSw==}
 
   three-bmfont-text@https://codeload.github.com/dmarcos/three-bmfont-text/tar.gz/eed4878795be9b3e38cf6aec6b903f56acd1f695:
-    resolution: {gitHosted: true, integrity: sha512-iYdv5kZmgr+mugaLGsTV28QDwh31DWgalwL/U/ZX68ZLL27jXIiqKzbJ4Y6HEQLc/bqPQHE62eHqu3R0+Ioc4g==, tarball: https://codeload.github.com/dmarcos/three-bmfont-text/tar.gz/eed4878795be9b3e38cf6aec6b903f56acd1f695}
+    resolution: {gitHosted: true, tarball: https://codeload.github.com/dmarcos/three-bmfont-text/tar.gz/eed4878795be9b3e38cf6aec6b903f56acd1f695}
     version: 3.0.0
 
   three-forcegraph@1.43.1:
