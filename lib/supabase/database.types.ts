@@ -1229,6 +1229,9 @@ export type Database = {
           research: Json | null
           researched_at: string | null
           research_model: string | null
+          // Added in migration 20260709000000_radar_fields_score_tier.sql
+          score: number | null
+          tier: string | null
           created_at: string | null
           updated_at: string | null
         }

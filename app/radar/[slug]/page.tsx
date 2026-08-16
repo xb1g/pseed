@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { RadarFieldPageClient } from "@/components/radar/RadarFieldPageClient";
+import { RadarFieldPageClient, type FieldSource } from "@/components/radar/RadarFieldPageClient";
 import type { RadarSkillSummary } from "@/components/radar/RadarSkillExperience";
 import type { Database } from "@/lib/supabase/database.types";
 import { getCachedPublishedRadarField } from "@/lib/radar/server";
@@ -102,7 +102,9 @@ export default async function RadarFieldPage({
     <RadarFieldPageClient
       initialField={field as RadarField}
       initialCards={allCards}
-      fieldSources={sources ?? []}
+      // radar_sources.ref is an int in the DB; the generated types lag the
+      // 20260617000001_career_radar.sql schema and mark it string|null.
+      fieldSources={(sources ?? []) as unknown as FieldSource[]}
       initialSkills={initialSkills}
       fromPlan={from === "plan"}
     />

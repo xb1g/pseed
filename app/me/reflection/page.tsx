@@ -63,7 +63,7 @@ export default function ReflectionHome() {
     const fetchReflections = async () => {
       setLoading(true);
       try {
-        const data = await getMindmapReflections();
+        const data = (await getMindmapReflections()) as MindmapReflection[];
 
         // Deduplicate: keep only the latest reflection per day
         const deduplicatedReflections = (data || []).reduce((acc, reflection) => {
