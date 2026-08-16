@@ -293,6 +293,70 @@ Only after those are green does a conversion rate mean anything. **If we make 80
 
 ---
 
+## Part 7 — From the TOFU reel to MOFU to BOFU
+
+The tofu reel earns attention. It should not carry the whole sale. The next
+content has to move the student from "this sounds like me" to "I can see the
+work" and then to "I know exactly how to start".
+
+### 7.1 MOFU: make the portfolio problem concrete
+
+Run three pieces after each tofu reel, each with one CTA and one field-specific
+example:
+
+1. **Ranking carousel:** "พอร์ต [คณะ] อะไรมีน้ำหนักจริง". Show three actions
+   ranked by evidence value, one thing to skip, and one verified deadline. CTA:
+   comment `แผน` or DM the field name.
+2. **Map/node demo:** show 20–30 seconds of the actual PathLab map. One node
+   should show the student doing the first real task and the artifact they will
+   finish with. CTA: "อยากลอง node แรก พิมพ์ [สาย]".
+3. **Student proof:** show the before/after: blank portfolio anxiety, the work
+   produced, mentor feedback, and the finished project page. Do not lead with
+   a certificate or a generic testimonial.
+
+MOFU success is not likes. Measure saves, field-page visits, qualified DM
+replies, and starts of the first map node. The job of MOFU is to earn a reply
+and make PathLab feel like the obvious first step.
+
+### 7.2 BOFU: remove the last three reasons not to buy
+
+BOFU should be field-specific and cohort-specific:
+
+1. **Offer post or live demo:** "PathLab [สาย] รอบ [วันที่], 5 วัน, ทำงานจริง
+   1 ชิ้น, mentor เช็กวันแรกและวันสุดท้าย, 299 บาท, รับ 4 คน". Show the exact
+   deliverable and the first node, not a feature list.
+2. **Parent proof:** a forwardable one-pager with what the 299 บาท buys, the
+   mentor identity, the schedule, the project page, and the refund rule if a
+   pre-sold uncovered field slips. The parent is usually the real approver.
+3. **Deadline and close:** send the poster first, then the price and start date
+   in one message. Use a tracked signup link per DM. Follow up once at 24 hours
+   and once at 72 hours, then stop.
+
+For uncovered fields such as medicine or law, sell the first-seat pre-sale with
+the full plan delivered now and a clear launch month. Use demand to choose the
+next map to build. Never send a bare link, and never end with "we do not have
+that field".
+
+### 7.3 The DM handoff
+
+The sequence is:
+
+```
+TOFU reel
+  → MOFU ranking or real map node
+  → one qualifying question
+  → personalized poster
+  → parent proof when needed
+  → BOFU cohort seat: price + date + tracked link
+```
+
+The operating metric is not reel reach. It is the number of engaged threads
+that receive a priced, field-matched offer and then start the first node. The
+current campaign can measure reply rate by A/B arm; it still needs DM-to-
+enrollment attribution before reporting revenue conversion.
+
+---
+
 ## Addendum 2026-08-14 — Lessons from reading the top-12 threads end to end
 
 Every hot/warm thread (starred, pay-ready, wants_pathlab, active this week) was read in full. These five findings change how we reply; the playbook above stands unless contradicted here.

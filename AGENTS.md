@@ -39,12 +39,34 @@ Key rules (full details in the doc):
 - Marketing/landing pages use **Basecamp-style margin notes** (`.pathlab-note` in `app/globals.css`): short, warm, humane asides in a yellow highlighter set at a casual angle. One per section, never on headings or body copy. Each note says the quiet human thing formal copy cannot (e.g. "รุ่นพี่เขียนเองทุกคน ไม่ได้จ้างนะ"). Copy lives in the `NOTES` block of `lib/content/pathlab-page.ts`; full spec in `docs/ui-design-system.md`
 - No em dashes (—) in user-facing copy. Use a comma, a colon, or rewrite the sentence
 
-## Micro PathLab Maps
+## PathLab Maps, Canonical Architecture
 
-Before creating or publishing a short Micro PathLab for the standalone map
-viewer, read [`skills/create-micro-pathlab-map/SKILL.md`](skills/create-micro-pathlab-map/SKILL.md).
-These experiences must render through `app/map/[id]/page.tsx`; do not use the
-seed/day-based PathLab generator for this surface.
+For new or modified PathLab work, the source of truth is the legacy learning-map
+and node system. PathLab is a map of real work, not a separate seed/day content
+runtime.
+
+Use these tables and surfaces:
+
+- `learning_maps` for the map record and public metadata
+- `map_nodes` for each learner action or decision
+- `node_content` for instructions, media, and reference material
+- `node_assessments` and `quiz_questions` for evidence and checks
+- `node_paths` for prerequisites and progression
+- `user_map_enrollments` and `student_node_progress` for enrollment and progress
+- `app/map/[id]/page.tsx` and `components/map/MapViewer.tsx` for the learner view
+
+Do not create new PathLab content in `path_days`, `path_activities`, or other
+seed/day activity tables. Existing `seeds`, `paths`, `path_days`, and
+`path_activities` rows are compatibility data from the earlier implementation;
+inspect actual imports before touching them, and do not treat them as the
+canonical content model for new work. If a generator still emits `seed`,
+`path`, or `days` fields, treat those as draft/editorial grouping metadata and
+normalize the saved experience into map nodes and node paths.
+
+Before creating or publishing a short Micro PathLab, read
+[`skills/create-micro-pathlab-map/SKILL.md`](skills/create-micro-pathlab-map/SKILL.md).
+Micro PathLabs use the same map/node contract and render through
+`app/map/[id]/page.tsx`; do not route them through a new seed/day runtime.
 
 ## Development Commands
 

@@ -1,6 +1,9 @@
 import { createAdminClient } from "@/utils/supabase/admin";
 import type { MetaAttachmentType } from "@/lib/meta/graph";
-import type { MessagingWindowMode } from "@/lib/dm-leads/messaging-window";
+import {
+  getMessagingWindowMode,
+  type MessagingWindowMode,
+} from "@/lib/dm-leads/messaging-window";
 import {
   classifyBucket,
   getFieldCoverage,
@@ -9,6 +12,8 @@ import {
   type FunnelScoreboard,
 } from "@/lib/dm-leads/playbook";
 import { messageSignalFlags, signalsFor } from "@/lib/dm-leads/signals";
+import { gateDraft } from "@/lib/dm-leads/send-gate";
+import type { DmScriptRung } from "@/lib/dm-leads/scripts";
 import { DM_LEAD_LIST_COLUMNS } from "@/types/dm-leads";
 import type {
   DmConversation,
@@ -959,8 +964,21 @@ async function sendAndRecordOutboundMessage(
     last_message_direction: DmMessageDirection | null;
   },
   input: { text?: string; attachmentUrl?: string; attachmentType?: MetaAttachmentType },
-  windowMode: MessagingWindowMode
-): Promise<{ sentAt: string }> {
+  windowMode: MessagingWindowMode,
+  /**
+   * Stamped on the row so an A/B readout joins arm to outcome without a second
+   * lookup, and so the attribution survives the campaign target being deleted.
+   */
+  campaign?: {
+    campaignId: string;
+    variant: string;
+    auto?: {
+      rung: DmScriptRung;
+      bucket: DmLeadBucket;
+      consecutiveOutbound: number;
+    };
+  }
+): Promise<{ sentAt: string; messageId: string }> {
   const sentAt = new Date().toISOString();
   const isAttachment = Boolean(input.attachmentUrl);
   const attachmentType = input.attachmentType ?? "image";
@@ -979,6 +997,8 @@ async function sendAndRecordOutboundMessage(
       message_type: (isAttachment ? "attachment" : "text") as DmMessageType,
       send_status: "pending",
       sent_at: sentAt,
+      campaign_id: campaign?.campaignId ?? null,
+      campaign_variant: campaign?.variant ?? null,
     })
     .select("id")
     .single();
@@ -1068,7 +1088,86 @@ async function sendAndRecordOutboundMessage(
     throw new Error("Reply sent, but delivery state was not saved");
   }
 
-  return { sentAt };
+  return { sentAt, messageId: outboundMessage.id };
+}
+
+/**
+ * Sends one campaign message and returns the recorded message id.
+ *
+ * Separate from `sendAdminReply` because a campaign send is text-only, must
+ * carry its A/B attribution, and the caller needs the message id to close out
+ * the campaign target row.
+ */
+export async function sendCampaignReply(
+  conversationId: string,
+  body: string,
+  campaign: {
+    campaignId: string;
+    variant: string;
+    auto?: {
+      rung: DmScriptRung;
+      bucket: DmLeadBucket;
+      consecutiveOutbound: number;
+    };
+  }
+): Promise<{ messageId: string }> {
+  const text = body.trim();
+  if (!text) throw new Error("Empty reply");
+
+  const supabase = createAdminClient();
+
+  const { data: conversation, error: fetchError } = await supabase
+    .from("dm_conversations")
+    .select("platform, platform_user_id, last_message_at, last_message_direction")
+    .eq("id", conversationId)
+    .single();
+
+  if (fetchError || !conversation) {
+    console.error("Error fetching conversation for campaign reply:", fetchError);
+    throw new Error("Conversation not found");
+  }
+
+  const { data: lastInbound } = await supabase
+    .from("dm_messages")
+    .select("sent_at")
+    .eq("conversation_id", conversationId)
+    .eq("direction", "inbound")
+    .order("sent_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const windowMode = getMessagingWindowMode(lastInbound?.sent_at ?? null);
+  if (windowMode === "closed") {
+    throw new Error("เกิน 7 วันจากข้อความล่าสุดของน้อง ส่งผ่านระบบไม่ได้แล้ว");
+  }
+
+  // Auto eligibility is a snapshot at queue-build time. Re-run the gate here
+  // with the live window and the edited draft so an old queue cannot silently
+  // cross into HUMAN_AGENT or acquire a price/link before it leaves.
+  if (campaign.auto) {
+    const gate = gateDraft({
+      body: text,
+      rung: campaign.auto.rung,
+      bucket: campaign.auto.bucket,
+      windowMode,
+      consecutiveOutbound: campaign.auto.consecutiveOutbound,
+    });
+    if (gate.decision !== "auto") {
+      throw new Error(`Auto-send blocked: ${gate.reasons.join(", ")}`);
+    }
+  }
+
+  const { messageId } = await sendAndRecordOutboundMessage(
+    supabase,
+    conversationId,
+    conversation,
+    { text },
+    windowMode,
+    campaign
+  );
+
+  invalidateDmLeadCache();
+  return { messageId };
 }
 
 export async function sendAdminReply(
@@ -1105,7 +1204,6 @@ export async function sendAdminReply(
     .order("sent_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  const { getMessagingWindowMode } = await import("@/lib/dm-leads/messaging-window");
   const windowMode = getMessagingWindowMode(lastInbound?.sent_at ?? null);
 
   // Attachment and caption are sent as two separate Send API calls (the

@@ -16,6 +16,20 @@ Generate a single valid JSON object that matches `PathLabMapStructure` exactly.
 5. Validate schema integrity plus all strict ratio/quality rules before output.
 6. Output only parseable JSON with no markdown or commentary.
 
+## Persistence Architecture
+
+The saved PathLab uses the legacy learning-map contract as its canonical
+runtime. Persist generated work into `learning_maps`, `map_nodes`,
+`node_content`, `node_assessments`, `quiz_questions`, and `node_paths`, then
+enroll learners through `user_map_enrollments` and track progress through
+`student_node_progress`.
+
+The draft's `seed`, `path`, and `days` fields are editorial compatibility
+metadata for planning a longer experience. They must not become a reason to
+create new `path_days` or `path_activities` rows. Translate each planned day
+into ordered map nodes and node paths before persistence. The learner must land
+on `/map/<mapId>` and use the legacy map/node viewer.
+
 ## Output Contract
 
 - Output one JSON object only.

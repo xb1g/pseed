@@ -30,6 +30,33 @@ asking which option better serves that paragraph.
 
 ---
 
+## 0. Runtime and storage contract
+
+As of 2026-08-17, the canonical PathLab runtime is the legacy learning-map
+system. New PathLabs are persisted and played through:
+
+```
+learning_maps
+  → map_nodes
+    → node_content
+    → node_assessments / quiz_questions
+  → node_paths
+  → user_map_enrollments / student_node_progress
+```
+
+The learner surface is `app/map/[id]/page.tsx`, rendered by
+`components/map/MapViewer.tsx`. A node is an observable piece of career work or
+a decision, and a node path is the prerequisite relationship between pieces of
+work.
+
+The former `seeds → paths → path_days → path_activities` model is compatibility
+data, not the source of truth for new PathLab content. The editorial rules below
+still use days as a useful planning lens, but a day must be translated into
+map nodes, node content, assessments, and node paths before it is saved. Do not
+add new content-only behavior to `path_days` or `path_activities`.
+
+---
+
 ## 2. Backward design
 
 Author in this order. Never in reverse — content written first will always

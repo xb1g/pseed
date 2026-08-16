@@ -10,6 +10,8 @@ import { DmLeadsInbox } from "@/components/admin/DmLeadsInbox";
 import { DmLeadFilters as DmLeadFilterBar } from "@/components/admin/DmLeadFilters";
 import { RefreshButton } from "@/components/admin/RefreshButton";
 import { ScoreboardStrip } from "@/components/admin/ScoreboardStrip";
+import { PirateFunnel } from "@/components/admin/PirateFunnel";
+import { getPirateFunnel } from "@/lib/supabase/pirate-funnel";
 import type { DmLeadStage, DmPlatform } from "@/types/dm-leads";
 
 export const dynamic = "force-dynamic";
@@ -69,9 +71,10 @@ export default async function DmLeadsPage({
   const filters = parseFilters(raw);
   // One scan of dm_messages, shared by the list and the facets.
   const signals = await getDmLeadSignals();
-  const [conversations, facets] = await Promise.all([
+  const [conversations, facets, funnel] = await Promise.all([
     getConversationsForAdmin(filters, signals),
     getDmLeadFacets(filters, signals),
+    getPirateFunnel(),
   ]);
 
   return (
@@ -87,6 +90,8 @@ export default async function DmLeadsPage({
       </div>
 
       <ScoreboardStrip scoreboard={facets.scoreboard} />
+
+      <PirateFunnel funnel={funnel} />
 
       <BucketPills
         activeBucket={filters.bucket}

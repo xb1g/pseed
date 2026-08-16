@@ -21,8 +21,11 @@ const HUMAN_AGENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
  * flip to "outbound" as soon as we reply once, which would make a stale
  * thread look open again even though the lead's own message is >24h old.
  */
-export function isWithinMessagingWindow(lastInboundMessageAt: string | null | undefined): boolean {
-  return elapsedSinceInbound(lastInboundMessageAt) < WINDOW_MS;
+export function isWithinMessagingWindow(
+  lastInboundMessageAt: string | null | undefined,
+  now: number = Date.now()
+): boolean {
+  return elapsedSinceInbound(lastInboundMessageAt, now) < WINDOW_MS;
 }
 
 /**
@@ -37,9 +40,10 @@ export function isWithinMessagingWindow(lastInboundMessageAt: string | null | un
 export type MessagingWindowMode = "standard" | "human_agent" | "closed";
 
 export function getMessagingWindowMode(
-  lastInboundMessageAt: string | null | undefined
+  lastInboundMessageAt: string | null | undefined,
+  now: number = Date.now()
 ): MessagingWindowMode {
-  const elapsed = elapsedSinceInbound(lastInboundMessageAt);
+  const elapsed = elapsedSinceInbound(lastInboundMessageAt, now);
   if (elapsed < WINDOW_MS) return "standard";
   if (elapsed < HUMAN_AGENT_WINDOW_MS) return "human_agent";
   return "closed";
@@ -50,9 +54,12 @@ export function getMessagingWindowMode(
  * no usable timestamp so every caller treats "unknown" as "closed" rather than
  * as "wide open" — the safe direction for a send guard.
  */
-function elapsedSinceInbound(lastInboundMessageAt: string | null | undefined): number {
+function elapsedSinceInbound(
+  lastInboundMessageAt: string | null | undefined,
+  now: number
+): number {
   if (!lastInboundMessageAt) return Number.POSITIVE_INFINITY;
-  const elapsed = Date.now() - new Date(lastInboundMessageAt).getTime();
+  const elapsed = now - new Date(lastInboundMessageAt).getTime();
   if (Number.isNaN(elapsed)) return Number.POSITIVE_INFINITY;
   return elapsed;
 }

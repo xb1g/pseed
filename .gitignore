@@ -74,6 +74,7 @@ coverage
 .windsurf/
 
 # personal tooling state / scratch, not project source
+.playwright-cli/
 archived/
 examples/
 artifacts/

@@ -131,14 +131,19 @@ function lobbyAvatarColor(userId: string): string {
 
 // ---- Trail mode layout (prototype) ----
 // Vertical distance between depth levels and horizontal zigzag amplitude.
-const TRAIL_LEVEL_GAP = 190;
+// Keep the level gap larger than the desktop hitbox so labels and shadows
+// never become part of the neighboring node's tap area.
+const TRAIL_LEVEL_GAP = 220;
 const TRAIL_ZIGZAG_AMPLITUDE = 140;
-// Estimated rendered size of a trail node (island sprite + label). React Flow
-// positions anchor a node's TOP-LEFT corner, so clamp/centering math must add
-// the node width — otherwise right-zigzag nodes overflow narrow screens.
-// (Measured: the island node box renders ~150 flow units wide/tall.)
+const TRAIL_NODE_GAP = 8;
+const MOBILE_TRAIL_NODE_MIN_W = 80;
+const MOBILE_TRAIL_NODE_MAX_W = 104;
+// Fixed React Flow geometry. The old implementation let the intrinsic 2048px
+// sprite dimensions decide the node bounds, which made the visual and the
+// touch target disagree across browsers.
 const TRAIL_NODE_W = 150;
 const TRAIL_NODE_H = 200;
+const TRAIL_SPRITE_INSET = 12;
 // Zigzag sequence around the center column: center → right → left → center …
 // The amplitude is responsive: narrow viewports get a tighter wiggle.
 const trailZigzag = (amplitude: number) => [0, amplitude, -amplitude];
@@ -170,6 +175,7 @@ function compareTrailNodes(a: MapNode, b: MapNode): number {
 function computeTrailLayout(
   map: FullLearningMap,
   amplitude: number = TRAIL_ZIGZAG_AMPLITUDE,
+  levelGap: number = TRAIL_LEVEL_GAP,
 ): TrailLayout {
   const trailNodes = map.map_nodes.filter(isTrailStepNode);
   const positions = new Map<string, { x: number; y: number }>();
@@ -219,7 +225,7 @@ function computeTrailLayout(
     for (const node of levelNodes) {
       positions.set(node.id, {
         x: zigzag[step % zigzag.length],
-        y: -d * TRAIL_LEVEL_GAP,
+        y: -d * levelGap,
       });
       orderedIds.push(node.id);
       step++;
@@ -329,30 +335,98 @@ export function MapViewer({
   // Measure the map container width so the zigzag and pan clamp can keep the
   // trail column filling (but never exceeding) the screen on any viewport.
   const [flowWidth, setFlowWidth] = useState(0);
+  const mapCanvasRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!trailMode || typeof window === "undefined") return;
     const update = () => {
-      const el = document.querySelector(".react-flow");
+      const el = mapCanvasRef.current?.querySelector(
+        ".react-flow",
+      ) as HTMLElement | null;
       if (el) setFlowWidth(el.getBoundingClientRect().width);
     };
     update();
+    const el = mapCanvasRef.current?.querySelector(
+      ".react-flow",
+    ) as HTMLElement | null;
+    const observer =
+      el && typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(update)
+        : null;
+    if (observer && el) {
+      observer.observe(el);
+    }
     window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", update);
+    };
   }, [trailMode, isMounted, isMobile]);
+
+  // On phones the visual island and its label need a smaller, stable box so
+  // adjacent zig-zag stops cannot overlap in React Flow's rectangular hit
+  // testing. The 24px reserve leaves a little breathing room at both edges.
+  const trailNodeSize = useMemo(() => {
+    if (!isMobile) {
+      return { width: TRAIL_NODE_W, height: TRAIL_NODE_H };
+    }
+
+    const measuredFlowWidth =
+      flowWidth > 0
+        ? flowWidth / TRAIL_ZOOM
+        : MOBILE_TRAIL_NODE_MAX_W * 3 + TRAIL_NODE_GAP * 2 + 24;
+    const width = Math.max(
+      MOBILE_TRAIL_NODE_MIN_W,
+      Math.min(
+        MOBILE_TRAIL_NODE_MAX_W,
+        (measuredFlowWidth - 24 - TRAIL_NODE_GAP * 2) / 3,
+      ),
+    );
+
+    return {
+      width: Math.round(width),
+      height: Math.round(width * 1.45),
+    };
+  }, [flowWidth, isMobile]);
+
+  const viewerNodeSize = useMemo(
+    () =>
+      trailMode
+        ? trailNodeSize
+        : { width: TRAIL_NODE_W, height: TRAIL_NODE_H },
+    [trailMode, trailNodeSize],
+  );
+  const trailLevelGap = isMobile
+    ? trailNodeSize.height + 24
+    : TRAIL_LEVEL_GAP;
 
   // Responsive zigzag: the whole node (anchor + width) must fit the viewport
   // at trail zoom, so narrow phones get a tighter wiggle.
   const trailAmplitude = useMemo(() => {
-    if (flowWidth <= 0) return TRAIL_ZIGZAG_AMPLITUDE;
-    const viewportFlowWidth = flowWidth / TRAIL_ZOOM;
+    const viewportFlowWidth =
+      flowWidth > 0
+        ? flowWidth / TRAIL_ZOOM
+        : isMobile
+          ? MOBILE_TRAIL_NODE_MAX_W * 3 + TRAIL_NODE_GAP * 2 + 24
+          : Number.POSITIVE_INFINITY;
+    const usableFlowWidth =
+      Number.isFinite(viewportFlowWidth) && viewportFlowWidth > 0
+        ? Math.max(viewerNodeSize.width + TRAIL_NODE_GAP * 2, viewportFlowWidth - 24)
+        : Number.POSITIVE_INFINITY;
+
     return Math.max(
-      60,
-      Math.min(TRAIL_ZIGZAG_AMPLITUDE, (viewportFlowWidth - TRAIL_NODE_W) / 2 - 16),
+      TRAIL_NODE_GAP,
+      Math.min(
+        TRAIL_ZIGZAG_AMPLITUDE,
+        (usableFlowWidth - viewerNodeSize.width) / 2,
+      ),
     );
-  }, [flowWidth]);
+  }, [flowWidth, isMobile, viewerNodeSize.width]);
   const trailLayout = useMemo(
-    () => (trailMode ? computeTrailLayout(map, trailAmplitude) : null),
-    [trailMode, map, trailAmplitude],
+    () =>
+      trailMode
+        ? computeTrailLayout(map, trailAmplitude, trailLevelGap)
+        : null,
+    [trailMode, map, trailAmplitude, trailLevelGap],
   );
   const [progressReady, setProgressReady] = useState(false);
   const trailCenteredRef = useRef(false);
@@ -380,9 +454,10 @@ export function MapViewer({
     }
     if (!isFinite(minX)) return undefined;
 
-    // Positions anchor the node's top-left corner; the visible node extends
-    // TRAIL_NODE_W/H to the right/down, so the extent must cover that too.
-    const spanX = maxX + TRAIL_NODE_W - minX;
+    // Positions anchor the node's top-left corner; the fixed hitbox extends
+    // to the right/down, so the extent must cover the same geometry used by
+    // React Flow for touch selection.
+    const spanX = maxX + viewerNodeSize.width - minX;
     const viewportFlowWidth = flowWidth > 0 ? flowWidth / TRAIL_ZOOM : 0;
     // Keep the extent a few units NARROWER than the viewport (not exactly
     // equal) — exact equality leaves sub-pixel rounding slack that lets the
@@ -397,9 +472,12 @@ export function MapViewer({
 
     return [
       [minX - xPad, minY - TRAIL_Y_PAD],
-      [maxX + TRAIL_NODE_W + xPad, maxY + TRAIL_NODE_H + TRAIL_Y_PAD],
+      [
+        maxX + viewerNodeSize.width + xPad,
+        maxY + viewerNodeSize.height + TRAIL_Y_PAD,
+      ],
     ];
-  }, [trailMode, trailLayout, flowWidth]);
+  }, [trailMode, trailLayout, flowWidth, viewerNodeSize]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -1006,7 +1084,7 @@ export function MapViewer({
 
           if (needsGrading) {
             gradingIndicator = (
-              <div className="absolute -top-3 -right-3 z-30 animate-bounce">
+              <div className="pointer-events-none absolute -top-3 -right-3 z-30 animate-bounce">
                 <div className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-red-400">
                   GRADE
                 </div>
@@ -1039,7 +1117,7 @@ export function MapViewer({
               : "bg-slate-500";
 
           memberProgressInfo = (
-            <div className="absolute -top-8 right-0 z-30 transform scale-90 origin-bottom-right">
+            <div className="pointer-events-none absolute -top-8 right-0 z-30 origin-bottom-right scale-90 transform">
               <div
                 className={`${bgColor} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-md border border-white/20 flex items-center gap-1`}
               >
@@ -1057,7 +1135,7 @@ export function MapViewer({
           if (requirement === "all") {
             requirementBadge = (
               <div
-                className="absolute top-0 -left-2 z-20"
+                className="pointer-events-none absolute top-0 -left-2 z-20"
                 title="All members must submit"
               >
                 <div className="bg-purple-600 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center shadow border border-purple-400 font-bold">
@@ -1068,8 +1146,30 @@ export function MapViewer({
           }
         }
 
+        const spriteSize = Math.max(
+          64,
+          viewerNodeSize.width - TRAIL_SPRITE_INSET,
+        );
+        const labelWidth = Math.max(
+          MOBILE_TRAIL_NODE_MIN_W,
+          Math.min(152, viewerNodeSize.width),
+        );
+        const spriteShadow = selected
+          ? "drop-shadow(0 14px 18px rgba(0, 0, 0, 0.48))"
+          : "drop-shadow(0 10px 12px rgba(0, 0, 0, 0.34))";
+
         return (
-          <div className={`relative group ${animationClass}`}>
+          <div
+            className="map-node-hit-area relative flex items-start justify-center"
+            role="button"
+            tabIndex={isUnlocked ? 0 : -1}
+            aria-label={`${data.title} - ${isUnlocked ? "Available" : "Locked"} - Difficulty: ${data.difficulty} stars`}
+            style={{
+              width: viewerNodeSize.width,
+              height: viewerNodeSize.height,
+              touchAction: "manipulation",
+            }}
+          >
             <Handle
               type="target"
               position={Position.Left}
@@ -1084,10 +1184,13 @@ export function MapViewer({
             />
 
             {/* Core Node Visuals */}
-            <div className="relative min-w-[64px] min-h-[64px] w-fit h-fit flex items-center justify-center">
+            <div
+              className={`map-node-visual relative flex shrink-0 items-center justify-center ${animationClass}`}
+              style={{ width: spriteSize, height: spriteSize }}
+            >
               {/* Trail mode: soft static ring marking the student's current node */}
               {(data as any).isCurrent && (
-                <div className="absolute -inset-4 rounded-full trail-current-ring pointer-events-none z-10" />
+                <div className="pointer-events-none absolute -inset-4 z-10 rounded-full trail-current-ring" />
               )}
 
               {/* Trail mode (prototype): mock multiplayer presence — avatar
@@ -1113,7 +1216,7 @@ export function MapViewer({
                     return (
                       <div
                         key={a.id}
-                        className="absolute left-1/2 top-1/2 z-30 pointer-events-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.6)]"
+                        className="pointer-events-none absolute left-1/2 top-1/2 z-30 drop-shadow-[0_2px_3px_rgba(0,0,0,0.6)]"
                         style={{
                           transform: `translate(-50%, -50%) rotate(${angle}deg) translateX(${radius}px) rotate(${-angle}deg)`,
                         }}
@@ -1134,43 +1237,19 @@ export function MapViewer({
                 })()}
               {/* Background Atmosphere/Glow */}
               {isUnlocked && (
-                <div className="absolute inset-0 -z-10">
-                  {/* Main shadow image */}
-                  <img
-                    src={spriteUrl}
-                    alt=""
-                    className="w-auto h-auto object-contain absolute opacity-60"
-                    style={{
-                      filter: "brightness(0) blur(4px)",
-                      transform: "scale(1.3)",
-                    }}
-                  />
-                  {/* Secondary softer shadow for depth */}
-                  <img
-                    src={spriteUrl}
-                    alt=""
-                    className="w-max h-max object-contain absolute opacity-30"
-                    style={{
-                      filter: "brightness(0) blur(8px)",
-                      transform: "translateY(16px) scale(1.2)",
-                    }}
-                  />
-                  {/* Ground shadow for flying island effect */}
-                  <div
-                    className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 w-16 h-6 bg-black/20 rounded-full blur-md"
-                    style={{
-                      animation: selected
-                        ? "shadow-pulse 2s ease-in-out infinite"
-                        : "none",
-                    }}
-                  />
+                <div
+                  className="pointer-events-none absolute inset-0 z-0"
+                  aria-hidden="true"
+                >
+                  {/* A fixed ground shadow keeps the visual depth stable on iOS. */}
+                  <div className="map-node-ground-shadow absolute bottom-[-10px] left-1/2 h-3 w-[62%] -translate-x-1/2 rounded-[50%]" />
                 </div>
               )}
 
               {/* Progress Glow Effect */}
               {glowEffect && (
                 <div
-                  className={`absolute inset-0 ${glowEffect} rounded-full animate-pulse-slow`}
+                  className={`pointer-events-none absolute inset-0 ${glowEffect} rounded-full animate-pulse-slow`}
                 />
               )}
 
@@ -1185,19 +1264,22 @@ export function MapViewer({
               <img
                 src={spriteUrl}
                 alt={data.title}
-                className={`w-auto h-auto object-contain z-20 drop-shadow-lg hover:drop-shadow-xl transition-all duration-300 ${glowEffect}`}
+                className={`map-node-sprite relative z-20 block object-contain ${glowEffect}`}
                 style={{
-                  filter: selected
-                    ? `${brightness} brightness(1.15) saturate(1.3)`
-                    : brightness,
+                  width: spriteSize,
+                  height: spriteSize,
+                  filter: `${brightness} ${
+                    selected ? "brightness(1.15) saturate(1.3)" : ""
+                  } ${spriteShadow}`,
                 }}
               />
 
               {/* Floating Label */}
               <div
-                className={`absolute -bottom-11 left-1/2 transform -translate-x-1/2 ${selected ? "scale-105 -translate-y-1" : ""} transition-all duration-300 z-30`}
+                className="pointer-events-none absolute left-1/2 top-full z-30 mt-2 -translate-x-1/2"
+                style={{ width: labelWidth }}
               >
-                <div className="bg-card/95 backdrop-blur-sm border border-border rounded-xl px-3.5 py-2 shadow-lg hover:shadow-xl transition-all duration-200 w-[9.5rem] sm:w-[11rem]">
+                <div className="w-full rounded-xl border border-border bg-card/95 px-3.5 py-2 shadow-lg backdrop-blur-sm">
                   <div className="text-[11px] sm:text-xs font-bold text-card-foreground text-center break-words line-clamp-3 leading-snug">
                     {data.title}
                   </div>
@@ -1210,7 +1292,7 @@ export function MapViewer({
 
               {/* Lock Overlay for locked nodes */}
               {!isUnlocked && (
-                <div className="absolute inset-0 flex items-center justify-center">
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                   <div className="bg-black/60 rounded-full p-3 backdrop-blur-sm animate-pulse">
                     <Lock className="h-6 w-6 text-white drop-shadow-sm" />
                   </div>
@@ -1219,7 +1301,7 @@ export function MapViewer({
 
               {/* Hover Effect for Unlocked Nodes */}
               {isUnlocked && (
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="map-node-hover-glow pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300">
                   <div className="absolute inset-0 bg-gradient-to-t from-blue-400/10 to-transparent rounded-full blur-sm" />
                 </div>
               )}
@@ -1281,7 +1363,15 @@ export function MapViewer({
         );
       },
     }),
-    [progressMap, isInstructorOrTA, isTeamMap, isNodeUnlocked, isNodeCompleted, getSubmissionRequirement],
+    [
+      progressMap,
+      isInstructorOrTA,
+      isTeamMap,
+      isNodeUnlocked,
+      isNodeCompleted,
+      getSubmissionRequirement,
+      viewerNodeSize,
+    ],
   );
 
   // Trail mode: the student's "current" node — first unlocked node that is
@@ -1425,12 +1515,23 @@ export function MapViewer({
         connectable: false,
         selectable: true,
         selected: selectedNode?.id === node.id,
-        style: {
-          backgroundColor: "#ffffff00",
-          border: "2px solid #cccccc00",
-          flexGrow: 1,
-          aspectRatio: "1 / 1",
-        },
+        style:
+          nodeType === "default"
+            ? {
+                backgroundColor: "transparent",
+                border: "0 solid transparent",
+                padding: 0,
+                width: viewerNodeSize.width,
+                height: viewerNodeSize.height,
+                overflow: "visible",
+                touchAction: "manipulation",
+              }
+            : {
+                backgroundColor: "transparent",
+                border: "0 solid transparent",
+                padding: 0,
+                overflow: "visible",
+              },
       };
     });
 
@@ -1477,7 +1578,20 @@ export function MapViewer({
 
     setNodes(transformedNodes as any);
     setEdges(transformedEdges);
-  }, [map, progressMap, setNodes, setEdges, trailMode, trailLayout, currentTrailNodeId, currentUser, presenceByNode, nodeOverrides, deletedNodeIds]);
+  }, [
+    map,
+    progressMap,
+    setNodes,
+    setEdges,
+    trailMode,
+    trailLayout,
+    currentTrailNodeId,
+    currentUser,
+    presenceByNode,
+    nodeOverrides,
+    deletedNodeIds,
+    viewerNodeSize,
+  ]);
 
   // Trail mode: pan the camera to a node, but clamp the destination to the
   // legal pan area (trailTranslateExtent) BEFORE animating. Raw setCenter can
@@ -1490,13 +1604,15 @@ export function MapViewer({
       duration: number,
     ) => {
       const k = TRAIL_ZOOM;
-      const el = document.querySelector(".react-flow");
+      const el = mapCanvasRef.current?.querySelector(
+        ".react-flow",
+      ) as HTMLElement | null;
       const vw = el?.clientWidth ?? window.innerWidth;
       const vh = el?.clientHeight ?? window.innerHeight;
 
       const internal = reactFlowInstance.getNode(nodeId);
-      const w = internal?.measured?.width ?? TRAIL_NODE_W;
-      const h = internal?.measured?.height ?? TRAIL_NODE_H;
+      const w = internal?.measured?.width ?? viewerNodeSize.width;
+      const h = internal?.measured?.height ?? viewerNodeSize.height;
 
       // Raw target: node centered in the viewport.
       let tx = vw / 2 - (position.x + w / 2) * k;
@@ -1517,7 +1633,13 @@ export function MapViewer({
 
       reactFlowInstance.setViewport({ x: tx, y: ty, zoom: k }, { duration });
     },
-    [reactFlowInstance, trailTranslateExtent],
+    [
+      mapCanvasRef,
+      reactFlowInstance,
+      trailTranslateExtent,
+      viewerNodeSize.width,
+      viewerNodeSize.height,
+    ],
   );
 
   // Trail mode: skip fitView and, once progress has settled, center the
@@ -1679,7 +1801,10 @@ export function MapViewer({
   const useMobileBottomSheet = trailMode && isNarrowScreen;
 
   const mapCanvas = (
-    <div className={trailMode ? "flex-1 trail-mode relative" : "flex-1 relative"}>
+    <div
+      ref={mapCanvasRef}
+      className={trailMode ? "flex-1 trail-mode relative" : "flex-1 relative"}
+    >
       {headerContent}
       <ReactFlow
         nodes={nodes}
@@ -1694,6 +1819,7 @@ export function MapViewer({
         nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable={true}
+        selectionOnDrag={false}
         panOnScroll
         panOnDrag={[0, 1, 2]}
         attributionPosition="bottom-left"
@@ -2132,6 +2258,47 @@ export function MapViewerWithProvider({
            a page scroll and users need two fingers to move the map. */
         .trail-mode .react-flow__pane {
           touch-action: none;
+        }
+
+        /* React Flow selects rectangular nodes. Keep that rectangle explicit
+           and let labels, shadows, and hover decoration stay non-interactive
+           so an overlapping visual cannot steal a phone tap. */
+        .map-node-hit-area {
+          -webkit-tap-highlight-color: transparent;
+          user-select: none;
+        }
+
+        .map-node-sprite {
+          max-width: none;
+        }
+
+        .map-node-ground-shadow {
+          background: radial-gradient(
+            ellipse,
+            rgba(0, 0, 0, 0.3) 0%,
+            rgba(0, 0, 0, 0.16) 48%,
+            transparent 76%
+          );
+          filter: blur(5px);
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+          .map-node-hit-area:hover .map-node-hover-glow {
+            opacity: 1;
+          }
+        }
+
+        @media (hover: none) {
+          .map-node-hit-area:hover .map-node-hover-glow {
+            opacity: 0;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .map-node-visual,
+          .map-node-ground-shadow {
+            animation: none !important;
+          }
         }
 
         /* Trail mode: soft static ring on the student's current node. */

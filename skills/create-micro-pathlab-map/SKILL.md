@@ -5,8 +5,9 @@ description: Create, validate, and persist a 5–45 minute Micro PathLab as a st
 
 # Create Micro PathLab Map
 
-Build a standalone `learning_maps` experience that renders directly at
-`/map/<mapId>`.
+Build a `learning_maps` PathLab experience that renders directly at
+`/map/<mapId>`. This is the canonical map/node architecture for both Micro
+PathLabs and longer PathLab experiences.
 
 ## Required context
 
@@ -17,8 +18,9 @@ Read:
 2. Repository `docs/pathlab-design-doctrine.md`
    for the editorial standard.
 
-Use this standalone contract even if `app/project/page.tsx` or an older PathLab
-skill shows `seed`, `path`, or `days` fields.
+Use this contract even if `app/project/page.tsx` or an older PathLab generator
+shows `seed`, `path`, or `days` fields. Those fields are compatibility/editorial
+metadata, not the persistence model.
 
 ## Surface boundary
 
