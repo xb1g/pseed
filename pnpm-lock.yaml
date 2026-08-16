@@ -48,8 +48,8 @@ importers:
         specifier: ^3.10.0
         version: 3.10.0(react-hook-form@7.71.1(react@19.2.4))
       '@icons-pack/react-simple-icons':
-        specifier: ^12.9.0
-        version: 12.9.0(react@19.2.4)
+        specifier: ^13.13.0
+        version: 13.13.0(react@19.2.4)
       '@line/bot-sdk':
         specifier: ^11.0.0
         version: 11.0.0
@@ -1262,8 +1262,9 @@ packages:
   '@iconify/utils@3.1.0':
     resolution: {integrity: sha512-Zlzem1ZXhI1iHeeERabLNzBHdOa4VhQbqAcOQaMKuTuyZCpwKbC2R4Dd0Zo3g9EAc+Y4fiarO8HIHRAth7+skw==}
 
-  '@icons-pack/react-simple-icons@12.9.0':
-    resolution: {integrity: sha512-GLb2ayO78ZjjmI7GMpCDlXcELEr3DPO89nordI/JC8dMiJDMzuPb3qeOTt+SWcFOyJ+SAh9C/feUCpiBSM8ZLQ==}
+  '@icons-pack/react-simple-icons@13.13.0':
+    resolution: {integrity: sha512-B5HhQMIpcSH4z8IZ8HFhD59CboHceKYMpPC9kAwGyKntvPdyJJv26DLu4Z1wAjcCLyrJhf11tMhiQGom9Rxb9g==}
+    engines: {node: '>=24', pnpm: '>=10'}
     peerDependencies:
       react: ^16.13 || ^17 || ^18 || ^19
 
@@ -8753,7 +8754,7 @@ snapshots:
       '@iconify/types': 2.0.0
       mlly: 1.8.0
 
-  '@icons-pack/react-simple-icons@12.9.0(react@19.2.4)':
+  '@icons-pack/react-simple-icons@13.13.0(react@19.2.4)':
     dependencies:
       react: 19.2.4
 
