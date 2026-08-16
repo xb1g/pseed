@@ -664,3 +664,22 @@ Same 4 steps as B1 with `scripts/rewrite-launchpad-day-5-6.ts`.
 Workstreams A and B are independent: run A1→A2→A3 sequentially (shared files),
 B1, B2, B3 in parallel (disjoint row IDs, one shared dump artifact: each B task
 re-runs the dump after its own update; final combined review reads the last dump).
+
+### Task A4: Dawn-themed loading skeletons
+
+The student-facing loading states are generic gray/blue boxes
+(`app/map/loading.tsx`, `app/map/[id]/loading.tsx`); a third file
+(`app/map/map-skeleton.tsx`, a vinyl-record skeleton) is dead code with no
+importers.
+
+- [ ] Step 1: Remake `app/map/loading.tsx` (maps lobby): `dawn-theme` wrapper +
+  `<DawnScene />`, skeleton blocks as warm glass (`bg-white/5 border-white/10`)
+  matching the real lobby layout (read `app/map/client-page.tsx` for the real
+  section/card shape first). Pulse only via `motion-safe:animate-pulse`.
+- [ ] Step 2: Remake `app/map/[id]/loading.tsx` (map view): same Dawn shell;
+  canvas area with a few faint island-node placeholders, right column styled like
+  `.dawn-panel`. Keep the `h-[calc(100vh-var(--header-height))]` sizing.
+- [ ] Step 3: Delete `app/map/map-skeleton.tsx` (verify zero importers first:
+  `grep -rn "map-skeleton\|MapSkeleton" --include="*.tsx" app components`).
+- [ ] Step 4: Leave `app/map/[id]/edit/loading.tsx` (admin editor) unchanged.
+- [ ] Step 5: Verify `pnpm lint` clean. No commit (handled centrally).

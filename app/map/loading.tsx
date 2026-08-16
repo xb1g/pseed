@@ -1,41 +1,54 @@
-import { Skeleton } from "@/components/ui/skeleton";
-import { Compass } from "lucide-react";
+import { DawnScene } from "@/components/projectseed/dawn-scene";
 
+// Dawn-themed skeleton for the Pathlabs lobby. Warm-glass blocks mirror the
+// real layout in client-page.tsx: centered HeroHeader, then map sections of
+// square vinyl cards. Decorative only; pulse stops under reduced motion.
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950">
-      {/* Hero Header Skeleton */}
-      <div className="bg-gradient-to-r from-slate-800 via-blue-900 to-indigo-900 text-white border-b border-blue-800/50">
-        <div className="container mx-auto px-6 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm border border-blue-400/30">
-                <Compass className="h-5 w-5 text-blue-300" />
+    <div className="dawn-theme min-h-screen">
+      <DawnScene />
+
+      <div
+        role="status"
+        aria-label="Loading"
+        className="relative z-10 motion-safe:animate-pulse"
+      >
+        {/* Hero header skeleton (mirrors components/map/HeroHeader.tsx) */}
+        <div className="border-b border-white/5">
+          <div className="container mx-auto flex flex-col items-center gap-5 px-6 py-8">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-full border border-white/10 bg-white/5" />
+              <div className="space-y-2">
+                <div className="h-6 w-28 rounded bg-white/10" />
+                <div className="h-3 w-36 rounded bg-white/5" />
               </div>
-              <h1 className="text-3xl font-bold tracking-tight">
-                Pathlabs
-              </h1>
             </div>
-            <Skeleton className="h-10 w-32 bg-blue-800/30" />
+            <div className="h-4 w-full max-w-3xl rounded bg-white/5" />
           </div>
         </div>
-      </div>
 
-      {/* Maps Grid Skeleton */}
-      <div className="container mx-auto px-6 py-8 space-y-8">
-        <div className="space-y-6">
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-6 w-6 bg-blue-800/30 rounded" />
-            <Skeleton className="h-8 w-48 bg-blue-800/30" />
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {[...Array(10)].map((_, i) => (
-              <div key={i} className="flex flex-col space-y-3">
-                <Skeleton className="aspect-square w-full rounded-lg bg-blue-800/30" />
-                <Skeleton className="h-4 w-3/4 bg-blue-800/30" />
-                <Skeleton className="h-3 w-1/2 bg-blue-800/30" />
-              </div>
-            ))}
+        {/* Map section skeleton (mirrors components/map/MapSection.tsx) */}
+        <div className="container mx-auto space-y-8 px-6 py-8">
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="h-6 w-6 rounded border border-white/10 bg-white/5" />
+              <div className="h-7 w-44 rounded bg-white/10" />
+              <div className="h-4 w-16 rounded bg-white/5" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="relative">
+                  {/* Vinyl peeking above the cover */}
+                  <div className="absolute -top-5 left-1/2 h-16 w-16 -translate-x-1/2 rounded-full border border-white/10 bg-white/[0.03]" />
+                  {/* Album cover tile with title bars at the bottom */}
+                  <div className="relative flex aspect-square w-full flex-col justify-end gap-2 overflow-hidden rounded-lg border border-white/10 bg-white/5 p-4">
+                    <div className="h-4 w-3/4 rounded bg-white/10" />
+                    <div className="h-3 w-1/2 rounded bg-white/5" />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

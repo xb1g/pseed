@@ -12174,3 +12174,164 @@ a.pathlab-fields__button {
     animation: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * .learning-content-text — reading typography for long-form learning content
+ * (student node view, submission review). Warm dawn palette, 65ch measure,
+ * relaxed rhythm. Single source of truth so every reading surface matches.
+ * ------------------------------------------------------------------------- */
+.learning-content-text {
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  letter-spacing: 0.003em;
+  color: rgb(231 229 228);
+  max-width: 65ch;
+}
+.learning-content-text h1,
+.learning-content-text h2,
+.learning-content-text h3,
+.learning-content-text h4 {
+  color: rgb(250 250 249);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+.learning-content-text h1 {
+  font-size: 1.875rem;
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+.learning-content-text h1:not(:first-child) {
+  margin-top: 2rem;
+}
+.learning-content-text h2 {
+  font-size: 1.5rem;
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+.learning-content-text h2:not(:first-child) {
+  margin-top: 1.5rem;
+}
+.learning-content-text h3 {
+  font-size: 1.25rem;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+.learning-content-text h3:not(:first-child) {
+  margin-top: 1.25rem;
+}
+.learning-content-text h4 {
+  font-size: 1.125rem;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+.learning-content-text h4:not(:first-child) {
+  margin-top: 1rem;
+}
+.learning-content-text p {
+  margin-bottom: 1.125rem;
+  line-height: 1.8;
+}
+.learning-content-text p:last-child {
+  margin-bottom: 0;
+}
+.learning-content-text strong {
+  color: rgb(245 245 244);
+  font-weight: 600;
+}
+.learning-content-text a {
+  color: rgb(252 211 77);
+  text-decoration: underline;
+  text-decoration-color: rgb(252 211 77 / 0.35);
+  text-underline-offset: 3px;
+  font-weight: 500;
+  transition: color 0.15s, text-decoration-color 0.15s;
+}
+.learning-content-text a:hover {
+  color: rgb(253 230 138);
+  text-decoration-color: rgb(253 230 138 / 0.8);
+}
+.learning-content-text ul,
+.learning-content-text ol {
+  margin: 1.25rem 0;
+  padding-left: 1.5rem;
+}
+.learning-content-text ul:first-child,
+.learning-content-text ol:first-child {
+  margin-top: 0;
+}
+.learning-content-text ul {
+  list-style: disc;
+}
+.learning-content-text ol {
+  list-style: decimal;
+}
+.learning-content-text li {
+  margin-bottom: 0.5rem;
+  line-height: 1.7;
+}
+.learning-content-text li::marker {
+  color: rgb(252 211 77 / 0.55);
+}
+.learning-content-text li:last-child {
+  margin-bottom: 0;
+}
+.learning-content-text code {
+  background-color: rgb(28 25 23);
+  color: rgb(253 230 138);
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.85em;
+  font-family: 'Monaco', 'Courier New', monospace;
+  border: 1px solid rgb(68 64 60);
+}
+.learning-content-text pre {
+  background-color: rgb(12 10 9);
+  border: 1px solid rgb(41 37 36);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1.25rem 0;
+  overflow-x: auto;
+}
+.learning-content-text pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: rgb(231 229 228);
+}
+.learning-content-text blockquote {
+  border-left: 3px solid rgb(252 211 77 / 0.35);
+  padding-left: 1rem;
+  margin: 1.25rem 0;
+  font-style: italic;
+  color: rgb(214 211 209);
+}
+.learning-content-text del {
+  color: rgb(168 162 158);
+}
+.learning-content-text table {
+  width: 100%;
+  margin: 1.25rem 0;
+  font-size: 0.9375rem;
+  border-collapse: collapse;
+}
+.learning-content-text th,
+.learning-content-text td {
+  border: 1px solid rgb(68 64 60);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+.learning-content-text th {
+  color: rgb(245 245 244);
+  font-weight: 600;
+  background-color: rgb(28 25 23 / 0.6);
+}
+.learning-content-text img {
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  margin: 1.25rem 0;
+}
+.learning-content-text hr {
+  border-color: rgb(68 64 60);
+  margin: 2rem 0;
+}
