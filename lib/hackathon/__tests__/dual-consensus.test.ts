@@ -84,10 +84,10 @@ describe("runDualGrade consensus rules", () => {
   it("both passed → auto-approve with Kimi feedback and averaged score", () => {
     const outcome = runDualGrade(kimiResult, minimaxResult);
     expect(outcome.autoApprove).toBe(true);
-    expect(outcome.draft.status).toBe("passed");
-    expect(outcome.draft.score_awarded).toBe(85); // average of 90 and 80
-    expect(outcome.draft.feedback).toBe("Kimi feedback");
-    expect(outcome.draft.consensus?.agreement).toBe("agree");
+    expect(outcome.draft!.status).toBe("passed");
+    expect(outcome.draft!.score_awarded).toBe(85); // average of 90 and 80
+    expect(outcome.draft!.feedback).toBe("Kimi feedback");
+    expect(outcome.draft!.consensus?.agreement).toBe("agree");
   });
 
   it("both revision_required → draft with stricter (min) score, no auto-approve", () => {
@@ -95,9 +95,9 @@ describe("runDualGrade consensus rules", () => {
     const m = { ...minimaxResult, status: "revision_required" as const, score_awarded: 30 };
     const outcome = runDualGrade(k, m);
     expect(outcome.autoApprove).toBe(false);
-    expect(outcome.draft.status).toBe("revision_required");
-    expect(outcome.draft.score_awarded).toBe(35); // average of 40 and 30
-    expect(outcome.draft.consensus?.agreement).toBe("agree");
+    expect(outcome.draft!.status).toBe("revision_required");
+    expect(outcome.draft!.score_awarded).toBe(35); // average of 40 and 30
+    expect(outcome.draft!.consensus?.agreement).toBe("agree");
   });
 
   it("disagree (passed vs revision_required) → pending_review with both opinions", () => {
@@ -105,11 +105,11 @@ describe("runDualGrade consensus rules", () => {
     const m = { ...minimaxResult, status: "revision_required" as const, score_awarded: 30 };
     const outcome = runDualGrade(k, m);
     expect(outcome.autoApprove).toBe(false);
-    expect(outcome.draft.status).toBe("pending_review");
-    expect(outcome.draft.consensus?.agreement).toBe("disagree");
-    expect(outcome.draft.consensus?.models).toHaveLength(2);
-    expect(outcome.draft.consensus?.models[0].model).toBe("kimi-for-coding");
-    expect(outcome.draft.consensus?.models[1].model).toBe("minimax-m2-highspeed");
+    expect(outcome.draft!.status).toBe("pending_review");
+    expect(outcome.draft!.consensus?.agreement).toBe("disagree");
+    expect(outcome.draft!.consensus?.models).toHaveLength(2);
+    expect(outcome.draft!.consensus!.models![0]!.model).toBe("kimi-for-coding");
+    expect(outcome.draft!.consensus!.models![1]!.model).toBe("minimax-m2-highspeed");
   });
 
   it("disagree (revision_required vs passed) → pending_review with both opinions", () => {
@@ -117,24 +117,24 @@ describe("runDualGrade consensus rules", () => {
     const m = { ...minimaxResult, status: "passed" as const };
     const outcome = runDualGrade(k, m);
     expect(outcome.autoApprove).toBe(false);
-    expect(outcome.draft.status).toBe("pending_review");
-    expect(outcome.draft.consensus?.agreement).toBe("disagree");
+    expect(outcome.draft!.status).toBe("pending_review");
+    expect(outcome.draft!.consensus?.agreement).toBe("disagree");
   });
 
   it("MiniMax errors, Kimi passed → single-model auto-approve via Kimi", () => {
     const outcome = runDualGrade(kimiResult, null);
     expect(outcome.autoApprove).toBe(true);
-    expect(outcome.draft.status).toBe("passed");
-    expect(outcome.draft.feedback).toBe("Kimi feedback");
-    expect(outcome.draft.consensus?.agreement).toBe("single_model");
+    expect(outcome.draft!.status).toBe("passed");
+    expect(outcome.draft!.feedback).toBe("Kimi feedback");
+    expect(outcome.draft!.consensus?.agreement).toBe("single_model");
   });
 
   it("Kimi errors, MiniMax passed → single-model auto-approve via MiniMax", () => {
     const outcome = runDualGrade(null, minimaxResult);
     expect(outcome.autoApprove).toBe(true);
-    expect(outcome.draft.status).toBe("passed");
-    expect(outcome.draft.feedback).toBe("MiniMax feedback");
-    expect(outcome.draft.consensus?.agreement).toBe("single_model");
+    expect(outcome.draft!.status).toBe("passed");
+    expect(outcome.draft!.feedback).toBe("MiniMax feedback");
+    expect(outcome.draft!.consensus?.agreement).toBe("single_model");
   });
 
   it("both models error → error outcome, no draft", () => {
@@ -147,23 +147,23 @@ describe("runDualGrade consensus rules", () => {
     const k = { ...kimiResult, status: "revision_required" as const };
     const outcome = runDualGrade(k, null);
     expect(outcome.autoApprove).toBe(false);
-    expect(outcome.draft.status).toBe("revision_required");
-    expect(outcome.draft.consensus?.agreement).toBe("single_model");
+    expect(outcome.draft!.status).toBe("revision_required");
+    expect(outcome.draft!.consensus?.agreement).toBe("single_model");
   });
 
   it("Kimi errors, MiniMax revision_required → single-model draft no auto-approve", () => {
     const m = { ...minimaxResult, status: "revision_required" as const };
     const outcome = runDualGrade(null, m);
     expect(outcome.autoApprove).toBe(false);
-    expect(outcome.draft.status).toBe("revision_required");
-    expect(outcome.draft.consensus?.agreement).toBe("single_model");
+    expect(outcome.draft!.status).toBe("revision_required");
+    expect(outcome.draft!.consensus?.agreement).toBe("single_model");
   });
 
   it("disagree consensus JSON contains all required fields", () => {
     const k = { ...kimiResult, status: "passed" as const };
     const m = { ...minimaxResult, status: "revision_required" as const, score_awarded: 30 };
     const outcome = runDualGrade(k, m);
-    const models = outcome.draft.consensus?.models ?? [];
+    const models = outcome.draft!.consensus?.models ?? [];
     expect(models).toHaveLength(2);
     for (const entry of models) {
       expect(entry).toHaveProperty("model");
