@@ -66,6 +66,16 @@ export default function PathlabJourneyMap() {
     };
   }, []);
 
+  // Escape dismisses the anchored popup while one is open.
+  useEffect(() => {
+    if (!selectedId) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSelectedId(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [selectedId]);
+
   const stops = useMemo(
     () => (preview ? toTrailStops(preview) : []),
     [preview]
@@ -155,20 +165,59 @@ export default function PathlabJourneyMap() {
             </button>
           );
         })}
+        {selected && (
+          <>
+            <div
+              className="pathlab-journey-map__popup-backdrop"
+              aria-hidden="true"
+              onClick={() => setSelectedId(null)}
+            />
+            <div
+              role="dialog"
+              aria-label={selected.title}
+              className="pathlab-journey-map__popup"
+              style={{
+                top: selected.row * TRAIL_ROW_PX + 96,
+                left: `clamp(8.5rem, ${selected.xPct}%, calc(100% - 8.5rem))`,
+              }}
+            >
+              <button
+                type="button"
+                aria-label="ปิด"
+                className="pathlab-journey-map__popup-close"
+                onClick={() => setSelectedId(null)}
+              >
+                ×
+              </button>
+              <p className="pathlab-journey-map__popup-title">
+                {selected.title}
+              </p>
+              {selected.snippet && (
+                <p className="pathlab-journey-map__popup-body">
+                  {selected.snippet}
+                </p>
+              )}
+              <Link
+                href={`/map/${preview.map.id}`}
+                className="pathlab-journey-map__cta"
+              >
+                {JOURNEY_MAP.ctaLabel}
+              </Link>
+            </div>
+          </>
+        )}
       </div>
 
       <p className="pathlab-journey-map__hint">
         <span className="pathlab-note">{JOURNEY_MAP.hint}</span>
       </p>
 
-      <div className="pathlab-journey-map__detail" aria-live="polite">
+      <div className="pathlab-journey-map__detail">
         <p className="pathlab-journey-map__detail-heading">
-          {selected ? selected.title : preview.map.title}
+          {preview.map.title}
         </p>
         <p className="pathlab-journey-map__detail-doing">
-          {selected
-            ? (selected.snippet ?? preview.map.description ?? "")
-            : (preview.map.description ?? "")}
+          {preview.map.description ?? ""}
         </p>
         <Link
           href={`/map/${preview.map.id}`}
