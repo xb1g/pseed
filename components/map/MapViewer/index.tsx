@@ -6,7 +6,6 @@ import {
   useEdgesState,
   OnSelectionChangeParams,
   ReactFlowProvider,
-  type Node,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -153,7 +152,7 @@ function MapViewer({ map, seedRoomId, seedTitle, seedId }: MapViewerProps) {
     ),
   };
 
-  const [reactFlowNodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [reactFlowNodes, setNodes, onNodesChange] = useNodesState<MapViewerNode>([]);
   const [reactFlowEdges, setEdges, onEdgesChange] = useEdgesState<MapViewerEdge>([]);
 
   // Transform and set nodes/edges when dependencies change

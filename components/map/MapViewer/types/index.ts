@@ -28,6 +28,8 @@ export type AnyProgress = StudentProgress | TeamNodeProgress;
 export type EnhancedProgress = AnyProgress & {
   member_progress?: TeamMemberProgress[];
   best_submission?: any;
+  // Present on student progress; team progress rows may omit it.
+  submitted_at?: string | null;
 };
 
 // Map type detection
@@ -59,13 +61,17 @@ export type SubmissionRequirement = "single" | "all";
 // Progress map type
 export type ProgressMap = Record<string, EnhancedProgress>;
 
-// ReactFlow node with enhanced data
-export interface MapViewerNode extends Node {
-  data: MapNode & {
-    progress?: EnhancedProgress;
-    node_type?: string;
-  };
-}
+// ReactFlow node with enhanced data.
+// xyflow v12 requires Node data to be indexable (Record<string, unknown>), so
+// this is a type alias of Node<CustomData> rather than an interface extension —
+// an interface extension of a concrete (non-indexable) data type fails to
+// satisfy the Node constraint.
+export type MapViewerNodeData = MapNode & {
+  progress?: EnhancedProgress;
+  node_type?: string;
+} & Record<string, unknown>;
+
+export type MapViewerNode = Node<MapViewerNodeData>;
 
 // ReactFlow edge for map
 export interface MapViewerEdge extends Edge {
