@@ -55,10 +55,10 @@ const processTextContent = (content: string): string => {
 
 // Custom fallback components for better UX - memoized to prevent unnecessary re-renders
 const LoadingFallback = memo(({ url }: { url: string }) => (
-  <div className="aspect-video bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg flex flex-col items-center justify-center text-center p-6 animate-pulse">
-    <PlayCircle className="h-12 w-12 text-slate-400 mb-4" />
-    <h3 className="font-semibold text-slate-600 mb-2">Loading content...</h3>
-    <p className="text-sm text-slate-500">Preparing your media for viewing</p>
+  <div className="aspect-video bg-gradient-to-br from-stone-800/80 to-stone-900/80 rounded-lg flex flex-col items-center justify-center text-center p-6 animate-pulse">
+    <PlayCircle className="h-12 w-12 text-stone-500 mb-4" />
+    <h3 className="font-semibold text-stone-300 mb-2">Loading content...</h3>
+    <p className="text-sm text-stone-500">Preparing your media for viewing</p>
   </div>
 ));
 LoadingFallback.displayName = "LoadingFallback";
@@ -215,16 +215,18 @@ const TextContent = memo(({ contentBody }: { contentBody: string }) => {
       <style jsx global>{`
         .learning-content-text {
           font-size: 1.0625rem;
-          line-height: 1.75;
-          color: rgb(156 163 175);
+          line-height: 1.8;
+          letter-spacing: 0.003em;
+          color: rgb(231 229 228);
+          max-width: 65ch;
         }
         .learning-content-text h1,
         .learning-content-text h2,
         .learning-content-text h3,
         .learning-content-text h4 {
-          color: rgb(243 244 246);
+          color: rgb(250 250 249);
           font-weight: 600;
-          letter-spacing: -0.025em;
+          letter-spacing: -0.02em;
           line-height: 1.3;
         }
         .learning-content-text h1 {
@@ -260,29 +262,31 @@ const TextContent = memo(({ contentBody }: { contentBody: string }) => {
           margin-top: 1rem;
         }
         .learning-content-text p {
-          margin-bottom: 1rem;
-          line-height: 1.75;
+          margin-bottom: 1.125rem;
+          line-height: 1.8;
         }
         .learning-content-text p:last-child {
           margin-bottom: 0;
         }
         .learning-content-text strong {
-          color: rgb(229 231 235);
+          color: rgb(245 245 244);
           font-weight: 600;
         }
         .learning-content-text a {
-          color: rgb(96 165 250);
-          text-decoration: none;
+          color: rgb(252 211 77);
+          text-decoration: underline;
+          text-decoration-color: rgb(252 211 77 / 0.35);
+          text-underline-offset: 3px;
           font-weight: 500;
-          transition: all 0.2s;
+          transition: color 0.15s, text-decoration-color 0.15s;
         }
         .learning-content-text a:hover {
-          text-decoration: underline;
-          color: rgb(147 197 253);
+          color: rgb(253 230 138);
+          text-decoration-color: rgb(253 230 138 / 0.8);
         }
         .learning-content-text ul,
         .learning-content-text ol {
-          margin: 1rem 0;
+          margin: 1.25rem 0;
           padding-left: 1.5rem;
         }
         .learning-content-text ul:first-child,
@@ -291,50 +295,72 @@ const TextContent = memo(({ contentBody }: { contentBody: string }) => {
         }
         .learning-content-text li {
           margin-bottom: 0.5rem;
-          line-height: 1.75;
+          line-height: 1.7;
+        }
+        .learning-content-text li::marker {
+          color: rgb(252 211 77 / 0.55);
         }
         .learning-content-text li:last-child {
           margin-bottom: 0;
         }
         .learning-content-text code {
-          background-color: rgb(31 41 55);
-          color: rgb(229 231 235);
-          padding: 0.25rem 0.5rem;
-          border-radius: 0.375rem;
-          font-size: 0.875rem;
+          background-color: rgb(28 25 23);
+          color: rgb(253 230 138);
+          padding: 0.15rem 0.4rem;
+          border-radius: 0.25rem;
+          font-size: 0.85em;
           font-family: 'Monaco', 'Courier New', monospace;
-          border: 1px solid rgb(55 65 81);
+          border: 1px solid rgb(68 64 60);
         }
         .learning-content-text pre {
-          background-color: rgb(17 24 39);
-          border: 1px solid rgb(55 65 81);
+          background-color: rgb(12 10 9);
+          border: 1px solid rgb(41 37 36);
           border-radius: 0.5rem;
           padding: 1rem;
-          margin: 1rem 0;
+          margin: 1.25rem 0;
           overflow-x: auto;
         }
         .learning-content-text pre code {
           background: transparent;
           border: none;
           padding: 0;
+          color: rgb(231 229 228);
         }
         .learning-content-text blockquote {
-          border-left: 4px solid rgb(59 130 246 / 0.5);
+          border-left: 3px solid rgb(252 211 77 / 0.35);
           padding-left: 1rem;
-          padding-top: 0.5rem;
-          padding-bottom: 0.5rem;
-          margin: 1rem 0;
+          margin: 1.25rem 0;
           font-style: italic;
-          background-color: rgb(31 41 55 / 0.3);
+          color: rgb(214 211 209);
+        }
+        .learning-content-text del {
+          color: rgb(168 162 158);
+        }
+        .learning-content-text table {
+          width: 100%;
+          margin: 1.25rem 0;
+          font-size: 0.9375rem;
+          border-collapse: collapse;
+        }
+        .learning-content-text th,
+        .learning-content-text td {
+          border: 1px solid rgb(68 64 60);
+          padding: 0.5rem 0.75rem;
+          text-align: left;
+        }
+        .learning-content-text th {
+          color: rgb(245 245 244);
+          font-weight: 600;
+          background-color: rgb(28 25 23 / 0.6);
         }
         .learning-content-text img {
           border-radius: 0.5rem;
           box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-          margin: 1rem 0;
+          margin: 1.25rem 0;
         }
         .learning-content-text hr {
-          border-color: rgb(55 65 81);
-          margin: 1.5rem 0;
+          border-color: rgb(68 64 60);
+          margin: 2rem 0;
         }
       `}</style>
       <div
@@ -369,8 +395,8 @@ export const renderContent = (
       sensitivity: "accent",
     }) === 0;
   const TitleSection = trimmedTitle && !isDuplicateOfNodeTitle ? (
-    <div className="mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
-      <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+    <div className="mb-4 pb-3 border-b border-stone-200 dark:border-stone-700">
+      <h3 className="text-xl font-semibold text-stone-900 dark:text-stone-50">
         {contentTitle}
       </h3>
     </div>
@@ -429,20 +455,20 @@ export const renderContent = (
         <div className="w-full space-y-4" key={contentKey}>
           {TitleSection}
           {/* PDF Viewer with better options */}
-          <div className="relative w-full bg-white rounded-lg shadow-lg border border-gray-200">
+          <div className="relative w-full bg-white rounded-lg shadow-lg border border-stone-200">
             {/* Header with controls */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-200 rounded-t-lg">
+            <div className="flex items-center justify-between p-4 bg-stone-50 border-b border-stone-200 rounded-t-lg">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
                   <span className="text-white text-sm font-bold">PDF</span>
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-gray-900 block">
+                  <span className="text-sm font-medium text-stone-900 block">
                     {isDuplicateOfNodeTitle
                       ? fileName
                       : contentTitle?.trim() || fileName}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-stone-500">
                     PDF Document
                   </span>
                 </div>
@@ -457,7 +483,7 @@ export const renderContent = (
                   <Button
                     variant="outline"
                     size="sm"
-                    className="text-blue-600 hover:text-blue-700 border-blue-300 hover:bg-blue-50"
+                    className="text-amber-700 hover:text-amber-800 border-amber-300 hover:bg-amber-50"
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Full Screen
@@ -469,7 +495,7 @@ export const renderContent = (
             {/* Multiple PDF viewing options for better compatibility */}
             <div className="relative w-full">
               {/* Primary PDF viewer using Google Docs viewer */}
-              <div className="bg-gray-100 p-2 rounded">
+              <div className="bg-stone-100 p-2 rounded">
                 <iframe
                   src={`https://docs.google.com/viewer?url=${encodeURIComponent(contentUrl)}&embedded=true`}
                   className="w-full border-0 rounded"
@@ -480,9 +506,9 @@ export const renderContent = (
               </div>
 
               {/* Alternative viewing options */}
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg border-t border-gray-200">
+              <div className="mt-4 p-4 bg-stone-50 rounded-lg border-t border-stone-200">
                 <div className="flex flex-col gap-4">
-                  <p className="text-sm text-gray-600 text-center">
+                  <p className="text-sm text-stone-600 text-center">
                     Choose your preferred viewing method:
                   </p>
 
@@ -497,7 +523,7 @@ export const renderContent = (
                       <Button
                         variant="outline"
                         size="sm"
-                        className="w-full text-blue-600 hover:text-blue-700 border-blue-300 hover:bg-blue-50"
+                        className="w-full text-amber-700 hover:text-amber-800 border-amber-300 hover:bg-amber-50"
                       >
                         <ExternalLink className="h-4 w-4 mr-2" />
                         Browser Viewer
@@ -514,7 +540,7 @@ export const renderContent = (
                       <Button
                         variant="outline"
                         size="sm"
-                        className="w-full text-green-600 hover:text-green-700 border-green-300 hover:bg-green-50"
+                        className="w-full text-amber-700 hover:text-amber-800 border-amber-300 hover:bg-amber-50"
                       >
                         <ExternalLink className="h-4 w-4 mr-2" />
                         Full Screen
@@ -530,7 +556,7 @@ export const renderContent = (
                       <Button
                         variant="outline"
                         size="sm"
-                        className="w-full text-purple-600 hover:text-purple-700 border-purple-300 hover:bg-purple-50"
+                        className="w-full text-amber-700 hover:text-amber-800 border-amber-300 hover:bg-amber-50"
                       >
                         <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -565,19 +591,19 @@ export const renderContent = (
       return (
         <div key={contentKey}>
           {TitleSection}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-6">
+          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-6">
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-12 h-12 bg-blue-600 dark:bg-blue-500 rounded-lg flex items-center justify-center">
-                <ExternalLink className="h-6 w-6 text-white" />
+              <div className="flex-shrink-0 w-12 h-12 bg-amber-200/15 rounded-lg flex items-center justify-center">
+                <ExternalLink className="h-6 w-6 text-amber-200" />
               </div>
               <div className="flex-1 min-w-0">
                 {!contentTitle?.trim() && (
-                  <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
+                  <h3 className="font-semibold text-stone-100 mb-2 flex items-center gap-2">
                     📚 Resource Link
                   </h3>
                 )}
                 {content.content_body && (
-                  <p className="text-sm text-blue-800 dark:text-blue-200 mb-4 leading-relaxed">
+                  <p className="text-sm text-stone-300 mb-4 leading-relaxed">
                     {content.content_body}
                   </p>
                 )}
@@ -588,12 +614,12 @@ export const renderContent = (
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center"
                   >
-                    <Button className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-sm">
+                    <Button className="bg-amber-200 text-amber-950 hover:bg-amber-100 shadow-sm">
                       <ExternalLink className="h-4 w-4 mr-2" />
                       Open Resource
                     </Button>
                   </a>
-                  <div className="text-xs text-blue-600 dark:text-blue-300 font-mono bg-blue-100 dark:bg-blue-900/50 px-3 py-2 rounded border border-blue-200 dark:border-blue-700 truncate">
+                  <div className="text-xs text-amber-200/80 font-mono bg-black/30 px-3 py-2 rounded border border-white/10 truncate">
                     {contentUrl}
                   </div>
                 </div>
@@ -625,10 +651,10 @@ export const renderContent = (
 
     default:
       return (
-        <div className="aspect-video bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg flex flex-col items-center justify-center text-center p-6">
-          <ImageIcon className="h-12 w-12 text-slate-400 mb-4" />
-          <p className="text-slate-600 font-medium">Unsupported content type</p>
-          <p className="text-sm text-slate-500 mt-2">
+        <div className="aspect-video bg-gradient-to-br from-stone-800/80 to-stone-900/80 rounded-lg flex flex-col items-center justify-center text-center p-6">
+          <ImageIcon className="h-12 w-12 text-stone-500 mb-4" />
+          <p className="text-stone-300 font-medium">Unsupported content type</p>
+          <p className="text-sm text-stone-500 mt-2">
             Content type: {content.content_type}
           </p>
         </div>

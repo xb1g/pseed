@@ -148,7 +148,10 @@ export async function GET(request: Request) {
           !isProfileComplete(profileData, guardianConsent) ||
           !profileData.is_onboarded
         ) {
-          redirectTo = "/onboard";
+          // Carry the destination through onboarding, otherwise a first-time
+          // signup arriving from a join link loses where they were headed.
+          redirectTo =
+            next === "/me" ? "/onboard" : `/onboard?next=${encodeURIComponent(next)}`;
         }
       }
 

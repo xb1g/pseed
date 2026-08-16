@@ -20,6 +20,8 @@ interface Props {
   goBack: () => void | Promise<void>;
   isAnonymous: boolean;
   prefill?: AccountPrefill | null;
+  /** Same-origin path to land on after onboarding, e.g. a lobby join link. */
+  nextAfterOnboarding?: string | null;
 }
 
 const EDUCATION_COPY = {
@@ -38,7 +40,13 @@ const EDUCATION_COPY = {
 const INPUT_CLASS =
   "min-h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white placeholder:text-white/30 focus:border-blue-400/50 focus:outline-none transition";
 
-export function AccountPhase({ data, isAnonymous, goBack, prefill }: Props) {
+export function AccountPhase({
+  data,
+  isAnonymous,
+  goBack,
+  prefill,
+  nextAfterOnboarding,
+}: Props) {
   const [fullName, setFullName] = useState(
     () => prefill?.full_name?.trim() || data.name?.trim() || ""
   );
@@ -203,8 +211,9 @@ export function AccountPhase({ data, isAnonymous, goBack, prefill }: Props) {
         return;
       }
 
-      // Hard redirect to /me to ensure full reload of session cookies and profile
-      window.location.assign("/me");
+      // Hard redirect to ensure full reload of session cookies and profile.
+      // Honors the join link the user arrived from, when there was one.
+      window.location.assign(nextAfterOnboarding ?? "/me");
     } catch {
       setError(
         isEn

@@ -1150,6 +1150,9 @@ const ContentPreview = ({ item }: { item: NodeContent }) => {
             }
             .ce-md a {
               color: rgb(252 211 77);
+              text-decoration: underline;
+              text-decoration-color: rgb(252 211 77 / 0.35);
+              text-underline-offset: 3px;
             }
             .ce-md ul,
             .ce-md ol {

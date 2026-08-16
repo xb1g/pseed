@@ -6,7 +6,7 @@ import {
   isUserEnrolledInMap,
 } from "@/lib/api/enrollment-client";
 import { useToast } from "@/components/ui/use-toast";
-import { MapWelcomeDialog } from "./MapWelcomeDialog";
+import { MapWelcomeExperience } from "./MapWelcomeExperience";
 import { LearningMap } from "@/types/map";
 
 interface MapEnrollmentTrackerProps {
@@ -112,8 +112,8 @@ export function MapEnrollmentTracker({
     <>
       {children}
 
-      {/* Welcome dialog for first-time visitors */}
-      <MapWelcomeDialog
+      {/* Welcome experience for first-time visitors */}
+      <MapWelcomeExperience
         isOpen={showWelcomeDialog}
         onOpenChange={(open) => {
           if (!open && typeof window !== "undefined") {

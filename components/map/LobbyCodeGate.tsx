@@ -30,7 +30,14 @@ interface LobbyCodeGateProps {
 
 /** Resolves the curriculum content to display for the given map preview. */
 function getPathContent(map: MapPreview): PathContent {
-  const title = map.title.toLowerCase();
+  if (map.id === "00000000-0000-0000-0000-000000000020") {
+    return STARTUP_PATH;
+  }
+  if (map.id === "00000000-0000-0000-0000-000000000010") {
+    return WEB_DEV_PATH;
+  }
+
+  const title = (map.title ?? "").toLowerCase();
   const category = (map.category ?? "").toLowerCase();
 
   if (
@@ -385,7 +392,7 @@ function SignInButton({ mapId, code }: SignInButtonProps) {
   return (
     <button
       type="button"
-      onClick={() => router.push(`/login?redirect=${encodeURIComponent(target)}`)}
+      onClick={() => router.push(`/login?next=${encodeURIComponent(target)}`)}
       className="ei-button-dusk w-full justify-center"
     >
       เข้าสู่ระบบเพื่อเริ่ม

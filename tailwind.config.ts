@@ -26,6 +26,7 @@ const config = {
       fontFamily: {
         sans: ["var(--font-libre-franklin)", "var(--font-bai-jamjuree)"],
         "bai-jamjuree": ["var(--font-bai-jamjuree)", "sans-serif"],
+        kodchasan: ["var(--font-kodchasan)", "var(--font-bai-jamjuree)", "sans-serif"],
         heading: ["var(--font-libre-franklin)", "var(--font-krub)"],
         "radar-title": ["var(--font-instrument-serif)", "serif"],
         "radar-thai-title": ["var(--font-noto-serif-thai)", "serif"],

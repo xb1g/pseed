@@ -20,7 +20,20 @@ function asEducationLevel(
   return null;
 }
 
-export default async function OnboardPage() {
+export default async function OnboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ next?: string }>;
+}) {
+  // Where to land once onboarding finishes. Same-origin paths only, so the
+  // param cannot be used as an open redirect.
+  const params = await searchParams;
+  const rawNext = params?.next;
+  const nextAfterOnboarding =
+    rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//")
+      ? rawNext
+      : null;
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -45,7 +58,7 @@ export default async function OnboardPage() {
     .maybeSingle();
 
   if (profile?.is_onboarded) {
-    redirect("/me");
+    redirect(nextAfterOnboarding ?? "/me");
   }
 
   const oauthName =
@@ -61,6 +74,7 @@ export default async function OnboardPage() {
       isAnonymous={isAnonymousUser(user)}
       oauthName={oauthName}
       initialState={state as OnboardingState | null}
+      nextAfterOnboarding={nextAfterOnboarding}
       accountPrefill={{
         full_name: profile?.full_name ?? oauthName,
         username: profile?.username ?? null,

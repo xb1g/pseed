@@ -138,8 +138,10 @@ const STARTUP_JOURNEY: JourneyDay[] = [
 ];
 
 const BY_ID: Record<string, JourneyDay[]> = {
-  // Trail Demo seed map
+  // Web Dev demo map
   "00000000-0000-0000-0000-000000000010": WEB_DEV_JOURNEY,
+  // Startup PathLab demo map
+  "00000000-0000-0000-0000-000000000020": STARTUP_JOURNEY,
 };
 
 const BY_TITLE: Record<string, JourneyDay[]> = {

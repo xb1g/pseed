@@ -20,6 +20,8 @@ interface OnboardClientProps {
   oauthName: string | null;
   initialState: OnboardingState | null;
   accountPrefill?: AccountPrefill | null;
+  /** Same-origin path to land on after onboarding, e.g. a lobby join link. */
+  nextAfterOnboarding?: string | null;
 }
 
 const IS_DEV = process.env.NODE_ENV !== "production";
@@ -40,6 +42,7 @@ export function OnboardClient({
   oauthName,
   initialState,
   accountPrefill,
+  nextAfterOnboarding,
 }: OnboardClientProps) {
   const [step, setStep] = useState<OnboardingStep>(() => {
     const initial = initialState?.current_step ?? "welcome";
@@ -173,6 +176,7 @@ export function OnboardClient({
                 {...sharedProps}
                 isAnonymous={isAnonymous}
                 prefill={accountPrefill}
+                nextAfterOnboarding={nextAfterOnboarding}
               />
             )}
           </div>

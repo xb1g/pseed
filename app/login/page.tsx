@@ -36,7 +36,9 @@ export default async function LoginPage({
       !isProfileComplete(profileData, guardianConsent) ||
       !profileData.is_onboarded
     ) {
-      redirect("/onboard");
+      redirect(
+        next === "/" ? "/onboard" : `/onboard?next=${encodeURIComponent(next)}`
+      );
     }
 
     redirect(next);
