@@ -913,7 +913,7 @@ export const deleteMap = async (
       return;
     }
 
-    const nodeIds = nodes.map((n) => n.id);
+    const nodeIds = nodes.map((n: { id: string }) => n.id);
     console.log(`🔍 Found ${nodeIds.length} nodes to clean up`);
 
     // Step 1: Delete assessment submissions and grades
@@ -926,7 +926,7 @@ export const deleteMap = async (
       .in("node_id", nodeIds);
 
     if (assessments && assessments.length > 0) {
-      const assessmentIds = assessments.map((a) => a.id);
+      const assessmentIds = assessments.map((a: { id: string }) => a.id);
       console.log(`Found ${assessmentIds.length} assessments to clean up`);
 
       // First get all submission IDs that need to be deleted
@@ -940,7 +940,7 @@ export const deleteMap = async (
         // Continue anyway as this might not exist
       }
 
-      const submissionIds = submissionsToDelete?.map(s => s.id) || [];
+      const submissionIds = submissionsToDelete?.map((s: { id: string }) => s.id) || [];
 
       // Delete submission grades first (has FK to assessment_submissions)
       if (submissionIds.length > 0) {
