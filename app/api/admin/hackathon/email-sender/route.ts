@@ -9,7 +9,11 @@ import {
 } from "@/lib/hackathon/email-templates";
 import { type EmailTemplateVars } from "@/lib/hackathon/email";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Instantiate lazily so module import does not throw when RESEND_API_KEY is
+// absent during `next build` page-data collection.
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY);
+}
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "hi@noreply.passionseed.org";
 
 function getServiceClient() {
@@ -265,7 +269,7 @@ export async function POST(req: NextRequest) {
       const chunk = emailList.slice(i, i + BATCH_SIZE);
 
       try {
-        const { error } = await resend.batch.send(chunk);
+        const { error } = await getResend().batch.send(chunk);
         if (error) {
           failed += chunk.length;
           errors.push(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${error.message}`);

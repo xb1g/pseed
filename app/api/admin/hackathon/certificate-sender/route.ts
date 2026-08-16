@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
-import { Resend } from "resend";
 
 // Increase body size limit for certificate file uploads (~200 PNGs)
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "hi@noreply.passionseed.org";
 
 function getServiceClient() {
