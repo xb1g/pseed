@@ -29,6 +29,9 @@ const customJestConfig = {
   collectCoverage: true,
   coverageDirectory: "coverage",
   coverageProvider: "v8",
+  // transformIgnorePatterns is customized in the async export below (next/jest
+  // prepends its own node_modules patterns that would otherwise re-ignore the
+  // ESM AI SDK packages we need transformed).
   // Git worktrees are independent checkouts — running their suites from this
   // root resolves `@/` imports against the wrong tree, so they always fail.
   testPathIgnorePatterns: [
@@ -45,4 +48,44 @@ const customJestConfig = {
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
-module.exports = createJestConfig(customJestConfig);
+//
+// next/jest prepends its own transformIgnorePatterns (whitelisting only
+// `geist` and `next/dist/...`) that still ignore the ESM AI SDK packages under
+// pnpm. To actually transform them we must REPLACE the resolved list, not
+// append — so we use the async override form and rebuild the patterns,
+// preserving next/jest's own entries and adding ours.
+module.exports = async () => {
+  const config = await createJestConfig(customJestConfig)();
+
+  const esmWhitelist = [
+    // Direct layout: transform whitelisted packages, skip .pnpm (handled below).
+    "[/\\\\]node_modules[/\\\\](?!\\.pnpm[/\\\\])(?!(?:@ai-sdk|@workflow|ai|zod)[/\\\\])",
+    // pnpm store layout: scoped entries use `@scope+name` under .pnpm.
+    "[/\\\\]node_modules[/\\\\]\\.pnpm[/\\\\](?!(?:@ai-sdk\\+[^/\\\\]+|@workflow\\+[^/\\\\]+|ai@|zod@))",
+  ];
+
+  config.transformIgnorePatterns = [
+    ...esmWhitelist,
+    // Keep next/jest's defaults (css modules) but drop its node_modules
+    // patterns, which would otherwise re-ignore the packages we just
+    // whitelisted.
+    ...(config.transformIgnorePatterns || []).filter((p) =>
+      p.includes("module\\.")
+    ),
+  ];
+
+  // Route the ESM-only packages through a CommonJS-forcing babel transform.
+  // Jest tries transform keys in insertion order, so this must precede the
+  // catch-all SWC transform that next/jest provides.
+  const esmPackagePath =
+    "[/\\\\]node_modules[/\\\\](?:\\.pnpm[/\\\\](?:@ai-sdk\\+[^/\\\\]+|@workflow\\+[^/\\\\]+|ai|zod)@[^/\\\\]+[/\\\\]node_modules[/\\\\])?(?:@ai-sdk|@workflow|ai|zod)[/\\\\].+\\.(?:js|mjs|ts)$";
+
+  const existingTransform = config.transform || {};
+
+  config.transform = {
+    [esmPackagePath]: require.resolve("./jest.esm-cjs-transform.js"),
+    ...existingTransform,
+  };
+
+  return config;
+};
