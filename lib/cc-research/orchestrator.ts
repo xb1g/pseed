@@ -278,7 +278,7 @@ function parseDecisionMakers(raw: unknown): CcDecisionMaker[] {
         linkedinUrl,
       };
     })
-    .filter((entry): entry is CcDecisionMaker => Boolean(entry));
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
 }
 
 function parseBreakdown(raw: unknown) {
@@ -303,51 +303,29 @@ function parseBreakdown(raw: unknown) {
   }
 
   const parsed = raw as Record<string, unknown>;
-  const nested = parsed.breakdown as Record<string, unknown> | undefined;
+  // The breakdown JSON stores per-dimension scores under unknown-typed keys;
+  // index loosely and coerce each field defensively.
+  type DimensionBreakdown = { score?: unknown; weight?: unknown; weightedScore?: unknown; reasoning?: unknown };
+  const breakdown = (parsed.breakdown ?? {}) as Record<string, DimensionBreakdown>;
+  const dimension = (key: string) => {
+    const d = breakdown[key] ?? {};
+    return {
+      score: toNumber(d.score as string | number) || 0,
+      weight: toNumber(d.weight as string | number) || 0,
+      weightedScore: toNumber(d.weightedScore as string | number) || 0,
+      reasoning: toStringArray(d.reasoning),
+    };
+  };
 
   return {
     weightedScoreBand: (parsed.weightedScoreBand as "0-40" | "41-60" | "61-80" | "81-100") || base.weightedScoreBand,
     urgencyScore: toNumber(parsed.urgencyScore as string | number) ?? 0,
     icpFitScore: toNumber(parsed.icpFitScore as string | number) ?? 0,
-    studentScale: {
-      score: toNumber((nested as Record<string, unknown> | undefined)?.studentScale?.score as string | number) || 0,
-      weight: toNumber((nested as Record<string, unknown> | undefined)?.studentScale?.weight as string | number) || 0,
-      weightedScore:
-        toNumber((nested as Record<string, unknown> | undefined)?.studentScale?.weightedScore as string | number) || 0,
-      reasoning: toStringArray((nested as Record<string, unknown> | undefined)?.studentScale?.reasoning),
-    },
-    advisorStaffing: {
-      score: toNumber((nested as Record<string, unknown> | undefined)?.advisorStaffing?.score as string | number) || 0,
-      weight: toNumber((nested as Record<string, unknown> | undefined)?.advisorStaffing?.weight as string | number) || 0,
-      weightedScore:
-        toNumber((nested as Record<string, unknown> | undefined)?.advisorStaffing?.weightedScore as string | number) || 0,
-      reasoning: toStringArray((nested as Record<string, unknown> | undefined)?.advisorStaffing?.reasoning),
-    },
-    careerTransitionLanguage: {
-      score:
-        toNumber((nested as Record<string, unknown> | undefined)?.careerTransitionLanguage?.score as string | number) || 0,
-      weight:
-        toNumber((nested as Record<string, unknown> | undefined)?.careerTransitionLanguage?.weight as string | number) || 0,
-      weightedScore:
-        toNumber(
-          (nested as Record<string, unknown> | undefined)?.careerTransitionLanguage?.weightedScore as string | number,
-        ) || 0,
-      reasoning: toStringArray((nested as Record<string, unknown> | undefined)?.careerTransitionLanguage?.reasoning),
-    },
-    transferSignals: {
-      score: toNumber((nested as Record<string, unknown> | undefined)?.transferSignals?.score as string | number) || 0,
-      weight: toNumber((nested as Record<string, unknown> | undefined)?.transferSignals?.weight as string | number) || 0,
-      weightedScore:
-        toNumber((nested as Record<string, unknown> | undefined)?.transferSignals?.weightedScore as string | number) || 0,
-      reasoning: toStringArray((nested as Record<string, unknown> | undefined)?.transferSignals?.reasoning),
-    },
-    easeOfContact: {
-      score: toNumber((nested as Record<string, unknown> | undefined)?.easeOfContact?.score as string | number) || 0,
-      weight: toNumber((nested as Record<string, unknown> | undefined)?.easeOfContact?.weight as string | number) || 0,
-      weightedScore:
-        toNumber((nested as Record<string, unknown> | undefined)?.easeOfContact?.weightedScore as string | number) || 0,
-      reasoning: toStringArray((nested as Record<string, unknown> | undefined)?.easeOfContact?.reasoning),
-    },
+    studentScale: dimension("studentScale"),
+    advisorStaffing: dimension("advisorStaffing"),
+    careerTransitionLanguage: dimension("careerTransitionLanguage"),
+    transferSignals: dimension("transferSignals"),
+    easeOfContact: dimension("easeOfContact"),
     careerTransitionSignals: toStringArray(parsed.careerTransitionSignals),
     transferSignalsSignals: toStringArray(parsed.transferSignals),
     advisorSignals: toStringArray(parsed.advisorSignals),
