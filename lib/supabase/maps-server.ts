@@ -116,11 +116,13 @@ export const getMapsWithStatsServer = async (
   page: number = 0,
   limit: number = 20
 ): Promise<{
-  maps: (LearningMap & {
+  // Omit LearningMap.map_type (DB vocab) — overridden below with the
+  // viewer-facing classification. See getMapsWithStats in lib/supabase/maps.ts.
+  maps: (Omit<LearningMap, "map_type"> & {
     node_count: number;
     avg_difficulty: number;
     total_assessments: number;
-    map_type: "personal" | "classroom" | "team" | "forked" | "public";
+    map_type: "personal" | "classroom" | "classroom_exclusive" | "team" | "forked" | "public";
     isEnrolled: boolean;
     hasStarted: boolean;
     // New image storage fields

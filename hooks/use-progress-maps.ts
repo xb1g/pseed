@@ -4,26 +4,8 @@ import { useEffect, useState } from "react";
 import { getMapsWithStats } from "@/lib/supabase/maps";
 // TODO: Create API route for enrolled maps with progress
 // import { getUserEnrolledMapsWithProgress } from "@/lib/supabase/enrollment";
-import { LearningMap, UserMapEnrollment } from "@/types/map";
-
-type MapWithStats = LearningMap & {
-  node_count: number;
-  avg_difficulty: number;
-  total_assessments: number;
-  isEnrolled: boolean;
-  hasStarted: boolean;
-  map_type: "personal" | "classroom" | "team" | "forked" | "public";
-  source_info?: {
-    classroom_name?: string;
-    team_name?: string;
-    original_title?: string;
-  };
-  // New image storage fields
-  cover_image_url?: string;
-  cover_image_blurhash?: string;
-  cover_image_key?: string;
-  cover_image_updated_at?: string;
-};
+import { UserMapEnrollment } from "@/types/map";
+import type { MapWithStats } from "@/hooks/use-map-operations";
 
 type EnrolledMapWithProgress = MapWithStats & {
   enrollment: UserMapEnrollment;

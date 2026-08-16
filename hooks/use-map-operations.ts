@@ -4,13 +4,15 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { LearningMap } from "@/types/map";
 
-export type MapWithStats = LearningMap & {
+// Omit LearningMap.map_type (DB vocab) — overridden below with the
+// viewer-facing classification. See getMapsWithStats in lib/supabase/maps.ts.
+export type MapWithStats = Omit<LearningMap, "map_type"> & {
   node_count: number;
   avg_difficulty: number;
   total_assessments: number;
   isEnrolled: boolean;
   hasStarted: boolean;
-  map_type: "personal" | "classroom" | "team" | "forked" | "public";
+  map_type: "personal" | "classroom" | "classroom_exclusive" | "team" | "forked" | "public";
   source_info?: {
     classroom_name?: string;
     team_name?: string;

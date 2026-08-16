@@ -13,6 +13,7 @@ import {
   ProgressStatus,
   UserMapEnrollment,
 } from "@/types/map";
+import type { MapWithStats } from "@/hooks/use-map-operations";
 import {
   dedupeRequest,
   createCacheKey,
@@ -93,25 +94,11 @@ export const getMaps = async (): Promise<LearningMap[]> => {
 export const getMapsWithStats = async (
   page: number = 0,
   limit: number = 20
-): Promise<
-  {
-    maps: (LearningMap & {
-      node_count: number;
-      avg_difficulty: number;
-      total_assessments: number;
-      map_type: "personal" | "classroom" | "classroom_exclusive" | "team" | "forked" | "public";
-      isEnrolled: boolean;
-      hasStarted: boolean;
-      source_info?: {
-        classroom_name?: string;
-        team_name?: string;
-        original_title?: string;
-      };
-    })[];
-    total_count: number;
-    has_more: boolean;
-  }
-> => {
+): Promise<{
+  maps: MapWithStats[];
+  total_count: number;
+  has_more: boolean;
+}> => {
   try {
     const supabase = createClient();
 
