@@ -128,6 +128,11 @@ export interface JourneyProject {
   metadata: Record<string, any> | null;
   // Link to North Star
   linked_north_star_id: string | null;
+  // North Star enhancement fields (present on north-star projects)
+  sdg_goals?: number[];
+  career_path?: string | null;
+  north_star_shape?: string;
+  north_star_color?: string;
   created_at: string;
   updated_at: string;
   completed_at: string | null;

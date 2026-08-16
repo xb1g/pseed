@@ -58,6 +58,9 @@ export function NorthStarProjectNode({
   const isLowZoom = zoom < 0.8;
   const isHighZoom = zoom >= 1.2;
 
+  // Node width adapts to zoom: compact at low zoom, roomier when zoomed in.
+  const nodeWidth = isLowZoom ? 200 : 280;
+
   // Fixed icon size for performance
   const iconSize = 3;
 
