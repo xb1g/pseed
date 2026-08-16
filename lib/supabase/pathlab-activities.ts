@@ -679,7 +679,6 @@ export async function batchCreateActivities(
       path_day_id: dayId,
       title: activityInput.title,
       instructions: activityInput.instructions,
-      activity_type: activityInput.activity_type,
       display_order: activityInput.display_order,
       estimated_minutes: activityInput.estimated_minutes,
       is_required: activityInput.is_required,
@@ -709,7 +708,8 @@ export async function batchCreateActivities(
     results.push({
       ...activity,
       path_content: contentItems,
-      path_assessment: assessment,
+      // A freshly created assessment has no quiz questions yet.
+      path_assessment: assessment ? { ...assessment, quiz_questions: [] } : null,
     });
   }
 

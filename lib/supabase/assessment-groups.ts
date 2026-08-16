@@ -242,12 +242,12 @@ export const getAssessmentMapContext = async (
       return null;
     }
 
-    if (!assessmentData?.map_nodes?.learning_maps) {
+    const learningMap = assessmentData?.map_nodes?.[0]?.learning_maps?.[0];
+    if (!learningMap) {
       console.warn("⚠️ No learning map found for assessment");
       return null;
     }
 
-    const learningMap = assessmentData.map_nodes.learning_maps;
     console.log("📍 Found learning map:", learningMap);
 
     return {
@@ -300,12 +300,12 @@ export const getClassroomStudentsForAssessment = async (
       throw new Error(`Failed to get assessment data: ${assessmentError.message}`);
     }
 
-    if (!assessmentData?.map_nodes?.learning_maps) {
+    const learningMap = assessmentData?.map_nodes?.[0]?.learning_maps?.[0];
+    if (!learningMap) {
       console.warn("⚠️ No learning map found for assessment");
       return [];
     }
 
-    const learningMap = assessmentData.map_nodes.learning_maps;
     console.log("📍 Found learning map:", learningMap);
 
     // Check if this is a classroom-exclusive map
@@ -459,9 +459,11 @@ export const getUserAssessmentGroup = async (
     return null;
   }
 
-  // Get all members of this group
+  // Get all members of this group. The nested select returns assessment_groups
+  // as an array, so read the first element's id.
+  const groupId = data.assessment_groups[0]?.id;
   const groups = await getAssessmentGroups(assessmentId);
-  return groups.find(group => group.id === data.assessment_groups.id) || null;
+  return groups.find(group => group.id === groupId) || null;
 };
 
 /**
@@ -507,17 +509,25 @@ export const submitAssessmentForGroup = async (
 export const hasGroupSubmissions = async (assessmentId: string): Promise<boolean> => {
   const supabase = createClient();
 
+  // Resolve the node_id(s) for this assessment first, then filter submissions.
+  const { data: assessmentNodes } = await supabase
+    .from("node_assessments")
+    .select("node_id")
+    .eq("id", assessmentId);
+
+  const nodeIds = (assessmentNodes ?? [])
+    .map((row: { node_id: string }) => row.node_id)
+    .filter(Boolean);
+
+  if (nodeIds.length === 0) {
+    return false;
+  }
+
   const { data, error } = await supabase
     .from("node_submissions")
     .select("id")
     .eq("submitted_for_group", true)
-    .in(
-      "node_id",
-      supabase
-        .from("node_assessments")
-        .select("node_id")
-        .eq("id", assessmentId)
-    )
+    .in("node_id", nodeIds)
     .limit(1);
 
   if (error) {
