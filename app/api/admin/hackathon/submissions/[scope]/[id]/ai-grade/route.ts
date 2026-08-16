@@ -146,6 +146,22 @@ type AssessmentRow = {
   metadata?: Record<string, unknown> | null;
 };
 
+// Row shapes for the nested Supabase relations read off the loosely-typed
+// submission row (sub is Record<string, unknown>). Declaring them lets pickOne
+// return properly-typed objects instead of {}.
+type ActivityRow = {
+  id?: string;
+  title?: string | null;
+  instructions?: string | null;
+  display_order?: number | null;
+  hackathon_program_phases?: PhaseRow | PhaseRow[] | null;
+};
+type PhaseRow = {
+  id?: string;
+  title?: string | null;
+  phase_number?: number | null;
+};
+
 function formatAssessmentQuestions(assessments: AssessmentRow[]): string {
   if (!assessments?.length) return "(no assessment questions defined)";
 
@@ -435,8 +451,8 @@ async function gatherPromptContext(
   }
 
   const sub = submission as Record<string, unknown>;
-  const activity = pickOne(sub.hackathon_phase_activities);
-  const phase = pickOne(activity?.hackathon_program_phases);
+  const activity = pickOne<ActivityRow>(sub.hackathon_phase_activities as ActivityRow | ActivityRow[] | null | undefined);
+  const phase = pickOne<PhaseRow>(activity?.hackathon_program_phases);
 
   // Fetch all assessments for this activity separately to avoid duplicate table alias error
   const { data: assessmentsData } = await serviceClient
@@ -477,8 +493,8 @@ async function gatherPromptContext(
 
   // Analyze images if present
   const activityLens = inferActivityLens(activity?.title ?? null, activity?.instructions ?? null);
-  const imageUrl = sub.image_url ?? null;
-  const fileUrls = Array.isArray(sub.file_urls) ? sub.file_urls : [];
+  const imageUrl = typeof sub.image_url === "string" ? sub.image_url : null;
+  const fileUrls: string[] = Array.isArray(sub.file_urls) ? sub.file_urls : [];
 
   let imageAnalysis: SubmissionImageAnalysis | null = null;
   if (!opts?.skipImageAnalysis && (imageUrl || fileUrls.length > 0)) {
@@ -528,7 +544,7 @@ async function gatherPromptContext(
     activitySpecFormatted,
     pointsPossible,
     assessments,
-    textAnswer: sub.text_answer ?? null,
+    textAnswer: typeof sub.text_answer === "string" ? sub.text_answer : null,
     imageUrl,
     fileUrls,
     scope,
@@ -644,7 +660,7 @@ export async function GET(
   } catch (err: unknown) {
     console.error("[admin/hackathon/ai-grade] GET error:", err);
     return NextResponse.json(
-      { error: "Failed to load prompt", message: err?.message ?? String(err) },
+      { error: "Failed to load prompt", message: err instanceof Error ? err.message : String(err) },
       { status: 500 }
     );
   }
@@ -815,7 +831,7 @@ export async function POST(
           console.error("[admin/hackathon/ai-grade] persist draft failed:", persistErr);
           send({
             type: "error",
-            message: persistErr?.message?.includes("No rows matched")
+            message: (persistErr instanceof Error && persistErr.message.includes("No rows matched"))
               ? "Another grade was just submitted — please review the updated result."
               : "Failed to save AI draft. Please try again.",
           });
@@ -861,7 +877,7 @@ export async function POST(
     return NextResponse.json(
       {
         error: "AI grading failed",
-        message: err?.message ?? String(error),
+        message: err instanceof Error ? err.message : String(error),
         name: err?.name,
         cause: (err as { cause?: unknown }).cause ? String((err as { cause?: unknown }).cause) : undefined,
       },
@@ -910,7 +926,7 @@ async function runModelStream(opts: {
     return accumulated;
   } catch (err: unknown) {
     console.error(`[admin/hackathon/ai-grade] ${label} model error:`, err);
-    send({ type: "error", message: `${label} failed: ${err?.message ?? String(err)}`, model: label });
+    send({ type: "error", message: `${label} failed: ${err instanceof Error ? err.message : String(err)}`, model: label });
     return null;
   }
 }

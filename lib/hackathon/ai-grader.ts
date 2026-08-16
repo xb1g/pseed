@@ -17,6 +17,7 @@ import {
   buildReviewInboxItems,
   reviewStatusToSubmissionStatus,
 } from "@/lib/hackathon/admin-submissions";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type AiDraftStatus = "passed" | "revision_required" | "pending_review";
 export type AiDraftSource = "manual" | "bulk" | "auto_on_submit";
@@ -85,29 +86,10 @@ export function maybeAutoApprove(draft: AiDraft): boolean {
  * ai_draft is cleared.
  */
 export async function persistDraft(
-  serviceClient: {
-    from: (table: string) => {
-      select: (...cols: string[]) => {
-        eq: (col: string, val: string) => {
-          maybeSingle: () => Promise<{ data: Record<string, unknown> | null; error: unknown }>;
-          single: () => Promise<{ data: Record<string, unknown> | null; error: unknown }>;
-        };
-      };
-      update: (payload: Record<string, unknown>) => {
-        eq: (col: string, val: string) => {
-          eq: (col: string, val: string | null) => Promise<{ data: Record<string, unknown> | null; error: unknown }>;
-          select: (...cols: string[]) => {
-            single: () => Promise<{ data: Record<string, unknown> | null; error: unknown }>;
-          };
-        };
-      };
-      insert: (payload: Record<string, unknown>) => {
-        select: (...cols: string[]) => {
-          single: () => Promise<{ data: Record<string, unknown> | null; error: unknown }>;
-        };
-      };
-    };
-  },
+  // Any SupabaseClient: the previous structural inline type was both narrower
+  // than every real client and triggered TS2589 (excessively deep
+  // instantiation) at call sites under supabase-js 2.95.
+  serviceClient: SupabaseClient<any>,
   opts: PersistDraftOptions
 ): Promise<{ promoted: boolean; reviewId: string | null }> {
   const { scope, submissionId, draft, source, model, forceReview, reviewedByUserId, expectedGeneratedAt } = opts;
