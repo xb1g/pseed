@@ -5,6 +5,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import type {
+  LobbyAccessTier,
   MapLobby,
   MapLobbyWithCount,
   LobbyRosterEntry,
@@ -30,7 +31,8 @@ interface ProgressRow {
  */
 export const createLobby = async (
   mapId: string,
-  name: string
+  name: string,
+  accessTier: LobbyAccessTier = "full"
 ): Promise<MapLobby> => {
   const supabase = await createClient();
 
@@ -43,7 +45,12 @@ export const createLobby = async (
 
   const { data, error } = await supabase
     .from("map_lobbies")
-    .insert({ map_id: mapId, name, created_by: user.id })
+    .insert({
+      map_id: mapId,
+      name,
+      access_tier: accessTier,
+      created_by: user.id,
+    })
     .select()
     .single();
 
@@ -154,6 +161,28 @@ export const setLobbyOpen = async (
   if (error) {
     console.error("Error updating lobby:", error);
     throw new Error("Failed to update lobby");
+  }
+};
+
+/**
+ * Admin: switch a lobby between the full map and the micro (free) tier.
+ * Takes effect on the members' next page load -- nothing is copied onto the
+ * membership rows, so the tier is always read from the lobby.
+ */
+export const setLobbyAccessTier = async (
+  lobbyId: string,
+  accessTier: LobbyAccessTier
+): Promise<void> => {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("map_lobbies")
+    .update({ access_tier: accessTier })
+    .eq("id", lobbyId);
+
+  if (error) {
+    console.error("Error updating lobby access tier:", error);
+    throw new Error("Failed to update lobby access tier");
   }
 };
 

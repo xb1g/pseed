@@ -1044,7 +1044,12 @@ export default function EditMapPage({
         <div className="container max-w-none px-6 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
-              <Button asChild variant="ghost" size="sm">
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="rounded-full border-white/10 bg-[#17120e]/70 text-stone-200 backdrop-blur-md hover:border-white/20 hover:bg-[#241b14]/85 hover:text-amber-50"
+              >
                 <Link
                   href={
                     map?.map_type === "seed" && map?.parent_seed_id

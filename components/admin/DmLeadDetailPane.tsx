@@ -16,7 +16,6 @@ import {
 } from "@/lib/dm-leads/playbook";
 import { deriveSignalsFromMessages } from "@/lib/dm-leads/signals";
 import { isWithinMessagingWindow } from "@/lib/dm-leads/messaging-window";
-import { leadFromConversation, lastInboundFromMessages } from "@/lib/dm-leads/personalize";
 import { BUCKET_NEXT_RUNG, RUNG_META } from "@/lib/dm-leads/scripts";
 import { DmLeadManageBar } from "@/components/admin/DmLeadManageBar";
 import { DM_REPLY_TEXTAREA_ID, DmLeadReplyForm } from "@/components/admin/DmLeadReplyForm";
@@ -25,7 +24,7 @@ import { DmLeadTagsEditor } from "@/components/admin/DmLeadTagsEditor";
 import { LeadTagBadges } from "@/components/admin/LeadTagBadges";
 import { DmMessageBubble } from "@/components/admin/DmMessageBubble";
 import { DmLeadPublicReplyBar } from "@/components/admin/DmLeadPublicReplyBar";
-import type { DmConversation, DmConversationWithMessages } from "@/types/dm-leads";
+import type { DmConversationWithBucket, DmConversationWithMessages } from "@/types/dm-leads";
 
 const COVERAGE_BADGE: Record<FieldCoverage, { label: string; className: string }> = {
   covered: {
@@ -86,7 +85,8 @@ function RoutingHeader({
 }
 
 interface DmLeadDetailPaneProps {
-  conversation: DmConversation;
+  /** The narrowed inbox row; the full thread is fetched separately on select. */
+  conversation: DmConversationWithBucket;
   body: string;
   onBodyChange: (body: string) => void;
   onSent: (hadAttachment: boolean) => void;
@@ -316,9 +316,7 @@ export function DmLeadDetailPane({
             <DmLeadScripts
               bucket={bucket}
               coverage={coverage}
-              lead={leadFromConversation(conversation, {
-                lastInbound: lastInboundFromMessages(thread?.dm_messages),
-              })}
+              conversationId={conversation.id}
               onInsert={insertScript}
             />
           </div>

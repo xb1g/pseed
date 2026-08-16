@@ -33,6 +33,7 @@ export function PathlabFieldsClient({ fields }: PathlabFieldsClientProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const stageRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
   const gridRef = useRef<HTMLUListElement>(null);
   const detailRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLButtonElement>(null);
@@ -93,6 +94,13 @@ export function PathlabFieldsClient({ fields }: PathlabFieldsClientProps) {
   /** Move focus with the content: into the panel, then back to its card. */
   useEffect(() => {
     if (isOpen) {
+      /* The tapped card sits low on the screen, so an opened panel grows
+         upward out of view. Bring the section top (heading + panel start)
+         into view; focus stays scroll-free so it cannot fight this. */
+      sectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
       backRef.current?.focus({ preventScroll: true });
       return;
     }
@@ -122,6 +130,7 @@ export function PathlabFieldsClient({ fields }: PathlabFieldsClientProps) {
 
   return (
     <section
+      ref={sectionRef}
       id="pathlab-fields"
       className={`pathlab-fields${isOpen ? " is-open" : ""}`}
       aria-labelledby="pathlab-fields-heading"

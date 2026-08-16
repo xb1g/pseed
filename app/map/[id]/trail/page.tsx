@@ -85,7 +85,12 @@ export default async function MapTrailPage(props: {
   return (
     <div className="w-full relative" style={{ height: "calc(100vh - 65px)" }}>
       <div className="absolute top-4 left-4 z-10 flex gap-2">
-        <Button asChild variant="outline" size="sm">
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          className="rounded-full border-white/10 bg-[#17120e]/70 text-stone-200 backdrop-blur-md hover:border-white/20 hover:bg-[#241b14]/85 hover:text-amber-50"
+        >
           <Link href={`/map/${params.id}`}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Pathlab

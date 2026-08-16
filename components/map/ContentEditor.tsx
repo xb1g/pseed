@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -43,6 +43,10 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { marked } from "marked";
 import { sanitizeHtml } from "@/lib/security/sanitize-html";
+import {
+  RichTextEditor,
+  RichTextEditorHandle,
+} from "@/components/map/RichTextEditor";
 
 // Content type configurations
 const CONTENT_TYPE_CONFIG = {
@@ -50,7 +54,7 @@ const CONTENT_TYPE_CONFIG = {
     label: "Text",
     icon: "📝",
     placeholder: "Write your text content here...",
-    hint: "Markdown supported. Paste an image (Cmd+V / Ctrl+V) to embed it.",
+    hint: "Select text to format · markdown shortcuts work · paste an image to embed it",
   },
   image: {
     label: "Image",
@@ -577,6 +581,7 @@ const ContentForm = ({
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const textEditorRef = useRef<RichTextEditorHandle>(null);
 
   const config = CONTENT_TYPE_CONFIG[contentType];
 
@@ -585,6 +590,9 @@ const ContentForm = ({
   // Universal clipboard paste listener for images
   const handlePaste = useCallback(
     async (e: React.ClipboardEvent) => {
+      // The rich text editor handles its own image pastes.
+      if ((e.target as HTMLElement).closest?.(".ProseMirror")) return;
+
       const items = e.clipboardData?.items;
       if (!items) return;
 
@@ -623,14 +631,10 @@ const ContentForm = ({
             const data = await res.json();
             if (data.fileUrl) {
               if (contentType === "text") {
-                // In text mode, append markdown image syntax
-                setContentBody((prev) => {
-                  const prefix = prev && !prev.endsWith("\n") ? "\n\n" : "";
-                  return `${prev}${prefix}![Pasted Image](${data.fileUrl})\n`;
-                });
+                // In text mode, drop the image into the rich text editor
+                textEditorRef.current?.insertImage(data.fileUrl);
                 toast({
                   title: "Image inserted into text!",
-                  description: "Markdown image tag added.",
                 });
               } else {
                 // Set image URL and switch to image type
@@ -882,8 +886,27 @@ const ContentForm = ({
         </div>
       )}
 
-      {/* Text body / resource description */}
-      {(contentType === "text" || contentType === "resource_link") && (
+      {/* Text body: Notion-style WYSIWYG, stored as markdown */}
+      {contentType === "text" && (
+        <div className="space-y-1.5">
+          <RichTextEditor
+            ref={textEditorRef}
+            nodeId={nodeId}
+            content={contentBody}
+            onChange={(md) => {
+              setContentBody(md);
+              clearErrors();
+            }}
+            placeholder={config.placeholder}
+          />
+          <p className="truncate text-[11px] text-muted-foreground">
+            {config.hint}
+          </p>
+        </div>
+      )}
+
+      {/* Resource link description stays plain and short */}
+      {contentType === "resource_link" && (
         <div className="space-y-1.5">
           <Textarea
             id="content_body"
@@ -892,24 +915,15 @@ const ContentForm = ({
               setContentBody(e.target.value);
               clearErrors();
             }}
-            onPaste={handlePaste}
             className={`min-h-[110px] resize-y border-white/10 bg-white/5 text-sm focus-visible:ring-1 ${
-              errors.some(
-                (e) => e.includes("Content body") || e.includes("Description"),
-              )
+              errors.some((e) => e.includes("Description"))
                 ? "border-red-400/70"
                 : ""
             }`}
-            placeholder={
-              contentType === "resource_link"
-                ? "What is this resource, and why should students open it?"
-                : config.placeholder
-            }
+            placeholder="What is this resource, and why should students open it?"
           />
           <p className="truncate text-[11px] text-muted-foreground">
-            {contentType === "resource_link"
-              ? "A clear description beats a bare URL."
-              : config.hint}
+            A clear description beats a bare URL.
           </p>
         </div>
       )}
@@ -1286,6 +1300,7 @@ const ContentPreview = ({ item }: { item: NodeContent }) => {
 // line; clicking the line collapses. Text rows edit inline, in place.
 const SortableContentRow = ({
   item,
+  nodeId,
   disabled,
   expanded,
   inlineEditing,
@@ -1296,6 +1311,7 @@ const SortableContentRow = ({
   onInlineCancel,
 }: {
   item: NodeContent;
+  nodeId: string;
   disabled: boolean;
   expanded: boolean;
   inlineEditing: boolean;
@@ -1316,12 +1332,6 @@ const SortableContentRow = ({
 
   const cfg = CONTENT_TYPE_CONFIG[item.content_type];
   const missing = !item.content_url && !item.content_body;
-
-  // Inline text editing draft, synced when editing opens
-  const [draft, setDraft] = useState(item.content_body || "");
-  useEffect(() => {
-    if (inlineEditing) setDraft(item.content_body || "");
-  }, [inlineEditing, item.content_body]);
 
   return (
     <div
@@ -1347,37 +1357,14 @@ const SortableContentRow = ({
 
         {inlineEditing ? (
           <div className="min-w-0 flex-1 px-1 py-0.5">
-            <textarea
+            <RichTextEditor
+              nodeId={nodeId}
+              content={item.content_body || ""}
+              onSave={(md) => onInlineSave(item, md)}
+              onCancel={onInlineCancel}
+              showActions
               autoFocus
-              value={draft}
-              onChange={(e) => {
-                setDraft(e.target.value);
-                e.target.style.height = "auto";
-                e.target.style.height = `${e.target.scrollHeight}px`;
-              }}
-              ref={(el) => {
-                if (el) {
-                  el.style.height = "auto";
-                  el.style.height = `${el.scrollHeight}px`;
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  e.preventDefault();
-                  onInlineCancel();
-                }
-                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                  e.preventDefault();
-                  onInlineSave(item, draft);
-                }
-              }}
-              onBlur={() => onInlineSave(item, draft)}
-              placeholder="Write markdown… paste images to embed"
-              className="max-h-72 w-full resize-none overflow-hidden rounded-md border border-amber-200/30 bg-white/5 px-2 py-1.5 text-[13px] leading-relaxed text-stone-200 focus:outline-none focus:ring-1 focus:ring-amber-200/50"
             />
-            <p className="mt-0.5 text-[10px] text-muted-foreground">
-              Cmd+Enter saves · Esc cancels
-            </p>
           </div>
         ) : (
           <button
@@ -1875,6 +1862,7 @@ export function ContentEditor({
                 ) : (
                   <SortableContentRow
                     item={item}
+                    nodeId={nodeId}
                     disabled={listBusy}
                     expanded={expandedId === item.id}
                     inlineEditing={inlineEditId === item.id}

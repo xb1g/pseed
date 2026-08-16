@@ -10784,6 +10784,8 @@ summary:focus-visible .radar-expand-indicator {
   padding: 0 clamp(1.25rem, 5vw, 4rem) clamp(5rem, 12vw, 9rem);
   max-width: 82rem;
   margin-inline: auto;
+  /* Clears the sticky nav on anchor jumps and the scrollIntoView on open. */
+  scroll-margin-top: 4.5rem;
 }
 
 .pathlab-fields__heading {

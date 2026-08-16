@@ -4,7 +4,9 @@ import {
   getLobbiesForMap,
   createLobby,
   setLobbyOpen,
+  setLobbyAccessTier,
 } from "@/lib/supabase/lobbies";
+import { isLobbyAccessTier } from "@/types/lobby";
 
 /**
  * GET /api/admin/lobbies?mapId=<uuid>
@@ -44,8 +46,8 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/admin/lobbies
- * Body: { mapId: string, name: string }
- * Creates a new lobby for the given map.
+ * Body: { mapId: string, name: string, accessTier?: "full" | "micro" }
+ * Creates a new lobby for the given map. Defaults to the full-map tier.
  */
 export async function POST(request: NextRequest) {
   const admin = await requireAdmin();
@@ -61,7 +63,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { mapId, name } = body as Record<string, unknown>;
+  const { mapId, name, accessTier } = body as Record<string, unknown>;
 
   if (!mapId || typeof mapId !== "string") {
     return NextResponse.json(
@@ -87,8 +89,19 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  if (accessTier !== undefined && !isLobbyAccessTier(accessTier)) {
+    return NextResponse.json(
+      { error: 'Invalid accessTier: must be "full" or "micro"' },
+      { status: 400 }
+    );
+  }
+
   try {
-    const lobby = await createLobby(mapId, name.trim());
+    const lobby = await createLobby(
+      mapId,
+      name.trim(),
+      accessTier ?? "full"
+    );
     return NextResponse.json({ lobby }, { status: 201 });
   } catch (error) {
     const message =
@@ -99,8 +112,9 @@ export async function POST(request: NextRequest) {
 
 /**
  * PATCH /api/admin/lobbies
- * Body: { lobbyId: string, isOpen: boolean }
- * Opens or closes a lobby.
+ * Body: { lobbyId: string, isOpen?: boolean, accessTier?: "full" | "micro" }
+ * Opens or closes a lobby, and/or changes its access tier. At least one of
+ * isOpen and accessTier must be present.
  */
 export async function PATCH(request: NextRequest) {
   const admin = await requireAdmin();
@@ -116,7 +130,7 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  const { lobbyId, isOpen } = body as Record<string, unknown>;
+  const { lobbyId, isOpen, accessTier } = body as Record<string, unknown>;
 
   if (!lobbyId || typeof lobbyId !== "string") {
     return NextResponse.json(
@@ -125,9 +139,23 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  if (typeof isOpen !== "boolean") {
+  if (isOpen !== undefined && typeof isOpen !== "boolean") {
     return NextResponse.json(
-      { error: "Missing or invalid field: isOpen (must be boolean)" },
+      { error: "Invalid field: isOpen (must be boolean)" },
+      { status: 400 }
+    );
+  }
+
+  if (accessTier !== undefined && !isLobbyAccessTier(accessTier)) {
+    return NextResponse.json(
+      { error: 'Invalid accessTier: must be "full" or "micro"' },
+      { status: 400 }
+    );
+  }
+
+  if (isOpen === undefined && accessTier === undefined) {
+    return NextResponse.json(
+      { error: "Nothing to update: provide isOpen and/or accessTier" },
       { status: 400 }
     );
   }
@@ -143,7 +171,12 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    await setLobbyOpen(lobbyId, isOpen);
+    if (typeof isOpen === "boolean") {
+      await setLobbyOpen(lobbyId, isOpen);
+    }
+    if (accessTier !== undefined) {
+      await setLobbyAccessTier(lobbyId, accessTier);
+    }
     return NextResponse.json({ success: true });
   } catch (error) {
     const message =

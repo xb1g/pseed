@@ -5,8 +5,44 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
-import type { MapLobbyWithCount } from "@/types/lobby";
-import { Copy, Check, Users, Plus } from "lucide-react";
+import type { LobbyAccessTier, MapLobbyWithCount } from "@/types/lobby";
+import { Copy, Check, Users, Plus, Lock } from "lucide-react";
+
+/** Two-state tier picker. Micro is the free tier: first island only. */
+function TierToggle({
+  value,
+  onChange,
+  disabled,
+  size = "md",
+}: {
+  value: LobbyAccessTier;
+  onChange: (tier: LobbyAccessTier) => void;
+  disabled?: boolean;
+  size?: "sm" | "md";
+}) {
+  const pad = size === "sm" ? "px-2 py-0.5 text-[11px]" : "px-3 py-1.5 text-xs";
+
+  return (
+    <div className="inline-flex rounded-md border border-white/10 bg-black/20 p-0.5">
+      {(["full", "micro"] as LobbyAccessTier[]).map((tier) => (
+        <button
+          key={tier}
+          type="button"
+          disabled={disabled}
+          onClick={() => onChange(tier)}
+          aria-pressed={value === tier}
+          className={`${pad} rounded transition-colors disabled:opacity-50 ${
+            value === tier
+              ? "bg-amber-500/20 text-amber-200"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          {tier === "full" ? "Full" : "Micro (free)"}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 interface LobbyListProps {
   mapId: string;
@@ -17,9 +53,11 @@ export function LobbyList({ mapId, onSelect }: LobbyListProps) {
   const [lobbies, setLobbies] = useState<MapLobbyWithCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [newLobbyName, setNewLobbyName] = useState("");
+  const [newLobbyTier, setNewLobbyTier] = useState<LobbyAccessTier>("full");
   const [creating, setCreating] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [togglingLobbyId, setTogglingLobbyId] = useState<string | null>(null);
+  const [tierLobbyId, setTierLobbyId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const loadLobbies = useCallback(async () => {
@@ -67,7 +105,7 @@ export function LobbyList({ mapId, onSelect }: LobbyListProps) {
       const response = await fetch("/api/admin/lobbies", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mapId, name }),
+        body: JSON.stringify({ mapId, name, accessTier: newLobbyTier }),
       });
 
       if (!response.ok) {
@@ -92,6 +130,45 @@ export function LobbyList({ mapId, onSelect }: LobbyListProps) {
       });
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleChangeTier = async (
+    lobbyId: string,
+    accessTier: LobbyAccessTier
+  ) => {
+    try {
+      setTierLobbyId(lobbyId);
+      const response = await fetch("/api/admin/lobbies", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lobbyId, accessTier }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      setLobbies((prev) =>
+        prev.map((l) => (l.id === lobbyId ? { ...l, access_tier: accessTier } : l))
+      );
+      toast({
+        title: accessTier === "micro" ? "Switched to Micro" : "Switched to Full",
+        description:
+          accessTier === "micro"
+            ? "Members now see the first island only."
+            : "Members now see the whole map.",
+      });
+    } catch (error) {
+      console.error("Error updating lobby tier:", error);
+      toast({
+        title: "Failed to update tier",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setTierLobbyId(null);
     }
   };
 
@@ -152,6 +229,7 @@ export function LobbyList({ mapId, onSelect }: LobbyListProps) {
   return (
     <div className="space-y-4">
       {/* Create new lobby */}
+      <div className="space-y-2">
       <div className="flex gap-2">
         <Input
           placeholder="New lobby name..."
@@ -167,6 +245,19 @@ export function LobbyList({ mapId, onSelect }: LobbyListProps) {
           <Plus className="h-4 w-4 mr-1" />
           {creating ? "Creating..." : "New lobby"}
         </Button>
+      </div>
+        <div className="flex items-center gap-2">
+          <TierToggle
+            value={newLobbyTier}
+            onChange={setNewLobbyTier}
+            disabled={creating}
+          />
+          <span className="text-xs text-slate-400">
+            {newLobbyTier === "micro"
+              ? "Members see the first island only."
+              : "Members see the whole map."}
+          </span>
+        </div>
       </div>
 
       {/* Lobbies list */}
@@ -189,7 +280,15 @@ export function LobbyList({ mapId, onSelect }: LobbyListProps) {
             >
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-white truncate">{lobby.name}</div>
+                  <div className="flex items-center gap-2">
+                    <div className="font-medium text-white truncate">{lobby.name}</div>
+                    {lobby.access_tier === "micro" && (
+                      <span className="inline-flex items-center gap-1 rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] text-amber-200">
+                        <Lock className="h-2.5 w-2.5" />
+                        Micro
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-3 mt-1">
                     {/* Join code with copy button */}
                     <div className="flex items-center gap-1.5">
@@ -222,10 +321,16 @@ export function LobbyList({ mapId, onSelect }: LobbyListProps) {
 
                 {/* Open/closed switch */}
                 <div
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-3"
                   onClick={(e) => e.stopPropagation()}
                   role="none"
                 >
+                  <TierToggle
+                    value={lobby.access_tier}
+                    onChange={(tier) => handleChangeTier(lobby.id, tier)}
+                    disabled={tierLobbyId === lobby.id}
+                    size="sm"
+                  />
                   <span className="text-xs text-slate-400">
                     {lobby.is_open ? "Open" : "Closed"}
                   </span>

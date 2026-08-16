@@ -11,7 +11,7 @@ import type { DmConversation } from "@/types/dm-leads";
 const PRESET_TAGS = ["VIP", "ผู้ปกครอง", "โรงเรียน", "ครู/อาจารย์", "สปอนเซอร์"];
 
 interface DmLeadTagsEditorProps {
-  conversation: DmConversation;
+  conversation: Pick<DmConversation, "id" | "admin_tags">;
   onChange?: (patch: LeadMetaPatch) => void;
 }
 

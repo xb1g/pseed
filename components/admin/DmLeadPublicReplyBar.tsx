@@ -15,11 +15,24 @@ import {
   getDefaultPublicCommentReply,
   hasThreadDeliveryFailure,
 } from "@/lib/dm-leads/delivery-status";
-import { leadFromConversation } from "@/lib/dm-leads/personalize";
 import type { DmConversation, DmConversationWithMessages, IgComment } from "@/types/dm-leads";
 
 interface DmLeadPublicReplyBarProps {
-  conversation: DmConversation;
+  conversation: Pick<
+    DmConversation,
+    | "id"
+    | "username"
+    | "display_name"
+    | "grade_level"
+    | "interests"
+    | "activities_summary"
+    | "stage"
+    | "wants_pathlab"
+    | "pathlab_pay_ready"
+    | "wants_community"
+    | "wants_talent"
+    | "has_hands_on_experience"
+  >;
   thread: DmConversationWithMessages | null;
 }
 
@@ -29,6 +42,7 @@ export function DmLeadPublicReplyBar({ conversation, thread }: DmLeadPublicReply
   const [loadingComment, setLoadingComment] = useState(false);
   const [message, setMessage] = useState("");
   const [copied, setCopied] = useState(false);
+  const [personalized, setPersonalized] = useState(false);
   const [sentSuccess, setSentSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -45,13 +59,7 @@ export function DmLeadPublicReplyBar({ conversation, thread }: DmLeadPublicReply
     setMessage(template);
 
     let cancelled = false;
-    void personalizeLeadCopyAction({
-      template,
-      lead: leadFromConversation(conversation),
-      kind: "public_comment",
-    }).then((result) => {
-      if (!cancelled && result.body) setMessage(result.body);
-    });
+    setPersonalized(false);
     setLoadingComment(true);
     getLeadCommentInfo(conversation.id)
       .then((data) => {
@@ -68,6 +76,31 @@ export function DmLeadPublicReplyBar({ conversation, thread }: DmLeadPublicReply
       cancelled = true;
     };
   }, [conversation.id, conversation.username, isBlocked]);
+
+  /**
+   * The rewrite costs an LLM round trip, so it waits until the bar is on
+   * screen. Previously it fired for every lead the operator clicked through,
+   * whether or not they ever opened this bar.
+   */
+  useEffect(() => {
+    const visible = isBlocked || isOpen;
+    if (!visible || personalized || !message.trim()) return;
+
+    let cancelled = false;
+    setPersonalized(true);
+    void personalizeLeadCopyAction({
+      conversationId: conversation.id,
+      template: message,
+      kind: "public_comment",
+    }).then((result) => {
+      if (!cancelled && result.body) setMessage(result.body);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // `message` is intentionally omitted: this must not re-run on each edit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversation.id, isBlocked, isOpen, personalized]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message);

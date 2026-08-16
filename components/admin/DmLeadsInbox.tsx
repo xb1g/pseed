@@ -335,7 +335,7 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversationW
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vimMode, fullscreen, items, selectedIndex, selected, suggestions, router]);
 
-  const handleSelect = (conversation: DmConversation) => {
+  const handleSelect = (conversation: DmConversationWithBucket) => {
     // Below lg the detail pane is hidden — go to the full page instead.
     if (window.matchMedia("(min-width: 1024px)").matches) {
       setSelectedId(conversation.id);

@@ -35,7 +35,25 @@ export interface QuickReplyContext {
   hasHandsOnExperience: boolean;
 }
 
-export function contextFromConversation(c: DmConversation): QuickReplyContext {
+/**
+ * Takes only the columns it reads, so it accepts both a full `dm_conversations`
+ * row and the narrowed row the inbox list selects.
+ */
+export function contextFromConversation(
+  c: Pick<
+    DmConversation,
+    | "stage"
+    | "grade_level"
+    | "interests"
+    | "display_name"
+    | "username"
+    | "wants_pathlab"
+    | "pathlab_pay_ready"
+    | "wants_community"
+    | "wants_talent"
+    | "has_hands_on_experience"
+  >
+): QuickReplyContext {
   return {
     stage: c.stage,
     gradeLevel: c.grade_level,

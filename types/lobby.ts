@@ -5,12 +5,27 @@ export type NodeProgressStatus =
   | "passed"
   | "failed";
 
+/**
+ * How much of a map a lobby's members can reach.
+ * - "full": the whole map.
+ * - "micro": the free tier. Only the first island's content is readable;
+ *   every later island stays locked regardless of progress.
+ */
+export type LobbyAccessTier = "full" | "micro";
+
+export const LOBBY_ACCESS_TIERS: LobbyAccessTier[] = ["full", "micro"];
+
+export const isLobbyAccessTier = (value: unknown): value is LobbyAccessTier =>
+  typeof value === "string" &&
+  (LOBBY_ACCESS_TIERS as string[]).includes(value);
+
 export interface MapLobby {
   id: string;
   map_id: string;
   name: string;
   join_code: string;
   is_open: boolean;
+  access_tier: LobbyAccessTier;
   created_by: string | null;
   created_at: string;
 }

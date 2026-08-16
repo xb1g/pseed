@@ -84,7 +84,7 @@ export function useLeadMetaUpdater(
 }
 
 interface DmLeadManageBarProps {
-  conversation: DmConversation;
+  conversation: Pick<DmConversation, "id" | "starred" | "follow_up_at" | "lead_status">;
   /** Optimistic local sync — the action call itself is owned by this bar. */
   onChange?: (patch: LeadMetaPatch) => void;
 }

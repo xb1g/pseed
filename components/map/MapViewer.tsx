@@ -100,6 +100,10 @@ interface MapViewerProps {
   // Server-computed permissions for the Preview/Edit/Grade mode system.
   canEdit?: boolean;
   canGrade?: boolean;
+  // Islands a micro (free) lobby member may not open. These stay locked no
+  // matter how much progress they make; their content is already stripped
+  // server-side, this only keeps the canvas honest about it.
+  lockedNodeIds?: string[];
 }
 
 // Deterministic avatar color per user, so a given lobbymate always shows in
@@ -277,7 +281,12 @@ export function MapViewer({
   headerContent,
   canEdit = false,
   canGrade = false,
+  lockedNodeIds,
 }: MapViewerProps) {
+  const tierLockedNodeIds = useMemo(
+    () => new Set(lockedNodeIds ?? []),
+    [lockedNodeIds]
+  );
   const { presenceByNode } = useLobbyPresence(map.id, initialPresence);
   const { mode: viewMode } = useMapViewMode();
   const { toast } = useToast();
@@ -846,6 +855,12 @@ export function MapViewer({
       return true;
     }
 
+    // Access-tier locks outrank progress and role: a micro-tier member never
+    // opens a later island, even if they somehow pass its prerequisites.
+    if (tierLockedNodeIds.has(nodeId)) {
+      return false;
+    }
+
     // Instructors/TAs can see all nodes (both team and personal maps)
     if (isInstructorOrTA) {
       return true;
@@ -862,7 +877,7 @@ export function MapViewer({
       const progress = progressMap[prereq.id];
       return progress?.status === "passed" || progress?.status === "submitted";
     });
-  }, [nodesById, prerequisitesByNodeId, isInstructorOrTA, progressMap]);
+  }, [nodesById, prerequisitesByNodeId, isInstructorOrTA, progressMap, tierLockedNodeIds]);
 
   // Get submission requirement for a node (single or all team members)
   const getSubmissionRequirement = useCallback((nodeId: string): "single" | "all" => {
@@ -2107,6 +2122,7 @@ export function MapViewerWithProvider({
   headerContent,
   canEdit,
   canGrade,
+  lockedNodeIds,
 }: MapViewerProps) {
   return (
     <ReactFlowProvider>
@@ -2369,6 +2385,7 @@ export function MapViewerWithProvider({
         headerContent={headerContent}
         canEdit={canEdit}
         canGrade={canGrade}
+        lockedNodeIds={lockedNodeIds}
       />
     </ReactFlowProvider>
   );

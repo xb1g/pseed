@@ -8,13 +8,11 @@ import {
   type DmLeadSignals,
   type FunnelScoreboard,
 } from "@/lib/dm-leads/playbook";
-import {
-  reduceMessagesToSignals,
-  signalsFor,
-  type DmMessageSignalRow,
-} from "@/lib/dm-leads/signals";
+import { messageSignalFlags, signalsFor } from "@/lib/dm-leads/signals";
+import { DM_LEAD_LIST_COLUMNS } from "@/types/dm-leads";
 import type {
   DmConversation,
+  DmConversationListColumn,
   DmConversationWithBucket,
   DmConversationWithMessages,
   DmLeadClassification,
@@ -144,6 +142,7 @@ export async function recordInboundMessage(params: {
       direction: "inbound" as DmMessageDirection,
       sender_type: "lead" as DmMessageSenderType,
       body: params.body,
+      ...messageSignalFlags(params.body),
       platform_message_id: params.platformMessageId ?? null,
       message_type: params.messageType ?? "text",
       metadata: params.metadata ?? {},
@@ -223,6 +222,7 @@ export async function recordBackfilledMessage(params: {
         direction: params.direction,
         sender_type: params.direction === "inbound" ? "lead" : "admin",
         body: params.body,
+        ...messageSignalFlags(params.body),
         platform_message_id: params.platformMessageId,
         message_type:
           params.messageType ??
@@ -388,10 +388,17 @@ export async function updateLeadMeta(
   }
 }
 
-/** PostgREST caps a single response at 1000 rows; page through with .range(). */
-const MESSAGE_PAGE_SIZE = 1000;
-
 export type DmLeadSignalMap = Map<string, DmLeadSignals>;
+
+/** One row of `dm_conversation_signals` — the SQL-side rollup of the matchers. */
+interface ConversationSignalRow {
+  conversation_id: string;
+  has_inbound: boolean | null;
+  last_inbound_message_at: string | null;
+  pathlab_link_sent: boolean | null;
+  price_mentioned: boolean | null;
+  offer_made: boolean | null;
+}
 
 let cachedSignals: { data: DmLeadSignalMap; timestamp: number } | null = null;
 let cachedScoreboard: { data: FunnelScoreboard; timestamp: number } | null = null;
@@ -403,11 +410,14 @@ export function invalidateDmLeadCache(): void {
 }
 
 /**
- * Every playbook signal for every conversation, in one pass over `dm_messages`.
+ * Every playbook signal for every conversation, as one row per conversation
+ * straight from `dm_conversation_signals`.
  *
- * Deliberately not per-conversation: a query per thread would be an N+1 the
- * moment the inbox grows. One paginated scan of three narrow columns stays
- * cheap well past the ~1,200 rows we have today.
+ * The aggregate happens in Postgres because the alternative — the paginated
+ * scan of `dm_messages` this replaced — moved ~800KB of message bodies over the
+ * wire on every cold request to produce five booleans per thread. The view is
+ * the same reduction as `reduceMessagesToSignals`, which still owns the matchers
+ * and still runs on the write path; the two must be edited together.
  */
 export async function getDmLeadSignals(forceFresh = false): Promise<DmLeadSignalMap> {
   const now = Date.now();
@@ -416,26 +426,28 @@ export async function getDmLeadSignals(forceFresh = false): Promise<DmLeadSignal
   }
 
   const supabase = createAdminClient();
-  const rows: DmMessageSignalRow[] = [];
+  const { data, error } = await supabase
+    .from("dm_conversation_signals")
+    .select(
+      "conversation_id, has_inbound, last_inbound_message_at, pathlab_link_sent, price_mentioned, offer_made"
+    );
 
-  for (let offset = 0; ; offset += MESSAGE_PAGE_SIZE) {
-    const { data, error } = await supabase
-      .from("dm_messages")
-      .select("conversation_id, direction, body, sent_at")
-      .order("id", { ascending: true })
-      .range(offset, offset + MESSAGE_PAGE_SIZE - 1);
-
-    if (error) {
-      console.error("Error fetching dm_messages for signals:", error);
-      throw new Error("Failed to compute lead signals");
-    }
-
-    const page = (data ?? []) as DmMessageSignalRow[];
-    rows.push(...page);
-    if (page.length < MESSAGE_PAGE_SIZE) break;
+  if (error) {
+    console.error("Error fetching dm_conversation_signals:", error);
+    throw new Error("Failed to compute lead signals");
   }
 
-  const signals = reduceMessagesToSignals(rows);
+  const signals: DmLeadSignalMap = new Map();
+  for (const row of (data ?? []) as ConversationSignalRow[]) {
+    signals.set(row.conversation_id, {
+      hasInbound: row.has_inbound ?? false,
+      lastInboundMessageAt: row.last_inbound_message_at,
+      pathlabLinkSent: row.pathlab_link_sent ?? false,
+      priceMentioned: row.price_mentioned ?? false,
+      offerMade: row.offer_made ?? false,
+    });
+  }
+
   cachedSignals = { data: signals, timestamp: Date.now() };
   return signals;
 }
@@ -456,7 +468,7 @@ function pathlabLinkConversationIds(signals: DmLeadSignalMap): Set<string> {
 
 /** Attaches the derived bucket + offer routing to a raw conversation row. */
 function withBucket(
-  conversation: DmConversation,
+  conversation: Pick<DmConversation, DmConversationListColumn>,
   signals: DmLeadSignalMap
 ): DmConversationWithBucket {
   const conversationSignals = signalsFor(signals, conversation.id);
@@ -475,7 +487,9 @@ export async function getConversationsForAdmin(
   const supabase = createAdminClient();
   const signals = preloadedSignals ?? (await getDmLeadSignals());
 
-  let query = supabase.from("dm_conversations").select("*");
+  let query = supabase
+    .from("dm_conversations")
+    .select(DM_LEAD_LIST_COLUMNS.join(", "));
   query = applyDmLeadFilters(query, filters);
   if (filters.pathlabLinkSent) {
     const ids = pathlabLinkConversationIds(signals);
@@ -493,7 +507,11 @@ export async function getConversationsForAdmin(
     throw new Error("Failed to fetch conversations");
   }
 
-  const classified = (data ?? []).map((row) => withBucket(row, signals));
+  // PostgREST can only infer a row type from a literal select string, and ours
+  // is built from DM_LEAD_LIST_COLUMNS so the columns and the type stay one
+  // source. That shared constant is what makes this cast safe.
+  const rows = (data ?? []) as unknown as Pick<DmConversation, DmConversationListColumn>[];
+  const classified = rows.map((row) => withBucket(row, signals));
   // Bucket is derived, so it cannot be pushed into SQL — filter last, after the
   // DB has already narrowed the set as far as it can.
   return filters.bucket
@@ -615,7 +633,6 @@ export async function getDmLeadFacets(
 
   const signals = preloadedSignals ?? (await getDmLeadSignals());
   const pathlabIds = pathlabLinkConversationIds(signals);
-  const scoreboard = await computeScoreboard(supabase, signals);
 
   let query = supabase
     .from("dm_conversations")
@@ -623,12 +640,21 @@ export async function getDmLeadFacets(
       "id, stage, grade_level, interests, last_message_direction, pathlab_pay_ready, starred, follow_up_at, lead_status, admin_tags"
     );
   query = applyDmLeadFilters(query, filters, { skipStage: true });
-  if (filters.pathlabLinkSent) {
-    if (pathlabIds.size === 0) return { ...EMPTY_FACETS, scoreboard };
+  const emptyByPathlabFilter = filters.pathlabLinkSent && pathlabIds.size === 0;
+  if (filters.pathlabLinkSent && !emptyByPathlabFilter) {
     query = query.in("id", [...pathlabIds]);
   }
 
-  const { data, error } = await query;
+  // The scoreboard spans the whole inbox and the facets respect the active
+  // filters, so they cannot share one read — but neither depends on the other.
+  const [scoreboard, facetRows] = await Promise.all([
+    computeScoreboard(supabase, signals),
+    emptyByPathlabFilter ? Promise.resolve(null) : query,
+  ]);
+
+  if (emptyByPathlabFilter) return { ...EMPTY_FACETS, scoreboard };
+
+  const { data, error } = facetRows!;
 
   if (error) {
     console.error("Error fetching dm_conversation facets:", error);
@@ -938,6 +964,9 @@ async function sendAndRecordOutboundMessage(
   const sentAt = new Date().toISOString();
   const isAttachment = Boolean(input.attachmentUrl);
   const attachmentType = input.attachmentType ?? "image";
+  const outboundBody = isAttachment
+    ? input.text?.trim() || `[${attachmentType}]`
+    : (input.text ?? "");
 
   const { data: outboundMessage, error: insertError } = await supabase
     .from("dm_messages")
@@ -945,7 +974,8 @@ async function sendAndRecordOutboundMessage(
       conversation_id: conversationId,
       direction: "outbound" as DmMessageDirection,
       sender_type: "admin" as DmMessageSenderType,
-      body: isAttachment ? input.text?.trim() || `[${attachmentType}]` : (input.text ?? ""),
+      body: outboundBody,
+      ...messageSignalFlags(outboundBody),
       message_type: (isAttachment ? "attachment" : "text") as DmMessageType,
       send_status: "pending",
       sent_at: sentAt,
@@ -1159,6 +1189,7 @@ export async function sendLeadQuickReplies(
       direction: "outbound" as DmMessageDirection,
       sender_type: "admin" as DmMessageSenderType,
       body: text.trim(),
+      ...messageSignalFlags(text),
       message_type: "quick_reply" as DmMessageType,
       metadata: { quick_reply_options: options },
       send_status: "pending",

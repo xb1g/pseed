@@ -15,7 +15,7 @@ import { MARQUEE_PHRASES } from "@/lib/content/pathlab-page";
 
 const PATHLAB_TITLE = "Pathlab: ทำ Project จริงกับผู้เชี่ยวชาญ";
 const PATHLAB_DESCRIPTION =
-  "ทดสอบว่าทางนี้ใช่ทางของคุณไหม และเริ่มต้นเรียนรู้พื้นฐานของสายต่างๆ ผ่านการทำ Project ที่ออกแบบร่วมกับผู้เชี่ยวชาญ ภายในเวลา 4-5 วัน";
+  "ทดสอบว่าทางนี้ใช่ทางของคุณไหม และเริ่มต้นเรียนรู้พื้นฐานของสายต่างๆ ผ่านการทำ Project ที่ออกแบบร่วมกับผู้เชี่ยวชาญ ภายในเวลา 4-6 วัน";
 
 export const metadata: Metadata = {
   title: PATHLAB_TITLE,

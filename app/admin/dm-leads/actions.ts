@@ -10,7 +10,7 @@ import {
 } from "@/lib/supabase/dm-leads";
 import type { MetaAttachmentType, MetaQuickReplyOption } from "@/lib/meta/graph";
 import type { DmLeadStatus } from "@/types/dm-leads";
-import type { PersonalizeKind, PersonalizeLead } from "@/lib/dm-leads/personalize";
+import type { PersonalizeKind } from "@/lib/dm-leads/personalize";
 
 async function personalizeOutboundText(
   conversationId: string,
@@ -32,20 +32,33 @@ async function personalizeOutboundText(
   });
 }
 
+/**
+ * Rewrites one template in the lead's voice.
+ *
+ * Takes a conversation id rather than a `PersonalizeLead`: the lead carries
+ * `activitiesSummary`, which is the whole concatenated DM history, and shipping
+ * it up from the browser on every call made the request payload enormous — and
+ * let the client decide what the model sees. The server already has to load the
+ * thread for `lastInbound`, so reading the lead here costs nothing extra.
+ *
+ * Call this on demand (insert, copy, send), never eagerly for a list of
+ * templates: Server Actions are dispatched one at a time by the client, so N
+ * speculative rewrites serialize into N × inference latency and block every
+ * other action queued behind them.
+ */
 export async function personalizeLeadCopyAction(input: {
+  conversationId: string;
   template: string;
-  lead: PersonalizeLead;
   kind?: PersonalizeKind;
 }) {
   await requireAdmin();
   if (!input.template.trim()) return { ok: true, body: input.template, error: null };
   try {
-    const { personalizeMessage } = await import("@/lib/dm-leads/personalize");
-    const body = await personalizeMessage({
-      template: input.template,
-      lead: input.lead,
-      kind: input.kind ?? "composed",
-    });
+    const body = await personalizeOutboundText(
+      input.conversationId,
+      input.template,
+      input.kind ?? "composed"
+    );
     return { ok: true, body, error: null };
   } catch (error) {
     console.error("personalizeLeadCopyAction failed:", error);

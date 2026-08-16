@@ -59,6 +59,36 @@ export function mentionsOffer(body: string): boolean {
 }
 
 /**
+ * The three matcher results for one message body, direction-agnostic.
+ *
+ * Written onto `dm_messages` at insert time so the per-conversation rollup can
+ * be a plain SQL aggregate instead of shipping every message body to Node on
+ * every request. Keeping the matchers here — rather than porting the regexes
+ * into Postgres — is deliberate: `deriveSignalsFromMessages` below and the bulk
+ * path must never disagree about a bucket, and two copies of these patterns in
+ * two languages is exactly how that starts.
+ *
+ * Direction rules (a link only counts from us, a price counts from either side)
+ * live in the aggregate, not here, so the stored flags stay raw.
+ *
+ * Editing any pattern above means re-running `scripts/backfill-message-signals.mjs`.
+ */
+export interface MessageSignalFlags {
+  signal_price: boolean;
+  signal_pathlab_link: boolean;
+  signal_offer: boolean;
+}
+
+export function messageSignalFlags(body: string | null | undefined): MessageSignalFlags {
+  const text = body ?? "";
+  return {
+    signal_price: mentionsPrice(text),
+    signal_pathlab_link: mentionsPathlabLink(text),
+    signal_offer: mentionsOffer(text),
+  };
+}
+
+/**
  * Folds every message into one `DmLeadSignals` per conversation. Conversations
  * with no messages are absent from the map — callers fall back to
  * `EMPTY_SIGNALS`.
@@ -70,7 +100,7 @@ export function reduceMessagesToSignals(
 
   for (const row of rows) {
     const current = signals.get(row.conversation_id) ?? { ...EMPTY_SIGNALS };
-    const body = row.body ?? "";
+    const flags = messageSignalFlags(row.body);
     const outbound = row.direction === "outbound";
 
     if (row.direction === "inbound") {
@@ -80,11 +110,11 @@ export function reduceMessagesToSignals(
         row.sent_at
       );
     }
-    if (outbound && mentionsPathlabLink(body)) current.pathlabLinkSent = true;
+    if (outbound && flags.signal_pathlab_link) current.pathlabLinkSent = true;
     // Price counts from either side — the lead asking "เท่าไหร่ครับ" means the
     // number is on the table, which is what the "hot" bucket is about.
-    if (mentionsPrice(body)) current.priceMentioned = true;
-    if (outbound && mentionsOffer(body)) current.offerMade = true;
+    if (flags.signal_price) current.priceMentioned = true;
+    if (outbound && flags.signal_offer) current.offerMade = true;
 
     signals.set(row.conversation_id, current);
   }

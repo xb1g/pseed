@@ -7,8 +7,11 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { personalizeLeadCopyAction, replyToLead, sendQuickReplyButtons } from "@/app/admin/dm-leads/actions";
 import { uploadDmAttachment } from "@/lib/dm-leads/upload-image-client";
-import { contextFromConversation, getQuickReplies } from "@/lib/dm-leads/quick-replies";
-import { leadFromConversation } from "@/lib/dm-leads/personalize";
+import {
+  contextFromConversation,
+  getQuickReplies,
+  type QuickReply,
+} from "@/lib/dm-leads/quick-replies";
 import { QUICK_REPLY_SETS } from "@/lib/dm-leads/quick-reply-buttons";
 import { PlanGeneratorModal } from "@/components/admin/PlanGeneratorModal";
 import type { MetaAttachmentType } from "@/lib/meta/graph";
@@ -32,7 +35,22 @@ function guessAttachmentKind(file: File): MetaAttachmentType {
 }
 
 interface DmLeadReplyFormProps {
-  conversation: DmConversation;
+  conversation: Pick<
+    DmConversation,
+    | "id"
+    | "platform"
+    | "username"
+    | "display_name"
+    | "grade_level"
+    | "interests"
+    | "activities_summary"
+    | "stage"
+    | "wants_pathlab"
+    | "pathlab_pay_ready"
+    | "wants_community"
+    | "wants_talent"
+    | "has_hands_on_experience"
+  >;
   /** Controlled body — when provided, onBodyChange must be too. */
   body?: string;
   onBodyChange?: (body: string) => void;
@@ -108,45 +126,30 @@ export function DmLeadReplyForm({
     if (file) setAttachedFile(file);
   };
 
-  const templateSuggestions = useMemo(
+  const suggestions = useMemo(
     () => getQuickReplies(contextFromConversation(conversation)),
     [conversation]
   );
-  const [suggestions, setSuggestions] = useState(templateSuggestions);
+  const [personalizingId, setPersonalizingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    setSuggestions(templateSuggestions);
-    const lead = leadFromConversation(conversation);
-    let cancelled = false;
-    Promise.all(
-      templateSuggestions.map(async (reply) => {
-        const result = await personalizeLeadCopyAction({
-          template: reply.body,
-          lead,
-          kind: "quick_reply",
-        });
-        return { ...reply, body: result.body };
-      })
-    ).then((next) => {
-      if (!cancelled) setSuggestions(next);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    conversation.id,
-    conversation.display_name,
-    conversation.username,
-    conversation.grade_level,
-    conversation.interests.join(","),
-    conversation.stage,
-    conversation.wants_pathlab,
-    conversation.pathlab_pay_ready,
-    conversation.wants_community,
-    conversation.wants_talent,
-    conversation.has_hands_on_experience,
-    templateSuggestions,
-  ]);
+  /**
+   * Rewrites the chosen suggestion only when the operator picks it. Doing all
+   * of them up front cost one serialized LLM round trip per suggestion before
+   * the operator had asked for anything.
+   */
+  const insertSuggestion = async (suggestion: QuickReply) => {
+    setPersonalizingId(suggestion.id);
+    try {
+      const result = await personalizeLeadCopyAction({
+        conversationId: conversation.id,
+        template: suggestion.body,
+        kind: "quick_reply",
+      });
+      setBody(result.body);
+    } finally {
+      setPersonalizingId(null);
+    }
+  };
 
   const handleSend = () => {
     if (onSend) {
@@ -212,8 +215,8 @@ export function DmLeadReplyForm({
               key={s.id}
               type="button"
               title={s.body}
-              onClick={() => setBody(s.body)}
-              disabled={isPending}
+              onClick={() => void insertSuggestion(s)}
+              disabled={isPending || personalizingId !== null}
               className={cn(
                 "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50",
                 TONE_STYLES[s.tone]
@@ -221,6 +224,7 @@ export function DmLeadReplyForm({
             >
               <span className="mr-1 opacity-50">{i + 1}.</span>
               {s.label}
+              {personalizingId === s.id && <span className="ml-1 opacity-60">…</span>}
             </button>
           ))}
         </div>

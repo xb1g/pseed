@@ -18,6 +18,12 @@ interface DmLeadScriptCardProps {
   trigger?: string;
   /** Drops the copy into the reply box. Omitted → copy only. */
   onInsert?: (body: string) => void;
+  /**
+   * Last-moment rewrite of the body, applied to both insert and copy. Async and
+   * on-demand on purpose — it costs an LLM round trip, so it must not run for
+   * cards the operator only ever scrolls past.
+   */
+  onPrepare?: (body: string) => Promise<string>;
 }
 
 export function DmLeadScriptCard({
@@ -26,9 +32,24 @@ export function DmLeadScriptCard({
   note,
   trigger,
   onInsert,
+  onPrepare,
 }: DmLeadScriptCardProps) {
   const [copied, setCopied] = useState(false);
+  const [preparing, setPreparing] = useState(false);
   const placeholders = countPlaceholders(body);
+
+  /** The raw template is the fallback: a failed rewrite must never block a send. */
+  const resolveBody = async (): Promise<string> => {
+    if (!onPrepare) return body;
+    setPreparing(true);
+    try {
+      return await onPrepare(body);
+    } catch {
+      return body;
+    } finally {
+      setPreparing(false);
+    }
+  };
 
   useEffect(() => {
     if (!copied) return;
@@ -38,11 +59,16 @@ export function DmLeadScriptCard({
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(body);
+      await navigator.clipboard.writeText(await resolveBody());
       setCopied(true);
     } catch {
       setCopied(false);
     }
+  };
+
+  const handleInsert = async () => {
+    if (!onInsert) return;
+    onInsert(await resolveBody());
   };
 
   return (
@@ -58,17 +84,19 @@ export function DmLeadScriptCard({
           {onInsert && (
             <button
               type="button"
-              onClick={() => onInsert(body)}
+              onClick={() => void handleInsert()}
+              disabled={preparing}
               title="แทรกลงช่องตอบ"
-              className="flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium transition-colors hover:bg-muted"
+              className="flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium transition-colors hover:bg-muted disabled:opacity-50"
             >
               <CornerDownLeft className="h-3 w-3" />
-              แทรก
+              {preparing ? "…" : "แทรก"}
             </button>
           )}
           <button
             type="button"
             onClick={handleCopy}
+            disabled={preparing}
             title="คัดลอก"
             className={cn(
               "flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium transition-colors",

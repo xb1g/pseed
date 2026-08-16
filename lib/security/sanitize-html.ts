@@ -8,6 +8,7 @@ const ALLOWED_TAGS = [
   "em",
   "u",
   "s",
+  "del",
   "code",
   "pre",
   "blockquote",

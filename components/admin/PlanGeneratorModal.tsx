@@ -40,7 +40,18 @@ import type { DmConversation } from "@/types/dm-leads";
 import type { GeneratedPlanDraft, StudentPlan } from "@/types/student-plan";
 
 interface PlanGeneratorModalProps {
-  conversation: DmConversation;
+  conversation: Pick<
+    DmConversation,
+    | "id"
+    | "platform"
+    | "username"
+    | "display_name"
+    | "grade_level"
+    | "interests"
+    | "activities_summary"
+    | "stage"
+    | "has_hands_on_experience"
+  >;
   onInsertReply?: (text: string) => void;
   triggerClassName?: string;
   triggerVariant?: "default" | "outline" | "secondary" | "ghost";

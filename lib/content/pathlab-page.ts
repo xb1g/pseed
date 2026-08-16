@@ -24,7 +24,8 @@ export const MARQUEE_PHRASES = [
  * /map/<id>. The id comes from NEXT_PUBLIC_MICRO_PATHLAB_MAP_ID so the CTA
  * can be pointed at the current sample case without a code change. When it
  * is unset, play-now CTAs fall back to the pricing section instead of a
- * dead link, and the free tier's direct-play button stays hidden.
+ * dead link, and the free tier's card falls back to a LINE OA button so it
+ * never sits without an action.
  */
 const MICRO_MAP_ID = process.env.NEXT_PUBLIC_MICRO_PATHLAB_MAP_ID;
 
@@ -143,7 +144,7 @@ export const HERO = {
   title: "Pathlab",
   subtitleLines: [
     "ทำ Project ที่ออกแบบร่วมกับผู้เชี่ยวชาญของสายนั้นๆ",
-    "ภายในเวลา 4-5 วัน",
+    "ภายในเวลา 4-6 วัน",
   ],
   /**
    * Above-the-fold actions. Mobile visitors decide within seconds, so the
@@ -377,16 +378,17 @@ export const PRICE_TIERS: PriceTier[] = [
     blurb: "ลองโปรเจกต์จิ๋วทุกวัน ไม่เสียตัง รู้เร็วว่าสายนี้ดึงดูดไหม",
     tone: "free",
     chip: "เริ่มวันนี้",
-    /* Zero-friction lead into the product — only once a sample map exists. */
-    ...(MICRO_PATHLAB.mapHref
-      ? { cta: { label: MICRO_PATHLAB.tierCta, href: MICRO_PATHLAB.mapHref } }
-      : {}),
+    /* Zero-friction lead into the product once a sample map exists; until
+       then the card points at LINE OA rather than sitting without an action. */
+    cta: MICRO_PATHLAB.mapHref
+      ? { label: MICRO_PATHLAB.tierCta, href: MICRO_PATHLAB.mapHref }
+      : { label: "ทัก LINE OA →", href: CONTACT.lineHref },
   },
   {
     label: "เดี่ยว",
     amount: "299",
     currency: "฿",
-    unit: "ต่อคน · รอบ 4-5 วัน",
+    unit: "ต่อคน · รอบ 4-6 วัน",
     blurb: "มาคนเดียวได้ เราจัดกลุ่ม + mentor ให้ใกล้ชิด",
     tone: "solo",
   },
@@ -762,7 +764,7 @@ export interface OfferCard {
 export const OFFER_CARDS: OfferCard[] = [
   {
     title: "Project",
-    body: "ที่ออกแบบร่วมกับผู้เชี่ยวชาญของสายนั้นๆ ภายในเวลา 4-5 วัน",
+    body: "ที่ออกแบบร่วมกับผู้เชี่ยวชาญของสายนั้นๆ ภายในเวลา 4-6 วัน",
   },
   {
     title: "หาสายที่ใช่",

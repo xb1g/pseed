@@ -96,11 +96,46 @@ export interface DmConversationWithMessages extends DmConversation {
 }
 
 /**
+ * The only `dm_conversations` columns the inbox list and its detail header
+ * actually read. Narrowed on purpose: `select("*")` shipped every column of all
+ * ~600 rows into the RSC payload on each load, and the detail pane fetches the
+ * full thread on demand anyway.
+ *
+ * This is the single source for both the TypeScript shape and the PostgREST
+ * column list, so a field can never be rendered without also being selected.
+ * Adding a field to the UI means adding it here.
+ */
+export const DM_LEAD_LIST_COLUMNS = [
+  "id",
+  "platform",
+  "platform_user_id",
+  "username",
+  "display_name",
+  "stage",
+  "grade_level",
+  "interests",
+  "activities_summary",
+  "last_message_at",
+  "last_message_direction",
+  "lead_status",
+  "admin_tags",
+  "starred",
+  "follow_up_at",
+  "pathlab_pay_ready",
+  "wants_pathlab",
+  "wants_community",
+  "wants_talent",
+  "has_hands_on_experience",
+] as const;
+
+export type DmConversationListColumn = (typeof DM_LEAD_LIST_COLUMNS)[number];
+
+/**
  * A conversation with its playbook classification already applied, so the UI
  * never has to reclassify (and never disagrees with the bucket counts).
- * Structurally a `DmConversation`, so it can be passed anywhere one is expected.
  */
-export interface DmConversationWithBucket extends DmConversation {
+export interface DmConversationWithBucket
+  extends Pick<DmConversation, DmConversationListColumn> {
   /** Derived from dm_messages, not stored on dm_conversations. */
   last_inbound_message_at: string | null;
   bucket: DmLeadBucket;

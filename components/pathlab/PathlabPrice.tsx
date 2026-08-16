@@ -46,7 +46,14 @@ export function PathlabPrice() {
             <p className="pathlab-price__tier-unit">{tier.unit}</p>
             <p className="pathlab-price__tier-blurb">{tier.blurb}</p>
             {tier.cta && (
-              <a className="pathlab-price__tier-cta" href={tier.cta.href}>
+              <a
+                className="pathlab-price__tier-cta"
+                href={tier.cta.href}
+                /* The LINE OA fallback leaves the site; the map link does not. */
+                {...(tier.cta.href.startsWith("http")
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
+              >
                 {tier.cta.label}
               </a>
             )}

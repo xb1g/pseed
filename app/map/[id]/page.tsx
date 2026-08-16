@@ -14,6 +14,11 @@ import { DawnScene } from "@/components/projectseed/dawn-scene";
 import { MapEnrollmentTracker } from "@/components/map/MapEnrollmentTracker";
 import { LobbyCodeGateWrapper } from "@/components/map/LobbyCodeGate";
 import { getUserLobbyForMap, getLobbyPresence } from "@/lib/supabase/lobbies";
+import {
+  getFirstIslandNodeIds,
+  getLockedNodeIds,
+  restrictMapToFirstIsland,
+} from "@/lib/utils/lobby-access";
 
 export default async function MapViewerPage(props: {
   params: Promise<{ id: string }>;
@@ -140,12 +145,26 @@ export default async function MapViewerPage(props: {
     );
   }
 
+  // Micro (free) lobbies open the first island only. Everything else is
+  // stripped server-side and locked on the canvas. Staff bypass the gate, so
+  // they always see the full map.
+  const isMicroTier = !canBypassGate && userLobby?.access_tier === "micro";
+  const firstIslandNodeIds = isMicroTier
+    ? getFirstIslandNodeIds(map)
+    : new Set<string>();
+  const viewerMap = isMicroTier
+    ? restrictMapToFirstIsland(map, firstIslandNodeIds)
+    : map;
+  const lockedNodeIds = isMicroTier
+    ? getLockedNodeIds(map, firstIslandNodeIds)
+    : undefined;
+
   const isSeedChild = map.map_type === "seed" && map.parent_seed_id;
   const backHref = isSeedChild ? `/seeds/${map.parent_seed_id}` : "/map";
   const backLabel = isSeedChild ? "Back to Seed" : "Back to Pathlabs";
 
   return (
-    <MapEnrollmentTracker map={map}>
+    <MapEnrollmentTracker map={viewerMap}>
       <MapViewModeProvider canEdit={!!userCanEdit} canGrade={!!userCanGrade}>
         {/* Dawn sky behind the map canvas — the scene is fixed-position, so
             the viewer above it must stay transparent (no dot grid, no flat
@@ -157,9 +176,10 @@ export default async function MapViewerPage(props: {
             style={{ height: "calc(100vh - 65px)" }}
           >
             <MapViewer
-              map={map}
+              map={viewerMap}
               trailMode
               initialPresence={initialPresence}
+              lockedNodeIds={lockedNodeIds}
               canEdit={!!userCanEdit}
               canGrade={!!userCanGrade}
               headerContent={
@@ -169,6 +189,8 @@ export default async function MapViewerPage(props: {
                   title={map.title}
                   canEdit={!!userCanEdit}
                   canGrade={!!userCanGrade}
+                  mapId={map.id}
+                  isAdmin={userIsAdmin}
                 />
               }
             />
