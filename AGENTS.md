@@ -1,6 +1,28 @@
 # AGENTS.md
 
-This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code), Cursor, Claude, Antigravity, and other AI agents working with code in this repository.
+
+## 🧠 Company Brain & Internal Knowledge Base (`../internal`)
+
+`passionseed/web` (this repo) is the **public application repository**.
+`passionseed/internal` (`https://github.com/passionseed/internal`) is the private **Source of Truth & Company Brain** (Product Strategy, Curricula, Research, Specs, and Design Docs).
+
+When designing features, writing copy, or modifying product logic, **treat `../internal` like a local RAG / NotebookLM knowledge base**:
+
+### 1. Where to Look
+
+| Directory | What's Inside | Use When |
+| :--- | :--- | :--- |
+| `../internal/docs/project/` | Strategy, Safeguarding, Business Canvas | Aligning on core business and product rules |
+| `../internal/docs/plans/` & `../internal/docs/superpowers/` | Technical PRDs, Sprint Plans, Specs | Implementing or refactoring major features |
+| `../internal/curriculum/` | Course outlines, PathLab exercises | Creating or updating learning content |
+| `../internal/research/` | User interviews, B2B market intelligence | Designing user flows and marketing copy |
+| `../internal/scripts/` | Ops scripts, one-off backfills | Looking for reference data migration logic |
+
+### 2. Agent Retrieval Protocol (RAG Workflow)
+1. **Search before Coding**: Before building any new feature or changing domain behavior, search `../internal` for existing PRDs or specs (`grep` or file search in `../internal`).
+2. **Grounding & Citations**: Ground your architecture in internal docs (e.g., cite `Ref: ../internal/docs/plans/xyz.md`).
+3. **Public Boundary**: Never commit confidential docs, customer data, or student PII back into the public `web` repo.
 
 ## UI Design System — REQUIRED READING
 
