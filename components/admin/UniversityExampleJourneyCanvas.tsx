@@ -41,6 +41,7 @@ import {
   OnSelectionChangeParams,
   Connection,
   ConnectionMode,
+  ConnectionLineType,
   Panel,
   applyNodeChanges,
   applyEdgeChanges,
@@ -94,7 +95,7 @@ import {
 } from "@/components/journey/utils/journeyMapBuilder";
 import { calculateJourneyStats } from "@/components/journey/utils/journeyCalculations";
 import { getUniversityExampleMaps } from "@/lib/supabase/education";
-import { Edit, Trash2, Users } from "lucide-react";
+import { BookOpen, Edit, Trash2, Users } from "lucide-react";
 import { StudentPersona } from "./PersonaFormDialog";
 
 interface UniversityExampleJourneyCanvasProps {
@@ -404,6 +405,7 @@ export function UniversityExampleJourneyCanvas({
       created_at: "2024-01-01T00:00:00.000Z", // Static for SSR consistency
       updated_at: "2024-01-01T00:00:00.000Z", // Static for SSR consistency
       completed_at: null,
+      achieved_at: null,
     }),
     [university, user],
   );
@@ -494,8 +496,8 @@ export function UniversityExampleJourneyCanvas({
   } = useJourneyMapState();
 
   // React Flow node and edge state
-  const [nodes, setNodes] = useNodesState([]);
-  const [edges, setEdges] = useEdgesState([]);
+  const [nodes, setNodes] = useNodesState<Node>([]);
+  const [edges, setEdges] = useEdgesState<Edge>([]);
 
   // Paths (connections between milestones)
   const [paths, setPaths] = React.useState<any[]>([]);
@@ -628,13 +630,14 @@ export function UniversityExampleJourneyCanvas({
       universityNorthStar,
       {
         onViewMilestones: () => {},
-        onEditProject: (project) => {
-          openEditDialog(project);
+        onEditProject: (projectId) => {
+          const project = projectsArray.find((p) => p.id === projectId);
+          if (project) openEditDialog(project);
         },
         onAddReflection: () => {},
         onEditNorthStar: () => {},
         onCreateProjectForNorthStar: () => {
-          openCreateDialog(universityNorthStar.id);
+          openCreateDialog();
         },
         onViewNorthStarDetails: () => {},
         onQuickStatusChange: () => {},
@@ -666,6 +669,7 @@ export function UniversityExampleJourneyCanvas({
         id: `milestone-${milestoneCounter}`,
         user_id: user.id,
         title: projectData.title,
+        short_title: projectData.title || null,
         description: projectData.description || null,
         goal: projectData.goal || null,
         why: projectData.why || null,
@@ -966,7 +970,7 @@ export function UniversityExampleJourneyCanvas({
       }, 1000);
     } catch (error) {
       console.error("Error saving example map:", error);
-      toast.error(`Failed to save example map: ${error.message || error}`);
+      toast.error(`Failed to save example map: ${error instanceof Error ? error.message : String(error)}`);
       setShowSaveDialog(false);
     } finally {
       setIsSaving(false);
@@ -1043,7 +1047,7 @@ export function UniversityExampleJourneyCanvas({
                 <JourneyActionBar
                   stats={journeyStats}
                   onCreateProject={() =>
-                    openCreateDialog(universityNorthStar.id)
+                    openCreateDialog()
                   }
                   onCreateNorthStar={() => {}} // Not needed for examples
                 />
@@ -1106,7 +1110,7 @@ export function UniversityExampleJourneyCanvas({
                         animated: false,
                       }}
                       connectionMode={ConnectionMode.Loose}
-                      connectionLineType="smoothstep"
+                      connectionLineType={ConnectionLineType.SmoothStep}
                       nodesDraggable={true}
                       nodesConnectable={false} // Disable connections for university examples
                       connectOnClick={false}
@@ -1138,7 +1142,7 @@ export function UniversityExampleJourneyCanvas({
                 </div>
 
                 {/* Navigation Guide */}
-                {isNavigationExpanded && <NavigationGuide />}
+                {isNavigationExpanded && <NavigationGuide stats={journeyStats} isExpanded={isNavigationExpanded} onToggle={() => setIsNavigationExpanded(!isNavigationExpanded)} />}
               </div>
             </ResizablePanel>
 
@@ -1182,7 +1186,7 @@ export function UniversityExampleJourneyCanvas({
 
                         <Button
                           onClick={() =>
-                            openCreateDialog(universityNorthStar.id)
+                            openCreateDialog()
                           }
                           className="w-full bg-blue-600 hover:bg-blue-700"
                         >
