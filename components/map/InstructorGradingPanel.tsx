@@ -129,10 +129,10 @@ export function InstructorGradingPanel({
         submission.id,
         grade,
         comments,
-        rating,
+        rating ?? null,
         userId,
         submission.student_node_progress.id,
-        pointsAwarded
+        pointsAwarded ?? null
       );
 
       toast({
@@ -240,7 +240,10 @@ export function InstructorGradingPanel({
 
     // Check if this is a team submission (placeholder - would check metadata or team associations)
     const isTeamSubmission = submission.metadata?.team_id !== undefined;
-    const teamName = submission.metadata?.team_name || "Team Submission";
+    const teamName =
+      typeof submission.metadata?.team_name === "string"
+        ? submission.metadata.team_name
+        : "Team Submission";
 
     return (
       <Card className="mb-4 hover:shadow-md transition-shadow">

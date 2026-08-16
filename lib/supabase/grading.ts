@@ -48,6 +48,9 @@ export type SubmissionWithDetails = {
     graded_at: string;
     graded_by?: string | null; // User ID of the grader
   }[];
+  // Free-form submission metadata (e.g. team_id for group submissions). The
+  // select("*") pulls it through when the column exists.
+  metadata?: { team_id?: string } & Record<string, unknown>;
 };
 
 export const getSubmissionsForMap = async (

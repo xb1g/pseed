@@ -123,7 +123,7 @@ export function CreateUniversityMilestoneDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} suppressHydrationWarning>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -151,7 +151,6 @@ export function CreateUniversityMilestoneDialog({
               <Select
                 value={formData.category}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
-                suppressHydrationWarning
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
@@ -174,7 +173,6 @@ export function CreateUniversityMilestoneDialog({
               <Select
                 value={formData.importance}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, importance: value }))}
-                suppressHydrationWarning
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select importance" />
@@ -198,7 +196,6 @@ export function CreateUniversityMilestoneDialog({
             <Select
               value={formData.target_timeframe}
               onValueChange={(value) => setFormData(prev => ({ ...prev, target_timeframe: value }))}
-              suppressHydrationWarning
             >
               <SelectTrigger>
                 <SelectValue placeholder="When should this be completed?" />
