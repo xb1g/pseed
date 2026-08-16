@@ -125,6 +125,8 @@ interface MidphaseDetail {
   confidence_score: number | null;
   ai_score: { total?: number } | null;
   auto_draft: string | null;
+  mentor_feedback?: string | null;
+  mentor_notes?: string | null;
 }
 
 interface VideoDetail {
@@ -166,7 +168,7 @@ function EntityTypeBadge({ type }: { type: Phase3EntityType }) {
 
 export function AdminHackathonPhase3Grading() {
   const [items, setItems] = useState<Phase3Item[]>([]);
-  const [counts, setCounts] = useState<Phase3Counts>({ total: 0, cycles: 0, midphase: 0, videos: 0 });
+  const [counts, setCounts] = useState<Phase3Counts>({ total: 0, cycles: 0, midphase: 0, videos: 0, graded: 0, ungraded: 0 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [aiGrading, setAiGrading] = useState(false);
@@ -955,7 +957,7 @@ export function AdminHackathonPhase3Grading() {
                             id: "",
                             step_type: s.step_type,
                             status: s.status,
-                            submission_data: {},
+                            submission_data: {} as Record<string, any>,
                           }));
                           const allSteps = detail?.steps ?? listSteps;
                           const stepOrder = ["hypothesis", "pretotype", "test_session", "test_run", "synthesis"];
@@ -1455,9 +1457,9 @@ export function AdminHackathonPhase3Grading() {
                   </div>
 
                   <div className="flex justify-center gap-2 mt-6">
-                    <Button variant="outline" size="xs" onClick={() => selectFirstN(10)} className="h-7 text-[10px] bg-slate-800/50 border-slate-700">First 10</Button>
-                    <Button variant="outline" size="xs" onClick={() => selectFirstN(20)} className="h-7 text-[10px] bg-slate-800/50 border-slate-700">First 20</Button>
-                    <Button variant="outline" size="xs" onClick={() => selectFirstN(bulkTargets.length)} className="h-7 text-[10px] bg-slate-800/50 border-slate-700">Select All</Button>
+                    <Button variant="outline" onClick={() => selectFirstN(10)} className="h-7 text-[10px] bg-slate-800/50 border-slate-700">First 10</Button>
+                    <Button variant="outline" onClick={() => selectFirstN(20)} className="h-7 text-[10px] bg-slate-800/50 border-slate-700">First 20</Button>
+                    <Button variant="outline" onClick={() => selectFirstN(bulkTargets.length)} className="h-7 text-[10px] bg-slate-800/50 border-slate-700">Select All</Button>
                   </div>
                 </div>
 
