@@ -10,6 +10,52 @@ import {
 } from "@/lib/supabase/dm-leads";
 import type { MetaAttachmentType, MetaQuickReplyOption } from "@/lib/meta/graph";
 import type { DmLeadStatus } from "@/types/dm-leads";
+import type { PersonalizeKind, PersonalizeLead } from "@/lib/dm-leads/personalize";
+
+async function personalizeOutboundText(
+  conversationId: string,
+  body: string,
+  kind: PersonalizeKind
+): Promise<string> {
+  if (!body.trim()) return body;
+  const { leadFromConversation, lastInboundFromMessages, personalizeMessage } = await import(
+    "@/lib/dm-leads/personalize"
+  );
+  const thread = await getConversationWithMessages(conversationId);
+  if (!thread) return body.trim();
+  return personalizeMessage({
+    template: body.trim(),
+    lead: leadFromConversation(thread, {
+      lastInbound: lastInboundFromMessages(thread.dm_messages),
+    }),
+    kind,
+  });
+}
+
+export async function personalizeLeadCopyAction(input: {
+  template: string;
+  lead: PersonalizeLead;
+  kind?: PersonalizeKind;
+}) {
+  await requireAdmin();
+  if (!input.template.trim()) return { ok: true, body: input.template, error: null };
+  try {
+    const { personalizeMessage } = await import("@/lib/dm-leads/personalize");
+    const body = await personalizeMessage({
+      template: input.template,
+      lead: input.lead,
+      kind: input.kind ?? "composed",
+    });
+    return { ok: true, body, error: null };
+  } catch (error) {
+    console.error("personalizeLeadCopyAction failed:", error);
+    return {
+      ok: false,
+      body: input.template,
+      error: error instanceof Error ? error.message : "Failed to personalize",
+    };
+  }
+}
 
 export async function replyToLead(
   conversationId: string,
@@ -44,7 +90,8 @@ export async function sendQuickReplyButtons(
   await requireAdmin();
 
   try {
-    await sendLeadQuickReplies(conversationId, text, options);
+    const prompt = await personalizeOutboundText(conversationId, text, "button_prompt");
+    await sendLeadQuickReplies(conversationId, prompt, options);
   } catch (error) {
     console.error("sendQuickReplyButtons failed:", error);
     const message = error instanceof Error ? error.message : "Failed to send quick replies";

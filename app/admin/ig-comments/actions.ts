@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin/requireAdmin";
 import { replyToComment, privateReplyToComment } from "@/lib/meta/graph";
 import { getCommentsMissedByDm, markCommentReplied } from "@/lib/supabase/ig-comments";
-import { getDefaultPublicCommentReply } from "@/lib/dm-leads/delivery-status";
+import { getPersonalizedPublicCommentReply } from "@/lib/dm-leads/delivery-status";
 import { createAdminClient } from "@/utils/supabase/admin";
 
 async function getIgCommentId(commentId: string): Promise<string> {
@@ -95,7 +95,11 @@ export async function replyToAllMissedComments(): Promise<BulkReplyResult> {
   for (const comment of batch) {
     const who = comment.username ?? comment.ig_comment_id;
     try {
-      await replyToComment(comment.ig_comment_id, getDefaultPublicCommentReply(comment.username));
+      const reply = await getPersonalizedPublicCommentReply({
+        username: comment.username,
+        gradeLevel: comment.grade_level,
+      });
+      await replyToComment(comment.ig_comment_id, reply);
       await markCommentReplied(comment.id);
       result.sent += 1;
     } catch (error) {

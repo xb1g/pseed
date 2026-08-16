@@ -743,7 +743,23 @@ export async function generateDraftPlan(
     stepOneAction,
   };
 
-  const dmCopy = formatPlanDmCopy(previewDraft);
+  const templateCopy = formatPlanDmCopy(previewDraft);
+  let dmCopy = templateCopy;
+  try {
+    const { personalizeMessage } = await import("@/lib/dm-leads/personalize");
+    dmCopy = await personalizeMessage({
+      template: templateCopy,
+      lead: {
+        displayName: studentName,
+        gradeLevel,
+        interests: interests.length > 0 ? interests : [targetField],
+        coverage: isCovered ? "covered" : "uncovered",
+      },
+      kind: "plan_dm",
+    });
+  } catch (error) {
+    console.warn("[plans.generator] Qwen plan copy failed, using template", error);
+  }
 
   // Admin-assessed readiness from the DM conversation (1–8); defaults to 3
   // when the admin has not signalled a level yet.

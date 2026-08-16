@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 /**
@@ -10,9 +11,20 @@ export function ParentsNav() {
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
         <Link
           href="/"
-          className="font-kodchasan text-base font-medium tracking-tight text-white transition-colors hover:text-amber-200"
+          aria-label="Passion Seed home"
+          className="flex items-center gap-2.5 transition-opacity hover:opacity-80"
         >
-          Passion Seed
+          <Image
+            src="/passionseed-logo.svg"
+            alt=""
+            width={32}
+            height={32}
+            priority
+            className="h-8 w-8 object-contain"
+          />
+          <span className="font-kodchasan text-base font-medium tracking-tight text-white">
+            Passion Seed
+          </span>
         </Link>
 
         <nav className="flex items-center gap-2">

@@ -1,32 +1,38 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { NodeContent, ContentType } from "@/types/map";
 import {
   Trash2,
   PlusCircle,
+  Plus,
   Edit,
   Check,
-  X,
   AlertCircle,
-  Upload,
+  ChevronRight,
   GripVertical,
-  ChevronUp,
-  ChevronDown,
   Loader2,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FileUpload } from "@/components/ui/file-upload";
 import {
@@ -40,41 +46,47 @@ import { sanitizeHtml } from "@/lib/security/sanitize-html";
 
 // Content type configurations
 const CONTENT_TYPE_CONFIG = {
-  video: {
-    label: "📹 Video & Media",
-    placeholder: "https://youtube.com/watch?v=... or https://vimeo.com/...",
-    hint: "YouTube, Vimeo, SoundCloud, Twitter, Reddit, GIPHY, Flickr",
-  },
-  canva_slide: {
-    label: "🎨 Canva Slide",
-    placeholder: "https://www.canva.com/design/DAGu7Owilr4/...",
-    hint: "Copy Canva Smart embed link",
-  },
   text: {
-    label: "📝 Text Content",
-    placeholder:
-      "Write your text content here... You can use HTML tags or Markdown syntax.",
-    hint: "Supports both HTML tags and Markdown syntax (headers, bold, italic, lists, links, etc.)",
+    label: "Text",
+    icon: "📝",
+    placeholder: "Write your text content here...",
+    hint: "Markdown supported. Paste an image (Cmd+V / Ctrl+V) to embed it.",
   },
   image: {
-    label: "🖼️ Image Upload",
-    placeholder: "",
-    hint: "Upload images (JPG, PNG, GIF, WebP, HEIC) up to 10MB",
+    label: "Image",
+    icon: "🖼️",
+    placeholder: "…or paste an image URL",
+    hint: "",
+  },
+  video: {
+    label: "Video",
+    icon: "📹",
+    placeholder: "https://youtube.com/watch?v=…",
+    hint: "YouTube, Vimeo, SoundCloud, X, Reddit, GIPHY, Flickr",
   },
   pdf: {
-    label: "📄 PDF Document",
+    label: "PDF",
+    icon: "📄",
     placeholder: "",
-    hint: "Upload PDF documents up to 40MB",
+    hint: "",
+  },
+  canva_slide: {
+    label: "Canva",
+    icon: "🎨",
+    placeholder: "https://www.canva.com/design/…",
+    hint: "Copy Canva's Smart embed link",
   },
   resource_link: {
-    label: "🔗 Resource Link",
-    placeholder: "https://example.com/document.pdf or https://book-website.com",
-    hint: "Files, books, documents, external resources",
+    label: "Link",
+    icon: "🔗",
+    placeholder: "https://example.com/resource",
+    hint: "Docs, repos, books, datasets, tools",
   },
   order_code: {
-    label: "🧩 Order Code",
+    label: "Code",
+    icon: "🧩",
     placeholder: "",
-    hint: "Add code blocks that students need to rearrange",
+    hint: "",
   },
 } as const;
 
@@ -193,6 +205,339 @@ const validateContentForm = (
 const generateTempId = (): string =>
   `temp_content_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+// Display helpers
+const getUrlHost = (url?: string | null): string => {
+  if (!url) return "";
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+};
+
+const getFileName = (url?: string | null): string => {
+  if (!url) return "";
+  const raw = url.split("/").pop() || "";
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+};
+
+// A short, human label for a content row: the title if set, otherwise the
+// most recognizable thing we can derive from the content itself.
+const getContentLabel = (item: NodeContent): string => {
+  if (item.content_title?.trim()) return item.content_title.trim();
+
+  switch (item.content_type) {
+    case "text": {
+      const plain = (item.content_body || "")
+        .replace(/<[^>]*>/g, " ")
+        .replace(/[#*>`_\[\]()!-]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      return plain
+        ? plain.length > 60
+          ? `${plain.slice(0, 60)}…`
+          : plain
+        : "Untitled text";
+    }
+    case "image":
+      return getFileName(item.content_url) || "Image";
+    case "pdf":
+      return getFileName(item.content_url) || "PDF document";
+    case "video": {
+      const host = getUrlHost(item.content_url);
+      return host ? `Video · ${host}` : "Video";
+    }
+    case "canva_slide":
+      return "Canva deck";
+    case "resource_link":
+      return getUrlHost(item.content_url) || "Resource link";
+    case "order_code": {
+      try {
+        const blocks = JSON.parse(item.content_body || "[]");
+        return `${blocks.length} code blocks`;
+      } catch {
+        return "Order code";
+      }
+    }
+    default:
+      return item.content_type;
+  }
+};
+
+// Get embed URL for video platforms
+const getEmbedUrl = (url: string): string | null => {
+  try {
+    // YouTube
+    if (url.includes("youtube.com") || url.includes("youtu.be")) {
+      const videoId = url.match(
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/,
+      )?.[1];
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+    }
+    // Vimeo
+    if (url.includes("vimeo.com")) {
+      const videoId = url.match(/vimeo\.com\/(\d+)/)?.[1];
+      return videoId ? `https://player.vimeo.com/video/${videoId}` : null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+const renderMarkdown = (text: string): string => {
+  try {
+    return sanitizeHtml(marked(text) as string);
+  } catch {
+    return sanitizeHtml(`<p>${text.replace(/\n/g, "</p><p>")}</p>`);
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Quick capture: paste or type, we figure out the block type
+// ---------------------------------------------------------------------------
+
+const VIDEO_HOSTS = [
+  "youtube.com",
+  "youtu.be",
+  "vimeo.com",
+  "soundcloud.com",
+  "twitter.com",
+  "x.com",
+  "reddit.com",
+  "giphy.com",
+  "flickr.com",
+];
+
+// Accept bare domains too ("youtube.com/watch?v=..."), not just full URLs.
+const normalizeUrl = (raw: string): string | null => {
+  const t = raw.trim();
+  if (validateUrl(t)) return t;
+  if (/^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(t)) {
+    const withProto = `https://${t}`;
+    if (validateUrl(withProto)) return withProto;
+  }
+  return null;
+};
+
+interface QuickDraft {
+  type: ContentType;
+  url: string | null;
+  body: string | null;
+}
+
+const detectContent = (raw: string): QuickDraft => {
+  const t = raw.trim();
+  const url = normalizeUrl(t);
+
+  if (url) {
+    const lower = url.toLowerCase();
+    if (lower.includes("canva.com/design/")) {
+      return { type: "canva_slide", url, body: null };
+    }
+    if (VIDEO_HOSTS.some((host) => lower.includes(host))) {
+      return { type: "video", url, body: null };
+    }
+    if (/\.(png|jpe?g|gif|webp|heic|heif)([?#].*)?$/.test(lower)) {
+      return { type: "image", url, body: null };
+    }
+    if (/\.pdf([?#].*)?$/.test(lower)) {
+      return { type: "pdf", url, body: null };
+    }
+    return { type: "resource_link", url, body: null };
+  }
+
+  return { type: "text", url: null, body: t };
+};
+
+// The one-line capture box. Paste creates a block immediately (image files
+// upload first); typing needs Enter. Escape backs out.
+const QuickAddInput = ({
+  autoFocus,
+  uploading,
+  placeholder,
+  onSubmit,
+  onPasteImage,
+  onCancel,
+}: {
+  autoFocus?: boolean;
+  uploading?: boolean;
+  placeholder?: string;
+  onSubmit: (text: string) => void;
+  onPasteImage: (file: File) => void;
+  onCancel?: () => void;
+}) => {
+  const [value, setValue] = useState("");
+
+  const submit = (text: string) => {
+    const t = text.trim();
+    if (!t) return;
+    setValue("");
+    onSubmit(t);
+  };
+
+  return (
+    <div className="relative min-w-0 flex-1">
+      <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-stone-500">
+        {uploading ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Plus className="h-3.5 w-3.5" />
+        )}
+      </span>
+      <input
+        type="text"
+        value={value}
+        autoFocus={autoFocus}
+        disabled={uploading}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            submit(value);
+          }
+          if (e.key === "Escape") {
+            setValue("");
+            onCancel?.();
+          }
+        }}
+        onPaste={(e) => {
+          const items = e.clipboardData?.items;
+          if (items) {
+            for (let i = 0; i < items.length; i++) {
+              if (items[i].type.startsWith("image/")) {
+                const file = items[i].getAsFile();
+                if (file) {
+                  e.preventDefault();
+                  setValue("");
+                  onPasteImage(file);
+                  return;
+                }
+              }
+            }
+          }
+          const text = e.clipboardData?.getData("text/plain");
+          if (text?.trim()) {
+            e.preventDefault();
+            submit(text);
+          }
+        }}
+        onBlur={() => {
+          if (!uploading) onCancel?.();
+        }}
+        placeholder={placeholder ?? "Paste a link or image, or type text…"}
+        className="h-9 w-full rounded-lg border border-dashed border-white/15 bg-transparent pl-8 pr-2 text-sm text-stone-200 transition-colors placeholder:text-stone-500 hover:border-amber-200/40 focus:border-amber-200/50 focus:outline-none disabled:opacity-60"
+      />
+    </div>
+  );
+};
+
+// Quick capture row: the input plus a door to the full editor for the things
+// quick capture cannot express (file uploads, code blocks, headings).
+const QuickAddRow = ({
+  autoFocus,
+  uploading,
+  showMore,
+  onSubmit,
+  onPasteImage,
+  onOpenFull,
+  onCancel,
+}: {
+  autoFocus?: boolean;
+  uploading?: boolean;
+  showMore?: boolean;
+  onSubmit: (text: string) => void;
+  onPasteImage: (file: File) => void;
+  onOpenFull?: () => void;
+  onCancel?: () => void;
+}) => (
+  <div className="flex items-center gap-1.5">
+    <QuickAddInput
+      autoFocus={autoFocus}
+      uploading={uploading}
+      onSubmit={onSubmit}
+      onPasteImage={onPasteImage}
+      onCancel={onCancel}
+    />
+    {showMore && (
+      <button
+        type="button"
+        onClick={onOpenFull}
+        title="Full editor: uploads, code blocks, headings"
+        className="h-9 shrink-0 rounded-lg border border-white/10 px-2.5 text-xs text-muted-foreground transition-colors hover:border-white/25 hover:text-stone-200"
+      >
+        More
+      </button>
+    )}
+  </div>
+);
+
+// Hover seam between two rows. Clicking it turns the seam into a quick
+// capture input that inserts at exactly that position.
+const InsertSeam = ({ onClick }: { onClick: () => void }) => (
+  <div
+    role="button"
+    aria-label="Insert content here"
+    onClick={onClick}
+    className="group/seam relative h-2 cursor-pointer"
+  >
+    <div className="absolute inset-x-1 top-1/2 flex -translate-y-1/2 items-center gap-1.5 opacity-0 transition-opacity duration-150 group-hover/seam:opacity-100">
+      <span className="h-px flex-1 bg-amber-200/40" />
+      <Plus className="h-3 w-3 text-amber-200/80" />
+      <span className="h-px flex-1 bg-amber-200/40" />
+    </div>
+  </div>
+);
+
+// Compact segmented type picker: one wrapping row of icon chips instead of a
+// grid of large cards.
+const TypeStrip = ({
+  value,
+  onChange,
+}: {
+  value: ContentType;
+  onChange: (type: ContentType) => void;
+}) => (
+  <div
+    className="flex flex-wrap gap-1"
+    role="radiogroup"
+    aria-label="Content type"
+  >
+    {(
+      Object.entries(CONTENT_TYPE_CONFIG) as Array<
+        [ContentType, (typeof CONTENT_TYPE_CONFIG)[ContentType]]
+      >
+    ).map(([type, cfg]) => {
+      const selected = value === type;
+      return (
+        <button
+          key={type}
+          type="button"
+          role="radio"
+          aria-checked={selected}
+          onClick={() => onChange(type)}
+          className={`flex min-w-[48px] flex-col items-center gap-1 whitespace-nowrap rounded-md border px-1.5 py-1.5 transition-colors duration-150 ${
+            selected
+              ? "border-amber-300/60 bg-amber-200/15 text-amber-100"
+              : "border-white/10 bg-white/[0.03] text-stone-400 hover:border-white/25 hover:text-stone-200"
+          }`}
+        >
+          <span className="text-sm leading-none" aria-hidden>
+            {cfg.icon}
+          </span>
+          <span className="text-[10px] font-medium leading-none">
+            {cfg.label}
+          </span>
+        </button>
+      );
+    })}
+  </div>
+);
+
 // Content form component
 const ContentForm = ({
   nodeId,
@@ -201,8 +546,9 @@ const ContentForm = ({
   onSave,
   onCancel,
 }: ContentFormProps) => {
+  const { toast } = useToast();
   const [contentType, setContentType] = useState<ContentType>(
-    existingContent?.content_type || "video",
+    existingContent?.content_type || "text",
   );
   const [contentTitle, setContentTitle] = useState(
     existingContent?.content_title || "",
@@ -234,25 +580,96 @@ const ContentForm = ({
 
   const config = CONTENT_TYPE_CONFIG[contentType];
 
+  const clearErrors = useCallback(() => setErrors([]), []);
+
+  // Universal clipboard paste listener for images
+  const handlePaste = useCallback(
+    async (e: React.ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (!file) continue;
+
+          e.preventDefault();
+          setIsUploading(true);
+          toast({
+            title: "Uploading pasted image...",
+            description: "Attaching image to content.",
+          });
+
+          try {
+            const formData = new FormData();
+            const ext = file.type.split("/")[1] || "png";
+            const fileName = `pasted-image-${Date.now()}.${ext}`;
+            formData.append("file", file, fileName);
+            formData.append("nodeId", nodeId);
+
+            const res = await fetch("/api/upload/images", {
+              method: "POST",
+              body: formData,
+            });
+
+            if (!res.ok) {
+              const errData = await res.json().catch(() => ({}));
+              throw new Error(
+                errData.error || `Upload failed with status ${res.status}`,
+              );
+            }
+
+            const data = await res.json();
+            if (data.fileUrl) {
+              if (contentType === "text") {
+                // In text mode, append markdown image syntax
+                setContentBody((prev) => {
+                  const prefix = prev && !prev.endsWith("\n") ? "\n\n" : "";
+                  return `${prev}${prefix}![Pasted Image](${data.fileUrl})\n`;
+                });
+                toast({
+                  title: "Image inserted into text!",
+                  description: "Markdown image tag added.",
+                });
+              } else {
+                // Set image URL and switch to image type
+                setContentType("image");
+                setContentUrl(data.fileUrl);
+                setUploadedFileName(data.fileName || fileName);
+                clearErrors();
+                toast({
+                  title: "Image uploaded successfully!",
+                  description: "Image attached and ready to save.",
+                });
+              }
+            }
+          } catch (err: any) {
+            console.error("Paste upload failed:", err);
+            toast({
+              title: "Image paste failed",
+              description: err.message || "Could not upload pasted image.",
+              variant: "destructive",
+            });
+          } finally {
+            setIsUploading(false);
+          }
+          break;
+        }
+      }
+    },
+    [contentType, nodeId, clearErrors, toast],
+  );
+
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-
-      console.log("Form submission attempted:", {
-        contentType,
-        contentTitle,
-        contentUrl,
-        contentBody,
-        uploadedFileName,
-      });
 
       const validationErrors = validateContentForm(
         contentType,
         contentUrl,
         contentBody,
       );
-
-      console.log("Validation errors:", validationErrors);
 
       if (validationErrors.length > 0) {
         setErrors(validationErrors);
@@ -283,7 +700,6 @@ const ContentForm = ({
         created_at: existingContent?.created_at || new Date().toISOString(),
       };
 
-      console.log("Saving content payload:", payload);
       setIsSaving(true);
 
       // Wrap in Promise to handle both sync and async onSave
@@ -300,14 +716,12 @@ const ContentForm = ({
       existingContent,
       nodeId,
       onSave,
+      contentCount,
     ],
   );
 
-  const clearErrors = useCallback(() => setErrors([]), []);
-
   const handleFileUploadComplete = useCallback(
     (fileUrl: string, fileName: string) => {
-      console.log("File upload completed:", { fileUrl, fileName });
       setContentUrl(fileUrl);
       setUploadedFileName(fileName);
       clearErrors();
@@ -320,20 +734,20 @@ const ContentForm = ({
   }, []);
 
   const handleUploadStateChange = useCallback((uploading: boolean) => {
-    console.log("Upload state changed:", uploading);
     setIsUploading(uploading);
   }, []);
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 p-4 border rounded-lg bg-muted/30 overflow-hidden"
+      onPaste={handlePaste}
+      className="space-y-3 rounded-lg border border-amber-200/25 bg-amber-200/[0.04] p-3"
     >
       {errors.length > 0 && (
-        <Alert variant="destructive" className="overflow-hidden">
-          <AlertCircle className="h-4 w-4 flex-shrink-0" />
-          <AlertDescription className="overflow-x-auto">
-            <ul className="list-disc pl-4 break-words">
+        <Alert variant="destructive" className="py-2">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <ul className="list-disc pl-4 text-xs">
               {errors.map((error, index) => (
                 <li key={index} className="break-words">
                   {error}
@@ -344,61 +758,32 @@ const ContentForm = ({
         </Alert>
       )}
 
-      <div className="space-y-2">
-        <Label htmlFor="contentType">Content Type *</Label>
-        <Select
-          value={contentType}
-          onValueChange={(v: ContentType) => {
-            setContentType(v);
-            clearErrors();
-          }}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select content type" />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(CONTENT_TYPE_CONFIG).map(([type, config]) => (
-              <SelectItem key={type} value={type}>
-                {config.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <TypeStrip
+        value={contentType}
+        onChange={(type) => {
+          setContentType(type);
+          clearErrors();
+        }}
+      />
 
-      {/* Title field for all content types */}
-      <div className="space-y-2">
-        <Label htmlFor="content_title">
-          Title
-          <span className="text-xs text-muted-foreground ml-2">
-            (Optional - give this content a descriptive title)
-          </span>
-        </Label>
-        <Input
-          id="content_title"
-          value={contentTitle}
-          onChange={(e) => {
-            setContentTitle(e.target.value);
-            clearErrors();
-          }}
-          placeholder="e.g., Introduction Video, Week 1 Slides, Important Resource..."
-          className="h-11 border-2 border-white/15 bg-white/5 hover:border-white/25 focus:border-amber-200/70 transition-colors"
-        />
-      </div>
+      {/* Optional heading, kept slim: one quiet input, no label chrome */}
+      <Input
+        id="content_title"
+        autoFocus
+        value={contentTitle}
+        onChange={(e) => {
+          setContentTitle(e.target.value);
+          clearErrors();
+        }}
+        placeholder="Heading (optional)"
+        className="h-8 border-white/10 bg-white/5 text-sm placeholder:text-stone-500 focus-visible:ring-1"
+      />
 
+      {/* URL-based types: one input, one hint line */}
       {(contentType === "video" ||
         contentType === "canva_slide" ||
         contentType === "resource_link") && (
-        <div className="space-y-3">
-          <Label
-            htmlFor="content_url"
-            className="text-sm font-semibold text-stone-200"
-          >
-            URL <span className="text-red-500">*</span>
-            <span className="text-xs text-stone-400 ml-2 font-normal">
-              ({config.hint})
-            </span>
-          </Label>
+        <div className="space-y-1.5">
           <Input
             id="content_url"
             value={contentUrl}
@@ -407,131 +792,99 @@ const ContentForm = ({
               clearErrors();
             }}
             placeholder={config.placeholder}
-            className={`h-11 border-2 border-white/15 bg-white/5 hover:border-white/25 focus:border-amber-200/70 transition-colors truncate ${
-              errors.some((e) => e.includes("URL"))
-                ? "border-red-400/70 focus:border-red-400"
-                : ""
+            className={`h-9 border-white/10 bg-white/5 text-sm focus-visible:ring-1 ${
+              errors.some((e) => e.includes("URL")) ? "border-red-400/70" : ""
             }`}
           />
-
-          {contentType === "video" && (
-            <div className="flex items-start gap-2 p-3 bg-emerald-300/10 border border-emerald-200/20 rounded-lg overflow-hidden">
-              <div className="text-emerald-300 mt-0.5 flex-shrink-0">🎯</div>
-              <div className="text-xs text-emerald-100/80 leading-relaxed break-words overflow-x-auto">
-                <strong>Supported platforms:</strong> YouTube, Vimeo,
-                SoundCloud, Twitter, Reddit, GIPHY, Flickr.
-                <br />
-                <strong>Pro tip:</strong> Most social media and video platform
-                URLs work automatically!
-              </div>
-            </div>
-          )}
-
-          {contentType === "resource_link" && (
-            <div className="flex items-start gap-2 p-3 bg-amber-200/[0.07] border border-amber-200/20 rounded-lg overflow-hidden">
-              <div className="text-amber-300 mt-0.5 flex-shrink-0">📚</div>
-              <div className="text-xs text-amber-100/80 leading-relaxed break-words overflow-x-auto">
-                <strong>Examples:</strong> PDFs, Google Docs, GitHub repos,
-                books, articles, datasets, tools.
-                <br />
-                <strong>Tip:</strong> Add a clear description below to help
-                students understand what this resource is!
-              </div>
-            </div>
+          {config.hint && (
+            <p className="truncate text-[11px] text-muted-foreground">
+              {config.hint}
+            </p>
           )}
         </div>
       )}
 
-      {/* File Upload for Images */}
+      {/* Image: one unified zone (drop / paste / browse) + optional URL */}
       {contentType === "image" && (
-        <div className="space-y-3">
-          <Label className="text-sm font-semibold text-stone-200">
-            Upload Image <span className="text-red-500">*</span>
-            <span className="text-xs text-stone-400 ml-2 font-normal">
-              ({config.hint})
-            </span>
-          </Label>
+        <div className="space-y-2">
           <FileUpload
+            compact
             nodeId={nodeId}
             onUploadComplete={handleFileUploadComplete}
             onValidationError={handleFileUploadError}
             onUploadStateChange={handleUploadStateChange}
             accept=".jpg,.jpeg,.png,.gif,.webp,.heic,.heif"
-            maxSize={10} // 10MB limit for images
+            maxSize={10}
             allowMultiple={false}
             uploadEndpoint="images"
-            className="border-2 border-dashed border-white/15"
           />
+          {!contentUrl && (
+            <Input
+              id="image_url_direct"
+              value={contentUrl}
+              onChange={(e) => {
+                setContentUrl(e.target.value);
+                clearErrors();
+              }}
+              placeholder={config.placeholder}
+              className="h-8 border-white/10 bg-white/5 text-xs focus-visible:ring-1"
+            />
+          )}
           {contentUrl && (
-            <div className="space-y-2">
-              <div className="text-xs text-emerald-300 bg-emerald-400/10 border border-emerald-300/20 p-2 rounded flex items-center gap-2">
-                <span>✅ Image uploaded successfully</span>
-                {uploadedFileName && (
-                  <span className="text-muted-foreground">
-                    ({uploadedFileName})
-                  </span>
-                )}
-              </div>
-              {/* Image Preview */}
-              <div className="border border-white/10 rounded-lg p-2 bg-white/5 overflow-hidden">
-                <p className="text-xs font-medium text-stone-300 mb-2">
-                  Preview:
-                </p>
-                <div className="relative w-full overflow-x-auto">
-                  <img
-                    src={contentUrl}
-                    alt="Uploaded preview"
-                    className="w-full h-auto rounded-lg shadow-md object-contain max-h-64"
-                    onError={(e) => {
-                      // Fallback if image fails to load
-                      (e.target as HTMLImageElement).style.display = "none";
-                      console.error("Failed to load image preview");
-                    }}
-                  />
-                </div>
+            <div className="overflow-hidden rounded-md border border-white/10 bg-black/20">
+              <img
+                src={contentUrl}
+                alt="Attached preview"
+                className="max-h-44 w-full object-contain"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                }}
+              />
+              <div className="flex items-center justify-between gap-2 border-t border-white/10 px-2 py-1">
+                <span className="truncate text-[11px] text-emerald-300">
+                  ✓ {uploadedFileName || getFileName(contentUrl) || "attached"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setContentUrl("");
+                    setUploadedFileName("");
+                  }}
+                  className="shrink-0 text-[11px] text-stone-400 hover:text-stone-200"
+                >
+                  Remove
+                </button>
               </div>
             </div>
           )}
         </div>
       )}
 
-      {/* File Upload for PDFs */}
+      {/* PDF: same unified zone, documents endpoint */}
       {contentType === "pdf" && (
-        <div className="space-y-3">
-          <Label className="text-sm font-semibold text-stone-200">
-            Upload PDF Document <span className="text-red-500">*</span>
-            <span className="text-xs text-stone-400 ml-2 font-normal">
-              ({config.hint})
-            </span>
-          </Label>
+        <div className="space-y-2">
           <FileUpload
+            compact
             nodeId={nodeId}
             onUploadComplete={handleFileUploadComplete}
             onValidationError={handleFileUploadError}
             onUploadStateChange={handleUploadStateChange}
             accept=".pdf"
-            maxSize={40} // 40MB limit for PDFs
+            maxSize={40}
             allowMultiple={false}
             uploadEndpoint="documents"
-            className="border-2 border-dashed border-white/15"
           />
           {(uploadedFileName || contentUrl) && (
-            <div className="text-xs text-emerald-300 bg-emerald-400/10 border border-emerald-300/20 p-2 rounded">
-              ✅ PDF uploaded successfully
-            </div>
+            <p className="truncate text-[11px] text-emerald-300">
+              ✓ {uploadedFileName || getFileName(contentUrl) || "PDF attached"}
+            </p>
           )}
         </div>
       )}
 
-      {/* Text Content and Resource Link Description */}
+      {/* Text body / resource description */}
       {(contentType === "text" || contentType === "resource_link") && (
-        <div className="space-y-2">
-          <Label htmlFor="content_body">
-            {contentType === "resource_link" ? "Description" : "Content"} *
-            <span className="text-xs text-muted-foreground ml-2">
-              ({config.hint})
-            </span>
-          </Label>
+        <div className="space-y-1.5">
           <Textarea
             id="content_body"
             value={contentBody}
@@ -539,54 +892,37 @@ const ContentForm = ({
               setContentBody(e.target.value);
               clearErrors();
             }}
-            className={`min-h-[120px] ${
+            onPaste={handlePaste}
+            className={`min-h-[110px] resize-y border-white/10 bg-white/5 text-sm focus-visible:ring-1 ${
               errors.some(
                 (e) => e.includes("Content body") || e.includes("Description"),
               )
-                ? "border-red-500"
+                ? "border-red-400/70"
                 : ""
             }`}
             placeholder={
               contentType === "resource_link"
-                ? "Describe what this resource is and why it's useful for students. e.g., 'Essential reading on machine learning fundamentals' or 'Python documentation for reference'"
+                ? "What is this resource, and why should students open it?"
                 : config.placeholder
             }
           />
-          <div className="text-xs text-muted-foreground">
-            {contentType === "resource_link" ? (
-              <>
-                📚 Tip: Explain what students will find in this resource and how
-                it relates to the lesson
-              </>
-            ) : (
-              <div className="space-y-1">
-                <div>
-                  💡 <strong>HTML:</strong> Use &lt;p&gt; for paragraphs,
-                  &lt;h1&gt; for headings, &lt;strong&gt; for bold text
-                </div>
-                <div>
-                  📝 <strong>Markdown:</strong> Use # for headings, **bold**,
-                  *italic*, - for lists
-                </div>
-              </div>
-            )}
-          </div>
+          <p className="truncate text-[11px] text-muted-foreground">
+            {contentType === "resource_link"
+              ? "A clear description beats a bare URL."
+              : config.hint}
+          </p>
         </div>
       )}
 
       {/* Order Code Editor */}
       {contentType === "order_code" && (
-        <div className="space-y-3">
-          <Label className="text-sm font-semibold text-stone-200">
-            Code Blocks <span className="text-red-500">*</span>
-            <span className="text-xs text-stone-400 ml-2 font-normal">
-              ({config.hint})
-            </span>
-          </Label>
-
-          <div className="space-y-2">
+        <div className="space-y-2">
+          <div className="space-y-1.5">
             {codeBlocks.map((block, index) => (
-              <div key={index} className="flex gap-2">
+              <div key={index} className="flex gap-1.5">
+                <span className="mt-2 w-4 shrink-0 text-right font-mono text-[10px] text-stone-500">
+                  {index + 1}
+                </span>
                 <Textarea
                   value={block}
                   onChange={(e) => {
@@ -608,21 +944,22 @@ const ContentForm = ({
                     }
                   }}
                   placeholder={`Code block ${index + 1}`}
-                  className="font-mono text-sm min-h-[60px] resize-none overflow-hidden bg-[#171310] text-stone-200 border-white/10"
+                  className="min-h-[44px] flex-1 resize-none overflow-hidden border-white/10 bg-[#171310] font-mono text-xs text-stone-200 focus-visible:ring-1"
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="shrink-0 text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                  className="h-8 w-8 shrink-0 self-start text-red-400 hover:bg-red-400/10 hover:text-red-300"
                   onClick={() => {
                     const newBlocks = codeBlocks.filter((_, i) => i !== index);
                     setCodeBlocks(newBlocks);
                     setContentBody(JSON.stringify(newBlocks));
                   }}
                   disabled={codeBlocks.length <= 1}
+                  aria-label={`Remove code block ${index + 1}`}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
             ))}
@@ -632,33 +969,29 @@ const ContentForm = ({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => {
-              setCodeBlocks([...codeBlocks, ""]);
-            }}
-            className="w-full border-dashed"
+            onClick={() => setCodeBlocks([...codeBlocks, ""])}
+            className="h-8 w-full border-dashed text-xs"
           >
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Add Code Block
+            <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
+            Add block
           </Button>
 
-          <div className="text-xs bg-amber-200/[0.07] border border-amber-200/15 p-3 rounded-lg text-amber-100/80">
-            🧩 <strong>How it works:</strong> Define the blocks in the{" "}
-            <strong>exact order</strong> you want them to appear. Students can
-            drag blocks to reorder them or nest them inside containers (blocks
-            with braces).
-          </div>
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            Blocks save in this exact order. Students drag to reorder them or
+            nest them inside containers.
+          </p>
         </div>
       )}
 
-      <div className="flex justify-end gap-2 pt-2">
+      <div className="flex items-center justify-end gap-1.5 pt-1">
         <Button
           type="button"
           variant="ghost"
-          onClick={onCancel}
           size="sm"
+          onClick={onCancel}
           disabled={isSaving || isUploading}
+          className="h-8 px-2.5 text-xs"
         >
-          <X className="h-4 w-4 mr-1" />
           Cancel
         </Button>
         <Button
@@ -669,21 +1002,22 @@ const ContentForm = ({
             isUploading ||
             ((contentType === "image" || contentType === "pdf") && !contentUrl)
           }
+          className="h-8 px-3 text-xs"
         >
           {isSaving ? (
             <>
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-              Saving...
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              Saving…
             </>
           ) : isUploading ? (
             <>
-              <Upload className="h-4 w-4 mr-1" />
-              Uploading...
+              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              Uploading…
             </>
           ) : (
             <>
-              <Check className="h-4 w-4 mr-1" />
-              {existingContent ? "Update Content" : "Add Content"}
+              <Check className="mr-1.5 h-3.5 w-3.5" />
+              {existingContent ? "Update" : "Add"}
             </>
           )}
         </Button>
@@ -692,252 +1026,444 @@ const ContentForm = ({
   );
 };
 
-// Content preview utilities
-const getContentPreview = (item: NodeContent): string => {
-  // If there's a title, use it as the primary preview
-  if (item.content_title?.trim()) {
-    const typeIcons = {
-      video: "📹",
-      canva_slide: "🎨",
-      text: "📝",
-      image: "🖼️",
-      pdf: "📄",
+// Empty preview placeholder
+const MissingPreview = () => (
+  <p className="py-1 text-[11px] italic text-red-300/80">
+    Nothing to preview yet. Edit to add content.
+  </p>
+);
 
-      resource_link: "🔗",
-      order_code: "🧩",
-    };
-    const icon = typeIcons[item.content_type] || "";
-    return `${icon} ${item.content_title}`;
-  }
+// Expanded, on-demand preview. Heavy embeds (video, Canva) only mount while
+// the row is expanded, so a long list stays fast. Previews are unboxed: the
+// thread line on the left provides the structure, not another nested card.
+const ContentPreview = ({ item }: { item: NodeContent }) => {
+  const url = item.content_url;
 
-  // Fallback to content-based previews
-  const previews = {
-    video: () =>
-      `📹 Video: ${item.content_url?.substring(0, 50)}${item.content_url && item.content_url.length > 50 ? "..." : ""}`,
-    canva_slide: () =>
-      `🎨 Canva: ${item.content_url?.substring(0, 50)}${item.content_url && item.content_url.length > 50 ? "..." : ""}`,
-    text: () => {
-      const bodyPreview =
-        item.content_body?.replace(/<[^>]*>/g, "").substring(0, 50) || "";
-      return `📝 Text: ${bodyPreview}${bodyPreview.length >= 50 ? "..." : ""}`;
-    },
-    image: () => {
-      const fileName =
-        item.content_url?.split("/").pop()?.substring(0, 30) || "";
-      return `🖼️ Image: ${fileName}${fileName.length >= 30 ? "..." : ""}`;
-    },
-    pdf: () => {
-      const fileName =
-        item.content_url?.split("/").pop()?.substring(0, 30) || "";
-      return `📄 PDF: ${fileName}${fileName.length >= 30 ? "..." : ""}`;
-    },
-    resource_link: () => {
-      const descriptionPreview = item.content_body?.substring(0, 30) || "";
-      const urlPreview = item.content_url?.substring(0, 25) || "";
-      return `🔗 Resource: ${descriptionPreview}${descriptionPreview.length >= 30 ? "..." : ""} (${urlPreview}${urlPreview.length >= 25 ? "..." : ""})`;
-    },
-    order_code: () => {
-      try {
-        const blocks = JSON.parse(item.content_body || "[]");
-        return `🧩 Order Code: ${blocks.length} blocks`;
-      } catch {
-        return "🧩 Order Code";
-      }
-    },
-  };
-
-  return previews[item.content_type]?.() || item.content_type;
-};
-
-// Get embed URL for video platforms
-const getEmbedUrl = (url: string): string | null => {
-  try {
-    // YouTube
-    if (url.includes("youtube.com") || url.includes("youtu.be")) {
-      const videoId = url.match(
-        /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/,
-      )?.[1];
-      return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
-    }
-    // Vimeo
-    if (url.includes("vimeo.com")) {
-      const videoId = url.match(/vimeo\.com\/(\d+)/)?.[1];
-      return videoId ? `https://player.vimeo.com/video/${videoId}` : null;
-    }
-    // SoundCloud
-    if (url.includes("soundcloud.com")) {
-      return null; // SoundCloud requires oEmbed, return null for fallback
-    }
-    return null;
-  } catch {
-    return null;
-  }
-};
-
-// Preview component for content in list view
-const ContentPreviewDisplay = ({
-  item,
-  expandedTextId,
-  setExpandedTextId,
-}: {
-  item: NodeContent;
-  expandedTextId: string | null;
-  setExpandedTextId: (id: string | null) => void;
-}) => {
-  const isExpanded = expandedTextId === item.id;
-
-  // Video content
-  if (item.content_type === "video" && item.content_url) {
-    const embedUrl = getEmbedUrl(item.content_url);
-    if (embedUrl) {
+  switch (item.content_type) {
+    case "image":
+      if (!url) return <MissingPreview />;
       return (
-        <div className="mt-3 rounded-lg overflow-hidden bg-black/30 border border-white/10">
-          <iframe
-            src={embedUrl}
-            allowFullScreen
-            className="w-full h-auto aspect-video"
-            title={item.content_title || "Video preview"}
-            loading="lazy"
+        <img
+          src={url}
+          alt={item.content_title || "Image content"}
+          className="max-h-56 max-w-full rounded-md object-contain"
+          loading="lazy"
+        />
+      );
+
+    case "video": {
+      if (!url) return <MissingPreview />;
+      const embedUrl = getEmbedUrl(url);
+      if (!embedUrl) {
+        return (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block truncate text-xs text-amber-300 hover:underline"
+          >
+            📹 Open video: {url}
+          </a>
+        );
+      }
+      return (
+        <iframe
+          src={embedUrl}
+          allowFullScreen
+          className="aspect-video w-full rounded-md bg-black/30"
+          title={item.content_title || "Video preview"}
+          loading="lazy"
+        />
+      );
+    }
+
+    case "canva_slide":
+      if (!url) return <MissingPreview />;
+      return (
+        <iframe
+          src={url}
+          allowFullScreen
+          className="aspect-video w-full rounded-md bg-black/30"
+          title={item.content_title || "Canva preview"}
+          loading="lazy"
+        />
+      );
+
+    case "text":
+      if (!item.content_body) return <MissingPreview />;
+      return (
+        <div className="max-h-72 overflow-y-auto pr-1">
+          <style jsx global>{`
+            .ce-md {
+              font-size: 13px;
+              line-height: 1.7;
+              color: rgb(214 211 209);
+            }
+            .ce-md h1,
+            .ce-md h2,
+            .ce-md h3,
+            .ce-md h4 {
+              color: rgb(245 245 244);
+              font-weight: 600;
+              line-height: 1.3;
+              margin: 0.75rem 0 0.375rem;
+            }
+            .ce-md h1:first-child,
+            .ce-md h2:first-child,
+            .ce-md h3:first-child,
+            .ce-md h4:first-child {
+              margin-top: 0;
+            }
+            .ce-md h1 {
+              font-size: 1.25rem;
+            }
+            .ce-md h2 {
+              font-size: 1.125rem;
+            }
+            .ce-md h3,
+            .ce-md h4 {
+              font-size: 1rem;
+            }
+            .ce-md p {
+              margin-bottom: 0.625rem;
+            }
+            .ce-md p:last-child {
+              margin-bottom: 0;
+            }
+            .ce-md strong {
+              color: rgb(231 229 228);
+              font-weight: 600;
+            }
+            .ce-md a {
+              color: rgb(252 211 77);
+            }
+            .ce-md ul,
+            .ce-md ol {
+              margin: 0.5rem 0;
+              padding-left: 1.25rem;
+            }
+            .ce-md ul {
+              list-style: disc;
+            }
+            .ce-md ol {
+              list-style: decimal;
+            }
+            .ce-md li {
+              margin-bottom: 0.25rem;
+            }
+            .ce-md code {
+              background: rgb(28 25 23);
+              border: 1px solid rgb(68 64 60);
+              border-radius: 0.25rem;
+              padding: 0.1rem 0.35rem;
+              font-size: 11px;
+            }
+            .ce-md pre {
+              background: rgb(12 10 9);
+              border: 1px solid rgb(68 64 60);
+              border-radius: 0.375rem;
+              padding: 0.625rem;
+              overflow-x: auto;
+              margin: 0.5rem 0;
+            }
+            .ce-md pre code {
+              background: transparent;
+              border: none;
+              padding: 0;
+            }
+            .ce-md blockquote {
+              border-left: 3px solid rgb(252 211 77 / 0.4);
+              padding-left: 0.75rem;
+              margin: 0.5rem 0;
+              font-style: italic;
+              color: rgb(168 162 158);
+            }
+            .ce-md img {
+              border-radius: 0.375rem;
+              margin: 0.5rem 0;
+              max-height: 240px;
+            }
+            .ce-md hr {
+              border-color: rgb(68 64 60);
+              margin: 0.75rem 0;
+            }
+          `}</style>
+          <div
+            className="ce-md"
+            dangerouslySetInnerHTML={{
+              __html: renderMarkdown(item.content_body),
+            }}
           />
         </div>
       );
-    } else {
-      // Fallback for non-embeddable videos
+
+    case "pdf": {
+      if (!url) return <MissingPreview />;
       return (
-        <div className="mt-3 p-3 rounded-lg bg-white/5 border border-white/10">
+        <div className="flex items-center gap-2.5 rounded-md bg-white/[0.04] p-2.5">
+          <span
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-red-500/15 text-base"
+            aria-hidden
+          >
+            📄
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[13px] font-medium text-stone-200">
+              {getFileName(url)}
+            </span>
+            <span className="block text-[11px] text-muted-foreground">
+              PDF document
+            </span>
+          </span>
           <a
-            href={item.content_url}
+            href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-amber-300 hover:underline text-sm break-all"
+            className="shrink-0 text-xs text-amber-300 hover:underline"
           >
-            📹 Open video: {item.content_url}
+            Open
           </a>
         </div>
       );
     }
-  }
 
-  // Canva slide content
-  if (item.content_type === "canva_slide" && item.content_url) {
-    return (
-      <div className="mt-3 rounded-lg overflow-hidden bg-white/5 border border-white/10">
-        <iframe
-          src={item.content_url}
-          allowFullScreen
-          className="w-full h-auto aspect-video"
-          title={item.content_title || "Canva slide preview"}
-          loading="lazy"
-        />
-      </div>
-    );
-  }
+    case "resource_link":
+      if (!url && !item.content_body) return <MissingPreview />;
+      return (
+        <div className="space-y-1.5 py-0.5">
+          {item.content_body && (
+            <p className="text-[13px] leading-relaxed text-stone-300">
+              {item.content_body}
+            </p>
+          )}
+          {url && (
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block truncate text-xs text-amber-300 hover:underline"
+            >
+              🔗 {url}
+            </a>
+          )}
+        </div>
+      );
 
-  // Text content - with expandable preview
-  if (item.content_type === "text" && item.content_body) {
-    const hasMoreContent = item.content_body.length > 150;
-
-    // Render markdown if it starts with markdown syntax, otherwise treat as plain text
-    const renderMarkdown = (text: string) => {
+    case "order_code": {
+      let blocks: string[] = [];
       try {
-        return sanitizeHtml(marked(text) as string);
+        blocks = JSON.parse(item.content_body || "[]");
       } catch {
-        return sanitizeHtml(`<p>${text.replace(/\n/g, "</p><p>")}</p>`);
+        blocks = [];
       }
-    };
-
-    return (
-      <div className="mt-3 rounded-lg overflow-hidden bg-white/5 border border-white/10">
-        {!isExpanded ? (
-          <>
-            {/* Collapsed preview - show rendered markdown (limited) */}
-            <div className="p-3">
-              <div
-                className="text-sm text-stone-300 line-clamp-3 prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{
-                  __html: renderMarkdown(item.content_body),
-                }}
-              />
-              {hasMoreContent && (
-                <button
-                  onClick={() => setExpandedTextId(item.id)}
-                  className="mt-2 text-xs text-amber-300 hover:underline font-medium"
-                >
-                  Show full content →
-                </button>
-              )}
+      if (!blocks.length) return <MissingPreview />;
+      return (
+        <div className="space-y-1">
+          {blocks.map((block, i) => (
+            <div
+              key={i}
+              className="flex items-start gap-2 rounded bg-[#171310] px-2 py-1"
+            >
+              <span className="mt-0.5 font-mono text-[10px] text-stone-500">
+                {i + 1}
+              </span>
+              <code className="min-w-0 flex-1 truncate font-mono text-[11px] text-stone-300">
+                {block.split("\n")[0] || "(empty block)"}
+              </code>
             </div>
-          </>
-        ) : (
-          <>
-            {/* Expanded full view */}
-            <div className="p-3 max-h-96 overflow-y-auto">
-              <div
-                className="text-sm text-stone-300 prose prose-sm max-w-none space-y-2"
-                dangerouslySetInnerHTML={{
-                  __html: renderMarkdown(item.content_body),
-                }}
-              />
-              <button
-                onClick={() => setExpandedTextId(null)}
-                className="mt-3 text-xs text-amber-300 hover:underline font-medium"
-              >
-                ← Collapse
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    );
-  }
-
-  // PDF content
-  if (item.content_type === "pdf" && item.content_url) {
-    const fileName = item.content_url.split("/").pop() || "Document";
-    return (
-      <div className="mt-3 p-3 rounded-lg bg-amber-200/[0.07] border border-amber-200/15">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-lg">📄</span>
-          <span className="text-sm font-medium text-stone-200">
-            PDF Document
-          </span>
+          ))}
         </div>
-        <a
-          href={item.content_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-amber-300 hover:underline text-sm break-all"
+      );
+    }
+
+    default:
+      return null;
+  }
+};
+
+// One flat row per content item: drag handle, thumbnail/icon, single-line
+// label, actions. Expanding shows the preview beside a Reddit-style thread
+// line; clicking the line collapses. Text rows edit inline, in place.
+const SortableContentRow = ({
+  item,
+  disabled,
+  expanded,
+  inlineEditing,
+  onToggleExpand,
+  onEdit,
+  onDelete,
+  onInlineSave,
+  onInlineCancel,
+}: {
+  item: NodeContent;
+  disabled: boolean;
+  expanded: boolean;
+  inlineEditing: boolean;
+  onToggleExpand: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onInlineSave: (item: NodeContent, draft: string) => void;
+  onInlineCancel: () => void;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id, disabled });
+
+  const cfg = CONTENT_TYPE_CONFIG[item.content_type];
+  const missing = !item.content_url && !item.content_body;
+
+  // Inline text editing draft, synced when editing opens
+  const [draft, setDraft] = useState(item.content_body || "");
+  useEffect(() => {
+    if (inlineEditing) setDraft(item.content_body || "");
+  }, [inlineEditing, item.content_body]);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+      className={isDragging ? "relative z-10 opacity-70" : undefined}
+    >
+      {/* Header row */}
+      <div className="flex items-center gap-0.5 py-1.5">
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          disabled={disabled}
+          aria-label="Drag to reorder"
+          className="shrink-0 cursor-grab touch-none rounded p-1 text-stone-600 hover:text-stone-300 active:cursor-grabbing disabled:pointer-events-none disabled:opacity-25"
         >
-          📥 Download: {fileName}
-        </a>
-      </div>
-    );
-  }
+          <GripVertical className="h-3.5 w-3.5" />
+        </button>
 
-  // Resource link content
-  if (item.content_type === "resource_link") {
-    return (
-      <div className="mt-3 p-3 rounded-lg bg-white/5 border border-white/10">
-        <div className="mb-2">
-          <p className="text-sm text-stone-300 break-words">
-            {item.content_body}
-          </p>
-        </div>
-        {item.content_url && (
-          <a
-            href={item.content_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-amber-300 hover:underline text-sm break-all inline-block"
+        {inlineEditing ? (
+          <div className="min-w-0 flex-1 px-1 py-0.5">
+            <textarea
+              autoFocus
+              value={draft}
+              onChange={(e) => {
+                setDraft(e.target.value);
+                e.target.style.height = "auto";
+                e.target.style.height = `${e.target.scrollHeight}px`;
+              }}
+              ref={(el) => {
+                if (el) {
+                  el.style.height = "auto";
+                  el.style.height = `${el.scrollHeight}px`;
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  onInlineCancel();
+                }
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault();
+                  onInlineSave(item, draft);
+                }
+              }}
+              onBlur={() => onInlineSave(item, draft)}
+              placeholder="Write markdown… paste images to embed"
+              className="max-h-72 w-full resize-none overflow-hidden rounded-md border border-amber-200/30 bg-white/5 px-2 py-1.5 text-[13px] leading-relaxed text-stone-200 focus:outline-none focus:ring-1 focus:ring-amber-200/50"
+            />
+            <p className="mt-0.5 text-[10px] text-muted-foreground">
+              Cmd+Enter saves · Esc cancels
+            </p>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onToggleExpand}
+            aria-expanded={expanded}
+            className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-md px-1 py-0.5 text-left transition-colors hover:bg-white/5"
           >
-            🔗 {item.content_url}
-          </a>
+            {item.content_type === "image" && item.content_url ? (
+              <img
+                src={item.content_url}
+                alt=""
+                loading="lazy"
+                className="h-8 w-8 shrink-0 rounded border border-white/10 object-cover"
+              />
+            ) : (
+              <span
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-white/10 bg-white/5 text-sm"
+                aria-hidden
+              >
+                {cfg.icon}
+              </span>
+            )}
+            <span className="min-w-0 flex-1">
+              <span className="block truncate whitespace-nowrap text-[13px] font-medium text-stone-200">
+                {getContentLabel(item)}
+              </span>
+              <span className="block truncate whitespace-nowrap text-[11px] text-muted-foreground">
+                {cfg.label}
+                {missing && (
+                  <span className="text-red-300"> · missing content</span>
+                )}
+              </span>
+            </span>
+            <ChevronRight
+              className={`h-3.5 w-3.5 shrink-0 text-stone-500 transition-transform duration-150 ${
+                expanded ? "rotate-90" : ""
+              }`}
+            />
+          </button>
         )}
-      </div>
-    );
-  }
 
-  return null;
+        <div className="flex shrink-0 items-center">
+          <button
+            type="button"
+            onClick={onEdit}
+            disabled={disabled}
+            aria-label="Edit content"
+            title={
+              item.content_type === "text" ? "Edit inline" : "Edit content"
+            }
+            className="rounded p-1.5 text-stone-400 hover:bg-white/10 hover:text-stone-100 disabled:pointer-events-none disabled:opacity-25"
+          >
+            <Edit className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={disabled}
+            aria-label="Delete content"
+            className="rounded p-1.5 text-stone-400 hover:bg-red-400/10 hover:text-red-300 disabled:pointer-events-none disabled:opacity-25"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Expanded preview with a Reddit-style thread line collapse rail */}
+      {expanded && !inlineEditing && (
+        <div className="flex">
+          <button
+            type="button"
+            onClick={onToggleExpand}
+            aria-label="Collapse preview"
+            title="Collapse"
+            className="group/thread w-6 shrink-0 self-stretch"
+          >
+            <span className="mx-auto block h-full w-px bg-white/15 transition-colors duration-150 group-hover/thread:bg-amber-200/70" />
+          </button>
+          <div className="min-w-0 flex-1 pb-2.5 pr-1">
+            <ContentPreview item={item} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 // Main component
@@ -949,9 +1475,21 @@ export function ContentEditor({
   const { toast } = useToast();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [expandedTextId, setExpandedTextId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [inlineEditId, setInlineEditId] = useState<string | null>(null);
+  const [insertAt, setInsertAt] = useState<number | null>(null);
+  const [quickUploading, setQuickUploading] = useState(false);
 
   const isFormActive = isAdding || editingId;
+  // While any editing surface is open, freeze the list's drag/actions so a
+  // stray click cannot yank state away mid-edit.
+  const listBusy =
+    !!isFormActive || inlineEditId !== null || insertAt !== null;
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   // Sort content by display_order for rendering
   const sortedContent = useMemo(() => {
@@ -959,6 +1497,23 @@ export function ContentEditor({
       (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0),
     );
   }, [content]);
+
+  const sortedIds = useMemo(
+    () => sortedContent.map((item) => item.id),
+    [sortedContent],
+  );
+
+  const signalSaveStart = () => {
+    if (typeof (window as any).__startContentAutoSave === "function") {
+      (window as any).__startContentAutoSave();
+    }
+  };
+
+  const signalSaveFinish = () => {
+    if (typeof (window as any).__finishContentAutoSave === "function") {
+      (window as any).__finishContentAutoSave();
+    }
+  };
 
   const handleSave = useCallback(
     async (savedContent: NodeContent) => {
@@ -978,17 +1533,13 @@ export function ContentEditor({
 
       const existingIndex = content.findIndex((c) => c.id === savedContent.id);
 
-      // Signal start of content auto-save
-      if (typeof (window as any).__startContentAutoSave === "function") {
-        (window as any).__startContentAutoSave();
-      }
+      signalSaveStart();
 
       try {
         let finalContent: NodeContent;
 
         if (existingIndex >= 0 && !savedContent.id.startsWith("temp_")) {
           // Update existing content in database
-          console.log("✏️ Updating content in database:", savedContent.id);
           finalContent = await updateNodeContent(savedContent.id, {
             content_type: savedContent.content_type,
             content_title: savedContent.content_title,
@@ -996,7 +1547,6 @@ export function ContentEditor({
             content_body: savedContent.content_body,
             display_order: savedContent.display_order,
           });
-          console.log("✅ Content updated in database:", finalContent);
 
           // Update local state
           const updatedContent = [...content];
@@ -1005,22 +1555,9 @@ export function ContentEditor({
 
           toast({ title: "Content updated successfully!" });
 
-          // Signal content auto-save complete
-          if (typeof (window as any).__finishContentAutoSave === "function") {
-            (window as any).__finishContentAutoSave();
-          }
+          signalSaveFinish();
         } else {
           // Create new content in database
-          console.log("➕ Creating content in database for node:", nodeId);
-          console.log("Content data being sent:", {
-            node_id: nodeId,
-            content_type: savedContent.content_type,
-            content_title: savedContent.content_title,
-            content_url: savedContent.content_url,
-            content_body: savedContent.content_body,
-            display_order: savedContent.display_order,
-          });
-
           finalContent = await createNodeContent({
             node_id: nodeId,
             content_type: savedContent.content_type,
@@ -1029,17 +1566,16 @@ export function ContentEditor({
             content_body: savedContent.content_body,
             display_order: savedContent.display_order ?? 0,
           });
-          console.log("✅ Content created in database:", finalContent);
 
           // Add to local state
           onContentChange([...content, finalContent]);
 
           toast({ title: "Content added successfully!" });
 
-          // Signal content auto-save complete
-          if (typeof (window as any).__finishContentAutoSave === "function") {
-            (window as any).__finishContentAutoSave();
-          }
+          signalSaveFinish();
+
+          // Reveal the new item so the author sees what students will see
+          setExpandedId(finalContent.id);
         }
 
         // Reset form state
@@ -1059,27 +1595,20 @@ export function ContentEditor({
 
   const handleDelete = useCallback(
     async (id: string) => {
-      // Signal start of content auto-save
-      if (typeof (window as any).__startContentAutoSave === "function") {
-        (window as any).__startContentAutoSave();
-      }
+      signalSaveStart();
 
       try {
         // Delete from database if it's not a temp ID
         if (!id.startsWith("temp_")) {
-          console.log("🗑️ Deleting content from database:", id);
           await deleteNodeContent(id);
-          console.log("✅ Content deleted from database");
         }
 
         // Update local state
         onContentChange(content.filter((c) => c.id !== id));
+        if (expandedId === id) setExpandedId(null);
         toast({ title: "Content deleted successfully!" });
 
-        // Signal content auto-save complete
-        if (typeof (window as any).__finishContentAutoSave === "function") {
-          (window as any).__finishContentAutoSave();
-        }
+        signalSaveFinish();
       } catch (error) {
         console.error("❌ Failed to delete content:", error);
         toast({
@@ -1089,10 +1618,11 @@ export function ContentEditor({
         });
       }
     },
-    [content, onContentChange, toast],
+    [content, onContentChange, toast, expandedId],
   );
 
   const handleEdit = useCallback((id: string) => {
+    setExpandedId(null);
     setEditingId(id);
   }, []);
 
@@ -1110,166 +1640,230 @@ export function ContentEditor({
     [handleDelete],
   );
 
-  // Reordering functions
-  const moveContentUp = useCallback(
-    async (index: number) => {
-      if (index === 0) return; // Already at top
-      const newContent = [...sortedContent];
+  // Drag-to-sort: reorder locally, then persist the display_order of every
+  // item whose position actually changed.
+  const handleDragEnd = useCallback(
+    async ({ active, over }: DragEndEvent) => {
+      if (!over || active.id === over.id) return;
 
-      // Swap items
-      [newContent[index - 1], newContent[index]] = [
-        newContent[index],
-        newContent[index - 1],
-      ];
+      const oldIndex = sortedContent.findIndex((c) => c.id === active.id);
+      const newIndex = sortedContent.findIndex((c) => c.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return;
 
-      // Update display_order for all items to match their new positions
-      const updatedContent = newContent.map((item, idx) => ({
-        ...item,
-        display_order: idx,
-      }));
+      const reordered = arrayMove(sortedContent, oldIndex, newIndex).map(
+        (item, idx) => ({ ...item, display_order: idx }),
+      );
 
-      // Update in local state immediately for UI responsiveness
-      onContentChange(updatedContent);
+      // Update local state immediately for UI responsiveness
+      onContentChange(reordered);
 
-      // Update the two affected items in database
+      // Persist only the items whose order changed
+      const changed = reordered.filter((item) => {
+        const before = sortedContent.find((c) => c.id === item.id);
+        return before?.display_order !== item.display_order;
+      });
+
       try {
-        await Promise.all([
-          updateNodeContent(updatedContent[index - 1].id, {
-            display_order: index - 1,
-          }),
-          updateNodeContent(updatedContent[index].id, {
-            display_order: index,
-          }),
-        ]);
+        await Promise.all(
+          changed
+            .filter((item) => !item.id.startsWith("temp_"))
+            .map((item) =>
+              updateNodeContent(item.id, { display_order: item.display_order }),
+            ),
+        );
       } catch (error) {
-        console.error("Failed to update content order:", error);
+        console.error("Failed to save content order:", error);
         toast({
           title: "Order update failed",
-          description: "The order was not saved to the database",
+          description: "The new order was not saved to the database",
           variant: "destructive",
         });
       }
-
-      toast({
-        title: "Content reordered",
-        description: "Moved up in the list",
-      });
     },
     [sortedContent, onContentChange, toast],
   );
 
-  const moveContentDown = useCallback(
-    async (index: number) => {
-      if (index === sortedContent.length - 1) return; // Already at bottom
-      const newContent = [...sortedContent];
+  // Quick capture: detect the block type from the pasted/typed text, create
+  // it immediately, optionally at a seam position.
+  const handleQuickCreate = useCallback(
+    async (draft: QuickDraft, atIndex?: number) => {
+      signalSaveStart();
 
-      // Swap items
-      [newContent[index], newContent[index + 1]] = [
-        newContent[index + 1],
-        newContent[index],
-      ];
-
-      // Update display_order for all items to match their new positions
-      const updatedContent = newContent.map((item, idx) => ({
-        ...item,
-        display_order: idx,
-      }));
-
-      // Update in local state immediately for UI responsiveness
-      onContentChange(updatedContent);
-
-      // Update the two affected items in database
       try {
-        await Promise.all([
-          updateNodeContent(updatedContent[index].id, {
-            display_order: index,
-          }),
-          updateNodeContent(updatedContent[index + 1].id, {
-            display_order: index + 1,
-          }),
-        ]);
+        const created = await createNodeContent({
+          node_id: nodeId,
+          content_type: draft.type,
+          content_title: null,
+          content_url: draft.url,
+          content_body: draft.body,
+          display_order: atIndex ?? sortedContent.length,
+        });
+
+        let next: NodeContent[];
+        if (atIndex !== undefined) {
+          const withInserted = [...sortedContent];
+          withInserted.splice(atIndex, 0, created);
+          next = withInserted.map((item, idx) => ({
+            ...item,
+            display_order: idx,
+          }));
+
+          // Persist the order shift of everything below the insertion point
+          const shifted = next.filter((item) => {
+            if (item.id === created.id || item.id.startsWith("temp_")) {
+              return false;
+            }
+            const before = sortedContent.find((c) => c.id === item.id);
+            return before?.display_order !== item.display_order;
+          });
+          Promise.all(
+            shifted.map((item) =>
+              updateNodeContent(item.id, { display_order: item.display_order }),
+            ),
+          ).catch((e) =>
+            console.error("Failed to persist shifted order:", e),
+          );
+        } else {
+          next = [...content, created];
+        }
+
+        onContentChange(next);
+        setInsertAt(null);
+        setExpandedId(created.id);
+        toast({ title: `${CONTENT_TYPE_CONFIG[draft.type].label} added` });
+
+        signalSaveFinish();
       } catch (error) {
-        console.error("Failed to update content order:", error);
+        console.error("Quick add failed:", error);
         toast({
-          title: "Order update failed",
-          description: "The order was not saved to the database",
+          title: "Couldn't add content",
+          description: (error as Error).message || "Unknown error",
           variant: "destructive",
         });
       }
-
-      toast({
-        title: "Content reordered",
-        description: "Moved down in the list",
-      });
     },
-    [sortedContent, onContentChange, toast],
+    [content, sortedContent, nodeId, onContentChange, toast],
   );
 
-  // Empty state component
-  const EmptyState = useMemo(
-    () => (
-      <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
-        <div className="space-y-2">
-          <p className="text-sm font-medium">No learning content added yet</p>
-          <p className="text-xs">
-            Add videos, slides, or text content to help students learn
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsAdding(true)}
-            className="mt-2"
-          >
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Add Your First Content
-          </Button>
-        </div>
-      </div>
-    ),
-    [],
+  const handleQuickSubmit = useCallback(
+    (text: string, atIndex?: number) => {
+      handleQuickCreate(detectContent(text), atIndex);
+    },
+    [handleQuickCreate],
   );
 
-  // Help text component
-  const HelpText = useMemo(
-    () => (
-      <div className="text-xs text-muted-foreground text-center space-y-1">
-        <p>💡 Content will be shown to students in the order listed above</p>
-        <p>↕️ Use the up/down arrows to reorder content items</p>
-        <p>
-          🎯 Mix different content types to create engaging learning experiences
-        </p>
-      </div>
-    ),
-    [],
+  // Pasted an image file into quick capture: upload first, then create the
+  // image block.
+  const handlePasteImageCreate = useCallback(
+    async (file: File, atIndex?: number) => {
+      setQuickUploading(true);
+      toast({ title: "Uploading image…" });
+
+      try {
+        const formData = new FormData();
+        const ext = file.type.split("/")[1] || "png";
+        formData.append("file", file, `pasted-image-${Date.now()}.${ext}`);
+        formData.append("nodeId", nodeId);
+
+        const res = await fetch("/api/upload/images", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `Upload failed (${res.status})`);
+        }
+
+        const data = await res.json();
+        if (data.fileUrl) {
+          await handleQuickCreate(
+            { type: "image", url: data.fileUrl, body: null },
+            atIndex,
+          );
+        }
+      } catch (error) {
+        console.error("Image paste failed:", error);
+        toast({
+          title: "Image upload failed",
+          description: (error as Error).message || "Unknown error",
+          variant: "destructive",
+        });
+      } finally {
+        setQuickUploading(false);
+      }
+    },
+    [nodeId, handleQuickCreate, toast],
+  );
+
+  // Inline text edit commits through the same save path as the full form.
+  const handleInlineSave = useCallback(
+    async (item: NodeContent, draft: string) => {
+      setInlineEditId(null);
+      const next = draft.trim();
+      const prev = (item.content_body || "").trim();
+      if (next === prev) return;
+      if (!next) {
+        toast({
+          title: "Text can't be empty",
+          description: "Reverted to the previous content.",
+        });
+        return;
+      }
+      await handleSave({ ...item, content_body: next });
+    },
+    [handleSave, toast],
   );
 
   return (
-    <div className="w-full overflow-x-hidden">
-      {/* Add new content form */}
-      {isAdding && (
-        <div className="border-2 border-dashed border-amber-200/30 rounded-lg p-1 max-h-[70vh] overflow-hidden w-full">
-          <div className="max-h-[65vh] overflow-y-auto w-full">
-            <ContentForm
-              nodeId={nodeId}
-              contentCount={content.length}
-              onSave={handleSave}
-              onCancel={handleCancelForm}
-            />
-          </div>
+    <div className="w-full">
+      {/* Seam above the first row */}
+      {content.length > 0 && !listBusy && insertAt !== 0 && (
+        <InsertSeam onClick={() => setInsertAt(0)} />
+      )}
+      {insertAt === 0 && (
+        <div className="pb-1.5">
+          <QuickAddRow
+            autoFocus
+            uploading={quickUploading}
+            onSubmit={(t) => handleQuickSubmit(t, 0)}
+            onPasteImage={(f) => handlePasteImageCreate(f, 0)}
+            onCancel={() => setInsertAt(null)}
+          />
         </div>
       )}
 
-      {/* Content list */}
-      <div className="space-y-2 pb-4 w-full">
-        {sortedContent.map((item, index) => (
-          <Card
-            key={item.id}
-            className="border-l-4 border-l-amber-300/70 bg-white/[0.03] overflow-hidden"
-          >
-            <CardContent className="p-3 w-full overflow-x-hidden">
-              {editingId === item.id ? (
-                <div className="border border-amber-200/40 rounded-lg p-1 bg-amber-200/5 max-h-[65vh] overflow-hidden w-full">
-                  <div className="max-h-[60vh] overflow-y-auto w-full">
+      {/* Content list: flat rows separated by hairlines, drag to reorder */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={sortedIds}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="divide-y divide-white/[0.06]">
+            {sortedContent.map((item, index) => (
+              <div key={item.id}>
+                {/* Insert seam between rows */}
+                {index > 0 && !listBusy && insertAt !== index && (
+                  <InsertSeam onClick={() => setInsertAt(index)} />
+                )}
+                {insertAt === index && (
+                  <div className="py-1.5">
+                    <QuickAddRow
+                      autoFocus
+                      uploading={quickUploading}
+                      onSubmit={(t) => handleQuickSubmit(t, index)}
+                      onPasteImage={(f) => handlePasteImageCreate(f, index)}
+                      onCancel={() => setInsertAt(null)}
+                    />
+                  </div>
+                )}
+
+                {editingId === item.id ? (
+                  <div className="py-1.5">
                     <ContentForm
                       nodeId={nodeId}
                       existingContent={item}
@@ -1278,129 +1872,74 @@ export function ContentEditor({
                       onCancel={handleCancelForm}
                     />
                   </div>
-                </div>
-              ) : (
-                <div className="space-y-2 w-full">
-                  <div className="flex justify-between items-start gap-2 flex-wrap">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      {/* Reorder buttons */}
-                      <div className="flex flex-col gap-0.5 flex-shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => moveContentUp(index)}
-                          className="h-5 w-6 p-0 hover:bg-amber-200/10"
-                          disabled={index === 0 || !!isFormActive}
-                          title="Move up"
-                        >
-                          <ChevronUp className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => moveContentDown(index)}
-                          className="h-5 w-6 p-0 hover:bg-amber-200/10"
-                          disabled={
-                            index === sortedContent.length - 1 || !!isFormActive
-                          }
-                          title="Move down"
-                        >
-                          <ChevronDown className="h-3 w-3" />
-                        </Button>
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="text-xs bg-amber-200/15 text-amber-200 border border-amber-200/20 px-2 py-0.5 rounded font-medium flex-shrink-0">
-                            #{index + 1}
-                          </span>
-                          <span className="text-xs text-muted-foreground capitalize flex-shrink-0">
-                            {item.content_type.replace("_", " ")}
-                          </span>
-                          {!item.content_url && !item.content_body && (
-                            <span className="text-xs bg-red-400/15 text-red-300 border border-red-400/25 px-2 py-0.5 rounded flex-shrink-0">
-                              Missing Content
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground break-words">
-                          {getContentPreview(item)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-1 flex-shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(item.id)}
-                        className="h-8 w-8 p-0"
-                        disabled={!!isFormActive}
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => confirmDelete(item.id)}
-                        className="h-8 w-8 p-0 text-red-400 hover:text-red-300 hover:bg-red-400/10"
-                        disabled={!!isFormActive}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Image Preview in List */}
-                  {item.content_type === "image" && item.content_url && (
-                    <div className="mt-2 border border-white/10 rounded-md overflow-x-auto bg-white/5">
-                      <div className="inline-flex w-full">
-                        <img
-                          src={item.content_url}
-                          alt={item.content_title || "Image content"}
-                          className="w-full h-auto object-contain max-h-48"
-                          loading="lazy"
-                          onError={(e) => {
-                            // Hide image if it fails to load
-                            (e.target as HTMLImageElement).style.display =
-                              "none";
-                            console.error("Failed to load image thumbnail");
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Content previews for other types */}
-                  <ContentPreviewDisplay
+                ) : (
+                  <SortableContentRow
                     item={item}
-                    expandedTextId={expandedTextId}
-                    setExpandedTextId={setExpandedTextId}
+                    disabled={listBusy}
+                    expanded={expandedId === item.id}
+                    inlineEditing={inlineEditId === item.id}
+                    onToggleExpand={() =>
+                      setExpandedId(expandedId === item.id ? null : item.id)
+                    }
+                    onEdit={() => {
+                      if (item.content_type === "text") {
+                        setExpandedId(null);
+                        setInlineEditId(item.id);
+                      } else {
+                        handleEdit(item.id);
+                      }
+                    }}
+                    onDelete={() => confirmDelete(item.id)}
+                    onInlineSave={handleInlineSave}
+                    onInlineCancel={() => setInlineEditId(null)}
                   />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
-      {/* Empty state */}
-      {content.length === 0 && !isAdding && EmptyState}
-
-      {/* Add content entry point */}
-      {!isFormActive && content.length > 0 && (
-        <Button
-          variant="outline"
-          onClick={() => setIsAdding(true)}
-          className="w-full h-11 border-2 border-dashed bg-transparent hover:bg-muted/50"
-        >
-          <PlusCircle className="h-4 w-4 mr-2" />
-          Add content
-        </Button>
+      {/* Empty state: quick capture is the first thing you see */}
+      {content.length === 0 && !isAdding && (
+        <div className="py-1.5">
+          <p className="mb-2 text-center text-[11px] text-muted-foreground">
+            No materials yet
+          </p>
+          <QuickAddRow
+            uploading={quickUploading}
+            showMore
+            onSubmit={(t) => handleQuickSubmit(t)}
+            onPasteImage={(f) => handlePasteImageCreate(f)}
+            onOpenFull={() => setIsAdding(true)}
+          />
+        </div>
       )}
 
-      {/* Help text */}
-      {content.length > 0 && HelpText}
+      {/* Bottom quick capture, always available */}
+      {!listBusy && content.length > 0 && (
+        <div className="mt-1.5">
+          <QuickAddRow
+            uploading={quickUploading}
+            showMore
+            onSubmit={(t) => handleQuickSubmit(t)}
+            onPasteImage={(f) => handlePasteImageCreate(f)}
+            onOpenFull={() => setIsAdding(true)}
+          />
+        </div>
+      )}
+
+      {/* Full editor form */}
+      {isAdding && (
+        <div className="pt-1.5">
+          <ContentForm
+            nodeId={nodeId}
+            contentCount={content.length}
+            onSave={handleSave}
+            onCancel={handleCancelForm}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -43,3 +43,19 @@ export const INTEREST_QUICK_REPLIES: QuickReplySet = {
 };
 
 export const QUICK_REPLY_SETS: QuickReplySet[] = [GRADE_LEVEL_QUICK_REPLIES, INTEREST_QUICK_REPLIES];
+
+/** Personalize only the prompt. Button titles must stay verbatim so they classify. */
+export async function personalizeQuickReplySet(
+  set: QuickReplySet,
+  lead: import("@/lib/dm-leads/personalize").PersonalizeLead
+): Promise<QuickReplySet> {
+  const { personalizeMessage } = await import("@/lib/dm-leads/personalize");
+  return {
+    ...set,
+    prompt: await personalizeMessage({
+      template: set.prompt,
+      lead,
+      kind: "button_prompt",
+    }),
+  };
+}

@@ -8,12 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
   getLeadCommentInfo,
+  personalizeLeadCopyAction,
   replyPubliclyToLeadComment,
 } from "@/app/admin/dm-leads/actions";
 import {
   getDefaultPublicCommentReply,
   hasThreadDeliveryFailure,
 } from "@/lib/dm-leads/delivery-status";
+import { leadFromConversation } from "@/lib/dm-leads/personalize";
 import type { DmConversation, DmConversationWithMessages, IgComment } from "@/types/dm-leads";
 
 interface DmLeadPublicReplyBarProps {
@@ -39,9 +41,17 @@ export function DmLeadPublicReplyBar({ conversation, thread }: DmLeadPublicReply
     setSentSuccess(false);
     setError(null);
     setCopied(false);
-    setMessage(getDefaultPublicCommentReply(conversation.username));
+    const template = getDefaultPublicCommentReply(conversation.username);
+    setMessage(template);
 
     let cancelled = false;
+    void personalizeLeadCopyAction({
+      template,
+      lead: leadFromConversation(conversation),
+      kind: "public_comment",
+    }).then((result) => {
+      if (!cancelled && result.body) setMessage(result.body);
+    });
     setLoadingComment(true);
     getLeadCommentInfo(conversation.id)
       .then((data) => {

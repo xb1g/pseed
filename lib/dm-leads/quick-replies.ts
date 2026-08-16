@@ -315,3 +315,35 @@ export function getQuickReplies(ctx: QuickReplyContext): QuickReply[] {
 
   return replies.slice(0, 4);
 }
+
+/**
+ * Same chips as `getQuickReplies`, with each body rewritten for this lead.
+ * Templates stay the fallback if Qwen is unreachable.
+ */
+export async function getPersonalizedQuickReplies(
+  ctx: QuickReplyContext
+): Promise<QuickReply[]> {
+  const { personalizeMessage } = await import("@/lib/dm-leads/personalize");
+  const replies = getQuickReplies(ctx);
+  return Promise.all(
+    replies.map(async (reply) => ({
+      ...reply,
+      body: await personalizeMessage({
+        template: reply.body,
+        lead: {
+          displayName: ctx.displayName,
+          username: ctx.username,
+          gradeLevel: ctx.gradeLevel,
+          interests: ctx.interests,
+          stage: ctx.stage,
+          wantsPathlab: ctx.wantsPathlab,
+          pathlabPayReady: ctx.pathlabPayReady,
+          wantsCommunity: ctx.wantsCommunity,
+          wantsTalent: ctx.wantsTalent,
+          hasHandsOnExperience: ctx.hasHandsOnExperience,
+        },
+        kind: "quick_reply",
+      }),
+    }))
+  );
+}

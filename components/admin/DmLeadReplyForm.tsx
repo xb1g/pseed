@@ -5,9 +5,10 @@ import { FileText, Film, ImageIcon, ListChecks, Music, Paperclip, Sparkles, X } 
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { replyToLead, sendQuickReplyButtons } from "@/app/admin/dm-leads/actions";
+import { personalizeLeadCopyAction, replyToLead, sendQuickReplyButtons } from "@/app/admin/dm-leads/actions";
 import { uploadDmAttachment } from "@/lib/dm-leads/upload-image-client";
 import { contextFromConversation, getQuickReplies } from "@/lib/dm-leads/quick-replies";
+import { leadFromConversation } from "@/lib/dm-leads/personalize";
 import { QUICK_REPLY_SETS } from "@/lib/dm-leads/quick-reply-buttons";
 import { PlanGeneratorModal } from "@/components/admin/PlanGeneratorModal";
 import type { MetaAttachmentType } from "@/lib/meta/graph";
@@ -107,10 +108,45 @@ export function DmLeadReplyForm({
     if (file) setAttachedFile(file);
   };
 
-  const suggestions = useMemo(
+  const templateSuggestions = useMemo(
     () => getQuickReplies(contextFromConversation(conversation)),
     [conversation]
   );
+  const [suggestions, setSuggestions] = useState(templateSuggestions);
+
+  useEffect(() => {
+    setSuggestions(templateSuggestions);
+    const lead = leadFromConversation(conversation);
+    let cancelled = false;
+    Promise.all(
+      templateSuggestions.map(async (reply) => {
+        const result = await personalizeLeadCopyAction({
+          template: reply.body,
+          lead,
+          kind: "quick_reply",
+        });
+        return { ...reply, body: result.body };
+      })
+    ).then((next) => {
+      if (!cancelled) setSuggestions(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    conversation.id,
+    conversation.display_name,
+    conversation.username,
+    conversation.grade_level,
+    conversation.interests.join(","),
+    conversation.stage,
+    conversation.wants_pathlab,
+    conversation.pathlab_pay_ready,
+    conversation.wants_community,
+    conversation.wants_talent,
+    conversation.has_hands_on_experience,
+    templateSuggestions,
+  ]);
 
   const handleSend = () => {
     if (onSend) {

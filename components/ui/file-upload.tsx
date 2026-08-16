@@ -35,6 +35,7 @@ interface FileUploadProps {
   disabled?: boolean;
   allowMultiple?: boolean; // New prop to control multiple uploads
   uploadEndpoint?: "default" | "images" | "documents"; // New prop to specify endpoint
+  compact?: boolean; // Slim single-line drop zone for tight editors (parent renders its own preview)
 }
 
 interface UploadedFile {
@@ -63,6 +64,7 @@ export function FileUpload({
   disabled = false,
   allowMultiple = true, // Default to true for multiple uploads
   uploadEndpoint = "default", // Default to the main upload endpoint
+  compact = false,
 }: FileUploadProps) {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]); // Changed to array for multiple files
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(
@@ -775,9 +777,9 @@ export function FileUpload({
 
   return (
     <>
-      <div className={`space-y-4 ${className}`}>
-        {/* Show uploaded files */}
-        {uploadedFiles.length > 0 && (
+      <div className={compact ? "space-y-2" : `space-y-4 ${className}`}>
+        {/* Show uploaded files (full mode only; compact mode lets the parent render its own preview) */}
+        {!compact && uploadedFiles.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">
               Uploaded Files ({uploadedFiles.length}):
@@ -843,7 +845,37 @@ export function FileUpload({
         )}
 
         {/* Upload progress */}
-        {(isUploading || hasError) && (
+        {(isUploading || hasError) &&
+          (compact ? (
+            <div
+              className={`flex items-center gap-2 rounded-md border px-2.5 py-2 ${
+                hasError
+                  ? "border-red-400/40 bg-red-500/10"
+                  : "border-primary/30 bg-primary/5"
+              }`}
+            >
+              {hasError ? (
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-red-500" />
+              ) : (
+                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
+              )}
+              <div className="min-w-0 flex-1">
+                <p
+                  className={`truncate text-xs ${
+                    hasError ? "text-red-500" : "text-foreground"
+                  }`}
+                >
+                  {uploadProgress?.message}
+                </p>
+                {!hasError && (
+                  <Progress
+                    value={uploadProgress?.percentage || 0}
+                    className="mt-1 h-1"
+                  />
+                )}
+              </div>
+            </div>
+          ) : (
           <div
             className={`p-6 border-2 rounded-lg ${
               hasError
@@ -879,9 +911,48 @@ export function FileUpload({
               </div>
             </div>
           </div>
-        )}
+          ))}
 
         {/* Always show upload interface - even during upload for multiple files */}
+        {compact ? (
+          /* Compact: one slim drop zone, always available so an uploaded
+             file can be replaced without extra chrome. Paste is handled by
+             the parent form's onPaste (this zone is focusable). */
+          !isUploading &&
+          !hasError && (
+            <div
+              role="button"
+              tabIndex={0}
+              aria-label="Upload file"
+              className={`flex items-center justify-center gap-2 rounded-md border border-dashed px-3 py-2.5 text-center transition-colors duration-150 ${
+                isDragging
+                  ? "border-primary/60 bg-primary/10"
+                  : disabled
+                    ? "border-border bg-muted/50"
+                    : "cursor-pointer border-input hover:border-primary/50 hover:bg-primary/5"
+              }`}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onClick={() => !disabled && fileInputRef.current?.click()}
+              onKeyDown={(e) => {
+                if (!disabled && (e.key === "Enter" || e.key === " ")) {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
+            >
+              <Upload className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <p className="text-xs text-muted-foreground">
+                {isDragging
+                  ? "Drop to upload"
+                  : uploadedFiles.length > 0
+                    ? "Drop, paste, or browse to replace"
+                    : `Drop, paste, or browse · ${maxSize}MB max`}
+              </p>
+            </div>
+          )
+        ) : (
         <div className="space-y-2">
           {/* For multiple file uploads - show "Add Another File" button when files are uploaded */}
           {allowMultiple && (uploadedFiles.length > 0 || isUploading) && (
@@ -980,17 +1051,6 @@ export function FileUpload({
             </div>
           )}
 
-          {/* Hidden file input */}
-          <Input
-            ref={fileInputRef}
-            type="file"
-            accept={accept}
-            onChange={handleFileSelect}
-            disabled={disabled}
-            multiple={allowMultiple}
-            className="hidden"
-          />
-
           {/* Help text */}
           {allowMultiple && (uploadedFiles.length > 0 || isUploading) && (
             <p className="text-xs text-muted-foreground text-center">
@@ -1006,6 +1066,18 @@ export function FileUpload({
             </p>
           )}
         </div>
+        )}
+
+        {/* Hidden file input (shared by both modes) */}
+        <Input
+          ref={fileInputRef}
+          type="file"
+          accept={accept}
+          onChange={handleFileSelect}
+          disabled={disabled}
+          multiple={allowMultiple}
+          className="hidden"
+        />
       </div>
 
       {/* Image Expansion Modal */}

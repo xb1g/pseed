@@ -61,3 +61,22 @@ export function getDefaultPublicCommentReply(username?: string | null): string {
   const mention = username ? `@${username} ` : "";
   return `${mention}พอดีน้องตั้งค่า privacy ไม่เปิดรับ DM จากคนแปลกหน้า พี่เลยส่ง DM หาไม่ได้ 🥺 รบกวนน้องกดทัก DM พี่มาก่อนได้เลยน้า เดี๋ยวพี่ส่งข้อมูล/แนะนำให้ครับ! 📩✨`;
 }
+
+export async function getPersonalizedPublicCommentReply(lead: {
+  username?: string | null;
+  displayName?: string | null;
+  gradeLevel?: string | null;
+  interests?: string[];
+}): Promise<string> {
+  const { personalizeMessage } = await import("@/lib/dm-leads/personalize");
+  return personalizeMessage({
+    template: getDefaultPublicCommentReply(lead.username),
+    lead: {
+      displayName: lead.displayName,
+      username: lead.username,
+      gradeLevel: lead.gradeLevel,
+      interests: lead.interests,
+    },
+    kind: "public_comment",
+  });
+}

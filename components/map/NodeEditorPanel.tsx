@@ -18,7 +18,6 @@ import {
   MapPin,
   Clock,
   Check,
-  Calendar,
   ChevronDown,
   Settings,
 } from "lucide-react";
@@ -82,6 +81,20 @@ export function NodeEditorPanel({
   const isTextNode = useMemo(() => {
     return (selectedNode?.data as any)?.node_type === "text";
   }, [selectedNode]);
+
+  // Live content list. Parents throttle node_content updates on the way to
+  // the canvas (MapEditor skips visual updates for content-only changes,
+  // MapViewer keeps a selection snapshot), so the selectedNode prop can lag
+  // behind. nodeData is updated locally on every edit, making it the fresh
+  // source; fall back to the prop while switching between nodes.
+  const liveContent = useMemo<NodeContent[]>(() => {
+    if (!selectedNode) return [];
+    const source =
+      nodeData.id === selectedNode.id
+        ? nodeData.node_content
+        : selectedNode.data.node_content;
+    return source ?? [];
+  }, [nodeData, selectedNode]);
 
   // For text nodes, we want immediate UI updates with debounced data changes
   const [localText, setLocalText] = useState("");
@@ -355,25 +368,11 @@ export function NodeEditorPanel({
 
   return (
     <div className="h-full flex flex-col dawn-panel overflow-hidden node-editor-panel">
-      {/* Header - Fixed */}
-      <div className="flex-shrink-0 p-4 dawn-panel__header">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-            <MapPin className="h-4 w-4 text-primary" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-foreground">Node Editor</h2>
-            <p className="text-xs text-muted-foreground">
-              ID: {selectedNode.id.substring(0, 8)}...
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Single-column editor mirroring the student view - Scrollable */}
-      <div className="flex-1 overflow-hidden">
-        <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-white/15 scrollbar-track-transparent">
-          <div className="p-4 space-y-6">
+      {/* Single-column editor mirroring the student view - Scrollable.
+          No fixed header: the inline title below is the heading, and a
+          truncated node ID tells the editor nothing. */}
+      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/15 scrollbar-track-transparent">
+        <div className="p-4 space-y-6">
             {/* Title — inline-editable, styled like the student-view heading */}
             <Input
               id="title"
@@ -703,15 +702,13 @@ export function NodeEditorPanel({
                         variant="outline"
                         className="text-xs border-amber-200/25 bg-amber-200/10 text-amber-200"
                       >
-                        {selectedNode.data.node_content?.length || 0} item
-                        {(selectedNode.data.node_content?.length || 0) !== 1
-                          ? "s"
-                          : ""}
+                        {liveContent.length} item
+                        {liveContent.length !== 1 ? "s" : ""}
                       </Badge>
                     </div>
                     <ContentEditor
                       nodeId={selectedNode.id}
-                      content={selectedNode.data.node_content || []}
+                      content={liveContent}
                       onContentChange={handleContentChange}
                     />
                   </section>
@@ -973,109 +970,7 @@ export function NodeEditorPanel({
                     ? "Text nodes are for annotations and labels. Changes are saved automatically to your draft."
                     : 'Changes are saved automatically to your draft. Use "Save All" to persist to database.'}
                 </div>
-              </div>
         </div>
-
-        {/* PathLab Day Assignment */}
-        {seedInfo?.seed_type === "pathlab" &&
-          pathDays.length > 0 &&
-          selectedNode &&
-          !isTextNode && (
-            <div className="border-t border-white/10 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-semibold">PathLab Days</Label>
-                <span className="text-xs text-stone-400">Assign to days</span>
-              </div>
-              <p className="text-xs text-stone-400">
-                Check which days should include this node
-              </p>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {pathDays.map((day) => {
-                  const isAssigned =
-                    Array.isArray(day.node_ids) &&
-                    day.node_ids.includes(selectedNode.id);
-                  return (
-                    <label
-                      key={day.id}
-                      className={`flex items-center gap-2 p-2 rounded border cursor-pointer transition-colors ${
-                        isAssigned
-                          ? "border-amber-200/50 bg-amber-200/10"
-                          : "border-white/10 hover:border-white/20"
-                      }`}
-                      onClick={async () => {
-                        if (!onPathDaysChange || !seedInfo) return;
-
-                        const updatedDays = pathDays.map((d) => {
-                          if (d.day_number === day.day_number) {
-                            const currentNodeIds = Array.isArray(d.node_ids)
-                              ? d.node_ids
-                              : [];
-                            const newNodeIds = isAssigned
-                              ? currentNodeIds.filter(
-                                  (id: string) => id !== selectedNode.id,
-                                )
-                              : [...currentNodeIds, selectedNode.id];
-                            return { ...d, node_ids: newNodeIds };
-                          }
-                          return d;
-                        });
-
-                        onPathDaysChange(updatedDays);
-
-                        // Save to database
-                        try {
-                          const pathResponse = await fetch(
-                            `/api/pathlab/days?seedId=${seedInfo.id}`,
-                          );
-                          const pathData = await pathResponse.json();
-
-                          if (pathData.days && pathData.days.length > 0) {
-                            const pathId = pathData.days[0].path_id;
-
-                            await fetch("/api/pathlab/days", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                pathId,
-                                totalDays: updatedDays.length,
-                                days: updatedDays,
-                              }),
-                            });
-
-                            toast({
-                              title: isAssigned
-                                ? "Removed from day"
-                                : "Added to day",
-                              description: `Node ${isAssigned ? "removed from" : "added to"} Day ${day.day_number}`,
-                            });
-                          }
-                        } catch (error) {
-                          toast({
-                            title: "Error",
-                            description: "Failed to update day assignment",
-                            variant: "destructive",
-                          });
-                        }
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isAssigned}
-                        onChange={() => {}} // Handled by label onClick
-                        className="h-4 w-4"
-                      />
-                      <span
-                        className={`text-sm ${isAssigned ? "text-amber-50 font-medium" : "text-stone-300"}`}
-                      >
-                        Day {day.day_number}
-                        {day.title ? `: ${day.title}` : ""}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          )}
       </div>
     </div>
   );

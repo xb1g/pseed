@@ -16,6 +16,7 @@ import {
 } from "@/lib/dm-leads/playbook";
 import { deriveSignalsFromMessages } from "@/lib/dm-leads/signals";
 import { isWithinMessagingWindow } from "@/lib/dm-leads/messaging-window";
+import { leadFromConversation, lastInboundFromMessages } from "@/lib/dm-leads/personalize";
 import { BUCKET_NEXT_RUNG, RUNG_META } from "@/lib/dm-leads/scripts";
 import { DmLeadManageBar } from "@/components/admin/DmLeadManageBar";
 import { DM_REPLY_TEXTAREA_ID, DmLeadReplyForm } from "@/components/admin/DmLeadReplyForm";
@@ -312,7 +313,14 @@ export function DmLeadDetailPane({
         </button>
         {scriptsOpen && (
           <div className="mt-1 max-h-52 overflow-y-auto pr-1">
-            <DmLeadScripts bucket={bucket} coverage={coverage} onInsert={insertScript} />
+            <DmLeadScripts
+              bucket={bucket}
+              coverage={coverage}
+              lead={leadFromConversation(conversation, {
+                lastInbound: lastInboundFromMessages(thread?.dm_messages),
+              })}
+              onInsert={insertScript}
+            />
           </div>
         )}
       </div>

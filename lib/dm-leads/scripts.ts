@@ -261,6 +261,37 @@ export function selectScripts(
   return [...bespoke, ...ladder].sort((a, b) => a.rung - b.rung);
 }
 
+/**
+ * Same selection as `selectScripts`, then each body is rewritten for this
+ * lead. Falls back to the verbatim playbook copy if Qwen is down.
+ */
+export async function selectPersonalizedScripts(
+  bucket: DmLeadBucket,
+  coverage: FieldCoverage,
+  lead: import("@/lib/dm-leads/personalize").PersonalizeLead
+): Promise<DmLeadScript[]> {
+  const { personalizeMessage } = await import("@/lib/dm-leads/personalize");
+  const scripts = selectScripts(bucket, coverage);
+  return Promise.all(
+    scripts.map(async (script) => ({
+      ...script,
+      body: await personalizeMessage({ template: script.body, lead, kind: "script" }),
+    }))
+  );
+}
+
+export async function personalizeObjections(
+  lead: import("@/lib/dm-leads/personalize").PersonalizeLead
+): Promise<DmLeadObjection[]> {
+  const { personalizeMessage } = await import("@/lib/dm-leads/personalize");
+  return Promise.all(
+    DM_LEAD_OBJECTIONS.map(async (objection) => ({
+      ...objection,
+      body: await personalizeMessage({ template: objection.body, lead, kind: "script" }),
+    }))
+  );
+}
+
 /** Unique rungs present in a selection, in ladder order. */
 export function scriptRungs(scripts: DmLeadScript[]): DmScriptRung[] {
   return [...new Set(scripts.map((script) => script.rung))].sort((a, b) => a - b);
