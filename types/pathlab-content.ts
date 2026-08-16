@@ -21,10 +21,17 @@ export type PathContentType =
   | 'ai_chat'       // AI chat with objective tracking
   | 'npc_chat';     // Scripted conversation with NPCs (branching dialogue)
 
+// Mirrors the path_assessments_assessment_type_check constraint (see
+// supabase/migrations/20260406203311_remote_schema.sql) — the DB accepts all 8.
 export type PathAssessmentType =
+  | 'quiz'
   | 'text_answer'
   | 'file_upload'
-  | 'image_upload';
+  | 'image_upload'
+  | 'checklist'
+  | 'daily_reflection'
+  | 'interest_rating'
+  | 'energy_check';
 
 export type PathActivityProgressStatus =
   | 'not_started'
