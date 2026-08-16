@@ -1,20 +1,23 @@
 export type PathLabGeneratorDifficulty = "beginner" | "intermediate" | "advanced";
 
+// These vocabularies mirror the authoritative zod schema in
+// lib/ai/pathlab-generator-schema.ts, which drives the AI prompt and validates
+// generated output. Keep the two in sync: content the generator can emit is
+// [text, video, pdf, image, resource_link]; assessments it can emit are
+// [none, text_answer, quiz, file_upload, checklist].
 export type PathLabContentType =
   | "text"
   | "video"
-  | "short_video"
-  | "canva_slide"
   | "pdf"
   | "image"
-  | "ai_chat"
-  | "npc_chat";
+  | "resource_link";
 
 export type PathLabAssessmentType =
   | "none"
   | "text_answer"
+  | "quiz"
   | "file_upload"
-  | "image_upload";
+  | "checklist";
 
 export interface PathLabLearningObjective {
   day: number;
