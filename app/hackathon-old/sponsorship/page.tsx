@@ -5,6 +5,10 @@ export const dynamic = "force-static";
 export const revalidate = 300; // ISR: revalidate every 5 minutes
 
 async function getHackathonStats() {
+  // No database during `next build` in CI — prerender with zero stats there.
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return { participants: 0, teams: 0, gradeLevels: {} };
+  }
   const admin = createAdminClient();
 
   // Fetch participant count

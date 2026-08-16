@@ -6,7 +6,15 @@ export const revalidate = 3600; // ISR: revalidate every hour
 
 const BETA_FORM_TOKEN = "2d1a7a73-e3dd-4c5a-b0d5-1b7f5a5c2e11";
 
+// During `next build` in CI there is no database, so SUPABASE_SERVICE_ROLE_KEY
+// is unset. Prerender with empty data in that case; in production the key is
+// present and the page fetches live data as intended.
+function hasServiceRoleKey() {
+  return Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
 async function fetchHackathonParticipants() {
+  if (!hasServiceRoleKey()) return [];
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("hackathon_participants")
@@ -42,6 +50,7 @@ async function fetchHackathonParticipants() {
 }
 
 async function fetchBetaRegistrations() {
+  if (!hasServiceRoleKey()) return [];
   const admin = createAdminClient();
 
   const { data: form } = await admin

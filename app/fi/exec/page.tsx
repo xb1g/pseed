@@ -25,6 +25,10 @@ export const revalidate = 300; // ISR: revalidate every 5 minutes
 const BETA_FORM_TOKEN = "2d1a7a73-e3dd-4c5a-b0d5-1b7f5a5c2e11";
 
 async function fetchHackathonData() {
+  // No database during `next build` in CI — prerender with empty data there.
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return { participants: [], withTeam: 0, teamRate: "0" };
+  }
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("hackathon_participants")
@@ -60,6 +64,8 @@ async function fetchHackathonData() {
 }
 
 async function fetchBetaData() {
+  // No database during `next build` in CI — prerender with zero count there.
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return { count: 0 };
   const admin = createAdminClient();
 
   const { data: form } = await admin
