@@ -58,6 +58,9 @@ export function BadgeDetailModal({
     };
 
     const handleViewCertificate = async () => {
+        // Narrow the nullable prop for use inside this closure; the component
+        // returns null below when badge is null, so this is always satisfied.
+        if (!badge) return;
         setLoadingCertificate(true);
         try {
             // Check if certificate exists

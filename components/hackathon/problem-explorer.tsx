@@ -41,17 +41,18 @@ interface TrackInfo {
   problems: ProblemData[];
 }
 
-// All problems data
+// All problems data. The imported JSON records carry many more fields than the
+// view model needs; narrow each to the subset the UI consumes.
 const allProblems: ProblemData[] = [
-  p1Data as ProblemData,
-  p2Data as ProblemData,
-  p3Data as ProblemData,
-  p4Data as ProblemData,
-  p5Data as ProblemData,
-  p6Data as ProblemData,
-  p7Data as ProblemData,
-  p8Data as ProblemData,
-  p9Data as ProblemData,
+  p1Data as unknown as ProblemData,
+  p2Data as unknown as ProblemData,
+  p3Data as unknown as ProblemData,
+  p4Data as unknown as ProblemData,
+  p5Data as unknown as ProblemData,
+  p6Data as unknown as ProblemData,
+  p7Data as unknown as ProblemData,
+  p8Data as unknown as ProblemData,
+  p9Data as unknown as ProblemData,
 ];
 
 // Track display names (bilingual)
