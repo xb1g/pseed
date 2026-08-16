@@ -57,14 +57,21 @@ export const deleteNode = async (id: string): Promise<void> => {
   try {
     // Delete in proper order to avoid constraint violations
 
-    // 1. Delete quiz questions for assessments of this node
-    await supabase
-      .from("quiz_questions")
-      .delete()
-      .in(
-        "assessment_id",
-        supabase.from("node_assessments").select("id").eq("node_id", id)
-      );
+    // 1. Delete quiz questions for assessments of this node.
+    // Supabase's .in() does not accept a query builder — resolve the assessment
+    // ids first, then delete.
+    const { data: nodeAssessments } = await supabase
+      .from("node_assessments")
+      .select("id")
+      .eq("node_id", id);
+    const assessmentIds = (nodeAssessments ?? []).map((a: { id: string }) => a.id);
+
+    if (assessmentIds.length > 0) {
+      await supabase
+        .from("quiz_questions")
+        .delete()
+        .in("assessment_id", assessmentIds);
+    }
 
     // 2. Delete assessments
     await supabase.from("node_assessments").delete().eq("node_id", id);

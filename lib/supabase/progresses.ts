@@ -11,6 +11,7 @@ import {
   submitNodeProgress as apiSubmitNodeProgress,
   type StudentProgress,
 } from "@/lib/api/progress-client";
+import type { TeamNodeProgress } from "@/lib/supabase/team-progress";
 import { dedupeRequest, createCacheKey } from "@/lib/utils/request-deduplication";
 import { createClient } from "@/utils/supabase/client";
 
@@ -63,7 +64,7 @@ export async function getStudentProgress(
  */
 export async function loadAllProgress(
   mapId: string
-): Promise<Record<string, StudentProgress>> {
+): Promise<Record<string, StudentProgress | TeamNodeProgress>> {
   // The cache key MUST include the viewer's id. Keyed on mapId alone, the
   // module-level cache serves one account's progress to another whenever two
   // users view the same map in one browser session -- which shows another
