@@ -10101,6 +10101,9 @@ summary:focus-visible .radar-expand-indicator {
 
 .pathlab-journey-map__stop {
   position: absolute;
+  /* Above __popup-backdrop (z-30) so islands stay clickable while a popup is
+     open; the popup itself (z-40) still paints above the stops. */
+  z-index: 35;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
