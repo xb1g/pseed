@@ -9269,6 +9269,14 @@ summary:focus-visible .radar-expand-indicator {
   white-space: nowrap;
 }
 
+/* On phones the wordmark crowds the anchor row; the logo alone carries the
+   brand, and the links keep the space. */
+@media (max-width: 480px) {
+  .pathlab-nav__name {
+    display: none;
+  }
+}
+
 .pathlab-nav__links {
   display: flex;
   align-items: center;
@@ -10776,6 +10784,312 @@ summary:focus-visible .radar-expand-indicator {
   font-size: clamp(0.9rem, 2vw, 1rem);
   line-height: 1.75;
   color: rgba(253, 243, 230, 0.82);
+}
+
+/* ── Poster: A4 promo sheet reusing the pathlab palette ── */
+
+/* Dark stage so the cream sheet reads as paper on screen. */
+.pathlab-poster-stage {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: clamp(1rem, 4vw, 3rem);
+  background: #524746;
+}
+
+/* One A4 portrait sheet. Fixed physical size: the layout inside is authored
+   in px against this known canvas, so no clamps are needed. */
+.pathlab-poster {
+  width: 210mm;
+  min-height: 297mm;
+  display: flex;
+  flex-direction: column;
+  gap: 7mm;
+  padding: 11mm 13mm;
+  background: #fdf3e6;
+  color: #524746;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+.pathlab-poster__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.pathlab-poster__brand {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: #c43e1d;
+  letter-spacing: 0.02em;
+}
+
+.pathlab-poster__brand-tag {
+  font-size: 15px;
+  color: rgba(82, 71, 70, 0.75);
+}
+
+.pathlab-poster__hero {
+  text-align: center;
+}
+
+.pathlab-poster__title {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 72px;
+  line-height: 1.1;
+  font-weight: 700;
+  color: #c43e1d;
+}
+
+.pathlab-poster__subtitle {
+  margin-top: 4mm;
+  font-size: 19px;
+  line-height: 1.8;
+  color: #524746;
+}
+
+.pathlab-poster__subtitle span {
+  display: block;
+}
+
+/* Same inversion as the offer section: brown cards on the cream sheet. */
+.pathlab-poster__offers {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5mm;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.pathlab-poster__offer {
+  padding: 6mm 5mm;
+  border-radius: 4mm;
+  background: #524746;
+  text-align: center;
+}
+
+.pathlab-poster__offer-title {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #fdf3e6;
+}
+
+.pathlab-poster__offer-body {
+  margin-top: 2mm;
+  font-size: 13.5px;
+  /* Thai stacks marks above and below, so it needs the extra leading. */
+  line-height: 1.8;
+  color: rgba(253, 243, 230, 0.86);
+}
+
+.pathlab-poster__fields {
+  text-align: center;
+}
+
+.pathlab-poster__fields-heading {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: #c43e1d;
+}
+
+.pathlab-poster__fields-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2.5mm;
+  margin-top: 3mm;
+  list-style: none;
+  padding: 0;
+}
+
+.pathlab-poster__field {
+  padding: 1.6mm 4mm;
+  border: 1.5px solid #c43e1d;
+  border-radius: 999px;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: #c43e1d;
+}
+
+/* Review band mirrors the landing page: brown band, orange quote cards. */
+.pathlab-poster__reviews {
+  padding: 6mm 6mm 7mm;
+  border-radius: 5mm;
+  background: #524746;
+}
+
+.pathlab-poster__reviews-heading {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: #fdf3e6;
+  text-align: center;
+}
+
+.pathlab-poster__reviews-list {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 5mm;
+  margin-top: 4mm;
+  list-style: none;
+  padding: 0;
+}
+
+.pathlab-poster__review {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.5mm;
+  padding: 6mm 6mm 5mm;
+  border-radius: 4mm;
+  background: #c43e1d;
+  text-align: center;
+}
+
+.pathlab-poster__review-mark {
+  position: absolute;
+  top: 1.5mm;
+  left: 3.5mm;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 30px;
+  line-height: 1;
+  color: #fdf3e6;
+  pointer-events: none;
+}
+
+.pathlab-poster__review-quote {
+  font-size: 14.5px;
+  line-height: 1.85;
+  color: #fdf3e6;
+}
+
+.pathlab-poster__review-ig {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 13px;
+  color: #fdf3e6;
+}
+
+.pathlab-poster__review-by {
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: rgba(253, 243, 230, 0.82);
+}
+
+.pathlab-poster__prices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5mm;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.pathlab-poster__price {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1mm;
+  padding: 4.5mm 4mm;
+  border: 1.5px solid rgba(82, 71, 70, 0.35);
+  border-radius: 4mm;
+  text-align: center;
+}
+
+/* The group deal is the one to push, so it gets the loud fill. */
+.pathlab-poster__price--group {
+  background: #c43e1d;
+  border-color: #c43e1d;
+}
+
+.pathlab-poster__price-label {
+  font-size: 14px;
+  color: rgba(82, 71, 70, 0.8);
+}
+
+.pathlab-poster__price-amount {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #c43e1d;
+}
+
+.pathlab-poster__price-unit {
+  font-size: 12px;
+  color: rgba(82, 71, 70, 0.7);
+}
+
+.pathlab-poster__price--group .pathlab-poster__price-label,
+.pathlab-poster__price--group .pathlab-poster__price-amount,
+.pathlab-poster__price--group .pathlab-poster__price-unit {
+  color: #fdf3e6;
+}
+
+/* Closing band: the single action the poster asks for. */
+.pathlab-poster__cta {
+  margin-top: auto;
+  padding: 6mm;
+  border-radius: 5mm;
+  background: #c43e1d;
+  text-align: center;
+}
+
+.pathlab-poster__cta-line {
+  font-size: 17px;
+  color: rgba(253, 243, 230, 0.9);
+}
+
+.pathlab-poster__cta-handle {
+  margin-top: 1mm;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  color: #fdf3e6;
+}
+
+/* Preview convenience on screens narrower than the sheet. zoom (not
+   transform) so the layout box shrinks too and no ghost scroll area remains. */
+@media (max-width: 760px) {
+  .pathlab-poster {
+    zoom: 0.68;
+  }
+}
+
+@media (max-width: 540px) {
+  .pathlab-poster {
+    zoom: 0.48;
+  }
+}
+
+@media (max-width: 400px) {
+  .pathlab-poster {
+    zoom: 0.36;
+  }
+}
+
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  .pathlab-poster-stage {
+    padding: 0;
+    background: none;
+  }
+
+  .pathlab-poster {
+    zoom: 1;
+    box-shadow: none;
+  }
 }
 
 /* ── Fields: the paths currently open ── */

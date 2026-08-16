@@ -5,7 +5,6 @@ import { FieldCardTile } from "./FieldCardTile";
 import { FieldDetailPanel } from "./FieldDetailPanel";
 import {
   COMING_SOON_CUE,
-  FIELD_DETAIL_LABELS,
   FIELDS_HEADING,
   FIELDS_HINT,
   type FieldCard,
@@ -182,13 +181,12 @@ export function PathlabFieldsClient({ fields }: PathlabFieldsClientProps) {
                   </p>
                 )}
                 {/* A field that is not open yet points at the DM door instead
-                    of sitting mute. Once its plan is written, the invitation
-                    is to read that first: the plan is what earns the DM. */}
-                {field.comingSoon && (
+                    of sitting mute. Once its plan is written the card behaves
+                    like any other: the frame's own cue invites the click, and
+                    the panel is where the round's status is stated. */}
+                {field.comingSoon && !field.detail && (
                   <p className="pathlab-fields__project pathlab-fields__soon-cue">
-                    {field.detail
-                      ? FIELD_DETAIL_LABELS.soonCardCue
-                      : COMING_SOON_CUE}
+                    {COMING_SOON_CUE}
                   </p>
                 )}
               </div>

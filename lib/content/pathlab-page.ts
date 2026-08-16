@@ -299,11 +299,10 @@ export const FIELD_DETAIL_LABELS = {
   cardAction: "ดูรายละเอียด 5 วัน",
   cardCue: "ดู 5 วันนี้ →",
   /**
-   * A path whose copy is written but which is not running yet: it opens and
-   * reads like any other, but the closing ask is "tell us you want it"
+   * A path whose copy is written but which is not running yet: the card and
+   * panel read like any other, but the closing ask is "tell us you want it"
    * rather than "book a round".
    */
-  soonCardCue: "ดูแพลน แล้วบอกเราว่าอยากได้ →",
   soonCtaPrefix: "ทัก IG บอกว่าอยากให้เปิดสาย",
   soonPrice: "ยังไม่เปิดรอบ ทักมาบอกได้ว่าสนใจ เราจะเปิดให้เมื่อมีคนพอ",
   /** Sits above the days so the plan is never mistaken for a live round. */

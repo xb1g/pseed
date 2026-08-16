@@ -53,9 +53,7 @@ export function FieldCardTile({ field, onOpen, isOpen }: FieldCardTileProps) {
       )}
       {field.detail && (
         <span className="pathlab-fields__cue" aria-hidden="true">
-          {field.comingSoon
-            ? FIELD_DETAIL_LABELS.soonCardCue
-            : FIELD_DETAIL_LABELS.cardCue}
+          {FIELD_DETAIL_LABELS.cardCue}
         </span>
       )}
     </div>
