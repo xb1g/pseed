@@ -96,7 +96,7 @@ export function MilestoneMapView({ projectId, onBack }: MilestoneMapViewProps) {
   }, [loadData]);
 
   // Handle milestone selection
-  const handleMilestoneSelect = useCallback((milestone: ProjectMilestone) => {
+  const handleMilestoneSelect = useCallback((milestone: ProjectMilestone | null) => {
     setSelectedMilestone(milestone);
   }, []);
 
@@ -223,17 +223,17 @@ export function MilestoneMapView({ projectId, onBack }: MilestoneMapViewProps) {
 
       {project.metadata?.milestone_north_star && (
         <CreateMilestoneNorthStarDialog
-          isOpen={isNorthStarDialogOpen}
-          onClose={() => setIsNorthStarDialogOpen(false)}
-          existingNorthStar={project.metadata.milestone_north_star}
-          onSave={async (northStar) => {
-            try {
-              await loadData();
-              toast.success("North Star updated");
-            } catch (error) {
+          open={isNorthStarDialogOpen}
+          onOpenChange={setIsNorthStarDialogOpen}
+          projectId={project.id}
+          projectTitle={project.title}
+          existingMilestoneNorthStar={project.metadata.milestone_north_star}
+          onSuccess={() => {
+            loadData().catch((error) => {
               console.error("Error updating north star:", error);
               toast.error("Failed to update North Star");
-            }
+            });
+            toast.success("North Star updated");
           }}
         />
       )}
