@@ -22,9 +22,8 @@ export interface PortfolioUploadedData {
   total_size_kb: number;
 }
 
-export interface InterestQuizStartedData {
-  // Empty payload
-}
+// Empty payload
+export type InterestQuizStartedData = Record<string, never>;
 
 export interface InterestQuizCompletedData {
   top_interests: string[];
