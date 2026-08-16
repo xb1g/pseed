@@ -74,18 +74,89 @@ const WEB_DEV_JOURNEY: JourneyDay[] = [
   },
 ];
 
+const STARTUP_JOURNEY: JourneyDay[] = [
+  {
+    day: 1,
+    stops: [
+      {
+        id: "su-1",
+        title: "ล่าปัญหา & Customer Discovery",
+        sprite_url: "/islands/crystal.png",
+        difficulty: 1,
+        node_type: "learning",
+      },
+    ],
+  },
+  {
+    day: 2,
+    stops: [
+      {
+        id: "su-2",
+        title: "Lean Canvas & Unit Economics",
+        sprite_url: "/islands/desert.png",
+        difficulty: 2,
+        node_type: "learning",
+      },
+    ],
+  },
+  {
+    day: 3,
+    stops: [
+      {
+        id: "su-3",
+        title: "สร้าง MVP & Rapid Prototype",
+        sprite_url: "/islands/winter.png",
+        difficulty: 2,
+        node_type: "learning",
+      },
+    ],
+  },
+  {
+    day: 4,
+    stops: [
+      {
+        id: "su-4",
+        title: "First 100 Users & Traction",
+        sprite_url: "/islands/crystal.png",
+        difficulty: 3,
+        node_type: "learning",
+      },
+    ],
+  },
+  {
+    day: 5,
+    stops: [
+      {
+        id: "su-5",
+        title: "Pitch Day & Launch",
+        sprite_url: "/islands/desert.png",
+        difficulty: 3,
+        node_type: "end",
+      },
+    ],
+  },
+];
+
 const BY_ID: Record<string, JourneyDay[]> = {
   // Trail Demo seed map
   "00000000-0000-0000-0000-000000000010": WEB_DEV_JOURNEY,
 };
 
 const BY_TITLE: Record<string, JourneyDay[]> = {
-  "Expert PathLabs": WEB_DEV_JOURNEY,
+  "Expert PathLabs": STARTUP_JOURNEY,
+  "Startup PathLab": STARTUP_JOURNEY,
+  "LaunchPad": STARTUP_JOURNEY,
+  "Web Developer PathLab": WEB_DEV_JOURNEY,
 };
 
 export function getLobbyJourneyOverride(
   mapId: string,
   mapTitle?: string | null
 ): JourneyDay[] | null {
-  return BY_ID[mapId] ?? (mapTitle ? (BY_TITLE[mapTitle] ?? null) : null);
+  if (BY_ID[mapId]) return BY_ID[mapId];
+  if (!mapTitle) return STARTUP_JOURNEY;
+  if (BY_TITLE[mapTitle]) return BY_TITLE[mapTitle];
+  if (/startup|ธุรกิจ|launchpad/i.test(mapTitle)) return STARTUP_JOURNEY;
+  if (/web|frontend|coding|code/i.test(mapTitle)) return WEB_DEV_JOURNEY;
+  return STARTUP_JOURNEY;
 }

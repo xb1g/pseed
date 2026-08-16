@@ -7,7 +7,8 @@ import { joinLobbyByCode } from "@/lib/api/lobbies-client";
 import { JOIN_LOBBY_ERROR } from "@/types/lobby";
 import { useAuth } from "@/hooks/use-auth";
 import type { JourneyDay } from "@/lib/utils/map-journey";
-import { WEB_DEV_PATH, type PathDay } from "@/lib/content/web-dev-path";
+import { WEB_DEV_PATH, type PathDay, type PathContent } from "@/lib/content/web-dev-path";
+import { STARTUP_PATH } from "@/lib/content/startup-path";
 import { Lock, MapPin, Check } from "lucide-react";
 
 export interface MapPreview {
@@ -27,12 +28,23 @@ interface LobbyCodeGateProps {
   onJoined: () => void;
 }
 
-/**
- * The map's node titles are still placeholder data, so the page shows the
- * authored Web Developer curriculum instead of the derived path graph. Swap
- * this back to `map.journey` once maps carry real per-node content.
- */
-const PATH = WEB_DEV_PATH;
+/** Resolves the curriculum content to display for the given map preview. */
+function getPathContent(map: MapPreview): PathContent {
+  const title = map.title.toLowerCase();
+  const category = (map.category ?? "").toLowerCase();
+
+  if (
+    title.includes("web") ||
+    title.includes("เว็บ") ||
+    title.includes("frontend") ||
+    category.includes("web") ||
+    category.includes("code")
+  ) {
+    return WEB_DEV_PATH;
+  }
+
+  return STARTUP_PATH;
+}
 
 /** Normalizes anything typed or pasted into a 6-char join code. */
 const normalizeCode = (raw: string): string =>
@@ -81,6 +93,7 @@ export function LobbyCodeGate({ map, onJoined }: LobbyCodeGateProps) {
 
   const isSignedOut = !authLoading && !isAuthenticated;
   const canSubmit = code.length === 6 && !isLoading;
+  const path = getPathContent(map);
 
   return (
     <div className="min-h-screen dusk-theme relative overflow-x-hidden">
@@ -98,11 +111,11 @@ export function LobbyCodeGate({ map, onJoined }: LobbyCodeGateProps) {
 
       <main className="lobby-plate relative z-10 mx-auto w-full max-w-xl px-5 pt-12 pb-20 sm:pt-16">
         <div className="lobby-rise">
-          <PathHeader map={map} />
+          <PathHeader map={map} path={path} />
         </div>
 
         <div className="lobby-rise mt-10" style={{ animationDelay: "90ms" }}>
-          <DayList days={PATH.days} />
+          <DayList days={path.days} />
         </div>
 
         <div className="lobby-rise mt-10" style={{ animationDelay: "180ms" }}>
@@ -126,7 +139,7 @@ export function LobbyCodeGate({ map, onJoined }: LobbyCodeGateProps) {
 /* Header: what you end up with, stated first                          */
 /* ------------------------------------------------------------------ */
 
-function PathHeader({ map }: { map: MapPreview }) {
+function PathHeader({ map, path }: { map: MapPreview; path: PathContent }) {
   return (
     <header>
       {/* Cover art is a band, not a card lid: the page is a document, not a
@@ -150,31 +163,31 @@ function PathHeader({ map }: { map: MapPreview }) {
       </div>
 
       <h1 className="mt-6 text-[1.75rem] sm:text-4xl font-bold leading-[1.15] tracking-tight text-white text-balance">
-        {PATH.titleTh}
+        {path.titleTh}
       </h1>
       <p className="mt-1 text-sm font-medium text-amber-300/80">
-        {PATH.titleEn}
+        {path.titleEn}
       </p>
 
       <p className="mt-4 max-w-[62ch] text-[0.9375rem] leading-7 text-slate-300 text-pretty">
-        {PATH.taglineTh}
+        {path.taglineTh}
       </p>
 
       {/* Three facts inline as a sentence-like row, not a metric grid. */}
       <dl className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-[0.8125rem] text-slate-400">
         <div className="flex items-center gap-1.5">
           <dt className="sr-only">ระยะเวลา</dt>
-          <dd className="font-semibold text-white">{PATH.days.length} วัน</dd>
+          <dd className="font-semibold text-white">{path.days.length} วัน</dd>
         </div>
         <span aria-hidden="true" className="h-3 w-px bg-white/15" />
         <div className="flex items-center gap-1.5">
           <dt className="sr-only">เวลาต่อวัน</dt>
-          <dd>{PATH.hoursPerDay}</dd>
+          <dd>{path.hoursPerDay}</dd>
         </div>
         <span aria-hidden="true" className="h-3 w-px bg-white/15" />
         <div className="flex items-center gap-1.5">
           <dt className="sr-only">ระดับ</dt>
-          <dd>{PATH.level}</dd>
+          <dd>{path.level}</dd>
         </div>
       </dl>
 
@@ -185,7 +198,7 @@ function PathHeader({ map }: { map: MapPreview }) {
           className="mt-1 h-4 w-4 shrink-0 text-amber-400"
           aria-hidden="true"
         />
-        <span className="text-pretty">{PATH.outcomeTh}</span>
+        <span className="text-pretty">{path.outcomeTh}</span>
       </p>
     </header>
   );
