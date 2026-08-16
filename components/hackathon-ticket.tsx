@@ -39,7 +39,7 @@ export function HackathonTicket({
   // Glow intensity based on mouse distance from center
   const glowOpacity = useTransform(
     [mouseX, mouseY],
-    ([latestX, latestY]) => {
+    ([latestX, latestY]: number[]) => {
       const distance = Math.sqrt(latestX * latestX + latestY * latestY);
       return 0.3 + distance * 0.4;
     }

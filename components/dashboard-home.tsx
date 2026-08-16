@@ -67,9 +67,16 @@ type EnrolledMapWithStats = MapWithStats & {
 export function DashboardHome({ user }: DashboardHomeProps) {
   const { enrolledMaps, availableMaps, isLoading, error } = useProgressMaps();
 
+  // Discriminate the union: EnrolledMapWithStats carries enrollment +
+  // realTimeProgress, plain MapWithStats does not.
+  const isEnrolledMap = (
+    map: MapWithStats | EnrolledMapWithStats
+  ): map is EnrolledMapWithStats =>
+    map.isEnrolled === true && "realTimeProgress" in map && "enrollment" in map;
+
   const getProgressStatus = (map: MapWithStats | EnrolledMapWithStats) => {
     // For enrolled maps with real-time progress, use the calculated progress
-    if ("isEnrolled" in map && map.isEnrolled && map.realTimeProgress) {
+    if (isEnrolledMap(map) && map.realTimeProgress) {
       const progress = map.realTimeProgress.progressPercentage;
       const { passedNodes, failedNodes, submittedNodes, inProgressNodes } =
         map.realTimeProgress;
@@ -87,7 +94,7 @@ export function DashboardHome({ user }: DashboardHomeProps) {
     }
 
     // For enrolled maps without real-time progress (fallback), use enrollment progress
-    if ("isEnrolled" in map && map.isEnrolled) {
+    if (isEnrolledMap(map)) {
       const progress = map.enrollment.progress_percentage;
       if (progress === 0) return { status: "Not Started", progress: 0 };
       if (progress < 100) return { status: "In Progress", progress };

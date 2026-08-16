@@ -66,7 +66,7 @@ export function UserPortal({ dashboardData }: UserPortalProps) {
   useEffect(() => {
     const fetchReflections = async () => {
       try {
-        const data = await getMindmapReflections(20);
+        const data = (await getMindmapReflections(20)) as MindmapReflection[];
 
         const deduplicatedReflections = (data || []).reduce(
           (acc, reflection) => {
@@ -87,7 +87,7 @@ export function UserPortal({ dashboardData }: UserPortalProps) {
 
         const uniqueReflections = Array.from(deduplicatedReflections.values())
           .sort(
-            (a, b) =>
+            (a: MindmapReflection, b: MindmapReflection) =>
               new Date(b.created_at).getTime() -
               new Date(a.created_at).getTime()
           )
