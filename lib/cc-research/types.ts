@@ -227,6 +227,7 @@ export interface CcDashboardPayload {
   leads: CcLeadRow[];
   outreachAttempts: CcOutreachAttempt[];
   interviews: CcInterview[];
+  feedbackEvents: CcFeedbackEvent[];
   funnel: CcFunnelPoint[];
   scoreBandDistribution: Record<string, number>;
   responseStateDistribution: Record<string, number>;

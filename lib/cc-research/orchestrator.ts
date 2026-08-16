@@ -757,7 +757,9 @@ export async function updateCcCampaign(campaignId: string, input: Partial<Create
       .slice(0, 72);
   }
   if (parsed.filters !== undefined) {
-    payload.filters = normalizeFilters(parsed.filters as CcLeadDiscoveryFilters);
+    // updateCampaignSchema declares filters as z.record(z.unknown()), so bridge
+    // the unknown record to the filter shape normalizeFilters expects.
+    payload.filters = normalizeFilters(parsed.filters as unknown as CcLeadDiscoveryFilters);
   }
   if (parsed.activeWeights !== undefined) {
     payload.active_weights = normalizeWeights(parsed.activeWeights as Partial<CcICPWeights>);

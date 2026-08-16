@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createCcCampaign, listCcCampaigns, updateCcCampaign } from "@/lib/cc-research/orchestrator";
-import { createCampaignSchema, type CreateCampaignInput } from "@/lib/cc-research/schema";
+import {
+  createCampaignSchema,
+  filtersSchema,
+  normalizedWeightsSchema,
+  type CreateCampaignInput,
+} from "@/lib/cc-research/schema";
 import { requireCCResearchAccess } from "@/lib/cc-research/auth";
 import { z } from "zod";
 
@@ -10,8 +15,9 @@ const campaignUpsertSchema = z.object({
   goal: z.string().max(200).optional(),
   state: z.enum(["draft", "active", "paused", "completed", "archived"]).optional(),
   slug: z.string().trim().min(3).max(80).optional(),
-  filters: z.record(z.unknown()).optional(),
-  activeWeights: z.record(z.number()).optional(),
+  // Reuse the shared schemas so the upsert payload matches CreateCampaignInput.
+  filters: filtersSchema.optional(),
+  activeWeights: normalizedWeightsSchema.partial().optional(),
 });
 
 export async function GET() {

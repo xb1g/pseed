@@ -3,7 +3,8 @@ import { createClient } from "@/utils/supabase/server";
 
 export interface CcAuthResult {
   authorized: boolean;
-  status: 200 | 401 | 403;
+  // 500 covers the role-lookup-failure path below.
+  status: 200 | 401 | 403 | 500;
   error: string | null;
   supabase?: SupabaseClient;
   userId?: string;

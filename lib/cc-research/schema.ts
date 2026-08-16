@@ -34,9 +34,14 @@ export const leadStatusSchema = z.enum([
   "disqualified",
 ]);
 
-export const outreachChannelSchema: z.ZodType<CcOutreachChannel> = z.enum(["email", "linkedin"]);
+// Note: these schemas intentionally avoid explicit `: z.ZodType<T>` annotations.
+// Annotating erases zod's input/output inference — the transforms below make
+// input optional but output required, and the bare ZodObject methods
+// (.partial()) disappear. Let zod infer; the exported types stay in sync via
+// the consumers in types.ts.
+export const outreachChannelSchema = z.enum(["email", "linkedin"]);
 
-export const campaignStateSchema: z.ZodType<CcCampaignState> = z.enum([
+export const campaignStateSchema = z.enum([
   "draft",
   "active",
   "paused",
@@ -44,7 +49,7 @@ export const campaignStateSchema: z.ZodType<CcCampaignState> = z.enum([
   "archived",
 ]);
 
-const filtersSchema: z.ZodType<CcLeadDiscoveryFilters> = z.object({
+export const filtersSchema = z.object({
   geographies: z.array(z.string().trim().toLowerCase()).default([]).transform((values) =>
     values.filter((value) => value.length > 0)
   ),
@@ -56,7 +61,7 @@ const filtersSchema: z.ZodType<CcLeadDiscoveryFilters> = z.object({
   personaSegments: z.array(personaSchema).optional(),
 });
 
-const scoreDimensionSchema: z.ZodType<Record<CcScoreDimensionKey, number>> = z.object({
+const scoreDimensionSchema = z.object({
   studentScale: z.number().positive(),
   advisorStaffing: z.number().positive(),
   careerTransitionLanguage: z.number().positive(),
@@ -64,7 +69,7 @@ const scoreDimensionSchema: z.ZodType<Record<CcScoreDimensionKey, number>> = z.o
   easeOfContact: z.number().positive(),
 });
 
-const normalizedWeightsSchema: z.ZodType<CcICPWeights> = z.object({
+export const normalizedWeightsSchema = z.object({
   studentScale: z.number().min(0).max(100),
   advisorStaffing: z.number().min(0).max(100),
   careerTransitionLanguage: z.number().min(0).max(100),
@@ -94,7 +99,8 @@ const seedLeadSchema = z.object({
 
 export const createCampaignSchema = z.object({
   title: z.string().min(3).max(120),
-  goal: z.string().max(200).optional(),
+  // Nullable: updates may clear the goal by sending null.
+  goal: z.string().max(200).nullable().optional(),
   state: campaignStateSchema.optional(),
   slug: z.string().trim().min(3).max(80).optional(),
   filters: filtersSchema.optional(),

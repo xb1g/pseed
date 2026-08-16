@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCcCampaign, updateCcCampaign } from "@/lib/cc-research/orchestrator";
+import { filtersSchema, normalizedWeightsSchema } from "@/lib/cc-research/schema";
 import { requireCCResearchAccess } from "@/lib/cc-research/auth";
 import { z } from "zod";
 
@@ -8,8 +9,9 @@ const patchCampaignSchema = z.object({
   goal: z.string().max(200).nullable().optional(),
   state: z.enum(["draft", "active", "paused", "completed", "archived"]).optional(),
   slug: z.string().trim().min(3).max(80).optional(),
-  filters: z.record(z.unknown()).optional(),
-  activeWeights: z.record(z.number()).optional(),
+  // Reuse the shared schemas so the patch payload matches the update input.
+  filters: filtersSchema.optional(),
+  activeWeights: normalizedWeightsSchema.partial().optional(),
 });
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ campaignId: string }> }) {
