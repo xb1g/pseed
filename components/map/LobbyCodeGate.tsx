@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useCallback, Suspense, FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { joinLobbyByCode } from "@/lib/api/lobbies-client";
 import { JOIN_LOBBY_ERROR } from "@/types/lobby";
@@ -34,17 +34,24 @@ interface LobbyCodeGateProps {
  */
 const PATH = WEB_DEV_PATH;
 
+/** Normalizes anything typed or pasted into a 6-char join code. */
+const normalizeCode = (raw: string): string =>
+  raw.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+
 export function LobbyCodeGate({ map, onJoined }: LobbyCodeGateProps) {
-  const [code, setCode] = useState("");
+  // A shared join link (/map/<id>?code=ABC123) prefills the field, so the
+  // student only has to press the button.
+  const searchParams = useSearchParams();
+  const [code, setCode] = useState(() =>
+    normalizeCode(searchParams.get("code") ?? "")
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const raw = e.target.value;
-      const upper = raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
-      setCode(upper.slice(0, 6));
+      setCode(normalizeCode(e.target.value));
       if (error) setError(null);
     },
     [error]
@@ -329,7 +336,7 @@ function CodeEntryCard({
         )}
 
         {isSignedOut ? (
-          <SignInButton mapId={mapId} />
+          <SignInButton mapId={mapId} code={code} />
         ) : (
           <button
             type="submit"
@@ -353,14 +360,19 @@ function CodeEntryCard({
 
 interface SignInButtonProps {
   mapId: string;
+  code: string;
 }
 
-function SignInButton({ mapId }: SignInButtonProps) {
+function SignInButton({ mapId, code }: SignInButtonProps) {
   const router = useRouter();
+  // Carry the code through login so the link keeps working after sign-in.
+  const target = code
+    ? `/map/${mapId}?code=${encodeURIComponent(code)}`
+    : `/map/${mapId}`;
   return (
     <button
       type="button"
-      onClick={() => router.push(`/login?redirect=/map/${mapId}`)}
+      onClick={() => router.push(`/login?redirect=${encodeURIComponent(target)}`)}
       className="ei-button-dusk w-full justify-center"
     >
       เข้าสู่ระบบเพื่อเริ่ม
@@ -374,5 +386,10 @@ interface LobbyCodeGateWrapperProps {
 
 export function LobbyCodeGateWrapper({ map }: LobbyCodeGateWrapperProps) {
   const router = useRouter();
-  return <LobbyCodeGate map={map} onJoined={() => router.refresh()} />;
+  // useSearchParams (join-link prefill) needs a suspense boundary above it.
+  return (
+    <Suspense fallback={null}>
+      <LobbyCodeGate map={map} onJoined={() => router.refresh()} />
+    </Suspense>
+  );
 }

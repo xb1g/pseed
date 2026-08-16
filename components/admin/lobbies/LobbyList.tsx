@@ -202,11 +202,22 @@ export function LobbyList({ mapId, onSelect }: LobbyListProps) {
     }
   };
 
-  const handleCopyCode = async (code: string) => {
+  /** The link students open: the map gate with the code prefilled. */
+  const buildJoinLink = useCallback(
+    (code: string) =>
+      `${window.location.origin}/map/${mapId}?code=${encodeURIComponent(code)}`,
+    [mapId]
+  );
+
+  const handleCopyLink = async (code: string) => {
     try {
-      await navigator.clipboard.writeText(code);
+      await navigator.clipboard.writeText(buildJoinLink(code));
       setCopiedCode(code);
       setTimeout(() => setCopiedCode(null), 2000);
+      toast({
+        title: "Join link copied",
+        description: "Paste it to invite students straight into this room.",
+      });
     } catch {
       toast({
         title: "Copy failed",
@@ -298,16 +309,22 @@ export function LobbyList({ mapId, onSelect }: LobbyListProps) {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleCopyCode(lobby.join_code);
+                          handleCopyLink(lobby.join_code);
                         }}
-                        className="p-1 rounded hover:bg-white/10 transition-colors"
-                        aria-label="Copy join code"
-                        title="Copy join code"
+                        className="inline-flex items-center gap-1 rounded px-1.5 py-1 text-[11px] text-slate-400 transition-colors hover:bg-white/10 hover:text-slate-200"
+                        aria-label="Copy join link"
+                        title="Copy join link"
                       >
                         {copiedCode === lobby.join_code ? (
-                          <Check className="h-3 w-3 text-green-400" />
+                          <>
+                            <Check className="h-3 w-3 text-green-400" />
+                            Copied
+                          </>
                         ) : (
-                          <Copy className="h-3 w-3 text-slate-400" />
+                          <>
+                            <Copy className="h-3 w-3" />
+                            Copy link
+                          </>
                         )}
                       </button>
                     </div>
