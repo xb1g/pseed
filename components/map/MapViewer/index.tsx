@@ -6,6 +6,7 @@ import {
   useEdgesState,
   OnSelectionChangeParams,
   ReactFlowProvider,
+  type Node,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -25,7 +26,8 @@ import {
 } from "@/lib/supabase/maps";
 
 // Import refactored modules
-import { MapViewerProps, MapViewerNode, UserRole, PanelRefs } from "./types";
+import { MapViewerProps, MapViewerNode, MapViewerEdge, UserRole, PanelRefs } from "./types";
+import type { MapNode } from "@/types/map";
 import { PANEL_SIZES } from "./constants";
 import { GameNode } from "./components/GameNode";
 import { NavigationGuide } from "./components/NavigationGuide";
@@ -151,8 +153,8 @@ function MapViewer({ map, seedRoomId, seedTitle, seedId }: MapViewerProps) {
     ),
   };
 
-  const [reactFlowNodes, setNodes, onNodesChange] = useNodesState([]);
-  const [reactFlowEdges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [reactFlowNodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [reactFlowEdges, setEdges, onEdgesChange] = useEdgesState<MapViewerEdge>([]);
 
   // Transform and set nodes/edges when dependencies change
   useEffect(() => {
@@ -186,7 +188,7 @@ function MapViewer({ map, seedRoomId, seedTitle, seedId }: MapViewerProps) {
       };
     });
 
-    const transformedEdges = [];
+    const transformedEdges: MapViewerEdge[] = [];
     map.map_nodes.forEach((node) => {
       node.node_paths_source.forEach((path) => {
         const sourceProgress = progressMap[path.source_node_id];

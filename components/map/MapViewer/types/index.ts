@@ -72,9 +72,11 @@ export interface MapViewerEdge extends Edge {
 }
 
 // Panel management
+// RefObject<T | null> matches React 19's useRef<T>(null), which types the
+// ref's current value as nullable until the panel mounts.
 export interface PanelRefs {
-  left: React.RefObject<ImperativePanelHandle>;
-  right: React.RefObject<ImperativePanelHandle>;
+  left: React.RefObject<ImperativePanelHandle | null>;
+  right: React.RefObject<ImperativePanelHandle | null>;
 }
 
 // Component state
