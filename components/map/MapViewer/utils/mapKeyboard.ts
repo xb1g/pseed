@@ -47,7 +47,7 @@ export function isPlainCharacterKey(event: KeyboardEvent): boolean {
   const hasModifier = event.metaKey || event.ctrlKey || event.altKey;
   
   // Do not intercept plain character keys like "f" without a modifier
-  return key && key.length === 1 && !hasModifier;
+  return !!key && key.length === 1 && !hasModifier;
 }
 
 /**

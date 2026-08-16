@@ -4,7 +4,8 @@
 
 import { Node, Edge } from "@xyflow/react";
 import { ImperativePanelHandle } from "react-resizable-panels";
-import { FullLearningMap, MapNode } from "@/lib/supabase/maps";
+import { FullLearningMap } from "@/lib/supabase/maps";
+import { MapNode } from "@/types/map";
 import { StudentProgress } from "@/lib/supabase/progresses";
 import { TeamNodeProgress, TeamMemberProgress } from "@/lib/supabase/team-progress";
 
