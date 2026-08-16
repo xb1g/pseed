@@ -16,9 +16,7 @@ investigate and fix.
 
 ## Scope
 
-The live application at [www.passionseed.org](https://www.passionseed.org)
-and everything in this repository, including the hackathon subsystem and
-API routes under `app/api/`.
+The live application at [www.passionseed.org](https://www.passionseed.org) and everything in this repository, including the hackathon subsystem and API routes under `app/api/`.
 
 ## Notes for researchers
 
