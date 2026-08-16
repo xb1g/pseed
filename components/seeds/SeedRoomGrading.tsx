@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GradeCell } from "@/components/classroom/GradeCell";
+import { markdownToSafeHtml } from "@/lib/security/sanitize-html";
 import {
   Search,
   Award,
@@ -593,9 +594,12 @@ export function SeedRoomGrading({ roomId, mapId }: SeedRoomGradingProps) {
                   {selectedSubmission.text_answer && (
                     <div>
                       <Label className="font-medium text-neutral-300">Text Answer:</Label>
-                      <div className="mt-2 p-3 bg-neutral-900 rounded-md text-neutral-100">
-                        {selectedSubmission.text_answer}
-                      </div>
+                      <div
+                        className="learning-content-text mt-2 p-3 bg-neutral-900 rounded-md"
+                        dangerouslySetInnerHTML={{
+                          __html: markdownToSafeHtml(selectedSubmission.text_answer),
+                        }}
+                      />
                     </div>
                   )}
 

@@ -80,6 +80,11 @@ export function sanitizeHtml(input: string): string {
 
 export function markdownToSafeHtml(markdown: string): string {
   // marked.parse can be async by default in newer versions, force sync.
-  const rendered = marked.parse(markdown ?? "", { async: false }) as string;
+  // GFM + breaks so plain-text answers with newlines and bare links render well.
+  const rendered = marked.parse(markdown ?? "", {
+    async: false,
+    gfm: true,
+    breaks: true,
+  }) as string;
   return sanitizeHtml(rendered);
 }

@@ -18,7 +18,9 @@ import {
   UserCheck,
   Circle,
   X,
+  Paperclip,
 } from "lucide-react";
+import { RichTextEditor } from "@/components/map/RichTextEditor";
 import {
   NodeAssessment,
   QuizQuestion,
@@ -355,6 +357,11 @@ export function AssessmentSection({
     setFileSizeError(null); // Clear any previous file size error
   };
 
+  const removeFile = (index: number) => {
+    setFileUrls((prev) => prev.filter((_, i) => i !== index));
+    setFileNames((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleFileSizeError = (error: string) => {
     setFileSizeError(error);
     // Also clear the file required error since we're showing a different error
@@ -663,7 +670,7 @@ export function AssessmentSection({
                         .map((member) => (
                           <p
                             key={member.user_id}
-                            className="text-xs text-blue-600"
+                            className="text-xs text-amber-300"
                           >
                             •{" "}
                             {member.full_name ||
@@ -690,18 +697,18 @@ export function AssessmentSection({
               {(assessment.metadata?.question ||
                 assessment.metadata?.prompt ||
                 assessment.metadata?.quiz_description) && (
-                <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg">
+                <div className="p-4 border border-amber-200/20 bg-amber-200/[0.05] rounded-lg">
                   <div className="flex gap-3">
                     <div className="flex-shrink-0">
-                      <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+                      <AlertCircle className="h-5 w-5 text-amber-300 mt-0.5" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-semibold text-blue-900 mb-2">
+                      <p className="font-semibold text-amber-100 mb-2">
                         {assessment.assessment_type === "quiz"
                           ? "Quiz Instructions"
                           : "Assessment Instructions"}
                       </p>
-                      <div className="text-sm text-blue-800 whitespace-pre-wrap space-y-2">
+                      <div className="text-sm text-stone-300 whitespace-pre-wrap space-y-2">
                         {assessment.metadata?.question && (
                           <p>{assessment.metadata.question}</p>
                         )}
@@ -720,9 +727,9 @@ export function AssessmentSection({
 
               {/* Attempt Information */}
               {submissionsWithGrades.length === 0 && (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center gap-2 text-sm text-blue-700">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <div className="p-3 bg-amber-200/[0.06] border border-amber-200/20 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-amber-100/90">
+                    <div className="w-2 h-2 bg-amber-300 rounded-full"></div>
                     {!(assessment.metadata?.allow_multiple_attempts ?? true) ? (
                       <span>Single attempt assessment - submit carefully</span>
                     ) : (
@@ -743,12 +750,52 @@ export function AssessmentSection({
                   <label className="text-sm font-medium text-foreground">
                     Your Answer
                   </label>
-                  <Textarea
-                    value={assessmentAnswer}
-                    onChange={(e) => setAssessmentAnswer(e.target.value)}
-                    placeholder="Type your detailed answer here..."
-                    className="min-h-[120px] resize-y"
+                  <RichTextEditor
+                    nodeId={nodeId}
+                    content={assessmentAnswer}
+                    onChange={setAssessmentAnswer}
+                    placeholder="Write your answer… select text to format, paste an image to embed it"
                   />
+
+                  {/* Attachments ride along with the text answer */}
+                  <FileUpload
+                    compact
+                    nodeId={nodeId}
+                    onUploadComplete={handleFileUpload}
+                    onValidationError={handleFileSizeError}
+                    onUploadStateChange={setIsUploading}
+                    accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.heic,.heif,.txt,.zip,.json,.csv"
+                    maxSize={10}
+                    disabled={isSubmitting}
+                    allowMultiple={true}
+                  />
+                  {fileUrls.length > 0 && (
+                    <ul className="space-y-1">
+                      {fileUrls.map((url, index) => (
+                        <li
+                          key={url}
+                          className="flex items-center gap-2 text-xs text-muted-foreground"
+                        >
+                          <Paperclip className="h-3 w-3 shrink-0" />
+                          <span className="min-w-0 flex-1 truncate">
+                            {fileNames[index] || url}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeFile(index)}
+                            disabled={isSubmitting}
+                            aria-label={`Remove ${fileNames[index] || "file"}`}
+                            className="shrink-0 rounded p-0.5 hover:bg-muted hover:text-foreground"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Write, paste images, add links, attach files: any mix works.
+                  </p>
                 </div>
               )}
 
@@ -921,6 +968,25 @@ export function AssessmentSection({
                   <p className="text-xs text-muted-foreground">
                     You can upload multiple images. Each image must be under 10MB.
                   </p>
+                </div>
+              )}
+
+              {/* File submissions can carry a written note too */}
+              {(assessment.assessment_type === "file_upload" ||
+                assessment.assessment_type === "image_upload") && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Note for your reviewer{" "}
+                    <span className="font-normal text-muted-foreground">
+                      (optional)
+                    </span>
+                  </label>
+                  <Textarea
+                    value={assessmentAnswer}
+                    onChange={(e) => setAssessmentAnswer(e.target.value)}
+                    placeholder="Context, links, what to look at…"
+                    className="min-h-[70px] resize-y"
+                  />
                 </div>
               )}
 

@@ -23,12 +23,19 @@ interface MapEnrollmentTrackerProps {
    * one lobby" invariant the lobby feature depends on.
    */
   skipAutoEnroll?: boolean;
+  /**
+   * Admins bypass the lobby gate and are never auto-enrolled, so they never see
+   * the welcome experience organically. They get a quiet "Replay welcome"
+   * button instead (clears the seen-gate and reopens it) for previewing.
+   */
+  isAdmin?: boolean;
 }
 
 export function MapEnrollmentTracker({
   map,
   children,
   skipAutoEnroll = false,
+  isAdmin = false,
 }: MapEnrollmentTrackerProps) {
   const [isCheckingEnrollment, setIsCheckingEnrollment] = useState(true);
   const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
@@ -108,9 +115,30 @@ export function MapEnrollmentTracker({
     }
   }, [justEnrolled]);
 
+  const tourSeenKey = `map-welcome-tour-seen:${map.id}`;
+
+  // Admin preview: forget the seen-gate and reopen the welcome experience.
+  const replayWelcome = () => {
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(tourSeenKey);
+    }
+    setShowWelcomeDialog(true);
+  };
+
   return (
     <>
       {children}
+
+      {/* Admin-only replay control; sits under the welcome overlay (z-[60]) */}
+      {isAdmin && !showWelcomeDialog && (
+        <button
+          type="button"
+          onClick={replayWelcome}
+          className="fixed bottom-4 right-4 z-40 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-400 backdrop-blur transition-colors hover:text-slate-200"
+        >
+          Replay welcome
+        </button>
+      )}
 
       {/* Welcome experience for first-time visitors */}
       <MapWelcomeExperience
@@ -118,10 +146,7 @@ export function MapEnrollmentTracker({
         onOpenChange={(open) => {
           if (!open && typeof window !== "undefined") {
             // Remember that the user skipped/finished the tour
-            window.localStorage.setItem(
-              `map-welcome-tour-seen:${map.id}`,
-              "true"
-            );
+            window.localStorage.setItem(tourSeenKey, "true");
           }
           setShowWelcomeDialog(open);
         }}

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getMapWithNodesServer } from "@/lib/supabase/maps-server";
 import { getSubmissionsForMapServer } from "@/lib/supabase/grading-server";
+import { getLobbyMembershipsForMap } from "@/lib/supabase/lobbies";
 import { createClient } from "@/utils/supabase/server";
 import { isInstructor } from "@/lib/supabase/roles";
 import { GradingTable } from "./grading-table";
@@ -37,9 +38,10 @@ export default async function GradingPage({
   const searchParamsResolved = await searchParams;
   const assignmentId = searchParamsResolved.assignment as string | undefined;
 
-  const [submissions, map] = await Promise.all([
+  const [submissions, map, lobbyMemberships] = await Promise.all([
     getSubmissionsForMapServer(mapId),
     getMapWithNodesServer(mapId),
+    getLobbyMembershipsForMap(mapId),
   ]);
 
   if (!map) {
@@ -285,6 +287,9 @@ export default async function GradingPage({
             userId={user.id}
             mapId={mapId}
             assignmentId={assignmentId}
+            roomByUserId={Object.fromEntries(
+              lobbyMemberships.map((m) => [m.user_id, m.lobby_name])
+            )}
           />
         </CardContent>
       </Card>

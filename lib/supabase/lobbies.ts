@@ -143,6 +143,50 @@ export const getLobbyRoster = async (
   });
 };
 
+/** One lobby membership row, scoped to a map: who is in which room. */
+export interface LobbyMembershipForMap {
+  user_id: string;
+  lobby_id: string;
+  lobby_name: string;
+}
+
+/**
+ * Grading: every lobby membership for a map, with the lobby name. One query;
+ * callers join it to submissions client-side by user id. Returns an empty
+ * list on error so grading still works without room info.
+ */
+export const getLobbyMembershipsForMap = async (
+  mapId: string
+): Promise<LobbyMembershipForMap[]> => {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("lobby_members")
+    .select("user_id, lobby_id, map_lobbies!inner(name, map_id)")
+    .eq("map_lobbies.map_id", mapId);
+
+  if (error) {
+    console.error("Error fetching lobby memberships:", error);
+    return [];
+  }
+
+  return (data ?? []).map((row) => {
+    const r = row as {
+      user_id: string;
+      lobby_id: string;
+      map_lobbies: { name: string }[] | { name: string } | null;
+    };
+    const lobby = Array.isArray(r.map_lobbies)
+      ? r.map_lobbies[0]
+      : r.map_lobbies;
+    return {
+      user_id: r.user_id,
+      lobby_id: r.lobby_id,
+      lobby_name: lobby?.name ?? "Unnamed room",
+    };
+  });
+};
+
 /**
  * Admin: open or close a lobby. Closing blocks NEW joins only -- existing
  * members keep their access.

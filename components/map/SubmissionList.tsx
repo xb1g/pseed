@@ -234,17 +234,24 @@ export function SubmissionList({
                 Submitted: {new Date(submission.submitted_at).toLocaleDateString()}
               </div>
 
-              {/* Quick preview */}
+              {/* Quick preview — strip markdown syntax so the snippet reads clean */}
               {submission.text_answer && (
-                <div className="mt-2 text-sm text-gray-600 line-clamp-2">
-                  {submission.text_answer.length > 80
-                    ? `${submission.text_answer.substring(0, 80)}...`
-                    : submission.text_answer}
+                <div className="mt-2 text-sm text-stone-400 line-clamp-2">
+                  {(() => {
+                    const plain = submission.text_answer
+                      .replace(/<[^>]*>/g, " ")
+                      .replace(/[#*>`_\[\]()!~-]/g, "")
+                      .replace(/\s+/g, " ")
+                      .trim();
+                    return plain.length > 80
+                      ? `${plain.substring(0, 80)}...`
+                      : plain;
+                  })()}
                 </div>
               )}
 
               {submission.file_urls && submission.file_urls.length > 0 && (
-                <div className="mt-1 text-xs text-blue-600">
+                <div className="mt-1 text-xs text-amber-300/80">
                   📎 {submission.file_urls.length} file(s)
                 </div>
               )}

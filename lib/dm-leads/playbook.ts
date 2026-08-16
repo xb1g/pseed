@@ -216,15 +216,52 @@ export interface FunnelScoreboard {
 export interface ScoreboardMetric {
   key: keyof Omit<FunnelScoreboard, "engaged">;
   label: string;
+  /**
+   * What the number actually counts, in the operator's words. Lives next to the
+   * metric so the tooltip cannot drift from the rule: edit the matcher in
+   * `lib/dm-leads/signals.ts` and this line moves with it.
+   */
+  description: string;
   /** Baseline measured 2026-08-13, for "are we moving" context. */
   baselinePct: number;
   targetPct: number;
 }
 
+/** Explains the denominator every metric below is divided by. */
+export const SCOREBOARD_DENOMINATOR_HELP =
+  "แชทที่ลีดตอบกลับอย่างน้อย 1 ครั้ง ใช้เป็นตัวหารของทั้ง 3 ตัวเลข " +
+  "แชทที่ไม่มีใครตอบไม่ได้บอกอะไรเรื่องวิธีขายของเรา " +
+  "นับทั้งกล่องข้อความเสมอ ไม่เปลี่ยนตามฟิลเตอร์ที่กดอยู่";
+
 export const SCOREBOARD_METRICS: ScoreboardMetric[] = [
-  { key: "offerMade", label: "ได้รับข้อเสนอ", baselinePct: 24, targetPct: 80 },
-  { key: "priceStated", label: "บอกราคาแล้ว", baselinePct: 4, targetPct: 80 },
-  { key: "endsOnOurMessage", label: "จบที่ข้อความเรา", baselinePct: 34, targetPct: 90 },
+  {
+    key: "offerMade",
+    label: "ได้รับข้อเสนอ",
+    description:
+      "เราพิตช์อะไรสักอย่างไปแล้ว: ส่งลิงก์ /pathlab, พูดถึงค่าย หรือ PathLab, " +
+      "พูดถึงโปรเจกต์ 5 วัน หรือบอกราคา นับเฉพาะข้อความที่เราส่ง " +
+      "ยกเว้นเรื่องราคาที่นับทั้งสองฝั่ง",
+    baselinePct: 24,
+    targetPct: 80,
+  },
+  {
+    key: "priceStated",
+    label: "บอกราคาแล้ว",
+    description:
+      "มีตัวเลขราคาจริง (299, 490, 999, 1,000) หรือคำว่า ราคา, บาท, ค่าใช้จ่าย " +
+      "โผล่ในแชท นับทั้งฝั่งเราและฝั่งลีดที่ถามมา เพราะพอตัวเลขขึ้นโต๊ะแล้วดีลก็เริ่มจริง",
+    baselinePct: 4,
+    targetPct: 80,
+  },
+  {
+    key: "endsOnOurMessage",
+    label: "จบที่ข้อความเรา",
+    description:
+      "ข้อความล่าสุดของแชทเป็นของเรา ไม่ใช่ปล่อยให้ลีดค้างรอ " +
+      "ตัวเลขนี้วัดว่าเราเงียบใส่คนที่คุยอยู่บ่อยแค่ไหน",
+    baselinePct: 34,
+    targetPct: 90,
+  },
 ];
 
 export function pct(numerator: number, denominator: number): number {

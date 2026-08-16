@@ -1,4 +1,3 @@
-import { cn } from "@/lib/utils";
 import {
   getConversationsForAdmin,
   getDmLeadFacets,
@@ -6,16 +5,11 @@ import {
   type DmLeadFilters,
   type DmLeadIntentFilter,
 } from "@/lib/supabase/dm-leads";
-import {
-  BUCKET_ORDER,
-  SCOREBOARD_METRICS,
-  pct,
-  type DmLeadBucket,
-  type FunnelScoreboard,
-} from "@/lib/dm-leads/playbook";
+import { BUCKET_ORDER, type DmLeadBucket } from "@/lib/dm-leads/playbook";
 import { DmLeadsInbox } from "@/components/admin/DmLeadsInbox";
 import { DmLeadFilters as DmLeadFilterBar } from "@/components/admin/DmLeadFilters";
 import { RefreshButton } from "@/components/admin/RefreshButton";
+import { ScoreboardStrip } from "@/components/admin/ScoreboardStrip";
 import type { DmLeadStage, DmPlatform } from "@/types/dm-leads";
 
 export const dynamic = "force-dynamic";
@@ -62,43 +56,6 @@ function parseFilters(raw: RawParams): DmLeadFilters {
     leadStatus: LEAD_STATUSES.find((s) => s === raw.status),
     tag: raw.tag && raw.tag !== "all" ? raw.tag : undefined,
   };
-}
-
-/**
- * Funnel health for the whole inbox, one compact strip. Failing metrics are
- * red — the point of the strip is to be uncomfortable when we go quiet.
- */
-function ScoreboardStrip({ scoreboard }: { scoreboard: FunnelScoreboard }) {
-
-  return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border bg-muted/30 px-3 py-1.5 text-xs">
-      <span className="text-muted-foreground">
-        สุขภาพกรวย · คุยจริง <b className="text-foreground">{scoreboard.engaged}</b>
-      </span>
-      {SCOREBOARD_METRICS.map((metric) => {
-        const value = pct(scoreboard[metric.key], scoreboard.engaged);
-        const passing = value >= metric.targetPct;
-        return (
-          <span
-            key={metric.key}
-            className="flex items-center gap-1"
-            title={`ฐาน ${metric.baselinePct}% · เป้า ${metric.targetPct}%`}
-          >
-            <span className="text-muted-foreground">{metric.label}</span>
-            <b
-              className={cn(
-                "tabular-nums",
-                passing ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
-              )}
-            >
-              {value}%
-            </b>
-            <span className="text-muted-foreground/70">{passing ? "✓" : "✗"}</span>
-          </span>
-        );
-      })}
-    </div>
-  );
 }
 
 import { BucketPills } from "@/components/admin/BucketPills";

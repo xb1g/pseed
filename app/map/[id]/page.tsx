@@ -164,7 +164,7 @@ export default async function MapViewerPage(props: {
   const backLabel = isSeedChild ? "Back to Seed" : "Back to Pathlabs";
 
   return (
-    <MapEnrollmentTracker map={viewerMap}>
+    <MapEnrollmentTracker map={viewerMap} isAdmin={userIsAdmin}>
       <MapViewModeProvider canEdit={!!userCanEdit} canGrade={!!userCanGrade}>
         {/* Dawn sky behind the map canvas — the scene is fixed-position, so
             the viewer above it must stay transparent (no dot grid, no flat

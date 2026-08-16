@@ -661,15 +661,25 @@ export function NodeViewPanel({
 
       // Validate and handle different assessment types
       if (assessment.assessment_type === "text_answer") {
-        if (!assessmentAnswer || assessmentAnswer.trim().length === 0) {
+        const hasText = !!assessmentAnswer && assessmentAnswer.trim().length > 0;
+        const attachmentUrls = (fileUrls || []).filter(
+          (url) => url && url.trim().length > 0
+        );
+        if (!hasText && attachmentUrls.length === 0) {
           toast({
             title: "Please provide an answer",
-            description: "Text answer cannot be empty.",
+            description: "Write an answer or attach at least one file.",
             variant: "destructive",
           });
           return;
         }
-        submissionData.text_answer = assessmentAnswer.trim();
+        // Multimodal: rich text (markdown, embedded images) plus attachments
+        if (hasText) {
+          submissionData.text_answer = assessmentAnswer.trim();
+        }
+        if (attachmentUrls.length > 0) {
+          submissionData.file_urls = attachmentUrls;
+        }
       } else if (assessment.assessment_type === "quiz") {
         // Validate quiz answers
         const allQuestions = assessment.quiz_questions || [];
@@ -735,6 +745,11 @@ export function NodeViewPanel({
         }
 
         submissionData.file_urls = validUrls;
+
+        // An optional written note rides along with the files
+        if (assessmentAnswer && assessmentAnswer.trim().length > 0) {
+          submissionData.text_answer = assessmentAnswer.trim();
+        }
       } else if (assessment.assessment_type === "checklist") {
         // Validate checklist data
         if (!checklistData) {

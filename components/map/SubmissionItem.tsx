@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { AssessmentSubmission, SubmissionGrade } from "@/types/map";
+import { markdownToSafeHtml } from "@/lib/security/sanitize-html";
 
 interface SubmissionItemProps {
   submission: AssessmentSubmission;
@@ -58,9 +59,9 @@ export function SubmissionItem({
 
   const getFileIcon = (url: string) => {
     if (isImageFile(url)) {
-      return <ImageIcon className="h-4 w-4 text-blue-600" />;
+      return <ImageIcon className="h-4 w-4 text-amber-300" />;
     }
-    return <FileText className="h-4 w-4 text-blue-600" />;
+    return <FileText className="h-4 w-4 text-amber-300" />;
   };
 
   // Determine if this was auto-graded (system) or manually graded
@@ -89,9 +90,12 @@ export function SubmissionItem({
               <p className="text-xs font-medium text-muted-foreground mb-1">
                 Your Answer:
               </p>
-              <p className="text-sm text-foreground">
-                {submission.text_answer}
-              </p>
+              <div
+                className="learning-content-text"
+                dangerouslySetInnerHTML={{
+                  __html: markdownToSafeHtml(submission.text_answer),
+                }}
+              />
             </div>
           )}
 
