@@ -579,7 +579,11 @@ export default function PitchDeck3Page() {
     if (touchStart === null) return;
     const delta = touchStart - e.changedTouches[0].clientX;
     if (Math.abs(delta) > 50) {
-      delta > 0 ? nextSlide() : prevSlide();
+      if (delta > 0) {
+        nextSlide();
+      } else {
+        prevSlide();
+      }
     }
     setTouchStart(null);
   };

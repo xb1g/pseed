@@ -107,7 +107,7 @@ export default async function GalleryPage({
             Student teams spent 3 months building solutions to real healthcare problems.
             If something here could help you, reach out directly to the team.
           </p>
-          <a
+          <Link
             href="/hackathon/gallery/match"
             className="bloom-button"
             style={{
@@ -122,7 +122,7 @@ export default async function GalleryPage({
             <span className="bloom-button__grain" aria-hidden="true" />
             <span aria-hidden="true">🐋</span>
             Not sure which product is for you?
-          </a>
+          </Link>
         </header>
       </div>
 

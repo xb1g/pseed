@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -200,7 +201,7 @@ export function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <a href="/admin/archive/universities" className="block">
+                <Link href="/admin/archive/universities" className="block">
                   <Card className="cursor-pointer hover:bg-slate-800/50 transition-colors h-full">
                     <CardHeader className="pb-3">
                       <div className="flex items-center gap-2 mb-1">
@@ -218,7 +219,7 @@ export function AdminDashboard() {
                       </p>
                     </CardContent>
                   </Card>
-                </a>
+                </Link>
               </div>
             </CardContent>
           </Card>

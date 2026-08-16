@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import WhaleChat from "@/components/hackathon/gallery/WhaleChat";
 import MatchReveal from "@/components/hackathon/gallery/MatchReveal";
@@ -91,7 +92,7 @@ export default function MatchFlow({ products }: MatchFlowProps) {
             height: "64px",
           }}
         >
-          <a
+          <Link
             href="/hackathon/gallery"
             style={{
               display: "inline-flex",
@@ -110,7 +111,7 @@ export default function MatchFlow({ products }: MatchFlowProps) {
                 filter: "drop-shadow(0 1px 8px rgba(20,40,80,0.30))",
               }}
             />
-          </a>
+          </Link>
 
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             <LangToggle onHero />

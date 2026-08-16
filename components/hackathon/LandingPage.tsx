@@ -2,6 +2,7 @@
 
 import { UsersRound, HeartPulse, Brain, Globe, Rocket, Network, Presentation } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import gsap from "gsap";
 import HackathonTimeline from "@/components/HackathonTimeline";
@@ -342,7 +343,7 @@ function LandingPageInner({ isLoggedIn }: LandingPageProps) {
                                 className={`${instant ? '' : 'transition-opacity duration-1000'} ${showContent ? 'opacity-100' : 'opacity-0'}`}
                             >
                                 <div className="pt-6 flex flex-col items-center gap-3">
-                                    <a
+                                    <Link
                                         href="/hackathon/gallery"
                                         className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-[#91C4E3]/15 border border-[#91C4E3]/40 text-[#91C4E3] font-medium text-base hover:bg-[#91C4E3]/25 hover:border-[#91C4E3]/60 transition-all duration-300"
                                     >
@@ -350,14 +351,14 @@ function LandingPageInner({ isLoggedIn }: LandingPageProps) {
                                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M3 8h10M9 4l4 4-4 4" />
                                         </svg>
-                                    </a>
+                                    </Link>
                                     {isLoggedIn && (
-                                        <a
+                                        <Link
                                             href="/hackathon/dashboard"
                                             className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-white/15 text-gray-300 text-sm hover:border-white/30 hover:text-white transition-all duration-300"
                                         >
                                             {L("Participant Dashboard", "แดชบอร์ดผู้เข้าแข่งขัน")}
-                                        </a>
+                                        </Link>
                                     )}
                                 </div>
                             </div>
@@ -659,9 +660,9 @@ function LandingPageInner({ isLoggedIn }: LandingPageProps) {
                                                     </div>
                                                 </div>
                                             ))}
-                                            <a href="/hackathon/challenge" className="inline-flex items-center gap-1.5 text-xs text-[#91C4E3]/60 hover:text-[#91C4E3] transition-colors pt-1 font-[family-name:var(--font-mitr)]">
+                                            <Link href="/hackathon/challenge" className="inline-flex items-center gap-1.5 text-xs text-[#91C4E3]/60 hover:text-[#91C4E3] transition-colors pt-1 font-[family-name:var(--font-mitr)]">
                                                 {L("Read full brief →", "อ่านโจทย์เต็ม →")}
-                                            </a>
+                                            </Link>
                                         </div>
                                     </div>
                                 </div>
@@ -714,9 +715,9 @@ function LandingPageInner({ isLoggedIn }: LandingPageProps) {
                                                     </div>
                                                 </div>
                                             ))}
-                                            <a href="/hackathon/challenge" className="inline-flex items-center gap-1.5 text-xs text-[#A594BA]/60 hover:text-[#A594BA] transition-colors pt-1 font-[family-name:var(--font-mitr)]">
+                                            <Link href="/hackathon/challenge" className="inline-flex items-center gap-1.5 text-xs text-[#A594BA]/60 hover:text-[#A594BA] transition-colors pt-1 font-[family-name:var(--font-mitr)]">
                                                 {L("Read full brief →", "อ่านโจทย์เต็ม →")}
-                                            </a>
+                                            </Link>
                                         </div>
                                     </div>
                                 </div>
@@ -769,9 +770,9 @@ function LandingPageInner({ isLoggedIn }: LandingPageProps) {
                                                     </div>
                                                 </div>
                                             ))}
-                                            <a href="/hackathon/challenge" className="inline-flex items-center gap-1.5 text-xs text-[#7ECBB4]/60 hover:text-[#7ECBB4] transition-colors pt-1 font-[family-name:var(--font-mitr)]">
+                                            <Link href="/hackathon/challenge" className="inline-flex items-center gap-1.5 text-xs text-[#7ECBB4]/60 hover:text-[#7ECBB4] transition-colors pt-1 font-[family-name:var(--font-mitr)]">
                                                 {L("Read full brief →", "อ่านโจทย์เต็ม →")}
-                                            </a>
+                                            </Link>
                                         </div>
                                     </div>
                                 </div>
@@ -779,7 +780,7 @@ function LandingPageInner({ isLoggedIn }: LandingPageProps) {
 
                             {/* View Full Challenge Brief CTA */}
                             <div className="text-center mt-10">
-                                <a
+                                <Link
                                     href="/hackathon/challenge"
                                     className="inline-flex items-center gap-3 px-8 py-3.5 rounded-full border border-[#91C4E3]/30 text-[#91C4E3] text-sm font-[family-name:var(--font-mitr)] hover:border-[#91C4E3]/60 hover:bg-[#91C4E3]/5 transition-all duration-300"
                                     style={{ textShadow: '0 0 12px rgba(145,196,227,0.4)' }}
@@ -788,7 +789,7 @@ function LandingPageInner({ isLoggedIn }: LandingPageProps) {
                                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M3 8h10M9 4l4 4-4 4" />
                                     </svg>
-                                </a>
+                                </Link>
                             </div>
                         </div>
                     </section>
@@ -1010,7 +1011,7 @@ function LandingPageInner({ isLoggedIn }: LandingPageProps) {
                                     {L("9 problems, 800+ participants built real health products. Find the one that matters to you.", "9 ปัญหา 800+ ผู้เข้าแข่งขัน สร้างผลิตภัณฑ์ที่แก้ปัญหาสุขภาพจริง หาผลงานที่ตรงกับคุณ")}
                                 </p>
                                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
-                                    <a
+                                    <Link
                                         href="/hackathon/gallery"
                                         className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-[#91C4E3]/15 border border-[#91C4E3]/40 text-[#91C4E3] font-medium text-base hover:bg-[#91C4E3]/25 hover:border-[#91C4E3]/60 transition-all duration-300"
                                     >
@@ -1018,14 +1019,14 @@ function LandingPageInner({ isLoggedIn }: LandingPageProps) {
                                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M3 8h10M9 4l4 4-4 4" />
                                         </svg>
-                                    </a>
-                                    <a
+                                    </Link>
+                                    <Link
                                         href="/hackathon/gallery/match"
                                         className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-white/15 text-gray-300 text-sm hover:border-white/30 hover:text-white transition-all duration-300"
                                     >
                                         <span aria-hidden="true">🐋</span>
                                         {L("Find your match", "หาผลงานที่ใช่สำหรับคุณ")}
-                                    </a>
+                                    </Link>
                                 </div>
                             </div>
                         </div>

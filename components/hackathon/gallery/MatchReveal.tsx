@@ -255,7 +255,7 @@ export default function MatchReveal({ answers, results, unmatched, onRetake }: M
           {/* More to explore */}
           {unmatched.length > 0 && (
             <div style={{ textAlign: "center", marginTop: "0.25rem" }}>
-              <a
+              <Link
                 href="/hackathon/gallery"
                 style={{
                   fontFamily: "var(--font-bai-jamjuree), sans-serif",
@@ -271,7 +271,7 @@ export default function MatchReveal({ answers, results, unmatched, onRetake }: M
                 {lang === "th"
                   ? `ดูผลงานอื่นอีก ${unmatched.length} ผลงาน`
                   : `Explore ${unmatched.length} more products`}
-              </a>
+              </Link>
             </div>
           )}
         </div>

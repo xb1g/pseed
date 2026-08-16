@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { ArrowLeft, Users } from "lucide-react";
 import InterestDialog from "./InterestDialog";
 import ThemeToggle from "./ThemeToggle";
@@ -65,7 +66,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               height: "64px",
             }}
           >
-            <a
+            <Link
               href="/hackathon/gallery"
               style={{
                 display: "inline-flex",
@@ -83,7 +84,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             >
               <ArrowLeft size={15} aria-hidden="true" />
               All products
-            </a>
+            </Link>
 
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <LangToggle onHero />
