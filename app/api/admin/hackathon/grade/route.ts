@@ -109,7 +109,7 @@ export async function POST(req: Request) {
           
           const uploadResult = await ai.files.upload({
             file: localPath,
-            mimeType: mimeType,
+            config: { mimeType },
           });
           
           uploadedFiles.push(uploadResult);
@@ -133,19 +133,18 @@ export async function POST(req: Request) {
                const localPath = path.join(os.tmpdir(), `generic_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`);
                const dest = fs.createWriteStream(localPath);
                
-               // @ts-expect-error - Readable.fromWeb expects web stream
                const readable = Readable.fromWeb(response.body as any);
                readable.pipe(dest);
                
-               await new Promise((resolve, reject) => {
-                 dest.on('finish', resolve);
+               await new Promise<void>((resolve, reject) => {
+                 dest.on('finish', () => resolve());
                  dest.on('error', reject);
                });
-               
+
                console.log(`Uploading generic file to Gemini: ${localPath} (${contentType})`);
                const uploadResult = await ai.files.upload({
                  file: localPath,
-                 mimeType: contentType,
+                 config: { mimeType: contentType },
                });
                
                uploadedFiles.push(uploadResult);

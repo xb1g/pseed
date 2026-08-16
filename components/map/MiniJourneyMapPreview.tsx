@@ -42,8 +42,8 @@ interface LearningMap {
 function MiniMapPreviewContent({ mapId, onClick }: MiniJourneyMapPreviewProps) {
   const [map, setMap] = useState<LearningMap | null>(null);
   const [loading, setLoading] = useState(true);
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   useEffect(() => {
     const fetchMap = async () => {
@@ -124,7 +124,7 @@ function MiniMapPreviewContent({ mapId, onClick }: MiniJourneyMapPreviewProps) {
         selected={false}
         isUnlocked={true}
         isCompleted={false}
-        requirement={null}
+        requirement="single"
         isTeamMap={false}
         isInstructorOrTA={false}
         allSubmissions={[]}

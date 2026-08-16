@@ -7,7 +7,7 @@ import { DmLeadReplyForm } from "@/components/admin/DmLeadReplyForm";
 import { replyToLead } from "@/app/admin/dm-leads/actions";
 import { uploadDmAttachment } from "@/lib/dm-leads/upload-image-client";
 import type { MetaAttachmentType } from "@/lib/meta/graph";
-import type { DmConversation, DmMessage } from "@/types/dm-leads";
+import type { DmConversationWithMessages, DmMessage } from "@/types/dm-leads";
 
 function guessAttachmentKind(file: File): MetaAttachmentType {
   if (file.type.startsWith("image/")) return "image";
@@ -16,7 +16,7 @@ function guessAttachmentKind(file: File): MetaAttachmentType {
   return "file";
 }
 
-export function DmLeadConversation({ conversation }: { conversation: DmConversation }) {
+export function DmLeadConversation({ conversation }: { conversation: DmConversationWithMessages }) {
   const [body, setBody] = useState("");
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
