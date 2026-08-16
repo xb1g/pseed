@@ -1,5 +1,5 @@
 import { generateObject } from "ai";
-import { getModel } from "@/lib/ai/modelRegistry";
+import { getLanguageModel } from "@/lib/ai/modelRegistry";
 import {
   pathLabDayRegenerateSchema,
   pathLabGeneratorDraftSchema,
@@ -100,7 +100,7 @@ export async function generatePathLabDraft(
   }
 
   const { object } = await generateObject({
-    model: getModel(process.env.PATHLAB_GENERATOR_MODEL || "google/gemini-2.5-flash"),
+    model: getLanguageModel(process.env.PATHLAB_GENERATOR_MODEL || "google/gemini-2.5-flash"),
     system: buildPathLabSystemPrompt(),
     schema: pathLabGeneratorDraftSchema,
     prompt: buildPathLabDraftPrompt(input),
@@ -118,7 +118,7 @@ export async function regeneratePathLabDay(
   },
 ): Promise<PathLabDayRegenerateInput> {
   const { object } = await generateObject({
-    model: getModel(process.env.PATHLAB_GENERATOR_MODEL || "google/gemini-2.5-flash"),
+    model: getLanguageModel(process.env.PATHLAB_GENERATOR_MODEL || "google/gemini-2.5-flash"),
     system: buildPathLabSystemPrompt(),
     schema: pathLabDayRegenerateSchema,
     prompt: buildDayRegeneratePrompt({
@@ -150,7 +150,7 @@ export async function regeneratePathLabNode(
   },
 ): Promise<PathLabNodeRegenerateInput> {
   const { object } = await generateObject({
-    model: getModel("google/gemini-2.5-flash"),
+    model: getLanguageModel("google/gemini-2.5-flash"),
     system: buildPathLabSystemPrompt(),
     schema: pathLabNodeRegenerateSchema,
     prompt: buildNodeRegeneratePrompt({

@@ -1,6 +1,6 @@
 import { generateObject } from "ai";
 import { z } from "zod";
-import { getModel } from "@/lib/ai/modelRegistry";
+import { getLanguageModel } from "@/lib/ai/modelRegistry";
 import { searchTeamDirections } from "./search";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -51,7 +51,7 @@ Submissions: ${(snapshot?.source_text ?? "").slice(0, 500)}
   }).join("\n---\n");
 
   const { object } = await generateObject({
-    model: getModel(opts.modelName),
+    model: getLanguageModel(opts.modelName),
     schema: z.object({
       answer: z.string().describe("Comprehensive answer to the question"),
       citedTeamIds: z.array(z.string()).describe("Team IDs cited in the answer"),

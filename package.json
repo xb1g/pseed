@@ -30,6 +30,7 @@
     "migrate:logs:dry": "node scripts/migrate-console-logs.js --dry-run",
     "start": "next start",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:load": "tsx scripts/test-concurrent-jobs.ts",

@@ -211,7 +211,7 @@ export async function registerAppBetaUser(formData: FormData) {
     throw new Error(`Missing required form field: ${missingField.label}`);
   }
 
-  const { data: userSession } = await createClient().auth.getUser();
+  const { data: userSession } = await (await createClient()).auth.getUser();
 
   const { data: submission, error: submissionError } = await supabaseAdmin
     .from("ps_submissions")

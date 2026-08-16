@@ -204,7 +204,7 @@ export async function POST(req: NextRequest) {
       .eq("individual_submission_id", data.id);
   }
 
-  const mainSupabase = createMainClient();
+  const mainSupabase = await createMainClient();
   await mainSupabase.from("funnel_events").insert({
     user_id: participant.id,
     event_name: "hackathon_activity_complete",

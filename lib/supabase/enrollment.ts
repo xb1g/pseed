@@ -9,7 +9,7 @@ import { createClient } from "@/utils/supabase/server";
 export const enrollUserInMap = async (
   mapId: string
 ): Promise<UserMapEnrollment> => {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },
@@ -48,7 +48,7 @@ export const enrollUserInMap = async (
  * Checks if the current user is enrolled in a specific map
  */
 export const isUserEnrolledInMap = async (mapId: string): Promise<boolean> => {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },
@@ -76,7 +76,7 @@ export const isUserEnrolledInMap = async (mapId: string): Promise<boolean> => {
 export const getUserMapEnrollment = async (
   mapId: string
 ): Promise<UserMapEnrollment | null> => {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },
@@ -105,7 +105,7 @@ export const updateMapEnrollmentProgress = async (
   progressPercentage: number,
   isCompleted: boolean = false
 ): Promise<void> => {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },
@@ -156,7 +156,7 @@ export const getUserEnrolledMapsWithProgress = async (): Promise<
     };
   })[]
 > => {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -352,7 +352,7 @@ export const getUserEnrolledMaps = async (): Promise<
     total_assessments: number;
   })[]
 > => {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -437,7 +437,7 @@ export const getNextNodesToComplete = async (): Promise<
     status: string;
   }>
 > => {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

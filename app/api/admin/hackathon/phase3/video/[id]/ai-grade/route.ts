@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { streamText } from "ai";
 import { createClient } from "@/utils/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
-import { getModel } from "@/lib/ai/modelRegistry";
+import { getLanguageModel } from "@/lib/ai/modelRegistry";
 import { buildPhase3GradingPrompt } from "@/lib/hackathon/phase3-grading";
 import { parseModelGrade, runDualGrade } from "@/lib/hackathon/dual-grade";
 import { recalculateAndUpsertTeamScore } from "@/lib/hackathon/team-score";
@@ -106,7 +106,7 @@ async function runModelStream(opts: { modelName: string; prompt: string; send: (
   const { modelName, prompt, send, label } = opts;
   let accumulated = "";
   try {
-    const result = streamText({ model: getModel(modelName), prompt, temperature: 0.5, maxOutputTokens: 3000 });
+    const result = streamText({ model: getLanguageModel(modelName), prompt, temperature: 0.5, maxOutputTokens: 3000 });
     for await (const part of result.fullStream) {
       if (part.type === "text-delta") {
         const delta = (part as { text?: string }).text ?? "";

@@ -1,5 +1,5 @@
 import { generateObject } from "ai";
-import { getModel } from "@/lib/ai/modelRegistry";
+import { getLanguageModel } from "@/lib/ai/modelRegistry";
 import { parseProblemBrief, type ProblemBrief } from "@/lib/hackathon/problem-brief-schema";
 import {
   generatedProblemBriefSchema,
@@ -63,7 +63,7 @@ export async function planProblemBriefResearch(params: {
   sourceDossier: string;
 }): Promise<ProblemBriefResearchPlan> {
   const { object } = await generateObject({
-    model: getModel("google/gemini-2.5-flash"),
+    model: getLanguageModel("google/gemini-2.5-flash"),
     schema: problemBriefResearchPlanSchema,
     prompt: buildResearchPlannerPrompt(params.seed, params.sourceDossier),
     temperature: 0.15,
@@ -79,7 +79,7 @@ export async function generateProblemBriefFromDossier(params: {
   const researchPlan = await planProblemBriefResearch(params);
 
   const { object } = await generateObject({
-    model: getModel("google/gemini-2.5-flash"),
+    model: getLanguageModel("google/gemini-2.5-flash"),
     schema: generatedProblemBriefSchema,
     prompt: buildBriefWriterPrompt(params.seed, researchPlan, params.sourceDossier),
     temperature: 0.2,

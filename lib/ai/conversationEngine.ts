@@ -1,7 +1,7 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import { AssessmentAnswers } from "@/types/direction-finder";
-import { getModel } from "./modelRegistry";
+import { getLanguageModel } from "./modelRegistry";
 
 export async function summarizeConversation(
     history: { role: 'user' | 'assistant'; content: string }[],
@@ -20,7 +20,7 @@ export async function summarizeConversation(
     `;
 
         const { object } = await generateObject({
-            model: getModel("google/gemini-2.5-flash"), // Use fast model for summary
+            model: getLanguageModel("google/gemini-2.5-flash"), // Use fast model for summary
             schema: z.object({ summary: z.string() }),
             prompt,
         });
@@ -108,7 +108,7 @@ export async function conductDirectionConversation(
     `;
 
         const { object } = await generateObject({
-            model: getModel(modelName),
+            model: getLanguageModel(modelName),
             system: systemPrompt,
             messages: history,
             schema: z.object({

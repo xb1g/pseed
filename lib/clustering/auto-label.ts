@@ -1,6 +1,6 @@
 import { generateObject } from "ai";
 import { z } from "zod";
-import { getModel } from "@/lib/ai/modelRegistry";
+import { getLanguageModel } from "@/lib/ai/modelRegistry";
 import { createAdminClient } from "@/utils/supabase/admin";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -46,7 +46,7 @@ export async function autoLabelCluster(
   });
 
   const { object } = await generateObject({
-    model: getModel(opts.modelName),
+    model: getLanguageModel(opts.modelName),
     schema: z.object({
       label: z.string().describe("Short label (2-4 words) for this cluster"),
       summary: z.string().describe("One sentence describing what teams in this cluster have in common"),
@@ -126,7 +126,7 @@ export async function autoLabelAllClusters(
   }).join("\n\n---\n\n");
 
   const { object } = await generateObject({
-    model: getModel(opts.modelName),
+    model: getLanguageModel(opts.modelName),
     schema: z.object({
       clusters: z.array(z.object({
         cluster_index: z.number().describe("The cluster index (0-based)"),

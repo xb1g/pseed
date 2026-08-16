@@ -33,10 +33,13 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "app/me/reflection/page.tsx.bak",
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    // Deno edge functions are typechecked by the Supabase/Deno toolchain,
+    // not the Next.js app compiler.
+    "supabase/functions"
   ]
+}
 }

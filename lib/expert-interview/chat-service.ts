@@ -1,5 +1,5 @@
 import { generateObject } from "ai";
-import { getModel } from "@/lib/ai/modelRegistry";
+import { getLanguageModel } from "@/lib/ai/modelRegistry";
 import { normalizeQuestBlueprint } from "@/lib/expert-interview/quest-blueprint";
 import { z } from "zod";
 import type { ChatMessage, ExtractedCareerData, InterviewQuestion, InterviewType } from "@/types/expert-interview";
@@ -423,7 +423,7 @@ async function evaluateAndRespond(
 
   try {
     const { object } = await generateObject({
-      model: getModel("gemini-2.5-flash"),
+      model: getLanguageModel("gemini-2.5-flash"),
       schema: decisionSchema,
       system: [
         "You are a warm, curious interviewer helping young people understand careers.",
@@ -467,7 +467,7 @@ export async function extractCareerData(conversationHistory: ChatMessage[]): Pro
 
   try {
     const { object } = await generateObject({
-      model: getModel("gemini-2.5-flash"),
+      model: getLanguageModel("gemini-2.5-flash"),
       schema: extractedDataSchema,
       prompt: [
         "Extract structured career data and a career exploration blueprint from this interview transcript.",

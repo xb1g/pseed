@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { streamText } from "ai";
-import { getModel } from "@/lib/ai/modelRegistry";
+import { getLanguageModel } from "@/lib/ai/modelRegistry";
 import { deriveOutputs } from "@/lib/onboarding/derive";
 import {
   isAssessmentComplete,
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       : "";
 
     const result = streamText({
-      model: getModel("gpt-5-mini-2025-08-07"),
+      model: getLanguageModel("gpt-5-mini-2025-08-07"),
       system: [SYSTEM_PROMPT, interestContext].filter(Boolean).join("\n\n"),
       messages: messages.map((message) => ({
         role: message.role,

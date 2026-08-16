@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { streamText } from "ai";
 import { createClient } from "@/utils/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
-import { getModel } from "@/lib/ai/modelRegistry";
+import { getLanguageModel } from "@/lib/ai/modelRegistry";
 import { getPhaseSpec, getActivitySpec, formatActivitySpecForPrompt } from "@/lib/hackathon/phase-specs";
 import { persistDraft } from "@/lib/hackathon/ai-grader";
 import {
@@ -885,7 +885,7 @@ async function runModelStream(opts: {
 
   try {
     const result = streamText({
-      model: getModel(modelName),
+      model: getLanguageModel(modelName),
       prompt,
       temperature: 0.5,
       maxOutputTokens: 3000,

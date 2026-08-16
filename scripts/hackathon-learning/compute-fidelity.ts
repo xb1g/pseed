@@ -17,7 +17,7 @@ import { generateObject } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { z } from "zod";
-import { getModel } from "@/lib/ai/modelRegistry";
+import { getLanguageModel } from "@/lib/ai/modelRegistry";
 import { getActivitySpec, formatActivitySpecForPrompt } from "@/lib/hackathon/phase-specs";
 import dotenv from "dotenv";
 
@@ -61,7 +61,7 @@ function resolveModel() {
     const google = createGoogleGenerativeAI({ apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY ?? "" });
     return google(m);
   }
-  return getModel(MODEL); // handles deepseek-chat, etc.
+  return getLanguageModel(MODEL); // handles deepseek-chat, etc.
 }
 
 // generateObject retry — structured-output models intermittently return non-conforming JSON.

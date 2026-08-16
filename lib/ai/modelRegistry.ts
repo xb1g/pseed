@@ -162,3 +162,22 @@ export function getModel(modelName?: string) {
   console.warn(`[AI] Unknown model "${modelName}". Falling back to "${DEFAULT_GOOGLE_MODEL}".`);
   return google(DEFAULT_GOOGLE_MODEL);
 }
+
+// ---------------------------------------------------------------------------
+// Baseline: mixed @ai-sdk/provider majors.
+//
+// `@ai-sdk/anthropic@4` ships models typed as `BatchLanguageModelV4` while the
+// rest of the providers (`google@2`, `openai@3`, `deepseek@1`) and `ai@6`'s
+// `streamText` still speak `LanguageModelV2/V3`. The runtime objects are
+// compatible — this is purely a type-level mismatch. Callers should use
+// `getLanguageModel()` (which performs the single, documented cast) instead of
+// `getModel()` when passing the result to `streamText`/`generateText`.
+//
+// TODO(ai-sdk-alignment): remove this once every @ai-sdk/* provider is bumped
+// to a v5-compatible major (tracked in the dependency-alignment task).
+// ---------------------------------------------------------------------------
+import type { LanguageModel } from "ai";
+
+export function getLanguageModel(modelName?: string): LanguageModel {
+  return getModel(modelName) as unknown as LanguageModel;
+}

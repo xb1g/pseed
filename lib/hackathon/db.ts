@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { SESSION_EXPIRY_DAYS } from "./auth";
 import {
   buildHackathonTeams,
@@ -83,7 +83,11 @@ export async function createSession(participantId: string, token: string) {
   if (error) throw error;
 }
 
-export async function getSessionParticipant(token: string, client?: ReturnType<typeof createClient>): Promise<HackathonParticipant | null> {
+// The routes construct their client with the same `createClient(url, key)` call,
+// so accept the exported SupabaseClient instance type rather than
+// `ReturnType<typeof createClient>` — supabase-js 2.95 reworked the generics so
+// the two no longer unify.
+export async function getSessionParticipant(token: string, client?: SupabaseClient<any>): Promise<HackathonParticipant | null> {
   const now = new Date().toISOString();
   const { data } = await (client ?? getClient())
     .from("hackathon_sessions")

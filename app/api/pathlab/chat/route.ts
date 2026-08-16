@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateText } from "ai";
-import { getModel } from "@/lib/ai/modelRegistry";
+import { getLanguageModel } from "@/lib/ai/modelRegistry";
 import { isUnsafePathLabPrompt } from "@/lib/ai/pathlab-generator-prompts";
 import { buildChatSystemPrompt } from "@/lib/ai/pathlab-chat-prompts";
 import {
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
 
     // Generate AI response
     const result = await generateText({
-      model: getModel("gemini-2.5-flash"),
+      model: getLanguageModel("gemini-2.5-flash"),
       system: systemPrompt,
       messages: messages.map((m) => ({
         role: m.role,

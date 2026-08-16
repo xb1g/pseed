@@ -1,7 +1,7 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import { StudentProfile, RecommendedUniversity } from "@/types/education";
-import { getModel } from "./modelRegistry";
+import { getLanguageModel } from "./modelRegistry";
 
 export async function recommendUniversities(
     profile: StudentProfile,
@@ -28,7 +28,7 @@ export async function recommendUniversities(
     `;
 
         const { object } = await generateObject({
-            model: getModel("google/gemini-2.5-flash"),
+            model: getLanguageModel("google/gemini-2.5-flash"),
             schema: z.object({
                 recommendations: z.array(
                     z.object({

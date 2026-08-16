@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { streamText } from "ai";
 import { createClient } from "@/utils/supabase/server";
-import { getModel } from "@/lib/ai/modelRegistry";
+import { getLanguageModel } from "@/lib/ai/modelRegistry";
 
 export const maxDuration = 30;
 
@@ -71,7 +71,7 @@ export async function POST(
 
   try {
     const result = streamText({
-      model: getModel(AI_MODEL),
+      model: getLanguageModel(AI_MODEL),
       prompt,
       temperature: 0.6,
       maxOutputTokens: 1500,

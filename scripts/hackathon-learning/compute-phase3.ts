@@ -14,7 +14,7 @@
 import { Pool } from "pg";
 import { generateObject } from "ai";
 import { z } from "zod";
-import { getModel } from "@/lib/ai/modelRegistry";
+import { getLanguageModel } from "@/lib/ai/modelRegistry";
 import { formatCycleForPrompt } from "@/lib/hackathon/phase3-grading";
 
 const LOCAL_DB = process.env.LOCAL_DB_URL ?? "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
@@ -83,7 +83,7 @@ async function callModel(prompt: string): Promise<R> {
     const t = (await res.json())?.candidates?.[0]?.content?.parts?.[0]?.text;
     return Result.parse(JSON.parse(t));
   }
-  const { object } = await generateObject({ model: getModel(MODEL), schema: Result, system: SYSTEM, prompt });
+  const { object } = await generateObject({ model: getLanguageModel(MODEL), schema: Result, system: SYSTEM, prompt });
   return object;
 }
 

@@ -107,13 +107,13 @@ async function buildAIDraft(lead: ScoredLead): Promise<OutreachDraft | null> {
   ].join("\n");
 
   try {
-    const [{ generateObject }, { getModel }] = await Promise.all([
+    const [{ generateObject }, { getLanguageModel }] = await Promise.all([
       import("ai"),
       import("@/lib/ai/modelRegistry"),
     ]);
 
     const { object } = await generateObject({
-      model: getModel("gpt-5-mini-2025-08-07"),
+      model: getLanguageModel("gpt-5-mini-2025-08-07"),
       schema: outreachSchema,
       prompt,
       temperature: 0.4,

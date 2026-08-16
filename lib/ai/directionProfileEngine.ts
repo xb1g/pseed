@@ -7,7 +7,7 @@ import {
   extractByQuadrant,
   ZoneGridItem
 } from "@/types/direction-finder";
-import { getModel } from "./modelRegistry";
+import { getLanguageModel } from "./modelRegistry";
 
 // ==========================================
 // HELPER FUNCTIONS FOR CONTEXT EXTRACTION
@@ -222,7 +222,7 @@ Include an "evidence_used" object in each vector showing you used data from Q1-Q
 `;
 
     const { object } = await generateObject({
-      model: getModel(modelName),
+      model: getLanguageModel(modelName),
       schema: z.object({
         profile: z.object({
           energizers: z.array(z.object({
@@ -464,7 +464,7 @@ NEVER omit skill_tree, beginner_level, intermediate_level, or advanced_level. Al
 `;
 
     const { object } = await generateObject({
-      model: getModel(modelName),
+      model: getLanguageModel(modelName),
       schema: z.object({
         profile: z.object({
           energizers: z.array(z.object({
@@ -556,7 +556,7 @@ Generate 2-3 recommended programs/faculties and weekly/monthly commitments.
 `;
 
     const { object } = await generateObject({
-      model: getModel(modelName),
+      model: getLanguageModel(modelName),
       schema: z.object({
         programs: z.array(z.object({
           name: z.string(),
@@ -626,7 +626,7 @@ Include match level (High/Good/Stretch), match percentage, and reasoning.
 `;
 
     const { object } = await generateObject({
-      model: getModel(modelName),
+      model: getLanguageModel(modelName),
       schema: z.object({
         programs: z.array(z.object({
           name: z.string(),
@@ -688,7 +688,7 @@ Generate:
 `;
 
     const { object } = await generateObject({
-      model: getModel(modelName),
+      model: getLanguageModel(modelName),
       schema: z.object({
         commitments: z.object({
           this_week: z.array(z.string()),
@@ -761,7 +761,7 @@ A structured path (Beginner -> Intermediate -> Advanced).
 `;
 
     const { object } = await generateObject({
-      model: getModel(modelName),
+      model: getLanguageModel(modelName),
       schema: z.object({
         exploration_steps: z.array(z.object({
           type: z.enum(['project', 'study', 'activity', 'community', 'camp', 'person']),

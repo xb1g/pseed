@@ -1,6 +1,6 @@
 /** @jest-environment node */
 
-import { getModel, normalizeModelName, AVAILABLE_MODELS, getAllModels } from "@/lib/ai/modelRegistry";
+import { getModel, getLanguageModel, normalizeModelName, AVAILABLE_MODELS, getAllModels } from "@/lib/ai/modelRegistry";
 import { generateText } from "ai";
 
 const RUN_LIVE_TESTS = process.env.RUN_LIVE_AI_MODEL_TESTS === "true";
@@ -80,7 +80,7 @@ describeLive("Kimi model provider — live integration", () => {
   jest.setTimeout(60_000);
 
   it("Kimi model supports multimodal input (text + images)", async () => {
-    const model = getModel("kimi-for-coding");
+    const model = getLanguageModel("kimi-for-coding");
 
     const result = await generateText({
       model,
@@ -106,7 +106,7 @@ describeLive("Kimi model provider — live integration", () => {
     const resolvedName = normalizeModelName("kimi-for-coding");
     expect(resolvedName).toBe("kimi-for-coding");
 
-    const model = getModel(resolvedName);
+    const model = getLanguageModel(resolvedName);
     expect(model).toBeDefined();
 
     const result = await generateText({

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateObject, generateText } from 'ai';
 import { z } from 'zod';
 import { createClient } from '@/utils/supabase/server';
-import { getModel } from '@/lib/ai/modelRegistry';
+import { getLanguageModel } from '@/lib/ai/modelRegistry';
 import { resolveAIChatConfig } from '@/lib/pathlab/content-block';
 import type { AIChatMetadata } from '@/types/pathlab-content';
 
@@ -162,7 +162,7 @@ export async function POST(
     let assistantMessage: string;
     try {
       const { text } = await generateText({
-        model: getModel(resolveChatModel(metadata.model)),
+        model: getLanguageModel(resolveChatModel(metadata.model)),
         system: buildSystemPrompt(metadata),
         messages: aiMessages
           .filter((msg) => msg.role !== 'system')
@@ -281,7 +281,7 @@ Respond ONLY with valid JSON in this exact format:
 
     // A schema removes the markdown-fenced-JSON parsing this used to need
     const { object: analysis } = await generateObject({
-      model: getModel(DEFAULT_CHAT_MODEL),
+      model: getLanguageModel(DEFAULT_CHAT_MODEL),
       schema: z.object({
         percentage: z
           .number()
