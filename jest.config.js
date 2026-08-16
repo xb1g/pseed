@@ -31,7 +31,17 @@ const customJestConfig = {
   coverageProvider: "v8",
   // Git worktrees are independent checkouts — running their suites from this
   // root resolves `@/` imports against the wrong tree, so they always fail.
-  testPathIgnorePatterns: ["/node_modules/", "<rootDir>/.worktrees/"],
+  testPathIgnorePatterns: [
+    "/node_modules/",
+    "<rootDir>/.worktrees/",
+    // Written against node:test, not Jest. Run with: node --test
+    "<rootDir>/lib/projectseed/__tests__/me-summary.test.ts",
+    // Live-Postgres RLS integration suite. It is designed to FAIL (not skip)
+    // when the DB is unreachable, so it must not run in the default CI pass.
+    // Run it intentionally against a real database with:
+    //   SUPABASE_DB_URL=... npx jest lib/supabase/__tests__/lobby-rls.test.ts
+    "<rootDir>/lib/supabase/__tests__/lobby-rls.test.ts",
+  ],
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
