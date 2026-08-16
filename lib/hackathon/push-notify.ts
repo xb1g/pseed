@@ -1,4 +1,4 @@
-import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { createClient as createServiceClient, type SupabaseClient } from "@supabase/supabase-js";
 import webpush from "web-push";
 
 function initVapid() {
@@ -20,7 +20,9 @@ export async function sendInboxPushNotification({
   body,
   url,
 }: {
-  serviceClient: ReturnType<typeof createServiceClient>;
+  // Accept any SupabaseClient: supabase-js 2.95's createClient generics mean
+  // ReturnType<typeof createServiceClient> no longer unifies across call sites.
+  serviceClient: SupabaseClient<any>;
   participantIds: string[];
   title: string;
   body: string;
