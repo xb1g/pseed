@@ -298,15 +298,6 @@ export const FIELD_DETAIL_LABELS = {
   /** Appended to the card's accessible name. */
   cardAction: "ดูรายละเอียด 5 วัน",
   cardCue: "ดู 5 วันนี้ →",
-  /**
-   * A path whose copy is written but which is not running yet: the card and
-   * panel read like any other, but the closing ask is "tell us you want it"
-   * rather than "book a round".
-   */
-  soonCtaPrefix: "ทัก IG บอกว่าอยากให้เปิดสาย",
-  soonPrice: "ยังไม่เปิดรอบ ทักมาบอกได้ว่าสนใจ เราจะเปิดให้เมื่อมีคนพอ",
-  /** Sits above the days so the plan is never mistaken for a live round. */
-  soonNotice: "สายนี้ยังไม่เปิดรอบ นี่คือแพลนที่เราออกแบบไว้",
 } as const;
 
 export const PRICE_HEADING = "เลือกทางเริ่มต้น";
@@ -461,8 +452,6 @@ export interface FieldCard {
   src?: string;
   alt?: string;
   label: string;
-  /** Not open yet: the card greys out and carries a "Coming soon" overlay. */
-  comingSoon?: boolean;
   /**
    * The closing tile: a dark "?" card inviting people to ask about a field
    * that is not listed. Not a path, so it carries no image and its label wraps
@@ -473,15 +462,7 @@ export interface FieldCard {
   detail?: FieldDetail;
 }
 
-export const COMING_SOON_LABEL = "Coming soon";
-
-/**
- * Coming-soon cards link out to DM instead of sitting inert: a student whose
- * field is not open yet gets a door to knock on, not a dead end.
- */
-export const COMING_SOON_CUE = "ทัก IG ขอเปิดสายนี้ →";
-
-/** The paths currently open. Artwork is pre-cut to a shared 876x1171 frame. */
+/** The full catalogue of paths. Artwork is pre-cut to a shared 876x1171 frame. */
 export const FIELDS: FieldCard[] = [
   {
     src: "/pathlab/field-webdev.webp",
@@ -661,9 +642,6 @@ export const FIELDS: FieldCard[] = [
     src: "/pathlab/field-aviation.webp",
     alt: "วิศวกรกำลังตรวจสอบปีกเครื่องบินพร้อมคลิปบอร์ดจดบันทึก",
     label: "วิศวะการบิน",
-    // Written but not running: the panel opens and sells the plan, and the
-    // closing ask is "tell us you want it" rather than "book a round".
-    comingSoon: true,
     detail: {
       tagline: "ออกแบบสิ่งที่ต้องบินได้จริง แล้วพิสูจน์ด้วยตัวเลขว่ามันไม่ตก",
       briefShort: "ออกแบบปีกเครื่องบินส่งของ",
@@ -720,31 +698,26 @@ export const FIELDS: FieldCard[] = [
     src: "/pathlab/field-medical.webp",
     alt: "หูฟังแพทย์วางบนสมุดบันทึก",
     label: "Medical",
-    comingSoon: true,
   },
   {
     src: "/pathlab/field-architect.webp",
     alt: "แบบแปลนสถาปัตยกรรม",
     label: "Architect",
-    comingSoon: true,
   },
   {
     src: "/pathlab/field-commarts.webp",
     alt: "ภาพประกอบการออกแบบสีสันสดใส",
     label: "นิเทศ",
-    comingSoon: true,
   },
   {
     src: "/pathlab/field-civil.webp",
     alt: "วิศวะกำลังสำรวจหน้างานก่อสร้าง",
     label: "วิศวะโยธา",
-    comingSoon: true,
   },
   {
     src: "/pathlab/field-graphic.webp",
     alt: "งานออกแบบกราฟิกพื้นหลังสีเหลือง",
     label: "กราฟิกและแอนิเมชั่น",
-    comingSoon: true,
   },
   {
     label: "หากไม่มีสายที่สนใจทัก IG\nพวกเรามาได้เลยนะ",

@@ -138,6 +138,7 @@ const TRAIL_ZIGZAG_AMPLITUDE = 140;
 const TRAIL_NODE_GAP = 8;
 const MOBILE_TRAIL_NODE_MIN_W = 80;
 const MOBILE_TRAIL_NODE_MAX_W = 104;
+const MOBILE_TRAIL_LABEL_RESERVE = 28;
 // Fixed React Flow geometry. The old implementation let the intrinsic 2048px
 // sprite dimensions decide the node bounds, which made the visual and the
 // touch target disagree across browsers.
@@ -384,7 +385,7 @@ export function MapViewer({
 
     return {
       width: Math.round(width),
-      height: Math.round(width * 1.45),
+      height: Math.round(width * 1.45 + MOBILE_TRAIL_LABEL_RESERVE),
     };
   }, [flowWidth, isMobile]);
 

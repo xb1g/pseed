@@ -172,8 +172,7 @@ export const PARENTS_SAMPLE = {
 export const PARENTS_FIELDS = {
   eyebrow: "สายที่เลือกได้",
   title: "เลือกจากสิ่งที่ลูกพูดถึงบ่อย",
-  openLabel: "เปิดรอบแล้ว",
-  soonLabel: "กำลังเปิดเพิ่ม",
+  openLabel: "สายที่เปิดสอน",
   cta: "ดูรายละเอียดแต่ละสาย",
   note: "ยังไม่แน่ใจว่าสายไหน ทักมาคุยกัน เราช่วยดูให้",
 } as const;

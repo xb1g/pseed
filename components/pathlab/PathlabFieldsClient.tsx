@@ -4,7 +4,6 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { FieldCardTile } from "./FieldCardTile";
 import { FieldDetailPanel } from "./FieldDetailPanel";
 import {
-  COMING_SOON_CUE,
   FIELDS_HEADING,
   FIELDS_HINT,
   type FieldCard,
@@ -149,12 +148,7 @@ export function PathlabFieldsClient({ fields }: PathlabFieldsClientProps) {
             <li
               key={field.label}
               data-field-index={index}
-              // Greyed out only when there is nothing to look at. A path
-              // whose plan is written reads as live on the grid; the panel
-              // is where it says the round has not opened yet.
-              className={`pathlab-fields__item${
-                field.comingSoon && !field.detail ? " is-coming-soon" : ""
-              }${field.ask ? " is-ask" : ""}${
+              className={`pathlab-fields__item${field.ask ? " is-ask" : ""}${
                 isOpen && openIndex !== index ? " is-dismissed" : ""
               }`}
             >
@@ -178,15 +172,6 @@ export function PathlabFieldsClient({ fields }: PathlabFieldsClientProps) {
                 {field.detail && (
                   <p className="pathlab-fields__project">
                     {field.detail.briefShort}
-                  </p>
-                )}
-                {/* A field that is not open yet points at the DM door instead
-                    of sitting mute. Once its plan is written the card behaves
-                    like any other: the frame's own cue invites the click, and
-                    the panel is where the round's status is stated. */}
-                {field.comingSoon && !field.detail && (
-                  <p className="pathlab-fields__project pathlab-fields__soon-cue">
-                    {COMING_SOON_CUE}
                   </p>
                 )}
               </div>

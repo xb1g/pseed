@@ -29,6 +29,17 @@ interface SpriteCategory {
 // Static sprite data - in a real app, this could be fetched from an API
 const SPRITE_CATEGORIES: SpriteCategory[] = [
   {
+    name: "launchpad",
+    displayName: "LaunchPad",
+    sprites: [
+      "/islands/launchpad/day1.png",
+      "/islands/launchpad/day2.png",
+      "/islands/launchpad/day3.png",
+      "/islands/launchpad/day4.png",
+      "/islands/launchpad/day5.png",
+    ],
+  },
+  {
     name: "other",
     displayName: "Other",
     sprites: [

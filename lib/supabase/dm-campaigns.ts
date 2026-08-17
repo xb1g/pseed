@@ -28,7 +28,7 @@ import {
   type SendDecision,
 } from "@/lib/dm-leads/send-gate";
 import { leadFromConversation } from "@/lib/dm-leads/personalize";
-import type { DmConversation } from "@/types/dm-leads";
+import type { DmConversation, DmPlatform } from "@/types/dm-leads";
 
 /** One LLM call per lead; keep enough in flight to be quick, few enough not to melt Qwen. */
 const DRAFT_CONCURRENCY = 4;
@@ -283,6 +283,9 @@ export interface CampaignQueueItem extends CampaignTargetRow {
   username: string | null;
   grade_level: string | null;
   interests: string[];
+  /** Carried so the review card can deep-link into the real chat app. */
+  platform: DmPlatform;
+  platform_user_id: string;
   recent_turns: ThreadTurn[];
 }
 
@@ -317,7 +320,7 @@ export async function getCampaignQueue(
   const [{ data: convos }, turns] = await Promise.all([
     supabase
       .from("dm_conversations")
-      .select("id, display_name, username, grade_level, interests")
+      .select("id, display_name, username, grade_level, interests, platform, platform_user_id")
       .in("id", ids),
     fetchRecentTurns(supabase, ids),
   ]);
@@ -331,6 +334,8 @@ export async function getCampaignQueue(
       username: convo?.username ?? null,
       grade_level: convo?.grade_level ?? null,
       interests: convo?.interests ?? [],
+      platform: convo?.platform ?? "instagram",
+      platform_user_id: convo?.platform_user_id ?? "",
       recent_turns: turns.get(target.conversation_id) ?? [],
     };
   });

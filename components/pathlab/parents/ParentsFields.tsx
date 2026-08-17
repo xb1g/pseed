@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
-import { COMING_SOON_LABEL, type FieldCard } from "@/lib/content/pathlab-page";
+import { type FieldCard } from "@/lib/content/pathlab-page";
 import {
   PARENTS_FIELDS,
   PARENTS_FIELD_CARDS,
@@ -11,13 +11,10 @@ import { ParentsNote, ParentsSection, SectionHeading } from "./section";
 
 /**
  * The menu of paths, read-only. Parents choose a direction, not a curriculum,
- * so the tiles carry only the field name and whether it is running; the full
- * five-day breakdown stays on the student page one link away.
+ * so the tiles carry only the field name; the full five-day breakdown stays
+ * on the student page one link away.
  */
 export function ParentsFields() {
-  const open = PARENTS_FIELD_CARDS.filter((field) => !field.comingSoon);
-  const soon = PARENTS_FIELD_CARDS.filter((field) => field.comingSoon);
-
   return (
     <ParentsSection labelledBy="parents-fields">
       <SectionHeading
@@ -26,8 +23,7 @@ export function ParentsFields() {
         title={PARENTS_FIELDS.title}
       />
 
-      <FieldGroup label={PARENTS_FIELDS.openLabel} fields={open} />
-      <FieldGroup label={PARENTS_FIELDS.soonLabel} fields={soon} muted />
+      <FieldGroup label={PARENTS_FIELDS.openLabel} fields={PARENTS_FIELD_CARDS} />
 
       <Link
         href="/pathlab#pathlab-fields"
@@ -47,11 +43,9 @@ export function ParentsFields() {
 function FieldGroup({
   label,
   fields,
-  muted = false,
 }: {
   label: string;
   fields: FieldCard[];
-  muted?: boolean;
 }) {
   if (fields.length === 0) return null;
 
@@ -64,9 +58,7 @@ function FieldGroup({
         {fields.map((field) => (
           <li
             key={field.label}
-            className={`relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60 ${
-              muted ? "opacity-70" : ""
-            }`}
+            className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60"
           >
             <div className="relative aspect-[4/3]">
               {field.src ? (
@@ -75,7 +67,7 @@ function FieldGroup({
                   alt={field.alt ?? field.label}
                   fill
                   sizes="(max-width: 640px) 45vw, 220px"
-                  className={`object-cover ${muted ? "grayscale" : ""}`}
+                  className="object-cover"
                 />
               ) : null}
               <div
@@ -85,11 +77,6 @@ function FieldGroup({
               <p className="absolute inset-x-0 bottom-0 p-3 font-kodchasan text-sm font-medium leading-snug text-white">
                 {field.label}
               </p>
-              {muted ? (
-                <span className="absolute right-2 top-2 rounded-full bg-slate-950/80 px-2 py-1 font-space-mono text-[0.6rem] uppercase tracking-[0.12em] text-slate-300">
-                  {COMING_SOON_LABEL}
-                </span>
-              ) : null}
             </div>
           </li>
         ))}

@@ -8,6 +8,7 @@ import {
   sendCampaignTargetAction,
   skipCampaignTargetAction,
 } from "@/app/admin/dm-leads/campaign/actions";
+import { ChatAppLink } from "@/components/admin/ChatAppLink";
 import { GATE_REASON_LABELS, type GateReason } from "@/lib/dm-leads/send-gate";
 import type { CampaignQueueItem } from "@/lib/supabase/dm-campaigns";
 
@@ -149,6 +150,7 @@ export function CampaignReviewQueue({
           <span className="ml-auto rounded bg-background px-1.5 py-0.5 font-mono">
             {current.bucket} · rung {current.rung} · {current.variant}
           </span>
+          <ChatAppLink conversation={current} showLabel={false} />
         </div>
 
         {/* Addendum E: flags route, threads decide. Never approve without the thread. */}

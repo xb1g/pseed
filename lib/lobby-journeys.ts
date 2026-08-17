@@ -81,7 +81,7 @@ const STARTUP_JOURNEY: JourneyDay[] = [
       {
         id: "su-1",
         title: "ล่าปัญหา & Customer Discovery",
-        sprite_url: "/islands/crystal.png",
+        sprite_url: "/islands/launchpad/day1.png",
         difficulty: 1,
         node_type: "learning",
       },
@@ -93,7 +93,7 @@ const STARTUP_JOURNEY: JourneyDay[] = [
       {
         id: "su-2",
         title: "Lean Canvas & Unit Economics",
-        sprite_url: "/islands/desert.png",
+        sprite_url: "/islands/launchpad/day2.png",
         difficulty: 2,
         node_type: "learning",
       },
@@ -105,7 +105,7 @@ const STARTUP_JOURNEY: JourneyDay[] = [
       {
         id: "su-3",
         title: "สร้าง MVP & Rapid Prototype",
-        sprite_url: "/islands/winter.png",
+        sprite_url: "/islands/launchpad/day3.png",
         difficulty: 2,
         node_type: "learning",
       },
@@ -117,7 +117,7 @@ const STARTUP_JOURNEY: JourneyDay[] = [
       {
         id: "su-4",
         title: "First 100 Users & Traction",
-        sprite_url: "/islands/crystal.png",
+        sprite_url: "/islands/launchpad/day4.png",
         difficulty: 3,
         node_type: "learning",
       },
@@ -129,7 +129,7 @@ const STARTUP_JOURNEY: JourneyDay[] = [
       {
         id: "su-5",
         title: "Pitch Day & Launch",
-        sprite_url: "/islands/desert.png",
+        sprite_url: "/islands/launchpad/day5.png",
         difficulty: 3,
         node_type: "end",
       },

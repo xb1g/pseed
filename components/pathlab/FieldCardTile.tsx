@@ -1,7 +1,5 @@
 import Image from "next/image";
 import {
-  COMING_SOON_CUE,
-  COMING_SOON_LABEL,
   CONTACT,
   FIELD_DETAIL_LABELS,
   type FieldCard,
@@ -11,15 +9,15 @@ const IMAGE_SIZES = "(max-width: 640px) 44vw, (max-width: 1024px) 30vw, 14rem";
 
 interface FieldCardTileProps {
   field: FieldCard;
-  /** Absent for fields with no detail — those tiles are not actionable. */
+  /** Absent for fields with no detail — those tiles lead to the DM instead. */
   onOpen?: () => void;
   isOpen: boolean;
 }
 
 /**
  * One tile in the field grid. Three shapes: an openable path (a button), a
- * path not yet running (a link to DM — never a dead end), and the closing
- * "ask us" tile (a link).
+ * path whose five-day copy is not written yet (a link to DM — never a dead
+ * end), and the closing "ask us" tile (a link).
  */
 export function FieldCardTile({ field, onOpen, isOpen }: FieldCardTileProps) {
   if (field.ask) {
@@ -44,13 +42,8 @@ export function FieldCardTile({ field, onOpen, isOpen }: FieldCardTileProps) {
         fill
         sizes={IMAGE_SIZES}
       />
-      {/* Real text, not a pseudo-element: the status has to reach screen
-          readers, not just sighted users. A path whose plan is written
-          carries no badge: it has something to show, and the panel states
-          plainly that the round is not open yet. */}
-      {field.comingSoon && !field.detail && (
-        <span className="pathlab-fields__badge">{COMING_SOON_LABEL}</span>
-      )}
+      {/* Real text, not a pseudo-element: the cue has to reach screen
+          readers, not just sighted users. */}
       {field.detail && (
         <span className="pathlab-fields__cue" aria-hidden="true">
           {FIELD_DETAIL_LABELS.cardCue}
@@ -59,27 +52,23 @@ export function FieldCardTile({ field, onOpen, isOpen }: FieldCardTileProps) {
     </div>
   );
 
-  // A field that is not open yet still leads somewhere: tapping it opens a
-  // DM asking for that field, so "Coming soon" is an invitation, not a wall.
-  // Unless its copy is written — then it opens like any other path, because
-  // reading the days is what makes someone want to ask for it.
-  if (field.comingSoon && !field.detail) {
+  // A field whose plan is not written yet still leads somewhere: tapping it
+  // opens a DM asking for that field, so it is an invitation, not a wall.
+  if (!field.detail) {
     return (
       <a
-        className="pathlab-fields__button pathlab-fields__button--soon"
+        className="pathlab-fields__button"
         href={CONTACT.href}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label={`${field.label}, ${COMING_SOON_LABEL}, ${COMING_SOON_CUE}`}
+        aria-label={`${field.label}, ${FIELD_DETAIL_LABELS.ctaPrefix} ${field.label}`}
       >
         {frame}
       </a>
     );
   }
 
-  // Only a field with written copy can be opened; everything else stays inert
-  // so "clickable" never promises something that is not there.
-  if (!field.detail || !onOpen) return frame;
+  if (!onOpen) return frame;
 
   return (
     <button

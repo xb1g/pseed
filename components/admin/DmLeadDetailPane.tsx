@@ -24,6 +24,7 @@ import { DmLeadTagsEditor } from "@/components/admin/DmLeadTagsEditor";
 import { LeadTagBadges } from "@/components/admin/LeadTagBadges";
 import { DmMessageBubble } from "@/components/admin/DmMessageBubble";
 import { DmLeadPublicReplyBar } from "@/components/admin/DmLeadPublicReplyBar";
+import { ChatAppLink } from "@/components/admin/ChatAppLink";
 import type { DmConversationWithBucket, DmConversationWithMessages } from "@/types/dm-leads";
 
 const COVERAGE_BADGE: Record<FieldCoverage, { label: string; className: string }> = {
@@ -244,6 +245,7 @@ export function DmLeadDetailPane({
               <RefreshCw className={cn("h-3 w-3", isSyncing && "animate-spin text-foreground")} />
               <span className="hidden sm:inline">โหลดข้อความล่าสุด</span>
             </button>
+            <ChatAppLink conversation={conversation} />
             <DmLeadManageBar conversation={conversation} onChange={onMetaChange} />
             <Link
               href={`/admin/dm-leads/${conversation.id}`}
