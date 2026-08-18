@@ -1,4 +1,6 @@
 import { createAdminClient } from "@/utils/supabase/admin";
+import { isPortRequest } from "@/lib/meta/comment-intent";
+import { isSelfAuthored } from "@/lib/meta/self-account";
 import type { DmLeadClassification, IgComment } from "@/types/dm-leads";
 
 export async function upsertComment(params: {
@@ -87,13 +89,19 @@ export async function applyCommentClassification(
 }
 
 /**
- * Comments from people the DM automation never reached: no dm_conversations
- * row exists for their ig_user_id at all. If it did, some message — inbound
- * or outbound — would have created one. Absence means the automation's send
- * silently failed (opted out, blocked, "not opted in" window, etc).
- * Only returns comments inside `maxAgeDays` — the 7-day default
- * matches the private-reply window; public replies have no such limit, so the
- * bulk-reply action passes a wider window.
+ * Comments we still owe a reply.
+ *
+ * Three conditions must hold. The commenter asked for the portfolio by using
+ * the reel's keyword: anyone who commented something else never invited a DM,
+ * so we leave them alone. The comment is not one of our own replies. And the
+ * DM automation never reached them, meaning no dm_conversations row exists for
+ * their ig_user_id; had any message landed, inbound or outbound, one would.
+ * Absence means the send silently failed (privacy settings, blocked, opted
+ * out, "not opted in" window).
+ *
+ * Only returns comments inside `maxAgeDays`. The 7-day default matches the
+ * private-reply window; public replies have no such limit, so the bulk-reply
+ * action passes a wider window.
  */
 export async function getCommentsMissedByDm(maxAgeDays = 7): Promise<IgComment[]> {
   const supabase = createAdminClient();
@@ -128,7 +136,17 @@ export async function getCommentsMissedByDm(maxAgeDays = 7): Promise<IgComment[]
   }
 
   const reachedIds = new Set((matched ?? []).map((m) => m.platform_user_id));
-  return comments.filter((c) => c.ig_user_id && !reachedIds.has(c.ig_user_id));
+  return comments.filter(
+    (c) =>
+      c.ig_user_id &&
+      !reachedIds.has(c.ig_user_id) &&
+      // Our own replies are only kept out of this list by us happening to have
+      // a dm_conversations row; excluding them explicitly means a reply can
+      // never be addressed to ourselves.
+      !isSelfAuthored({ igUserId: c.ig_user_id, username: c.username }) &&
+      // Only people who commented the reel's keyword asked to hear from us.
+      isPortRequest(c.text)
+  );
 }
 
 export async function markCommentReplied(commentId: string): Promise<void> {
