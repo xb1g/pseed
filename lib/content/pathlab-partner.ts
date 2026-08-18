@@ -14,13 +14,12 @@
 
 import type { ContributionMode } from "@/types/expert-interview";
 
-/** Interview entry point for this page. Source tracking is always attached;
- *  a contribution mode is added when the expert picked one on the page. */
-export function partnerInterviewHref(mode?: ContributionMode): string {
-  const params = new URLSearchParams({ source: "partner" });
-  if (mode) params.set("mode", mode);
-  return `/expert-interview?${params.toString()}`;
-}
+/**
+ * The door this page opens: a DM thread with the team on Instagram, via
+ * Instagram's own messaging deep link (same pattern as lib/dm-leads). DMs
+ * land in the existing DM lead funnel, so no new intake surface is needed.
+ */
+export const PARTNER_IG_DM_URL = "https://ig.me/m/passion_seed.th";
 
 /** In-page anchors for the sticky top bar. */
 export const PARTNER_NAV_LINKS = [
@@ -52,7 +51,7 @@ export const PARTNER_HERO = {
   subtitleTail:
     "ไม่ว่าจะเป็นคอร์สที่คุณสอน งานที่คุณทำจริง หรือเคสที่มีแค่คุณเท่านั้นที่เล่าได้ เราช่วยเรียบเรียง สร้างระบบ และเผยแพร่โดยยังมีชื่อและเสียงของคุณอยู่กับผลงาน",
   ctas: {
-    primary: { label: "เริ่มแบ่งปันสิ่งที่คุณรู้", href: "/expert-interview?source=partner" },
+    primary: { label: "ทัก DM ใน Instagram", href: PARTNER_IG_DM_URL },
     secondary: { label: "ดูตัวอย่าง PathLab", href: "#partner-proof" },
   },
 } as const;
@@ -116,7 +115,7 @@ export const PARTNER_MODES = {
         "PathLab แบบลงมือทำจากเนื้อหาของคุณ พร้อมแบบประเมินและ feedback ให้นักเรียน",
       receive:
         "คอร์สเวอร์ชัน interactive ที่มีชื่อคุณกำกับ พร้อมข้อมูลว่านักเรียนทำอะไรได้จริง",
-      ctaLabel: "เริ่มจากคอร์สของคุณ",
+      ctaLabel: "DM เล่าเรื่องคอร์สของคุณ",
     },
     {
       id: "work",
@@ -127,7 +126,7 @@ export const PARTNER_MODES = {
         "สถานการณ์จำลองที่ให้นักเรียนสวมบทบาทและตัดสินใจกับโจทย์จริงของคุณ",
       receive:
         "เครดิตผู้เชี่ยวชาญบน PathLab และโปรไฟล์สาธารณะที่แชร์ต่อได้",
-      ctaLabel: "เล่าประสบการณ์ของคุณ",
+      ctaLabel: "DM เล่าประสบการณ์ของคุณ",
     },
     {
       id: "case",
@@ -138,7 +137,7 @@ export const PARTNER_MODES = {
         "Micro PathLab จากเคสนั้น ให้คนอื่นได้ลองแก้โจทย์เดียวกับที่คุณเคยเจอ",
       receive:
         "เคสของคุณกลายเป็นบทเรียนที่คนใช้จริง พร้อมชื่อและเครดิตของคุณ",
-      ctaLabel: "แบ่งปันเคสของคุณ",
+      ctaLabel: "DM เล่าเคสของคุณ",
     },
     {
       id: "other",
@@ -147,7 +146,7 @@ export const PARTNER_MODES = {
       effort: "เริ่มจากคุยสั้นๆ แล้วเราจะช่วยกันหารูปแบบที่เหมาะกับเนื้อหาของคุณ",
       create: "รูปแบบที่เหมาะกับเนื้อหาของคุณโดยเฉพาะ ไม่บังคับเข้าเทมเพลต",
       receive: "ช่องทางเผยแพร่ความรู้ที่มีชื่อคุณกำกับ และทีมที่ดูแลให้ตลอด",
-      ctaLabel: "คุยกับเราก่อน",
+      ctaLabel: "DM คุยกับเราก่อน",
     },
   ] as PartnerMode[],
 } as const;
@@ -242,7 +241,7 @@ export const PARTNER_EXCHANGE = {
 
 export const PARTNER_CONTACT = {
   heading: "เริ่มแบ่งปันสิ่งที่คุณรู้",
-  body: "ไม่ต้องสมัครสมาชิก ไม่ต้องเตรียมตัว เริ่มจากเล่าสิ่งที่คุณรู้ให้เราฟัง แล้วเราจะสร้างร่าง PathLab ให้คุณรีวิวก่อนเสมอ",
+  body: "ไม่ต้องสมัครสมาชิก ไม่ต้องเตรียมตัว ทัก DM มาเล่าให้เราฟังสั้นๆ ว่าคุณมีอะไรอยากแบ่งปัน แล้วเราจะต่อเรื่องให้ในแชท",
   /** What happens next, matching the post-submit copy in the interview flow. */
   steps: [
     "คุณเล่าหรือส่งสิ่งที่มี",
@@ -250,8 +249,8 @@ export const PARTNER_CONTACT = {
     "คุณรีวิว แก้ไข และอนุมัติ",
     "เผยแพร่พร้อมชื่อคุณ",
   ],
-  primaryLabel: "เริ่มแบ่งปันสิ่งที่คุณรู้",
-  lineLabel: "หรือทักคุยกับทีมงานก่อน",
-  lineHref: "https://line.me/ti/p/~@passionseed",
+  primaryLabel: "ทัก DM ใน Instagram",
+  secondaryLabel: "ดูตัวอย่าง PathLab",
+  secondaryHref: "#partner-proof",
   small: "คุณอนุมัติทุกอย่างก่อนเผยแพร่ และถอนเนื้อหาได้ทุกเมื่อ",
 } as const;

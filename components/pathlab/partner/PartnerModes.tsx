@@ -4,8 +4,8 @@ import { useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { NOTES } from "@/lib/content/pathlab-page";
 import {
+  PARTNER_IG_DM_URL,
   PARTNER_MODES,
-  partnerInterviewHref,
 } from "@/lib/content/pathlab-partner";
 import type { ContributionMode } from "@/types/expert-interview";
 
@@ -14,7 +14,7 @@ import type { ContributionMode } from "@/types/expert-interview";
  * interaction, not a card grid: picking a mode swaps one focused panel that
  * answers the five things an expert needs to know (what to bring, effort,
  * what we build, what they get back, the next action), and the panel CTA
- * deep-links into the interview with that mode attached.
+ * opens a DM thread with the team on Instagram.
  */
 export function PartnerModes() {
   const [selected, setSelected] = useState<ContributionMode>(
@@ -110,7 +110,9 @@ export function PartnerModes() {
         <div className="pathlab-partner__mode-cta">
           <a
             className="pathlab-hero__cta pathlab-hero__cta--primary"
-            href={partnerInterviewHref(active.id)}
+            href={PARTNER_IG_DM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
           >
             <span>{active.ctaLabel}</span>
             <ArrowRight

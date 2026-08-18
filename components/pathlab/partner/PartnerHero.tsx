@@ -33,6 +33,8 @@ export function PartnerHero() {
         <a
           className="pathlab-hero__cta pathlab-hero__cta--primary"
           href={PARTNER_HERO.ctas.primary.href}
+          target="_blank"
+          rel="noopener noreferrer"
         >
           {PARTNER_HERO.ctas.primary.label}
         </a>

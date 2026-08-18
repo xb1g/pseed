@@ -2,14 +2,14 @@ import { ArrowRight } from "lucide-react";
 import { NOTES } from "@/lib/content/pathlab-page";
 import {
   PARTNER_CONTACT,
-  partnerInterviewHref,
+  PARTNER_IG_DM_URL,
 } from "@/lib/content/pathlab-partner";
 
 /**
- * Closing call to action. The primary door is the expert interview itself
- * (no account needed, source tracking attached); LINE stays as the human
- * channel for experts who want to talk first. The steps mirror the
- * post-submit "what happens next" copy so the promise and the flow match.
+ * Closing call to action. The only door is a DM thread with the team on
+ * Instagram: no account, no form, and inbound messages land in the existing
+ * DM lead funnel. The steps mirror the post-submit "what happens next" copy
+ * so the promise and the flow match.
  */
 export function PartnerContact() {
   return (
@@ -36,19 +36,19 @@ export function PartnerContact() {
 
       <div className="pathlab-hero__ctas pathlab-partner__ctas">
         <a
-          href={partnerInterviewHref()}
+          href={PARTNER_IG_DM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
           className="pathlab-hero__cta pathlab-hero__cta--primary"
         >
           <span>{PARTNER_CONTACT.primaryLabel}</span>
           <ArrowRight className="pathlab-partner__cta-icon" aria-hidden="true" />
         </a>
         <a
-          href={PARTNER_CONTACT.lineHref}
-          target="_blank"
-          rel="noopener noreferrer"
+          href={PARTNER_CONTACT.secondaryHref}
           className="pathlab-hero__cta pathlab-hero__cta--secondary"
         >
-          {PARTNER_CONTACT.lineLabel}
+          {PARTNER_CONTACT.secondaryLabel}
         </a>
       </div>
 
