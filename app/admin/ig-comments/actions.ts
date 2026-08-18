@@ -6,6 +6,7 @@ import { replyToComment, privateReplyToComment } from "@/lib/meta/graph";
 import { getCommentsMissedByDm, markCommentReplied } from "@/lib/supabase/ig-comments";
 import { getPersonalizedPublicCommentReply } from "@/lib/dm-leads/delivery-status";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { BULK_REPLY_BATCH_CAP } from "./constants";
 
 async function getIgCommentId(commentId: string): Promise<string> {
   const supabase = createAdminClient();
@@ -64,7 +65,6 @@ export async function replyPrivately(commentId: string, message: string) {
  * only), so the batch sweeps a 30-day window.
  */
 const BULK_REPLY_WINDOW_DAYS = 30;
-const BULK_REPLY_BATCH_CAP = 50;
 const BULK_REPLY_DELAY_MS = 1000;
 
 export interface BulkReplyResult {

@@ -19,6 +19,13 @@ import type { DmLeadStage } from "@/types/dm-leads";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * 60 is the ceiling this Vercel plan allows, so the batch is sized to finish
+ * well inside it rather than the budget being sized to the batch. The client
+ * card chains runs back to back to work through a queue larger than one pass.
+ */
+export const maxDuration = 60;
+
 const STAGE_LABEL: Record<DmLeadStage, string> = {
   unknown: "Unknown",
   exploring: "Exploring",

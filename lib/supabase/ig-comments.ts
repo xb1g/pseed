@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/utils/supabase/admin";
 import { isPortRequest } from "@/lib/meta/comment-intent";
+import { isExcludedFromAutoReply } from "@/lib/meta/reply-exclusions";
 import { isSelfAuthored } from "@/lib/meta/self-account";
 import type { DmLeadClassification, IgComment } from "@/types/dm-leads";
 
@@ -99,8 +100,9 @@ const DEFAULT_MIN_SILENCE_HOURS = 24;
  *
  * Three conditions must hold. The commenter asked for the portfolio by using
  * the reel's keyword: anyone who commented something else never invited a DM,
- * so we leave them alone. The comment is not one of our own replies. And the
- * person has never written back to us.
+ * so we leave them alone. The comment is not one of our own replies, and the
+ * handle is not on the manual skip list. And the person has never written back
+ * to us.
  *
  * Silence is the only signal we have that a DM failed. When Instagram refuses
  * a message request the Graph API still reports success, no webhook fires, and
@@ -163,7 +165,9 @@ export async function getCommentsMissedByDm(
       // A reply must never be addressed to ourselves.
       !isSelfAuthored({ igUserId: c.ig_user_id, username: c.username }) &&
       // Only people who commented the reel's keyword asked to hear from us.
-      isPortRequest(c.text)
+      isPortRequest(c.text) &&
+      // Hand-maintained skip list: handled off the automation, or asked us to stop.
+      !isExcludedFromAutoReply(c.username)
   );
 }
 
