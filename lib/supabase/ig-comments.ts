@@ -1,4 +1,6 @@
 import { createAdminClient } from "@/utils/supabase/admin";
+import { isPortRequest } from "@/lib/meta/comment-intent";
+import { isSelfAuthored } from "@/lib/meta/self-account";
 import type { DmLeadClassification, IgComment } from "@/types/dm-leads";
 
 export async function upsertComment(params: {
@@ -87,23 +89,47 @@ export async function applyCommentClassification(
 }
 
 /**
- * Comments from people the DM automation never reached: no dm_conversations
- * row exists for their ig_user_id at all. If it did, some message — inbound
- * or outbound — would have created one. Absence means the automation's send
- * silently failed (opted out, blocked, "not opted in" window, etc).
- * Only returns comments inside `maxAgeDays` — the 7-day default
- * matches the private-reply window; public replies have no such limit, so the
- * bulk-reply action passes a wider window.
+ * How long to let a DM sit unanswered before treating it as undelivered.
+ * Long enough that someone who saw it overnight has had a chance to reply.
  */
-export async function getCommentsMissedByDm(maxAgeDays = 7): Promise<IgComment[]> {
+const DEFAULT_MIN_SILENCE_HOURS = 24;
+
+/**
+ * Comments we still owe a reply.
+ *
+ * Three conditions must hold. The commenter asked for the portfolio by using
+ * the reel's keyword: anyone who commented something else never invited a DM,
+ * so we leave them alone. The comment is not one of our own replies. And the
+ * person has never written back to us.
+ *
+ * Silence is the only signal we have that a DM failed. When Instagram refuses
+ * a message request the Graph API still reports success, no webhook fires, and
+ * the "Not everyone can message this profile" notice appears only in our own
+ * inbox: nothing reaches the database, so `send_status` stays null and
+ * `isDeliveryBlockedByPrivacy()` never sees the error it was built to catch.
+ * A conversation row therefore proves we tried, not that they heard us; only
+ * an inbound message proves that. Someone who received the DM and simply chose
+ * not to answer looks identical, which is why we wait `minSilenceHours` first
+ * and keep the reply worded as an offer rather than an accusation.
+ *
+ * Only returns comments inside `maxAgeDays`. The 7-day default matches the
+ * private-reply window; public replies have no such limit, so the bulk-reply
+ * action passes a wider window.
+ */
+export async function getCommentsMissedByDm(
+  maxAgeDays = 7,
+  minSilenceHours = DEFAULT_MIN_SILENCE_HOURS
+): Promise<IgComment[]> {
   const supabase = createAdminClient();
 
   const cutoff = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000).toISOString();
+  const silenceCutoff = new Date(Date.now() - minSilenceHours * 60 * 60 * 1000).toISOString();
 
   const { data: comments, error } = await supabase
     .from("ig_comments")
     .select("*")
     .gte("commented_at", cutoff)
+    .lte("commented_at", silenceCutoff)
     .is("replied_at", null)
     .not("ig_user_id", "is", null)
     .order("commented_at", { ascending: false });
@@ -118,8 +144,9 @@ export async function getCommentsMissedByDm(maxAgeDays = 7): Promise<IgComment[]
 
   const { data: matched, error: convError } = await supabase
     .from("dm_conversations")
-    .select("platform_user_id")
+    .select("id, platform_user_id, dm_messages!inner(direction)")
     .eq("platform", "instagram")
+    .eq("dm_messages.direction", "inbound")
     .in("platform_user_id", igUserIds);
 
   if (convError) {
@@ -128,7 +155,16 @@ export async function getCommentsMissedByDm(maxAgeDays = 7): Promise<IgComment[]
   }
 
   const reachedIds = new Set((matched ?? []).map((m) => m.platform_user_id));
-  return comments.filter((c) => c.ig_user_id && !reachedIds.has(c.ig_user_id));
+  return comments.filter(
+    (c) =>
+      c.ig_user_id &&
+      // Reached means they wrote back, not merely that we sent something.
+      !reachedIds.has(c.ig_user_id) &&
+      // A reply must never be addressed to ourselves.
+      !isSelfAuthored({ igUserId: c.ig_user_id, username: c.username }) &&
+      // Only people who commented the reel's keyword asked to hear from us.
+      isPortRequest(c.text)
+  );
 }
 
 export async function markCommentReplied(commentId: string): Promise<void> {

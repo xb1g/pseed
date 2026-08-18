@@ -32,7 +32,6 @@ export const PARENTS_HERO = {
   /** Answers the four fastest questions before the first scroll. */
   facts: [
     { label: "ระยะเวลา", value: "รอบละ 4-5 วัน" },
-    { label: "การดูแล", value: "mentor 1 คน ต่อเด็ก 4 คน" },
     { label: "พื้นฐาน", value: "เริ่มจากศูนย์ได้" },
     { label: "ค่าใช้จ่าย", value: "299 บาท ต่อคน" },
   ],

@@ -49,10 +49,10 @@ camp. Booking can be a spreadsheet.
 
 **Known risk:** `completion_percentage` is a DeepSeek judgment against a rubric
 you write. It is reliable for "did the student gather X." It is weak for "is the
-reasoning correct" and weakest for "did the student successfully defend their
-answer." Every `completion_criteria` below is written to be checkable on
-*observable conversation facts*, not on correctness. Where correctness matters,
-a human judges.
+reasoning correct." Every `completion_criteria` below is written to be checkable
+on *observable conversation facts*, not on correctness. Where correctness matters,
+a human judges — and after the Day 3 redesign, the only human judgment in the week
+happens in the Friday 1:1. See "What the AI-shortcut problem costs us now."
 
 ---
 
@@ -107,11 +107,12 @@ clock. Then: you cannot recognise what you have never been taught. Students lear
 five diseases, talk to a patient who could plausibly have any of them, and decide
 which one it is themselves.
 
-**This structure is also the fix for the AI-shortcut problem** (see the box at
-the end of Day 3). A closed set of five turns diagnosis from an open question
-into a discrimination task. An open question is what an AI answers well. "Which
-of these five, and why not the other four?" requires knowing what was taught, and
-because the symptoms overlap, a confidently-pasted AI answer is often wrong.
+**This structure is also the main remaining defence against the AI-shortcut
+problem** (see the section after this day). A closed set of five turns diagnosis
+from an open question into a discrimination task. An open question is what an AI
+answers well. "Which of these five, and why not the other four?" requires knowing
+what was taught, and because the symptoms overlap, a confidently-pasted AI answer
+is often wrong.
 
 `context_text`:
 > Yesterday you had all the time in the world. Real consultations don't work
@@ -159,7 +160,7 @@ because the symptoms overlap, a confidently-pasted AI answer is often wrong.
    exercise pays off.
 
 4. **Which one, and why not the others** (`text_answer`, 25 min) — the day's
-   deliverable, and the input to Day 3:
+   deliverable, and the main thing the mentor reads before that student's 1:1:
    - Which of the five do you think this is?
    - Which two were your closest runners-up?
    - For each runner-up: what specifically argues against it in *this* patient?
@@ -169,6 +170,17 @@ because the symptoms overlap, a confidently-pasted AI answer is often wrong.
    *Question 3 is the one that matters. A student who can only argue for their
    answer has not diagnosed anything, they have guessed and rationalised. The
    ruling-out is the skill.*
+
+   **Every claim ends in a quote or an admission.** Each line of the answer must
+   end in one of exactly two ways:
+   - a direct quote of what the patient said, or
+   - **"the patient never told me this."**
+
+   *This requirement moved here from the deleted Day 3. The "never told me this"
+   option is load-bearing: it is the honest answer for a feature they did not ask
+   about, and it turns a gap in their history-taking into a visible finding
+   instead of something to bluff past. It is also what makes the deliverable hard
+   to produce from an external AI, which has never seen this student's transcript.*
 
 ## Day 2 timeline
 
@@ -187,168 +199,71 @@ because the symptoms overlap, a confidently-pasted AI answer is often wrong.
 
 ---
 
-# Day 3 — Objection
-
-**Point of the day:** in medicine, being right is not enough. You have to show
-your reasoning to someone trying to break it. This is the highest-value day for
-the fit question — it is where students discover whether they find defending
-their thinking energizing or humiliating.
-
-**The change from the original plan: off-time research is deleted.** Research
-happens in the block.
-
-`context_text`:
-> Yesterday you picked one of five. Today you find out whether you picked it for
-> a reason. Someone is going to disagree with you, and "it seemed right" is not
-> going to survive.
-
-**Activities**
-
-**AI policy for today — state this out loud to students.**
-
-> You may use AI to research the diseases. You may not use AI to decide what your
-> patient has. Looking up what a condition looks like is what a textbook is for,
-> and AI is a faster textbook. But no AI has met your patient. Only you have the
-> conversation, so only you can do the matching.
-
-The two activities below enforce this by structure, not by trust. Part A is a
-task AI can help with and no learning is lost. Part B is a task AI cannot do,
-because the evidence exists only in the student's own transcript.
-
-1. **Part A — the diseases, in general** (`text`/`ai_chat`, 20 min) — **AI
-   allowed and encouraged.** Students research their answer and the two runners-up
-   they named on Day 2. Deliverable, a three-column comparison:
-   - What does each condition typically look like?
-   - Who typically gets it?
-   - In principle, what single finding most cleanly separates each pair?
-
-   Nothing about their patient goes in Part A. This is textbook work. Students
-   should note where they got each answer, including "asked the AI" — that is a
-   legitimate citation today, not a confession.
-
-   Narrowing this from "research your case" to "separate these three" is
-   deliberate. It is a task with a right shape, so students who do not know how to
-   research still produce something usable.
-
-2. **Part B — this patient, specifically** (`text_answer`, 20 min) — **no AI.**
-   The commitment, and the day's real deliverable. For every row of their Part A
-   comparison, students state what their own patient showed, and each line must
-   end in one of exactly two ways:
-   - a direct quote of what the patient said, or
-   - **"the patient never told me this."**
-
-   Then:
-   - Which of the five is it?
-   - Which two facts from your own conversation most support that?
-   - For each runner-up, what in *this* patient argues against it?
-   - What would you ask if you could go back?
-
-   *The "never told me this" option is load-bearing. It is the honest answer for
-   a feature they did not ask about, and it turns a gap in their history-taking
-   into a visible finding instead of something to bluff past. Students who
-   fabricate get caught in the spoken defence. Students who admit the gap have
-   learned exactly what they missed — which is the point of the whole week.*
-
-   The commitment must happen before the objection, or there is nothing at stake.
-
-3. **The objection** (`ai_chat`, 30 min) — the AI presses on what they committed
-   to. Full prompt below. Treat this as rehearsal, not assessment.
-
-4. **Spoken defence** (live, 30 min) — **the real one.** Pairs in breakouts, then
-   the mentor samples. Each student has 90 seconds to answer, out loud:
-   - Which one is it, and why not your first runner-up?
-   - What would change your mind?
-   - What did you have to ask for that the patient never offered?
-
-   Speaking is what makes this uncheatable. A student who understands their case
-   answers in four seconds. A student holding an AI tab cannot, and the pause is
-   audible. Text is never the answer medium here.
-
-   **Mentor sampling:** with 20 students the mentor cannot hear everyone. Rotate
-   through all four rooms and hear 5 students, chosen from whoever's `ai_chat`
-   `completion_percentage` looked *suspiciously perfect* as much as from whoever
-   looked stuck. Announce in advance that sampling happens but not who.
-
-## Day 3 timeline
-
-| Time | What | AI |
-|---|---|---|
-| 0:00–0:05 | State the AI policy out loud | — |
-| 0:05–0:25 | Part A: the diseases, in general | **allowed** |
-| 0:25–0:45 | Part B: this patient, specifically | **no** |
-| 0:45–1:15 | The objection (rehearsal) | our AI only |
-| 1:15–1:45 | Spoken defence, pairs + mentor sampling | none, spoken |
-| 1:45–2:00 | Reflection | — |
-
-`reflection_prompts`:
-- When you were challenged, did you want to defend your answer or abandon it?
-- Was it harder to say out loud than to write? Why do you think that is?
-- Where did AI actually help you today, and where did it turn out to be useless?
-- Was being questioned interesting or unpleasant? Answer honestly. There is no
-  right answer and nobody sees this but you.
-
----
-
-## The AI-shortcut problem, and what actually fixes it
+## What the AI-shortcut problem costs us now
 
 **The failure:** a student pastes the patient's clues into an external AI, gets
-"probably X because Y and Z," pastes that into the objector, pastes the
-objector's pressure back into the AI, and pastes the defence back. They are a
-copy-paste pipe between two AIs. `completion_percentage` reaches 100 and the
-transcript reads *excellently* — so the mentor sees a top performer. This is
-worse than a student who struggles visibly.
+"probably X because Y and Z," and pastes that back as their Day 2 deliverable.
+`completion_percentage` reaches 100 and the transcript reads *excellently* — so
+the mentor sees a top performer. This is worse than a student who struggles
+visibly, because it misdirects the one scarce resource in the camp: mentor
+attention.
 
 **Why prompting cannot fix it.** `completion_criteria` scores the words in the
 conversation, and AI-generated words satisfy any rubric better than a real
 student's words do. A stricter rubric makes it worse, because it selects harder
 for polished text. Any fix living inside the AI chat is theatre.
 
-**The framing that resolves it: do not ban AI, split the task.**
-
-"Research the disease" and "match it to the patient" are different operations,
-and only the second one is the learning. Looking up what a condition looks like
-is textbook work — AI is a faster textbook and nothing is lost. Deciding whether
-*this* patient has it requires the transcript the AI never saw.
-
-So Day 3 splits into Part A (AI allowed, general disease knowledge) and Part B
-(no AI, and structurally useless, because every claim must cite the student's own
-conversation).
-
-**Sanctioning AI for Part A is itself a control.** A student secretly using AI
-conceals it and you learn nothing. A student using it where it is permitted has no
-reason to hide, so the ones reaching for it in Part B are visibly doing something
-different from everyone else.
-
-Five layers, none of which depend on the rubric:
+**What the current design still has.** Three layers, none of which depend on the
+rubric:
 
 1. **Closed set of five with ambiguous overlap** (Day 2). Turns an open question
    into a discrimination task. The AI's confident answer is frequently wrong when
    the five genuinely overlap, so pasting it is a losing strategy rather than a
-   winning one.
-2. **Task split.** AI is aimed at the half where it does no harm, which removes
-   most of the motive to misuse it on the half where it does.
-3. **Private information.** The discriminating details exist only in *that
+   winning one. This is now the strongest remaining control, which raises the
+   stakes on getting the overlap right.
+2. **Private information.** The discriminating details exist only in *that
    student's* Day 2 transcript, because the patient volunteers nothing. An
    external AI cannot know what the patient said unless the student pastes the
    whole conversation — enough friction to stop the lazy default, which is the
    actual problem. Determined students are not the ones to design around.
-4. **Quotation or admission required.** Every Part B line ends in a patient quote
-   or "the patient never told me this." Generic AI reasoning produces neither.
-5. **Spoken defence.** The one robust layer. Removes text as the answer medium
-   entirely.
+3. **Quotation or admission required.** Every line of the Day 2 deliverable ends
+   in a patient quote or "the patient never told me this." Generic AI reasoning
+   produces neither.
 
-**What this does not do:** stop a determined, well-organised student who pastes
-transcripts and rehearses. Accept that. The goal is that the *easy* path runs
-through actually thinking, and that anyone taking the shortcut gets caught the
-moment they have to speak.
+**What was removed, and what it cost.** An earlier draft had a Day 3 built around
+an AI objector plus a 90-second spoken defence in pairs. The spoken defence was the
+one robust layer — it removed text as the answer medium entirely, and a student
+holding an AI tab could not answer in four seconds. Both were cut on the judgment
+that being challenged by an AI carries no real social pressure and therefore
+cannot test tolerance for being questioned, which was the day's stated purpose.
+
+That judgment is about the *objector*. Cutting the spoken defence alongside it was
+a deliberate simplification, and the cost is real: **there is now no point in the
+week where a student has to account for their reasoning out loud.** A well-organised
+student who routes Day 2 through an external AI will not be detected.
+
+**If this turns out to matter on the day**, the cheapest patch is not to rebuild
+Day 3. It is to add one question to the Friday 1:1, which is already a real
+conversation with a real person: *"Tell me about your Tuesday patient. Why not
+your first runner-up?"* Ten minutes with a mentor who has read the transcript
+does the same work the spoken defence did, at no extra cost in camp time, and
+without the artificial pressure of a simulated objection.
 
 ---
 
-# Day 4 — The Parts Nobody Posts
+# Day 3 — The Parts Nobody Posts
 
 **Point of the day:** the parts of medicine the week has not shown yet — what a
 hard decision actually costs, what the years look like, and what it is like to
 put your hands on a real person.
+
+**Design change from the earlier draft: the Objection day is deleted.** It ran an
+AI "senior doctor" that pressed on the student's Day 2 diagnosis, plus a spoken
+defence in pairs. Both are cut, because being challenged by an AI carries no real
+social pressure, and pressure that is not real cannot test tolerance for being
+questioned — which was the day's whole purpose. The ethics debate moves into this
+slot, and Day 4 becomes the med terminology lecture. The cost of the deletion is
+recorded in the section immediately above this one.
 
 `context_text`:
 > Everything this week has been the interesting part of medicine. Today, the
@@ -398,6 +313,91 @@ Shapes that work (your med student fills in with actual Thai cases):
 *The last shape is the most valuable one for this camp, because it is the one
 they are least ready for: doing everything right and still being wrong. That is
 the consequence students never imagine when they picture being a doctor.*
+
+## Day 3 timeline
+
+| Time | What |
+|---|---|
+| 0:00–1:00 | The debate |
+| 1:00–1:50 | Ethics carried into practice — see below |
+| 1:50–2:00 | Reflection |
+
+**0:00–1:00 — the debate**, exactly as structured above.
+
+**1:00–1:50 — ethics carried into practice.** The debate is one case argued from
+assigned sides. This block is the students' own position, in their own voice, on a
+case nobody assigned them. Two parts:
+
+1. **A second case, argued freely** (`text_answer` then Discord, 30 min) — a
+   different shape from the debate case, presented cold. No assigned sides this
+   time. Students write where they stand and what it costs, then discuss in the
+   same two rooms. The mentor's job is to keep asking "and what does that cost the
+   other person?"
+
+2. **The line you would not cross** (`text_answer`, 20 min) — the day's private
+   deliverable. Not a hypothetical:
+   - Of the two cases today, which decision would you find hardest to live with?
+   - What would you need to believe to make the other choice?
+   - Is there anything you are fairly sure you would refuse to do, even if a
+     senior told you to? Why that one?
+
+   *This is the closest the week comes to asking a student what kind of doctor
+   they would be, and it is the piece worth reading before their 1:1.*
+
+`reflection_prompts`:
+- In the debate, what was the strongest point made by the side you were arguing
+  against?
+- Was there a moment today where you changed your mind? What changed it?
+- Which was harder: arguing a side you disagreed with, or saying what you
+  actually think?
+
+---
+
+# Day 4 — The Words and the Hands
+
+**Point of the day:** two things the week has not given them yet. The vocabulary
+that makes medicine legible, and the first time they put their hands on a person.
+
+**Design change: this day was previously the ethics debate**, which has moved to
+Day 3. The med terminology lecture is new and replaces the deleted Objection day.
+
+`context_text`:
+> You have spent three days talking to patients in ordinary words. Today you learn
+> the words doctors use with each other, and then you use your hands.
+
+## Med terminology — the lecture (45 min)
+
+**General med school vocabulary, not the five conditions.** This is deliberately
+broad: the foundational language students will meet in year 1, not a glossary
+bolted onto this week's cases. It is the piece of the camp that most resembles
+what students imagine "learning medicine" is, and that recognition is part of its
+value.
+
+**What it needs to cover** — your med student sets the actual list:
+
+- **Word construction.** Prefixes, suffixes, roots. Once a student can take
+  `hepat-` + `-itis` apart, they can decode hundreds of terms they were never
+  taught. This is the highest-leverage 15 minutes of the block: teach the machine,
+  not the output.
+- **Anatomical direction and position.** Proximal/distal, superior/inferior,
+  medial/lateral, anterior/posterior. Needed to read anything.
+- **The vocabulary of describing a patient.** Acute vs chronic, onset, duration,
+  bilateral, the difference between a symptom and a sign.
+- **Common abbreviations** they will see on any chart or in any case write-up.
+
+**Teaching rule: build, don't list.** A slide of 80 terms teaches nothing. Give
+them the pieces and make them assemble words they have never seen. A student who
+can construct `bradycardia` from parts has learned something transferable; a
+student who memorised it has learned one word.
+
+**Delivery:** live from the mentor with a handout students keep, or `short_video`
+plus a `text` reference sheet on the platform. The handout matters more than the
+lecture — it joins the toolkit page as something they physically keep.
+
+**Optional closer (5 of the 45 min):** hand them a real case write-up or discharge
+summary, dense with terminology, and have them decode it. It converts the lecture
+from vocabulary into the experience of reading medicine and understanding it,
+which is a different and better feeling.
 
 ## The physical examination
 
@@ -484,21 +484,23 @@ minutes with notes. Budget for it.
 
 | Time | What |
 |---|---|
-| 0:00–1:00 | The debate |
-| 1:00–1:35 | The physical examination |
-| 1:35–1:55 | What the years look like |
-| 1:55–2:00 | The warning + reflection |
+| 0:00–0:45 | Med terminology lecture + decode exercise |
+| 0:45–1:20 | The physical examination |
+| 1:20–1:40 | What the years look like |
+| 1:40–1:45 | The warning |
+| 1:45–2:00 | Reflection |
 
 **The toolkit moved to Day 5.** Day 4 is full, and the toolkit is more useful
 written immediately before the new patient anyway.
 
-**If it overruns**, cut "what the years look like" to 12 minutes. Do not cut the
-debate or the examination — they are the day.
+**If it overruns**, cut the lecture's decode exercise (5 min) first, then "what
+the years look like" to 12 minutes. Do not cut the examination — students only
+touch a real person once all week, and the video has to reach the mentor tonight.
 
 `reflection_prompts`:
 - What did you hear today that you did not know before?
-- In the debate, what was the strongest point made by the side you were arguing
-  against?
+- Which piece of terminology did you find you could work out for yourself once you
+  knew the parts?
 - What surprised you about examining a real person? What was awkward about it?
 - Did today make medicine more or less attractive to you? Either answer is fine.
 
@@ -544,8 +546,8 @@ day, not at the end. They need the mentor at his sharpest, and they are the
 students the camp most needs to reach.
 
 **Structure of a 1:1 (10 min).** The mentor has read that student's week before
-the call — their Day 2 diagnosis, their Day 3 Part B, their exam video, and what
-they missed.
+the call — their Day 2 diagnosis and the reasoning behind it, their Day 3 "line
+you would not cross," their exam video, and what they missed.
 
 - **3 min — one specific thing they did well.** Not "good job." Something only
   true of them: *"You asked about her sleep. Nobody else did, and it was the
@@ -651,7 +653,7 @@ had told him at M4. No ceremony, no ranking, no certificates.
 **Instructions (student-facing):**
 > This patient is new. Nobody has told you what is wrong with them. You have 15
 > messages and your cheat sheet. Find out who they are and what is happening to
-> them. When you are done, you will tell your group about them.
+> them. When you are done, you will write up what you found.
 
 **`metadata.system_prompt`:**
 ```
@@ -664,7 +666,7 @@ today rather than last week.]
 
 WHAT IS ACTUALLY WRONG
 [AUTHOR: fill in the true underlying diagnosis. It must be one of the five taught
-on Day 2, and NOT the one this student concluded on Day 2-3. NEVER state it
+on Day 2, and NOT the one this student concluded on Day 2. NEVER state it
 directly. It must be assembled by the student from what you say.]
 
 WHAT YOU SHARE WITH THE OTHER FOUR
@@ -816,91 +818,31 @@ it concrete.
 
 ---
 
-## Day 3 — `ai_chat` (the objector)
+## The objector — deleted, and what survives it
 
-**Title:** Objection
+**This section previously held a full `ai_chat` system prompt for a "senior
+doctor" who pressed on the student's Day 2 diagnosis.** It has been removed along
+with Day 3's Objection format. Nothing needs to be authored here.
 
-**`metadata.system_prompt`:**
-```
-You are an experienced senior doctor reviewing a student's diagnostic reasoning.
-Your job is to press on it until it either holds or breaks. You are not hostile
-and you are not sarcastic. You are demanding.
+**Why it went:** an AI objection carries no real social pressure. The day existed
+to show students what being questioned feels like, and a simulated challenge
+cannot deliver that — a student can close the tab, take as long as they like, and
+nobody watches them be wrong. Pressure that is not real does not test tolerance
+for pressure.
 
-The student has committed in writing to a most-likely diagnosis and their
-supporting reasons. Take their reasoning seriously and then push on it.
+**What survives, and where it goes: the questions themselves were good.** They are
+worth keeping as prompts for the mentor in the Friday 1:1, where the person asking
+is real and the student answers out loud. Use one or two, not all of them — the
+1:1 is ten minutes and encouragement matters more than interrogation.
 
-THE SET
-The student has been taught exactly five conditions and has chosen one of them:
-[AUTHOR: list the five here]
-Confine your challenges to these five. Do not introduce a sixth condition.
+- What specifically rules out your next most likely of the other four?
+- What did your patient say, in their own words, that supports you?
+- What would you expect to see if you were wrong?
+- If it is "the most common one" — is common the same as likely in *this* patient?
 
-HOW YOU PRESS
-- Ask what specifically rules out the next most likely of the other four.
-- Point out any evidence they have not accounted for.
-- If they cite a fact, ask how it distinguishes their answer from another one.
-  A fact consistent with three of the five is not evidence for one of them. Press
-  hardest on facts that are actually shared across the set.
-- Ask them what their patient said, in the patient's own words, that supports
-  them. If they cannot produce anything specific to their own conversation, keep
-  asking for it.
-- If they say "it's most common," ask whether common is the same as likely in
-  this particular patient.
-- Ask what they would expect to see if they were wrong.
-- Ask what they would do if they could not order any test.
-
-RULES
-- Never tell them whether they are right. Not at the end either.
-- Never supply the answer or the reasoning you are fishing for.
-- Do not accept "I think so" or "it feels right" — ask what it is based on.
-- If they change their mind with good reason, acknowledge it and press the new
-  answer just as hard.
-- If they change their mind only because you pushed, say so and ask whether the
-  evidence actually changed.
-- Never apologise for questioning them.
-- One question at a time.
-```
-
-**`metadata.objective`:**
-```
-The student has defended their diagnosis under sustained questioning: they have
-distinguished their answer from at least one alternative, stated what evidence
-would change their mind, and accounted for at least one piece of evidence they
-had initially left out.
-```
-
-**`metadata.completion_criteria`:**
-```
-Score on OBSERVABLE FACTS only. Do NOT score on whether the student's diagnosis
-is correct — a student can defend a wrong answer well, and that counts as
-success here.
-
-CRITICAL: Do not award points for agreement, politeness, or confidence. Do not
-award points because the student answered at length. A student who concedes
-every time they are challenged scores LOW, not high.
-
-Award 20 points each, maximum 100:
-1. The student gave a specific reason distinguishing their diagnosis from at
-   least one other named condition in the set of five.
-2. The student stated what evidence or finding would change their mind.
-3. The student addressed at least one piece of evidence they had not accounted
-   for in their original written commitment.
-4. The student referred to something specific their own patient said, rather than
-   to general features of the condition.
-5. The student maintained or revised their position with stated reasoning, as
-   opposed to abandoning it under pressure or restating it unchanged.
-
-Be strict. Partial credit is not available per criterion.
-```
-
-**Author warning:** this score is *diagnostic for the mentor, not a gate for the
-student.* Do not treat 100% here as evidence a student understands their case —
-a well-executed copy-paste through an external AI scores higher than an honest
-struggling student. Use it to decide who to walk toward and who to sample in the
-spoken defence, in both directions: unusually low *and* suspiciously perfect.
-
-Test it before camp by giving deliberately weak, agreeable answers and confirming
-it scores low. If everyone finishes at 100% on the day, the criteria are too soft.
-Criterion 4 is the one that most resists AI-generated answers — keep it.
+*Tone note for the mentor: this is not a viva. Ask because you are curious about
+their reasoning, not to find out whether they are right. If a student cannot
+answer, that is a thing to be helped with in the moment, not a result to record.*
 
 ---
 
@@ -924,9 +866,10 @@ them.** That is built from four things, in order of how much they matter:
 4. **A next step concrete enough to act on**, made concrete by the mentor in the
    1:1, not chosen from a menu alone.
 
-**What they physically keep:** their toolkit page (written Day 4), their two
-transcripts, and their next step. Nothing is shared with parents by default. If a
-student wants to show their family, that is their choice to make.
+**What they physically keep:** their toolkit page (written Day 5), the
+terminology handout from Day 4, their two transcripts, and their next step.
+Nothing is shared with parents by default. If a student wants to show their
+family, that is their choice to make.
 
 **Private** — verdict reflection and the 30-day step. Student's own copy, and
 say so out loud.
@@ -955,10 +898,20 @@ record, not evidence of capability. Do not spend engineering time on it.*
    concluded earlier in the week, and must be genuinely reachable with the
    comparison table plus good questioning. Second-hardest authoring problem.
 
-3. **All `completion_criteria` wording**, tested before camp with deliberately
+3. **The two Day 3 ethics cases**, real and Thai, where both sides cost something.
+   The debate case gets assigned sides; the second case does not. Now the whole
+   centre of Day 3, so it carries more weight than in the earlier draft — one
+   thin case will show.
+
+4. **The Day 4 terminology list.** What actually gets taught in 45 minutes: which
+   roots, prefixes and suffixes, which directional terms, which abbreviations,
+   and the real case write-up used for the decode exercise. Keep it general med
+   school vocabulary rather than a glossary for the five conditions.
+
+5. **All `completion_criteria` wording**, tested before camp with deliberately
    weak answers.
 
-4. **Day 4's honest account.** Nobody else can give it.
+6. **Day 4's honest account.** Nobody else can give it.
 
 # Open engineering question
 

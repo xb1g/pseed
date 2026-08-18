@@ -113,6 +113,7 @@ invitation.html
 # SECURITY: wildcard patterns for local scripts and temp files
 scripts/*-local.js
 scripts/*-local.mjs
+scripts/*-local.ts
 scripts/.state/
 supabase/.temp/
 

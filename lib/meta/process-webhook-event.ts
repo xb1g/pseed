@@ -11,6 +11,7 @@ import {
 import { applyCommentClassification, upsertComment } from "@/lib/supabase/ig-comments";
 import { classifyConversationText } from "@/lib/meta/classify";
 import { getInstagramProfile } from "@/lib/meta/graph";
+import { isSelfAuthored } from "@/lib/meta/self-account";
 import type { NormalizedAttachment, NormalizedMetaEvent } from "@/lib/meta/webhook-events";
 import type { MetaWebhookEventResult } from "@/lib/supabase/meta-webhook-events";
 import type { DmMessageType } from "@/types/dm-leads";
@@ -209,6 +210,11 @@ export async function processMetaWebhookEvent(
     }
 
     case "comment.created_or_updated": {
+      // Our own replies arrive on this webhook too; storing them would put us
+      // in our own lead queue.
+      if (isSelfAuthored({ igUserId: event.platformUserId, username: event.username })) {
+        return { status: "ignored", skipReason: "comment_from_self" };
+      }
       const comment = await upsertComment({
         igCommentId: event.commentId,
         mediaId: event.mediaId,

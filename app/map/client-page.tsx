@@ -16,6 +16,10 @@ interface MapsClientPageProps {
   initialData: InitialData;
 }
 
+// Allowlist of published pathlabs; every other map/pathlab stays hidden for now.
+// Matched as a lowercase substring of the map title.
+const VISIBLE_MAP_TITLES = ["launchpad", "med seed camp"];
+
 export function MapsClientPage({ initialData }: MapsClientPageProps) {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const { groupMapsByType } = useMapTypeInfo();
@@ -36,9 +40,12 @@ export function MapsClientPage({ initialData }: MapsClientPageProps) {
     closePreviewDialog,
   } = useMapOperations({ initialData });
 
-  // Only show LaunchPad — Startup Trial for now; hide all other maps/pathlabs
   const visibleMaps = useMemo(
-    () => maps.filter((map) => map.title.toLowerCase().includes("launchpad")),
+    () =>
+      maps.filter((map) => {
+        const title = map.title.toLowerCase();
+        return VISIBLE_MAP_TITLES.some((allowed) => title.includes(allowed));
+      }),
     [maps]
   );
 

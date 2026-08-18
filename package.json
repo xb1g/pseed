@@ -41,7 +41,8 @@
     "jobs:monitor:watch": "tsx scripts/monitor-jobs.ts --watch",
     "bot:dev": "dotenv -e .env.local -o -- tsx watch bot/src/index.ts",
     "bot:start": "tsx bot/src/index.ts",
-    "bot:register": "dotenv -e .env.local -o -- tsx bot/src/index.ts --register-commands"
+    "bot:register": "dotenv -e .env.local -o -- tsx bot/src/index.ts --register-commands",
+    "cleanup:self-comments": "dotenv -e .env.local -o -- tsx scripts/mark-self-comments-replied.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.38",
