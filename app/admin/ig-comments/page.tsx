@@ -20,12 +20,11 @@ import type { DmLeadStage } from "@/types/dm-leads";
 export const dynamic = "force-dynamic";
 
 /**
- * The bulk reply runs as a server action under this route segment, and one
- * pass posts up to BULK_REPLY_BATCH_CAP comments a second apart. The platform
- * default cut that off after roughly four replies, so the budget has to cover
- * the whole batch with room to spare.
+ * 60 is the ceiling this Vercel plan allows, so the batch is sized to finish
+ * well inside it rather than the budget being sized to the batch. The client
+ * card chains runs back to back to work through a queue larger than one pass.
  */
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 const STAGE_LABEL: Record<DmLeadStage, string> = {
   unknown: "Unknown",

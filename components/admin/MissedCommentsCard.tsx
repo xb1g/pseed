@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,19 +29,59 @@ export function MissedCommentsCard({
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [result, setResult] = useState<BulkReplyResult | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [running, setRunning] = useState(false);
+  const [runs, setRuns] = useState(0);
+  /**
+   * Read inside the loop between passes, so Stop takes effect after the run in
+   * flight rather than abandoning replies mid-batch. State alone would be stale
+   * inside the closure.
+   */
+  const stopRequested = useRef(false);
 
   if (comments.length === 0) return null;
 
   const batchSize = Math.min(comments.length, BULK_REPLY_BATCH_CAP);
 
-  const send = () => {
-    startTransition(async () => {
-      const replyResult = await replyToAllMissedComments();
-      setResult(replyResult);
-      setConfirming(false);
+  /**
+   * One pass is capped so it finishes inside the platform's 60s function limit,
+   * so a queue larger than the cap needs several passes. Chaining them here
+   * keeps every request short while still draining the queue in one click.
+   *
+   * The loop trusts `skipped`, the count the action could not reach this pass,
+   * rather than a local guess at what is left. Successes are marked as replied
+   * before the next pass queries again, so the queue shrinks; failures are not,
+   * so a pass that sends nothing means only unsendable work is left and
+   * repeating it would spin. It stops on any of: nothing left, no progress,
+   * Stop pressed, or MAX_PASSES as a backstop against an unforeseen loop.
+   */
+  const MAX_PASSES = 60;
+
+  const send = async () => {
+    setRunning(true);
+    setConfirming(false);
+    stopRequested.current = false;
+    const totals: BulkReplyResult = { sent: 0, failed: 0, skipped: 0, errors: [] };
+    let passes = 0;
+
+    try {
+      for (;;) {
+        const pass = await replyToAllMissedComments();
+        passes += 1;
+        totals.sent += pass.sent;
+        totals.failed += pass.failed;
+        totals.skipped = pass.skipped;
+        totals.errors.push(...pass.errors);
+        setResult({ ...totals, errors: [...totals.errors] });
+        setRuns(passes);
+
+        const madeProgress = pass.sent > 0;
+        if (pass.skipped === 0 || !madeProgress || stopRequested.current) break;
+        if (passes >= MAX_PASSES) break;
+      }
+    } finally {
+      setRunning(false);
       router.refresh();
-    });
+    }
   };
 
   return (
@@ -50,8 +90,8 @@ export function MissedCommentsCard({
         <CardTitle>Missed by DM — {comments.length} unreplied</CardTitle>
         <CardDescription>
           These commenters have no DM thread (Instagram blocked the automated DM), so we can
-          only reach them with a public reply. The batch sends this exact message to each,
-          up to 50 per run:
+          only reach them with a public reply. This exact message goes to each, {batchSize} at
+          a time until the queue is empty:
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -76,7 +116,9 @@ export function MissedCommentsCard({
         {result && (
           <p className="text-sm">
             Sent {result.sent}, failed {result.failed}
-            {result.skipped > 0 && `, skipped ${result.skipped} (over batch cap)`}.
+            {result.skipped > 0 && `, ${result.skipped} still queued`}
+            {runs > 1 && ` · ${runs} runs`}
+            {running && " · running…"}.
             {result.errors.length > 0 && (
               <span className="block text-xs text-destructive">
                 {result.errors.slice(0, 5).join(" · ")}
@@ -86,22 +128,27 @@ export function MissedCommentsCard({
           </p>
         )}
 
-        {confirming ? (
+        {running ? (
           <div className="flex items-center gap-2">
-            <Button onClick={send} disabled={isPending}>
-              {isPending ? "Replying…" : `Confirm — reply publicly to ${batchSize}`}
+            <Button disabled>
+              Replying… {result ? `${result.sent} sent` : ""}
             </Button>
-            <Button variant="outline" onClick={() => setConfirming(false)} disabled={isPending}>
+            <Button variant="outline" onClick={() => (stopRequested.current = true)}>
+              Stop after this batch
+            </Button>
+          </div>
+        ) : confirming ? (
+          <div className="flex items-center gap-2">
+            <Button onClick={send}>
+              Confirm — reply publicly to all {comments.length}
+            </Button>
+            <Button variant="outline" onClick={() => setConfirming(false)}>
               Cancel
             </Button>
           </div>
         ) : (
-          <Button
-            variant="outline"
-            onClick={() => setConfirming(true)}
-            disabled={isPending}
-          >
-            Reply publicly to all {batchSize}
+          <Button variant="outline" onClick={() => setConfirming(true)}>
+            Reply publicly to all {comments.length}
           </Button>
         )}
       </CardContent>

@@ -7,9 +7,15 @@
  */
 
 /**
- * Replies posted per run. Sized against `maxDuration` on the page: 50 replies
- * a second apart plus Graph round trips runs near 100s, inside a 300s budget.
- * Raising this without raising that budget truncates the batch mid-run, which
- * is how a "reply to 50" click ended up posting four.
+ * Replies posted per run.
+ *
+ * The plan caps a serverless function at 60s. Observed sends run about 2s each
+ * including the 1s spacing, so 15 replies is roughly 30s: half the budget,
+ * leaving room for a slow Graph response without truncating the run. Raising
+ * this without raising `maxDuration` on the page is what turned an earlier
+ * "reply to 50" click into four replies and a 504.
+ *
+ * A queue longer than one pass is handled by the card running the action again
+ * rather than by making any single run longer.
  */
-export const BULK_REPLY_BATCH_CAP = 50;
+export const BULK_REPLY_BATCH_CAP = 15;
