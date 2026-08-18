@@ -349,6 +349,57 @@ export const NOTES = {
   partnerContact: "คุยกันก่อนได้ ยังไม่ต้องตัดสินใจ",
 } as const;
 
+/**
+ * Poster-only copy for /pathlab/poster. The poster is a dated print
+ * artifact, not a mirror of the live sections: it names real round dates and
+ * curates its own comment picks, so that wording lives here. Amounts,
+ * currencies and field labels are still pulled from PRICE_TIERS / FIELDS at
+ * render time so the numbers can never drift from the site.
+ */
+export const POSTER = {
+  headline: "หาสายที่ใช่ ผ่านการทำ Professional Project",
+  subline: "5 วัน เลือก 1 สายที่อยากลองทำ Project",
+  /** The four fields the poster promotes, matched against FIELDS by label. */
+  fieldLabels: ["Web Dev", "Game Dev", "Business Innovation", "Medical"],
+  /** The round's actual meeting times, under the fields. */
+  schedule: "เจอกัน 22-23, 26-28 · 19:00-21:00",
+  /** Rubber-stamp badge tossed beside the hero: the number-one worry, answered.
+      The space is deliberate — it sets the line break inside the stamp. */
+  stamp: "ไม่ต้องมี พื้นฐาน",
+  commentsHeading: "Comment จากรุ่นพี่",
+  /**
+   * Verbatim as sent. The first two also live in REVIEWS; ohm_kyzz is
+   * poster-only. Not rendered on the poster right now (it went image-first),
+   * kept here as the curated quote bank for print material.
+   */
+  comments: [
+    {
+      quote:
+        "สอนเข้าใจง่ายมาก เรียนสนุก นอกจากนี้ยังได้เจอเพื่อน ๆ และรุ่นพี่ในสายในวงการเดียวกัน เรียนเสร็จเลยได้กำลังใจ แรงบันดาลใจมาเต็มเลย",
+      ig: "IG:cathatput_02",
+      by: "รุ่นพี่จุฬา CEDT",
+    },
+    {
+      quote:
+        "ถ้าอยากแลของหรอย ๆ อยากเรียน Tech แบบเข้าใจง่าย ๆ แนะนำให้มาแล Techseed กันตะพี่บ่าวทั้งหลาย เขาสอนดีนิ อธิบายเข้าใจง่าย",
+      ig: "IG:victorchenspec",
+      by: "รุ่นพี่บางมด วิศวะกรรมระบบปัญญาประดิษฐ์",
+    },
+    {
+      quote: "งานที่จะทำให้น้องๆเข้าใจการทำงานในสาย tech มากขึ้น",
+      ig: "IG:ohm_kyzz",
+      by: "รุ่นพี่ลาดกระบัง IT",
+    },
+  ],
+  /**
+   * The poster's price rows keep only what a reader needs; the amounts and
+   * currency still come from PRICE_TIERS, keyed by tone.
+   */
+  priceUnits: { solo: "ต่อคน", group: "ทั้งกลุ่ม 4 คน · private class" },
+  /** 999 ÷ 4 — the group deal quietly beats going solo. */
+  priceNote: "มาเป็นกลุ่ม ตกคนละไม่ถึง 250 เอง",
+} as const;
+
 export interface PriceTier {
   /** Who it is for / tier name. */
   label: string;
@@ -755,7 +806,7 @@ export const OFFER_CARDS: OfferCard[] = [
   },
   {
     title: "Mentor",
-    body: "จะมี mentor คอยวางแผนเส้นทางหลังจบโปรเจกต์ว่าควรจะเตรียมตัวต่อยังไง",
+    body: "จะมี mentor คอยวางแผนเส้นทางหลังจบโปรเจกต์ว่าควรจะเตรียมตัวต่อยังไงให้เข้ามหาลัย",
   },
 ];
 

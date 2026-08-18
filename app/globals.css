@@ -10813,8 +10813,11 @@ summary:focus-visible .radar-expand-indicator {
 .pathlab-poster-stage {
   min-height: 100vh;
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  /* Column so the download action sits under the sheet rather than beside it. */
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 28px;
   padding: clamp(1rem, 4vw, 3rem);
   background: #524746;
 }
@@ -10822,16 +10825,34 @@ summary:focus-visible .radar-expand-indicator {
 /* One A4 portrait sheet. Fixed physical size: the layout inside is authored
    in px against this known canvas, so no clamps are needed. */
 .pathlab-poster {
+  position: relative;
   width: 210mm;
   min-height: 297mm;
+  /* The stage is a column flex container; without this the sheet would be
+     squeezed by flex shrinking on tall viewports. */
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  /* Any slack left after the content is spread evenly between sections, so
+     the sheet never dies with a blank band at the foot. */
+  justify-content: space-between;
   gap: 7mm;
-  padding: 11mm 13mm;
+  padding: 9mm 13mm;
   background: #fdf3e6;
   color: #524746;
   font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+/* A marker frame just inside the edge: slightly uneven corners keep it
+   hand-drawn rather than machined. */
+.pathlab-poster::before {
+  content: "";
+  position: absolute;
+  inset: 4.5mm;
+  border: 2px solid rgba(196, 62, 29, 0.28);
+  border-radius: 26px 31px 24px 33px / 31px 24px 33px 26px;
+  pointer-events: none;
 }
 
 .pathlab-poster__top {
@@ -10840,44 +10861,136 @@ summary:focus-visible .radar-expand-indicator {
   align-items: baseline;
 }
 
-.pathlab-poster__brand {
-  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
-  font-size: 20px;
-  font-weight: 600;
-  color: #c43e1d;
-  letter-spacing: 0.02em;
-}
-
-.pathlab-poster__brand-tag {
-  font-size: 15px;
-  color: rgba(82, 71, 70, 0.75);
+.pathlab-poster__logo {
+  height: 15mm;
+  width: auto;
 }
 
 .pathlab-poster__hero {
   text-align: center;
+  /* Tuck the hero up toward the logo: space-between was leaving the top of
+     the sheet feeling open. The slack redistributes to the other gaps. */
+  margin-top: -6mm;
 }
 
 .pathlab-poster__title {
   font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
-  font-size: 72px;
+  font-size: 68px;
   line-height: 1.1;
   font-weight: 700;
   color: #c43e1d;
 }
 
-.pathlab-poster__subtitle {
-  margin-top: 4mm;
-  font-size: 19px;
+/* The hero aside reuses the global .pathlab-note marker look; this row only
+   gives it poster sizing and a nudge of space under the title. */
+.pathlab-poster__note {
+  margin: 3mm 0 0;
+  font-size: 17px;
   line-height: 1.8;
+}
+
+.pathlab-poster__headline {
+  margin-top: 3.5mm;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.45;
   color: #524746;
 }
 
-.pathlab-poster__subtitle span {
+.pathlab-poster__subline {
+  margin-top: 1.5mm;
+  font-size: 15px;
+  color: rgba(82, 71, 70, 0.85);
+}
+
+/* Rubber-stamp badge beside the hero: double ring, slightly rotated, as if
+   pressed on after the sheet was printed. */
+.pathlab-poster__stamp {
+  position: absolute;
+  top: 33mm;
+  right: 15mm;
+  width: 29mm;
+  height: 29mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2.5px solid rgba(196, 62, 29, 0.7);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 1.6mm #fdf3e6,
+    inset 0 0 0 calc(1.6mm + 1.5px) rgba(196, 62, 29, 0.5);
+  transform: rotate(-9deg);
+  opacity: 0.9;
+}
+
+.pathlab-poster__stamp span {
+  max-width: 19mm;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+  text-align: center;
+  color: #c43e1d;
+}
+
+/* Sparkles tossed into the quiet corners. Fixed A4 canvas, so each sits at
+   a hand-picked mm coordinate with its own size, colour and angle. */
+.pathlab-poster__sparkle {
+  position: absolute;
+  color: #c43e1d;
+}
+
+.pathlab-poster__sparkle--hero-l {
+  top: 30mm;
+  left: 21mm;
+  width: 7mm;
+  transform: rotate(-12deg);
+}
+
+.pathlab-poster__sparkle--hero-r {
+  top: 68mm;
+  right: 17mm;
+  width: 5mm;
+  transform: rotate(9deg);
+  color: rgba(82, 71, 70, 0.55);
+}
+
+.pathlab-poster__sparkle--fields-r {
+  top: 121mm;
+  right: 12.5mm;
+  width: 6mm;
+  transform: rotate(14deg);
+}
+
+.pathlab-poster__sparkle--price-l {
+  bottom: 31mm;
+  left: 16mm;
+  width: 6.5mm;
+  transform: rotate(-8deg);
+  color: rgba(82, 71, 70, 0.55);
+}
+
+/* Hand-drawn wavy underline under a section heading. */
+.pathlab-poster__squiggle {
   display: block;
+  width: 34mm;
+  margin: 1.5mm auto 0;
+  color: #c43e1d;
+  opacity: 0.8;
+}
+
+/* Shared row for the margin notes sprinkled under sections. One per
+   section, always the seasoning, never the meal. */
+.pathlab-poster__section-note {
+  margin: 3.5mm 0 0;
+  font-size: 14.5px;
+  line-height: 1.8;
+  text-align: center;
 }
 
 /* Same inversion as the offer section: brown cards on the cream sheet. */
-.pathlab-poster__offers {
+.pathlab-poster__offers-list {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 5mm;
@@ -10893,19 +11006,32 @@ summary:focus-visible .radar-expand-indicator {
   text-align: center;
 }
 
+/* Hand-placed, not stamped: each card sits at a slightly different angle. */
+.pathlab-poster__offer:nth-child(1) {
+  transform: rotate(-1.1deg);
+}
+
+.pathlab-poster__offer:nth-child(2) {
+  transform: rotate(0.9deg) translateY(1.5mm);
+}
+
+.pathlab-poster__offer:nth-child(3) {
+  transform: rotate(-0.7deg);
+}
+
 .pathlab-poster__offer-title {
   font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 600;
   line-height: 1.4;
   color: #fdf3e6;
 }
 
 .pathlab-poster__offer-body {
-  margin-top: 2mm;
+  margin-top: 1.5mm;
   font-size: 13.5px;
   /* Thai stacks marks above and below, so it needs the extra leading. */
-  line-height: 1.8;
+  line-height: 1.7;
   color: rgba(253, 243, 230, 0.86);
 }
 
@@ -10915,99 +11041,107 @@ summary:focus-visible .radar-expand-indicator {
 
 .pathlab-poster__fields-heading {
   font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 600;
   color: #c43e1d;
 }
 
+/* Each open path shows its real artwork (the same 876x1171 cards the site
+   uses), hand-placed at a slight angle, with the field label stuck on as a
+   marker swipe that overlaps the photo's bottom edge. */
 .pathlab-poster__fields-list {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 2.5mm;
-  margin-top: 3mm;
-  list-style: none;
-  padding: 0;
-}
-
-.pathlab-poster__field {
-  padding: 1.6mm 4mm;
-  border: 1.5px solid #c43e1d;
-  border-radius: 999px;
-  font-size: 14.5px;
-  font-weight: 500;
-  color: #c43e1d;
-}
-
-/* Review band mirrors the landing page: brown band, orange quote cards. */
-.pathlab-poster__reviews {
-  padding: 6mm 6mm 7mm;
-  border-radius: 5mm;
-  background: #524746;
-}
-
-.pathlab-poster__reviews-heading {
-  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
-  font-size: 22px;
-  font-weight: 600;
-  color: #fdf3e6;
-  text-align: center;
-}
-
-.pathlab-poster__reviews-list {
   display: grid;
-  grid-template-columns: 1fr 1.6fr;
-  gap: 5mm;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4mm;
   margin-top: 4mm;
   list-style: none;
   padding: 0;
 }
 
-.pathlab-poster__review {
+.pathlab-poster__field {
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 1.5mm;
-  padding: 6mm 6mm 5mm;
-  border-radius: 4mm;
-  background: #c43e1d;
+  align-items: center;
+}
+
+/* Washi tape across a top corner of each photo, so the cards read as
+   physically stuck onto the sheet. Alternates corner by position. */
+.pathlab-poster__field::before {
+  content: "";
+  position: absolute;
+  top: -2.5mm;
+  z-index: 2;
+  width: 15mm;
+  height: 5mm;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 236, 170, 0.9),
+    rgba(255, 226, 140, 0.85)
+  );
+  box-shadow: 0 1px 2px rgba(82, 71, 70, 0.15);
+}
+
+/* Left pair taped on the left corner, right pair on the right — alternating
+   corners would stack two tapes into the middle gap. */
+.pathlab-poster__field:nth-child(-n + 2)::before {
+  left: -3.5mm;
+  transform: rotate(-40deg);
+}
+
+.pathlab-poster__field:nth-child(n + 3)::before {
+  right: -3.5mm;
+  transform: rotate(40deg);
+}
+
+.pathlab-poster__field:nth-child(1) {
+  transform: rotate(-1.3deg);
+}
+
+.pathlab-poster__field:nth-child(2) {
+  transform: rotate(1.1deg) translateY(1mm);
+}
+
+.pathlab-poster__field:nth-child(3) {
+  transform: rotate(-0.9deg);
+}
+
+.pathlab-poster__field:nth-child(4) {
+  transform: rotate(1.2deg) translateY(0.5mm);
+}
+
+.pathlab-poster__field-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 3mm;
+  box-shadow: 0 2px 8px rgba(82, 71, 70, 0.18);
+}
+
+/* The label rides the photo's bottom edge like a caption stuck on after. */
+.pathlab-poster__field .pathlab-note {
+  position: relative;
+  z-index: 1;
+  margin-top: -3.5mm;
+  font-size: 12px;
+}
+
+.pathlab-poster__schedule {
+  margin-top: 3.5mm;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #c43e1d;
   text-align: center;
 }
 
-.pathlab-poster__review-mark {
-  position: absolute;
-  top: 1.5mm;
-  left: 3.5mm;
-  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
-  font-size: 30px;
-  line-height: 1;
-  color: #fdf3e6;
-  pointer-events: none;
-}
-
-.pathlab-poster__review-quote {
-  font-size: 14.5px;
-  line-height: 1.85;
-  color: #fdf3e6;
-}
-
-.pathlab-poster__review-ig {
-  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
-  font-size: 13px;
-  color: #fdf3e6;
-}
-
-.pathlab-poster__review-by {
-  font-size: 12.5px;
-  line-height: 1.7;
-  color: rgba(253, 243, 230, 0.82);
-}
-
-.pathlab-poster__prices {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 5mm;
+/* No boxes: the solo price sits plain, the group deal gets the marker
+   treatment — highlighted, hand-cut, tilted. */
+.pathlab-poster__prices-list {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 9mm;
   list-style: none;
   padding: 0;
   margin: 0;
@@ -11017,64 +11151,39 @@ summary:focus-visible .radar-expand-indicator {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1mm;
-  padding: 4.5mm 4mm;
-  border: 1.5px solid rgba(82, 71, 70, 0.35);
-  border-radius: 4mm;
+  gap: 0.5mm;
   text-align: center;
 }
 
-/* The group deal is the one to push, so it gets the loud fill. */
 .pathlab-poster__price--group {
-  background: #c43e1d;
-  border-color: #c43e1d;
-}
-
-.pathlab-poster__price-label {
-  font-size: 14px;
-  color: rgba(82, 71, 70, 0.8);
+  padding: 3.5mm 7mm 4.5mm;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 224, 138, 0.95),
+    rgba(255, 213, 97, 0.92)
+  );
+  border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px;
+  transform: rotate(1.1deg);
 }
 
 .pathlab-poster__price-amount {
   font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
-  font-size: 30px;
+  font-size: 33px;
   font-weight: 700;
   line-height: 1.2;
   color: #c43e1d;
 }
 
 .pathlab-poster__price-unit {
-  font-size: 12px;
-  color: rgba(82, 71, 70, 0.7);
+  font-size: 12.5px;
+  color: rgba(82, 71, 70, 0.75);
 }
 
-.pathlab-poster__price--group .pathlab-poster__price-label,
-.pathlab-poster__price--group .pathlab-poster__price-amount,
 .pathlab-poster__price--group .pathlab-poster__price-unit {
-  color: #fdf3e6;
+  color: rgba(74, 62, 60, 0.85);
 }
 
-/* Closing band: the single action the poster asks for. */
-.pathlab-poster__cta {
-  margin-top: auto;
-  padding: 6mm;
-  border-radius: 5mm;
-  background: #c43e1d;
-  text-align: center;
-}
-
-.pathlab-poster__cta-line {
-  font-size: 17px;
-  color: rgba(253, 243, 230, 0.9);
-}
-
-.pathlab-poster__cta-handle {
-  margin-top: 1mm;
-  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
-  font-size: 30px;
-  font-weight: 700;
-  color: #fdf3e6;
-}
+/* The sheet ends at the price note; there is no footer band or contact row. */
 
 /* Preview convenience on screens narrower than the sheet. zoom (not
    transform) so the layout box shrinks too and no ghost scroll area remains. */
@@ -11104,6 +11213,7 @@ summary:focus-visible .radar-expand-indicator {
 @media print {
   .pathlab-poster-stage {
     padding: 0;
+    gap: 0;
     background: none;
   }
 
@@ -11111,6 +11221,548 @@ summary:focus-visible .radar-expand-indicator {
     zoom: 1;
     box-shadow: none;
   }
+
+  /* The download button is a screen affordance; it must never print. */
+  .pathlab-social__actions {
+    display: none;
+  }
+}
+
+/* ── Social card: 1200×630 share graphic in the poster's language ── */
+
+/* Same dark stage trick: the cream card reads as an artifact on screen. */
+.pathlab-social-stage {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  padding: clamp(1rem, 4vw, 3rem);
+  background: #524746;
+}
+
+.pathlab-social-scaler {
+  width: 100%;
+  max-width: 1200px;
+}
+
+/* The fixed 1200×630 canvas. Everything inside is authored in px against
+   this known size, exactly like the poster's mm against A4. */
+.pathlab-social {
+  position: relative;
+  width: 1200px;
+  height: 630px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 48px;
+  background: #fdf3e6;
+  color: #524746;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+/* Same wobbly marker frame as the poster. */
+.pathlab-social::before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border: 2px solid rgba(196, 62, 29, 0.28);
+  border-radius: 22px 27px 21px 28px / 27px 21px 28px 22px;
+  pointer-events: none;
+}
+
+.pathlab-social__logo {
+  position: absolute;
+  top: 22px;
+  left: 26px;
+  height: 52px;
+  width: auto;
+  display: block;
+}
+
+/* Same rubber stamp, scaled down for the smaller canvas. */
+.pathlab-social__stamp {
+  position: absolute;
+  top: 24px;
+  right: 28px;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2.5px solid rgba(196, 62, 29, 0.7);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 4px #fdf3e6,
+    inset 0 0 0 5.5px rgba(196, 62, 29, 0.5);
+  transform: rotate(-9deg);
+  opacity: 0.9;
+}
+
+.pathlab-social__stamp span {
+  max-width: 56px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.55;
+  text-align: center;
+  color: #c43e1d;
+}
+
+/* Sparkles tossed into the quiet corners; fixed canvas, so each sits at a
+   hand-picked coordinate with its own size, colour and angle. */
+.pathlab-social__sparkle {
+  position: absolute;
+  color: #c43e1d;
+}
+
+/* Rides above and to the right of the "สายที่เปิดตอนนี้" heading, clear of
+   the letterforms rather than stuck on top of them. */
+.pathlab-social__sparkle--hero-l {
+  top: 78px;
+  left: 212px;
+  width: 26px;
+  transform: rotate(-12deg);
+}
+
+.pathlab-social__sparkle--hero-r {
+  top: 150px;
+  right: 128px;
+  width: 17px;
+  transform: rotate(9deg);
+  color: rgba(82, 71, 70, 0.55);
+}
+
+/* Tucked into the gap between the promises and the booking line, where no
+   copy runs. */
+.pathlab-social__sparkle--price-r {
+  bottom: 158px;
+  right: 24px;
+  width: 22px;
+  transform: rotate(14deg);
+}
+
+.pathlab-social__hero {
+  text-align: center;
+}
+
+.pathlab-social__title {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 58px;
+  line-height: 1.1;
+  font-weight: 700;
+  color: #c43e1d;
+}
+
+.pathlab-social__note {
+  margin: 8px 0 0;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.pathlab-social__headline {
+  margin-top: 10px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #524746;
+}
+
+.pathlab-social__subline {
+  margin-top: 3px;
+  font-size: 15px;
+  color: rgba(82, 71, 70, 0.85);
+}
+
+.pathlab-social__schedule {
+  margin-top: 8px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #c43e1d;
+}
+
+/* No boxes: solo plain, group deal highlighted and tilted — same as poster. */
+.pathlab-social__prices {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 36px;
+  margin: auto 0 0;
+  list-style: none;
+  padding: 0;
+}
+
+.pathlab-social__price {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.pathlab-social__price--group {
+  padding: 8px 22px 10px;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 224, 138, 0.95),
+    rgba(255, 213, 97, 0.92)
+  );
+  border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px;
+  transform: rotate(1.1deg);
+}
+
+.pathlab-social__price-amount {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #c43e1d;
+}
+
+.pathlab-social__price-unit {
+  font-size: 12.5px;
+  color: rgba(82, 71, 70, 0.75);
+}
+
+.pathlab-social__price--group .pathlab-social__price-unit {
+  color: rgba(74, 62, 60, 0.85);
+}
+
+.pathlab-social__price-note {
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  line-height: 1.8;
+  text-align: center;
+}
+
+/* The field strip pinned to the foot: real artwork with tape and marker
+   labels, same handmade treatment as the poster. Two margin-top:auto rows
+   (here and prices) split the leftover space evenly. */
+.pathlab-social__fields {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  width: 100%;
+  margin: auto 0 0;
+  list-style: none;
+  padding: 0;
+}
+
+.pathlab-social__field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Washi tape across a top corner; left pair on the left, right pair on the
+   right, so two tapes never stack into the middle gaps. */
+.pathlab-social__field::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  z-index: 2;
+  width: 54px;
+  height: 18px;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 236, 170, 0.9),
+    rgba(255, 226, 140, 0.85)
+  );
+  box-shadow: 0 1px 2px rgba(82, 71, 70, 0.15);
+}
+
+.pathlab-social__field:nth-child(-n + 2)::before {
+  left: -10px;
+  transform: rotate(-40deg);
+}
+
+.pathlab-social__field:nth-child(n + 3)::before {
+  right: -10px;
+  transform: rotate(40deg);
+}
+
+.pathlab-social__field:nth-child(1) {
+  transform: rotate(-1.3deg);
+}
+
+.pathlab-social__field:nth-child(2) {
+  transform: rotate(1.1deg) translateY(3px);
+}
+
+.pathlab-social__field:nth-child(3) {
+  transform: rotate(-0.9deg);
+}
+
+.pathlab-social__field:nth-child(4) {
+  transform: rotate(1.2deg) translateY(2px);
+}
+
+.pathlab-social__field-img {
+  display: block;
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(82, 71, 70, 0.18);
+}
+
+/* The label rides the photo's bottom edge like a caption stuck on after. */
+.pathlab-social__field .pathlab-note {
+  position: relative;
+  z-index: 1;
+  margin-top: -10px;
+  font-size: 11.5px;
+}
+
+/* Landscape recomposition: the four paths become a 2×2 contact sheet on the
+   left. The right column keeps the decision-making copy visible at a social
+   size: what students make, how it helps them choose, mentor support, dates,
+   and price. */
+.pathlab-social__content {
+  position: absolute;
+  inset: 104px 48px 30px;
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 40px;
+  width: auto;
+}
+
+.pathlab-social__paths {
+  min-width: 0;
+  padding: 4px 10px 0;
+}
+
+/* The washi tape overhangs the first photo by ~14px, so the heading needs
+   more clearance than the visual gap suggests or the tape crosses the text. */
+.pathlab-social__paths-heading {
+  margin: 0 0 26px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: #c43e1d;
+}
+
+.pathlab-social__fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 22px;
+  margin: 0;
+}
+
+.pathlab-social__field-img {
+  height: 184px;
+}
+
+.pathlab-social__details {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding-right: 6px;
+}
+
+.pathlab-social__hero {
+  text-align: left;
+  padding-right: 78px;
+}
+
+.pathlab-social__title {
+  font-size: 46px;
+}
+
+.pathlab-social__note {
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.pathlab-social__headline {
+  margin-top: 8px;
+  font-size: 20px;
+}
+
+.pathlab-social__subline {
+  font-size: 13px;
+}
+
+/* The three promises get the whole middle of the right column instead of a
+   thin band with dead air under it: centred text, generous leading, and each
+   card set at its own slight angle so the row reads pinned up by hand. */
+.pathlab-social__offers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: start;
+  gap: 14px;
+  margin: 26px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pathlab-social__offer {
+  min-width: 0;
+  padding: 14px 4px 16px;
+  text-align: center;
+  border-left: none;
+  border-top: 3px solid rgba(196, 62, 29, 0.48);
+}
+
+.pathlab-social__offer:nth-child(1) {
+  transform: rotate(-1.1deg);
+}
+
+.pathlab-social__offer:nth-child(2) {
+  transform: rotate(0.8deg) translateY(4px);
+}
+
+.pathlab-social__offer:nth-child(3) {
+  transform: rotate(-0.7deg) translateY(1px);
+}
+
+.pathlab-social__offer h3 {
+  margin: 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #c43e1d;
+}
+
+.pathlab-social__offer p {
+  margin: 7px 0 0;
+  font-size: 13px;
+  line-height: 1.75;
+  color: rgba(82, 71, 70, 0.88);
+}
+
+/* The offers block above now absorbs the slack (flex: 1), so booking just
+   follows it rather than being shoved to the floor by margin auto. */
+/* Pushed to the foot of the column, then laid out as one row: prices on the
+   left, schedule on the right, both centred on the same line so neither sits
+   higher than the other. */
+.pathlab-social__booking {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: auto;
+  padding-top: 12px;
+  /* Lifted off the column floor so the row does not crowd the card edge. */
+  padding-bottom: 26px;
+}
+
+.pathlab-social__booking-col {
+  margin: 0;
+}
+
+/* The schedule stacks against the right edge, filling the space the prices
+   leave open: lead-in, dates set large, then the time. Only the dates carry
+   size, so the eye lands on them first. */
+.pathlab-social__schedule {
+  /* First in the DOM since it reads as the lead, but sits to the right. */
+  order: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  margin-top: 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 14px;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.pathlab-social__schedule-lead,
+.pathlab-social__schedule-time {
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.pathlab-social__schedule-dates {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+/* The two prices stay side by side so they read as one comparison. Only the
+   date line above spans the full column width. */
+.pathlab-social__prices {
+  justify-content: flex-start;
+  gap: 26px;
+  margin: 16px 0 0;
+}
+
+.pathlab-social__price--group {
+  padding: 7px 20px 9px;
+}
+
+.pathlab-social__price-amount {
+  font-size: 25px;
+}
+
+.pathlab-social__price-unit {
+  font-size: 10.5px;
+}
+
+/* Curls up out of the note toward the ฿999 deal, so the eye is walked from
+   the reassurance to the price it belongs to. */
+.pathlab-social__deal-arrow {
+  position: absolute;
+  left: 258px;
+  bottom: 32px;
+  width: 52px;
+  color: rgba(196, 62, 29, 0.5);
+  transform: rotate(-2deg);
+}
+
+/* Nudged right so it tucks under the group deal it is talking about, rather
+   than hugging the left edge with empty card beside it. */
+.pathlab-social__price-note {
+  margin: 9px 0 0;
+  padding-left: 56px;
+  font-size: 11.5px;
+  text-align: left;
+}
+
+/* Download action under the preview. Never inside the card, so it can
+   never leak into the exported PNG. */
+.pathlab-social__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.pathlab-social__download {
+  padding: 12px 28px;
+  border: none;
+  border-radius: 999px;
+  background: #c43e1d;
+  color: #fdf3e6;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.pathlab-social__download:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.pathlab-social__download:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.pathlab-social__error {
+  font-size: 14px;
+  color: #ffd9cc;
 }
 
 /* ── Fields: the paths currently open ── */
