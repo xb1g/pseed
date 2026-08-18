@@ -92,10 +92,17 @@ describe("trailPathD", () => {
     expect(trailPathD(single)).toBe("");
   });
 
-  it("walks from the first stop centre to the next row", () => {
+  it("walks from the first stop centre to the next row with a weaved curve", () => {
     const stops = toTrailStops(preview).slice(0, 2);
     const d = trailPathD(stops);
+    // starts at first stop (xPct 18, row 0 → y = 0*12 + 6 = 6)
     expect(d.startsWith("M 18 6")).toBe(true);
-    expect(d).toContain("L 50 18");
+    // curves via a midpoint (x = (18+50)/2 = 34, y = (6+18)/2 = 12)
+    expect(d).toContain("Q 18 12 34 12");
+    // ends at the second stop (xPct 50, row 1 → y = 18)
+    expect(d).toContain("Q 50 12 50 18");
+    expect(d.endsWith("50 18")).toBe(true);
+    // no straight L segments remain — connector is fully curved
+    expect(d).not.toMatch(/\sL\s/);
   });
 });

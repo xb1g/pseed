@@ -15639,6 +15639,7 @@ a.pathlab-fields__button {
   font-size: 16px;
   font-weight: 700;
   color: #c43e1d;
+  line-height: 1.2;
 }
 
 .pathlab-how__eyebrow--center {
@@ -15647,13 +15648,18 @@ a.pathlab-fields__button {
 
 .pathlab-how__eyebrow-chip {
   display: inline-block;
-  padding: 0.6mm 2.5mm;
-  margin-right: 1.8mm;
+  padding: 0.8mm 3mm;
+  margin-right: 2.6mm;
   border-radius: 999px;
   background: rgba(196, 62, 29, 0.12);
   font-size: 12px;
+  font-weight: 700;
   letter-spacing: 0.04em;
-  vertical-align: 1px;
+  /* Pull baseline up so chip + title sit on the same line without a
+     visible gap; vertical-align: middle + a small line-height pull on
+     the chip matches Thai glyph height to the Latin title text. */
+  vertical-align: 2px;
+  transform: translateY(-1px);
 }
 
 /* The zigzag trail container. Width is fixed px so the 0-100 viewBox in
@@ -15779,12 +15785,18 @@ a.pathlab-fields__button {
 
 .pathlab-how__day-gets {
   display: inline-block;
-  padding: 1mm 2.5mm;
+  padding: 1.2mm 3mm;
   border-radius: 999px;
   background: #c43e1d;
   color: #fdf3e6;
-  font-size: 11px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 12.5px;
   font-weight: 700;
+  letter-spacing: 0.02em;
+  /* Subtle lift so the badge reads as a chip, not a caption — sibling
+     day-title sits at 15px/700 and day-doing at 12px, so 12.5px keeps the
+     hierarchy intact while nudging the badge above the body weight. */
+  box-shadow: 0 1px 0 rgba(196, 62, 29, 0.18);
 }
 
 /* Tier 5 footer: a single quiet line so the reader knows what to do next. */

@@ -49,12 +49,26 @@ export function toTrailStops(preview: JourneyPreview): TrailStop[] {
   }));
 }
 
-/** Smooth dashed connector through stop centers, in viewBox units (100 wide, 12 per row). */
+/** Smooth dashed connector through stop centers, in viewBox units (100 wide, 12 per row).
+ *  Uses a quadratic bezier with a midpoint control point pushed off-axis between
+ *  consecutive stops so the trail weaves left/right with the zigzag instead of
+ *  cutting diagonally across each island sprite. */
 export function trailPathD(stops: TrailStop[]): string {
   if (stops.length < 2) return "";
   const pts = stops.map((s) => ({ x: s.xPct, y: s.row * 12 + 6 }));
-  return pts.reduce(
-    (d, p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `${d} L ${p.x} ${p.y}`),
-    ""
-  );
+
+  // Build the polyline as a sequence of short Q segments. Each segment's
+  // control point sits on the row's vertical midpoint and shares its x
+  // with the start of the segment, so the curve bows horizontally toward
+  // the next stop rather than crossing straight through the island sprite
+  // at that row.
+  const parts: string[] = [`M ${pts[0].x} ${pts[0].y}`];
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1];
+    const b = pts[i];
+    const midY = (a.y + b.y) / 2;
+    parts.push(`Q ${a.x} ${midY} ${(a.x + b.x) / 2} ${midY}`);
+    parts.push(`Q ${b.x} ${midY} ${b.x} ${b.y}`);
+  }
+  return parts.join(" ");
 }
