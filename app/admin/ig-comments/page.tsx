@@ -19,6 +19,14 @@ import type { DmLeadStage } from "@/types/dm-leads";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * The bulk reply runs as a server action under this route segment, and one
+ * pass posts up to BULK_REPLY_BATCH_CAP comments a second apart. The platform
+ * default cut that off after roughly four replies, so the budget has to cover
+ * the whole batch with room to spare.
+ */
+export const maxDuration = 300;
+
 const STAGE_LABEL: Record<DmLeadStage, string> = {
   unknown: "Unknown",
   exploring: "Exploring",

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { replyToAllMissedComments, type BulkReplyResult } from "@/app/admin/ig-comments/actions";
+import { BULK_REPLY_BATCH_CAP } from "@/app/admin/ig-comments/constants";
 
 export interface MissedCommentItem {
   id: string;
@@ -32,7 +33,7 @@ export function MissedCommentsCard({
 
   if (comments.length === 0) return null;
 
-  const batchSize = Math.min(comments.length, 50);
+  const batchSize = Math.min(comments.length, BULK_REPLY_BATCH_CAP);
 
   const send = () => {
     startTransition(async () => {
