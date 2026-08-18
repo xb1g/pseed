@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { HowWeLearnPosterClient } from "@/components/pathlab/HowWeLearnPosterClient";
 
 export const metadata: Metadata = {
-  title: "Pathlab — How We Learn — Passion Seed",
+  title: "Pathlab: How We Learn, Passion Seed",
   /** A print artifact, not a landing page: keep it out of search. */
   robots: { index: false, follow: false },
 };
