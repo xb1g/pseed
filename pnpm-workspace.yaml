@@ -1,5 +1,6 @@
 ignoredBuiltDependencies:
   - core-js
   - esbuild
+  - lazygit
   - sharp
   - unrs-resolver

@@ -10833,11 +10833,11 @@ summary:focus-visible .radar-expand-indicator {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  /* Any slack left after the content is spread evenly between sections, so
-     the sheet never dies with a blank band at the foot. */
-  justify-content: space-between;
-  gap: 7mm;
-  padding: 9mm 13mm;
+  /* The deal block owns the foot of the sheet, so it sits flush against the
+     bottom padding instead of being pushed by leftover space-between. */
+  justify-content: flex-start;
+  gap: 3.5mm;
+  padding: 7mm 13mm 8mm;
   background: #fdf3e6;
   color: #524746;
   font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
@@ -10855,60 +10855,69 @@ summary:focus-visible .radar-expand-indicator {
   pointer-events: none;
 }
 
-.pathlab-poster__top {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+/* Logo + "Pathlab" wordmark sit on a single centred lockup so the title
+   IS the brand. No separate brand row at the top of the sheet. */
+.pathlab-poster__lockup {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5mm;
 }
 
-.pathlab-poster__logo {
-  height: 15mm;
+/* Logo sized to the wordmark's x-height so the two marks read as one
+   unit. The orange mark was chosen because it pairs with the orange
+   wordmark — no second colour enters the lockup. */
+.pathlab-poster__lockup-logo {
+  height: 18mm;
   width: auto;
+  display: block;
 }
 
 .pathlab-poster__hero {
   text-align: center;
-  /* Tuck the hero up toward the logo: space-between was leaving the top of
-     the sheet feeling open. The slack redistributes to the other gaps. */
-  margin-top: -6mm;
+  /* The hero now starts the sheet (no brand row above it), so a small
+     top margin keeps breathing room under the marker frame. */
+  margin-top: 2mm;
 }
 
 .pathlab-poster__title {
   font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
-  font-size: 68px;
-  line-height: 1.1;
+  font-size: 88px;
+  line-height: 1;
   font-weight: 700;
+  letter-spacing: -0.025em;
   color: #c43e1d;
 }
 
 /* The hero aside reuses the global .pathlab-note marker look; this row only
    gives it poster sizing and a nudge of space under the title. */
 .pathlab-poster__note {
-  margin: 3mm 0 0;
+  margin: 2mm 0 0;
   font-size: 17px;
   line-height: 1.8;
 }
 
 .pathlab-poster__headline {
-  margin-top: 3.5mm;
+  margin-top: 3mm;
   font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
-  line-height: 1.45;
+  line-height: 1.4;
   color: #524746;
 }
 
 .pathlab-poster__subline {
-  margin-top: 1.5mm;
-  font-size: 15px;
+  margin-top: 1mm;
+  font-size: 14.5px;
   color: rgba(82, 71, 70, 0.85);
 }
 
 /* Rubber-stamp badge beside the hero: double ring, slightly rotated, as if
-   pressed on after the sheet was printed. */
+   pressed on after the sheet was printed. Pushed below the new logo+title
+   lockup so it never overlaps the wordmark. */
 .pathlab-poster__stamp {
   position: absolute;
-  top: 33mm;
+  top: 50mm;
   right: 15mm;
   width: 29mm;
   height: 29mm;
@@ -10942,14 +10951,14 @@ summary:focus-visible .radar-expand-indicator {
 }
 
 .pathlab-poster__sparkle--hero-l {
-  top: 30mm;
+  top: 42mm;
   left: 21mm;
   width: 7mm;
   transform: rotate(-12deg);
 }
 
 .pathlab-poster__sparkle--hero-r {
-  top: 68mm;
+  top: 86mm;
   right: 17mm;
   width: 5mm;
   transform: rotate(9deg);
@@ -10964,7 +10973,7 @@ summary:focus-visible .radar-expand-indicator {
 }
 
 .pathlab-poster__sparkle--price-l {
-  bottom: 31mm;
+  bottom: 18mm;
   left: 16mm;
   width: 6.5mm;
   transform: rotate(-8deg);
@@ -10993,14 +11002,14 @@ summary:focus-visible .radar-expand-indicator {
 .pathlab-poster__offers-list {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 5mm;
+  gap: 4mm;
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
 .pathlab-poster__offer {
-  padding: 6mm 5mm;
+  padding: 4.5mm 4mm 5mm;
   border-radius: 4mm;
   background: #524746;
   text-align: center;
@@ -11135,52 +11144,182 @@ summary:focus-visible .radar-expand-indicator {
   text-align: center;
 }
 
-/* No boxes: the solo price sits plain, the group deal gets the marker
-   treatment — highlighted, hand-cut, tilted. */
-.pathlab-poster__prices-list {
+/* Featured deal block: the bottom-of-sheet hero. A single dark panel holds
+   the tier label, the price (original → promo with discount chip), the unit
+   line, the blurb, and the perks. This is the buy-decision surface, so it
+   earns the only colored fill on the sheet and gets type weight that beats
+   every other section. */
+.pathlab-poster__deal {
+  position: relative;
+  padding: 7mm 8mm 7.5mm;
+  background: #524746;
+  border-radius: 6mm;
+  color: #fdf3e6;
+  /* A faint warm wash along the top edge hints at a highlighter swipe, so
+     the panel reads as built up by hand rather than dropped in. */
+  background-image: linear-gradient(
+      180deg,
+      rgba(196, 62, 29, 0.18),
+      rgba(196, 62, 29, 0) 7mm
+    ),
+    radial-gradient(
+      ellipse at 92% 0%,
+      rgba(255, 213, 97, 0.12),
+      rgba(255, 213, 97, 0) 60%
+    );
+}
+
+.pathlab-poster__deal-head {
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 9mm;
-  list-style: none;
-  padding: 0;
+  justify-content: space-between;
+  gap: 4mm;
+}
+
+.pathlab-poster__deal-title {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #fdf3e6;
   margin: 0;
 }
 
-.pathlab-poster__price {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5mm;
-  text-align: center;
-}
-
-.pathlab-poster__price--group {
-  padding: 3.5mm 7mm 4.5mm;
+/* The promo chip rides top-right of the deal head, on the same baseline as
+   the tier label so the eye pairs them as one header unit. */
+.pathlab-poster__deal-chip {
+  flex-shrink: 0;
+  padding: 1.6mm 4mm;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #524746;
   background: linear-gradient(
     100deg,
     rgba(255, 224, 138, 0.95),
     rgba(255, 213, 97, 0.92)
   );
   border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px;
-  transform: rotate(1.1deg);
 }
 
-.pathlab-poster__price-amount {
+/* The price row is the loudest thing on the sheet: original (struck) →
+   promo (big), then a discount chip. The arrow is a deliberate piece of
+   typography, not an icon, so it scales with the same font and inherits
+   the same colour as the promo number. */
+.pathlab-poster__deal-price {
+  display: flex;
+  align-items: baseline;
+  gap: 4mm;
+  margin-top: 4.5mm;
+  flex-wrap: wrap;
+}
+
+.pathlab-poster__deal-currency {
   font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
-  font-size: 33px;
+  font-weight: 700;
+  margin-right: 0.5mm;
+}
+
+.pathlab-poster__deal-original {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: rgba(253, 243, 230, 0.55);
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: rgba(253, 243, 230, 0.6);
+}
+
+.pathlab-poster__deal-arrow {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1;
+  color: rgba(253, 243, 230, 0.7);
+}
+
+.pathlab-poster__deal-promo {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 64px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fdf3e6;
+  letter-spacing: -0.02em;
+}
+
+.pathlab-poster__deal-discount {
+  margin-left: auto;
+  padding: 1.8mm 4.5mm;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 16px;
   font-weight: 700;
   line-height: 1.2;
   color: #c43e1d;
+  background: #fdf3e6;
+  border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px;
+  transform: rotate(-1.5deg);
 }
 
-.pathlab-poster__price-unit {
-  font-size: 12.5px;
-  color: rgba(82, 71, 70, 0.75);
+.pathlab-poster__deal-unit {
+  margin: 2.5mm 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: rgba(253, 243, 230, 0.82);
 }
 
-.pathlab-poster__price--group .pathlab-poster__price-unit {
-  color: rgba(74, 62, 60, 0.85);
+.pathlab-poster__deal-blurb {
+  margin: 2mm 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(253, 243, 230, 0.78);
+}
+
+/* Perks list: each item is its own line, with a green check chip on the
+   left. Green is the second accent on the sheet — the only colour besides
+   orange/red — so the ✓ reads as "included" without competing with the
+   wordmarks. Two columns on a wide sheet keeps the block short. */
+.pathlab-poster__perks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 7mm;
+  row-gap: 2.2mm;
+  list-style: none;
+  padding: 3mm 0 0;
+  margin: 3mm 0 0;
+  border-top: 1px dashed rgba(253, 243, 230, 0.22);
+}
+
+.pathlab-poster__perk {
+  display: flex;
+  align-items: flex-start;
+  gap: 3mm;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #fdf3e6;
+}
+
+.pathlab-poster__perk span:last-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pathlab-poster__check {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 5.5mm;
+  height: 5.5mm;
+  margin-top: 0.6mm;
+  border-radius: 50%;
+  background: #6fa86b;
+  color: #fdf3e6;
+}
+
+.pathlab-poster__check svg {
+  width: 78%;
+  height: 78%;
 }
 
 /* The sheet ends at the price note; there is no footer band or contact row. */
@@ -11202,6 +11341,380 @@ summary:focus-visible .radar-expand-indicator {
 @media (max-width: 400px) {
   .pathlab-poster {
     zoom: 0.36;
+  }
+}
+
+/* ── Poster v2: clearer four-tier hierarchy, friendlier feel ── */
+
+/* Same dark stage trick: the cream sheet reads as paper on screen. */
+.pathlab-poster2-stage {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 28px;
+  padding: clamp(1rem, 4vw, 3rem);
+  background: #524746;
+}
+
+/* Same A4 portrait canvas. Fixed physical size so layout inside is
+   authored against a known shape. */
+.pathlab-poster2 {
+  position: relative;
+  width: 210mm;
+  min-height: 297mm;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 10mm 14mm 9mm;
+  background: #fdf3e6;
+  color: #524746;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+/* A softer marker frame than v1: thinner, lighter, with wider corner
+   variation so it reads as a hand-drawn pencil rule, not a UI border. */
+.pathlab-poster2::before {
+  content: "";
+  position: absolute;
+  inset: 6mm;
+  border: 1.5px solid rgba(196, 62, 29, 0.22);
+  border-radius: 22px 30px 18px 28px / 28px 18px 30px 22px;
+  pointer-events: none;
+}
+
+/* Tier 4: brand row. Quiet confirmation of who made the sheet. Left
+   aligned so the eye flows past it to the title, never stopping. */
+.pathlab-poster2__brand {
+  display: flex;
+  align-items: center;
+  gap: 4mm;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+}
+
+.pathlab-poster2__logo {
+  height: 11mm;
+  width: auto;
+  display: block;
+}
+
+.pathlab-poster2__brand-name {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: rgba(82, 71, 70, 0.78);
+}
+
+/* The single margin note in the corner. v1 had three; v2 has one. The
+   note is positioned absolutely so it does not push the title down, and
+   its tilt comes from .pathlab-note itself. */
+.pathlab-poster2__note {
+  position: absolute;
+  top: 16mm;
+  right: 22mm;
+  margin: 0;
+  max-width: 56mm;
+  font-size: 13.5px;
+  line-height: 1.6;
+  z-index: 2;
+}
+
+/* Tier 1: THE name. The biggest, boldest, tightest letter on the sheet.
+   Set in Kodchasan with a negative tracking per the design system, in the
+   brand orange. This is the only thing that reads from across the room. */
+.pathlab-poster2__title {
+  margin: 8mm 0 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 128px;
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.045em;
+  color: #c43e1d;
+  text-align: center;
+}
+
+/* Tier 3: the promise. Three short lines that answer "what is this"
+   before the price. Centered, generous leading, in the dark plum so it
+   reads as the second thing after the title. */
+.pathlab-poster2__promise {
+  margin: 6mm auto 0;
+  max-width: 145mm;
+  text-align: center;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.6;
+  color: #524746;
+}
+
+/* A single sparkle tucked into the gap between the promise and the price
+   divider. Decorative only; the corner is empty otherwise. */
+.pathlab-poster2__sparkle {
+  position: absolute;
+  top: 110mm;
+  right: 28mm;
+  width: 7mm;
+  color: #c43e1d;
+  transform: rotate(8deg);
+  opacity: 0.85;
+}
+
+/* Hairline divider. A thin warm rule, not a heavy line, so the price band
+   reads as its own paragraph rather than a sliced section. */
+.pathlab-poster2__rule {
+  margin: 5mm 0 0;
+  height: 0;
+  border: 0;
+  border-top: 1.2px dashed rgba(196, 62, 29, 0.32);
+}
+
+/* Tier 2: the price. The only large number on the sheet. The eyebrow
+   (tier label) sets context, the row shows original → promo with a
+   discount chip, the unit line quietly explains what the price covers. */
+.pathlab-poster2__price {
+  margin: 4mm 0 0;
+  text-align: center;
+}
+
+.pathlab-poster2__price-eyebrow {
+  display: inline-block;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: #c43e1d;
+}
+
+/* The price row. Original sits left in muted type with a line through,
+   arrow implied by whitespace and visual proximity, promo sits center as
+   the hero number, discount chip floats to the right on a baseline. */
+.pathlab-poster2__price-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6mm;
+  margin: 4mm 0 0;
+  flex-wrap: wrap;
+}
+
+.pathlab-poster2__price-currency {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-weight: 700;
+  margin-right: 0.5mm;
+}
+
+.pathlab-poster2__price-original {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 46px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(82, 71, 70, 0.42);
+  text-decoration: line-through;
+  text-decoration-thickness: 2.5px;
+  text-decoration-color: rgba(82, 71, 70, 0.55);
+}
+
+.pathlab-poster2__price-promo {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 104px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: #c43e1d;
+}
+
+.pathlab-poster2__price-discount {
+  align-self: center;
+  padding: 2.5mm 6mm;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #524746;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 224, 138, 0.95),
+    rgba(255, 213, 97, 0.92)
+  );
+  border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px;
+  transform: rotate(-2deg);
+}
+
+.pathlab-poster2__price-unit {
+  margin: 4mm 0 0;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(82, 71, 70, 0.82);
+}
+
+.pathlab-poster2__price-blurb {
+  margin: 3mm auto 0;
+  max-width: 130mm;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 14px;
+  line-height: 1.7;
+  color: rgba(82, 71, 70, 0.72);
+}
+
+/* Perks: tier 4 detail, but the most persuasive copy on the sheet. Two
+   columns at this width so the list does not run too long. Each row owns
+   its own line so a teen can scan in three seconds. */
+.pathlab-poster2__perks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 8mm;
+  row-gap: 2.5mm;
+  list-style: none;
+  padding: 4mm 0 0;
+  margin: 4mm 0 0;
+  border-top: 1px solid rgba(196, 62, 29, 0.18);
+}
+
+.pathlab-poster2__perk {
+  display: flex;
+  align-items: flex-start;
+  gap: 3.5mm;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  color: #524746;
+}
+
+.pathlab-poster2__perk span:last-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The check glyph lives inside a green disc so it reads as "included"
+   and not as a stray orange shape on the cream sheet. Green is the only
+   second accent we use. */
+.pathlab-poster2__check {
+  flex-shrink: 0;
+  width: 6mm;
+  height: 6mm;
+  margin-top: 0.8mm;
+  padding: 1mm;
+  border-radius: 50%;
+  background: #6fa86b;
+  color: #fdf3e6;
+}
+
+/* Proof block. Same field artwork as v1, but smaller and grouped tighter
+   under one quiet heading. The schedule line sits below. */
+.pathlab-poster2__proof {
+  margin: 4mm 0 0;
+  text-align: center;
+}
+
+.pathlab-poster2__proof-heading {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #c43e1d;
+}
+
+.pathlab-poster2__fields {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4mm;
+  margin-top: 3mm;
+  list-style: none;
+  padding: 0;
+}
+
+.pathlab-poster2__field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Cap height + let cover crop, so the proof strip never grows past the
+   size we author. Without the cap, the natural aspect of the 876x1171
+   photos blows the strip to ~210 px and overflows the A4 sheet. */
+.pathlab-poster2__field-img {
+  display: block;
+  width: 100%;
+  height: 30mm;
+  object-fit: cover;
+  border-radius: 3mm;
+  box-shadow: 0 2px 8px rgba(82, 71, 70, 0.16);
+}
+
+.pathlab-poster2__field-label {
+  margin-top: -2.5mm;
+  font-size: 12px;
+}
+
+.pathlab-poster2__schedule {
+  margin-top: 4mm;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #c43e1d;
+}
+
+/* Tier 4 footer: the single next-step. Quiet but present, so the reader
+   knows what to do after reading everything above. */
+.pathlab-poster2__cta {
+  margin-top: auto;
+  padding-top: 6mm;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5mm;
+  text-align: center;
+}
+
+.pathlab-poster2__cta-eyebrow {
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 14px;
+  color: rgba(82, 71, 70, 0.7);
+}
+
+.pathlab-poster2__cta-handle {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #c43e1d;
+  letter-spacing: -0.005em;
+}
+
+/* Mobile preview: zoom (not transform) so the layout box shrinks too and
+   no ghost scroll area remains. */
+@media (max-width: 760px) {
+  .pathlab-poster2 {
+    zoom: 0.68;
+  }
+}
+
+@media (max-width: 540px) {
+  .pathlab-poster2 {
+    zoom: 0.48;
+  }
+}
+
+@media (max-width: 400px) {
+  .pathlab-poster2 {
+    zoom: 0.36;
+  }
+}
+
+/* v2 prints the same way as v1: full A4, no shadow, no stage. */
+@media print {
+  .pathlab-poster2-stage {
+    padding: 0;
+    gap: 0;
+    background: none;
+  }
+
+  .pathlab-poster2 {
+    zoom: 1;
+    box-shadow: none;
   }
 }
 

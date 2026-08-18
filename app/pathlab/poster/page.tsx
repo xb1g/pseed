@@ -60,11 +60,53 @@ function Sparkle({ className }: { className: string }) {
   );
 }
 
+/**
+ * Computes the percent discount between the original and the promo price so
+ * the "ลด 57%" chip can never drift away from the actual numbers. Returns
+ * null when the inputs are missing or malformed, so the chip disappears
+ * rather than printing a lie like "ลด NaN%".
+ */
+function discountPercent(
+  original: string | undefined,
+  promo: string | undefined,
+): number | null {
+  if (!original || !promo) return null;
+  const o = Number(original);
+  const p = Number(promo);
+  if (!Number.isFinite(o) || !Number.isFinite(p) || o <= 0 || p <= 0)
+    return null;
+  if (p >= o) return null;
+  return Math.round(((o - p) / o) * 100);
+}
+
+/**
+ * A tiny check chip rendered inline before each perk. Green was picked so
+ * the ✓ reads as "included", distinct from the orange wordmarks; the same
+ * green also lives in the field labels' tape so the whole sheet has two
+ * accents, never three.
+ */
+function CheckMark() {
+  return (
+    <span className="pathlab-poster__check" aria-hidden="true">
+      <svg viewBox="0 0 16 16" focusable="false">
+        <path
+          d="M3.5 8.4 6.6 11.5 12.5 4.8"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  );
+}
+
 export default function PathlabPosterPage() {
   /* The poster sells paid rounds only, so the free Micro Pathlab tier stays
      on the website. */
   const posterPrices = PRICE_TIERS.filter(
-    (tier): tier is PriceTier & { tone: "solo" | "group" } =>
+    (tier): tier is PriceTier & { tone: "solo" | "featured" | "group" } =>
       tier.tone !== "free",
   );
 
@@ -74,6 +116,18 @@ export default function PathlabPosterPage() {
     .map((label) => FIELDS.find((f) => f.label === label))
     .filter((f) => f !== undefined);
 
+  /* The featured "Pathlab รอบเต็ม" tier carries the price block, the perks
+     and the discount. If there is ever no featured tier, the block falls
+     back to the first paid tier so the sheet never ends without a price. */
+  const featured =
+    posterPrices.find((tier) => tier.tone === "featured") ?? posterPrices[0];
+
+  /* The discount lives next to the original/promo pair so it can never be
+     printed without both numbers above it. */
+  const discount = featured
+    ? discountPercent(featured.originalAmount, featured.amount)
+    : null;
+
   return (
     <main className="pathlab-poster-stage">
       <article
@@ -81,18 +135,19 @@ export default function PathlabPosterPage() {
         className="pathlab-poster"
         aria-label="โปสเตอร์ Pathlab"
       >
-        <header className="pathlab-poster__top">
-          {/* plain img, not next/image: keeps html-to-image export reliable */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/passion-seed-logo.png"
-            alt="Passion Seed"
-            className="pathlab-poster__logo"
-          />
-        </header>
-
         <section className="pathlab-poster__hero">
-          <h1 className="pathlab-poster__title">{HERO.title}</h1>
+          {/* Logo sits next to the big "Pathlab" wordmark so the title is
+              the brand — the word carries the room, the logo confirms it.
+              The plain <img> keeps the html-to-image export reliable. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <div className="pathlab-poster__lockup">
+            <img
+              src="/passion-seed-logo.png"
+              alt="Passion Seed"
+              className="pathlab-poster__lockup-logo"
+            />
+            <h1 className="pathlab-poster__title">{HERO.title}</h1>
+          </div>
           <p className="pathlab-poster__note">
             <span className="pathlab-note pathlab-note--tilt-r">
               {NOTES.hero}
@@ -160,29 +215,58 @@ export default function PathlabPosterPage() {
           <p className="pathlab-poster__schedule">{POSTER.schedule}</p>
         </section>
 
-        <section className="pathlab-poster__prices">
-          <ul className="pathlab-poster__prices-list">
-            {posterPrices.map((tier) => (
-              <li
-                key={tier.label}
-                className={`pathlab-poster__price pathlab-poster__price--${tier.tone}`}
-              >
-                <span className="pathlab-poster__price-amount">
-                  {tier.currency}
-                  {tier.amount}
+        {featured ? (
+          <section className="pathlab-poster__deal">
+            <div className="pathlab-poster__deal-head">
+              <h2 className="pathlab-poster__deal-title">{featured.label}</h2>
+              {featured.chip ? (
+                <span className="pathlab-poster__deal-chip">{featured.chip}</span>
+              ) : null}
+            </div>
+
+            <div className="pathlab-poster__deal-price">
+              {featured.originalAmount ? (
+                <span className="pathlab-poster__deal-original">
+                  <span className="pathlab-poster__deal-currency">
+                    {featured.currency}
+                  </span>
+                  {featured.originalAmount}
                 </span>
-                <span className="pathlab-poster__price-unit">
-                  {POSTER.priceUnits[tier.tone]}
+              ) : null}
+              <span className="pathlab-poster__deal-arrow" aria-hidden="true">
+                →
+              </span>
+              <span className="pathlab-poster__deal-promo">
+                <span className="pathlab-poster__deal-currency">
+                  {featured.currency}
                 </span>
-              </li>
-            ))}
-          </ul>
-          <p className="pathlab-poster__section-note">
-            <span className="pathlab-note pathlab-note--tilt-r-sm">
-              {POSTER.priceNote}
-            </span>
-          </p>
-        </section>
+                {featured.amount}
+              </span>
+              {discount !== null ? (
+                <span className="pathlab-poster__deal-discount">
+                  ลด {discount}%
+                </span>
+              ) : null}
+            </div>
+
+            <p className="pathlab-poster__deal-unit">{featured.unit}</p>
+
+            {featured.blurb ? (
+              <p className="pathlab-poster__deal-blurb">{featured.blurb}</p>
+            ) : null}
+
+            {featured.perks && featured.perks.length > 0 ? (
+              <ul className="pathlab-poster__perks">
+                {featured.perks.map((perk) => (
+                  <li key={perk} className="pathlab-poster__perk">
+                    <CheckMark />
+                    <span>{perk}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </section>
+        ) : null}
       </article>
 
       {/* Captured at 2x so the A4 sheet is usable in print, not just on
