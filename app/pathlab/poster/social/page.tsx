@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import {
   HERO,
   NOTES,
@@ -107,6 +108,22 @@ export default function PathlabSocialCardPage() {
 
   return (
     <main className="pathlab-social-stage">
+      <nav className="pathlab-ig-nav" aria-label="เลือกรูปแบบโปสเตอร์">
+        <span className="pathlab-ig-nav__tab pathlab-ig-nav__tab--active">
+          Social Card (1200×630)
+        </span>
+        <span className="pathlab-ig-nav__divider" aria-hidden="true" />
+        <Link href="/pathlab/poster/how-we-learn" className="pathlab-ig-nav__link">
+          How We Learn
+        </Link>
+        <Link href="/pathlab/poster/instagram" className="pathlab-ig-nav__link">
+          Instagram (4:5 · 1:1 · 9:16)
+        </Link>
+        <Link href="/pathlab/poster" className="pathlab-ig-nav__link">
+          A4 Print
+        </Link>
+      </nav>
+
       <PosterScaler designWidth={1200} className="pathlab-social-scaler">
         <article
           id="pathlab-social-card"

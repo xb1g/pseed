@@ -126,6 +126,9 @@ export type LeadMetaPatch = Partial<{
   follow_up_at: string | null;
   lead_status: DmLeadStatus;
   admin_tags: string[];
+  grade_level: string | null;
+  interests: string[];
+  stage: DmLeadStage;
 }>;
 
 export async function updateLead(conversationId: string, patch: LeadMetaPatch) {

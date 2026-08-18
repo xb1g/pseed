@@ -125,6 +125,25 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversationW
 
   const handleSyncChat = async (conversationId: string) => {
     setSyncingId(conversationId);
+    // Phase 1: Fast local hydration (<30ms)
+    try {
+      const fastThread = await getThread(conversationId);
+      if (fastThread) {
+        const lastInbound = deriveSignalsFromMessages(fastThread.dm_messages).lastInboundMessageAt;
+        threadCache.current.set(conversationId, fastThread);
+        setItems((prev) =>
+          prev.map((c) =>
+            c.id === conversationId
+              ? { ...c, ...fastThread, last_inbound_message_at: lastInbound }
+              : c
+          )
+        );
+      }
+    } catch {
+      // Ignore fast hydration error, proceed to Graph API sync
+    }
+
+    // Phase 2: Live Graph API Sync
     try {
       const res = await syncLeadMessages(conversationId);
       if (res.ok && res.conversation) {
@@ -288,6 +307,13 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversationW
         case "z":
           e.preventDefault();
           setFullscreen((v) => !v);
+          return;
+        case "r":
+        case "R":
+          if (selected) {
+            e.preventDefault();
+            handleSyncChat(selected.id);
+          }
           return;
       }
 

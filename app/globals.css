@@ -10834,9 +10834,11 @@ summary:focus-visible .radar-expand-indicator {
   display: flex;
   flex-direction: column;
   /* The deal block owns the foot of the sheet, so it sits flush against the
-     bottom padding instead of being pushed by leftover space-between. */
+     bottom padding instead of being pushed by leftover space-between. The
+     generous gap hands out the sheet's spare height as breathing room
+     between sections, so the deal still lands near the foot. */
   justify-content: flex-start;
-  gap: 3.5mm;
+  gap: 7mm;
   padding: 7mm 13mm 8mm;
   background: #fdf3e6;
   color: #524746;
@@ -10868,7 +10870,7 @@ summary:focus-visible .radar-expand-indicator {
    unit. The orange mark was chosen because it pairs with the orange
    wordmark — no second colour enters the lockup. */
 .pathlab-poster__lockup-logo {
-  height: 18mm;
+  height: 19.8mm;
   width: auto;
   display: block;
 }
@@ -10877,7 +10879,7 @@ summary:focus-visible .radar-expand-indicator {
   text-align: center;
   /* The hero now starts the sheet (no brand row above it), so a small
      top margin keeps breathing room under the marker frame. */
-  margin-top: 2mm;
+  margin-top: 4mm;
 }
 
 .pathlab-poster__title {
@@ -10912,35 +10914,78 @@ summary:focus-visible .radar-expand-indicator {
   color: rgba(82, 71, 70, 0.85);
 }
 
-/* Rubber-stamp badge beside the hero: double ring, slightly rotated, as if
-   pressed on after the sheet was printed. Pushed below the new logo+title
-   lockup so it never overlaps the wordmark. */
+/* Premium seal beside the title lockup, high on the sheet where the eye
+   lands first. Three rings do the work: a bold outer ring, a perforated
+   dashed ring (the serrated edge of a certificate seal), then the words
+   bracketed by tiny stars. A soft radial wash makes the ink read as
+   pressed into the paper, and a faint drop shadow lifts the seal off the
+   sheet like a wax stamp. Kept at a hand-pressed -9deg. */
 .pathlab-poster__stamp {
   position: absolute;
-  top: 50mm;
-  right: 15mm;
-  width: 29mm;
-  height: 29mm;
+  top: 12mm;
+  right: 13mm;
+  width: 31mm;
+  height: 31mm;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2.5px solid rgba(196, 62, 29, 0.7);
+  border: 2.5px solid rgba(196, 62, 29, 0.85);
   border-radius: 50%;
+  background: radial-gradient(
+    circle at 34% 30%,
+    rgba(196, 62, 29, 0.14),
+    rgba(196, 62, 29, 0.03) 58%
+  );
   box-shadow:
-    inset 0 0 0 1.6mm #fdf3e6,
-    inset 0 0 0 calc(1.6mm + 1.5px) rgba(196, 62, 29, 0.5);
+    inset 0 0 0 1.5mm #fdf3e6,
+    inset 0 0 0 calc(1.5mm + 1.25px) rgba(196, 62, 29, 0.55),
+    0 1.5px 4px rgba(82, 71, 70, 0.18);
   transform: rotate(-9deg);
-  opacity: 0.9;
+}
+
+/* The perforated inner ring: inset from the outer ring so a sliver of
+   paper shows between the two, like a postage seal. */
+.pathlab-poster__stamp::before {
+  content: "";
+  position: absolute;
+  inset: 3.6mm;
+  border: 1.4px dashed rgba(196, 62, 29, 0.65);
+  border-radius: 50%;
+  pointer-events: none;
 }
 
 .pathlab-poster__stamp span {
-  max-width: 19mm;
+  max-width: 20mm;
   font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
   font-size: 13px;
-  font-weight: 600;
-  line-height: 1.6;
+  font-weight: 700;
+  line-height: 1.55;
   text-align: center;
+  letter-spacing: 0.02em;
   color: #c43e1d;
+}
+
+/* Tiny seal stars bracketing the words, the way certificate seals frame
+   their motto. Purely decorative ink. */
+.pathlab-poster__stamp span::before,
+.pathlab-poster__stamp span::after {
+  display: block;
+  font-size: 8px;
+  line-height: 1.5;
+  letter-spacing: 0.3em;
+  /* Letter-spacing pads the right side too; text-indent recentres the pair. */
+  text-indent: 0.3em;
+  color: rgba(196, 62, 29, 0.75);
+}
+
+.pathlab-poster__stamp span::before {
+  content: "★ ★";
+  margin-bottom: 0.6mm;
+}
+
+.pathlab-poster__stamp span::after {
+  content: "★ ★";
+  margin-top: 0.6mm;
 }
 
 /* Sparkles tossed into the quiet corners. Fixed A4 canvas, so each sits at
@@ -10958,8 +11003,10 @@ summary:focus-visible .radar-expand-indicator {
 }
 
 .pathlab-poster__sparkle--hero-r {
-  top: 86mm;
-  right: 17mm;
+  /* In the breathing gap between subline and offer cards, above the Mentor
+     card's top corner. */
+  top: 65.5mm;
+  right: 16mm;
   width: 5mm;
   transform: rotate(9deg);
   color: rgba(82, 71, 70, 0.55);
@@ -10973,9 +11020,11 @@ summary:focus-visible .radar-expand-indicator {
 }
 
 .pathlab-poster__sparkle--price-l {
-  bottom: 18mm;
-  left: 16mm;
-  width: 6.5mm;
+  /* The sheet's quiet bottom-left corner: tucked into the cream margin
+     beside the deal panel, not under it. */
+  top: 250mm;
+  left: 6.8mm;
+  width: 5mm;
   transform: rotate(-8deg);
   color: rgba(82, 71, 70, 0.55);
 }
@@ -11009,7 +11058,7 @@ summary:focus-visible .radar-expand-indicator {
 }
 
 .pathlab-poster__offer {
-  padding: 4.5mm 4mm 5mm;
+  padding: 5.5mm 4.5mm 6mm;
   border-radius: 4mm;
   background: #524746;
   text-align: center;
@@ -11062,7 +11111,7 @@ summary:focus-visible .radar-expand-indicator {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 4mm;
-  margin-top: 4mm;
+  margin-top: 5mm;
   list-style: none;
   padding: 0;
 }
@@ -11136,22 +11185,24 @@ summary:focus-visible .radar-expand-indicator {
 }
 
 .pathlab-poster__schedule {
-  margin-top: 3.5mm;
+  margin-top: 4.5mm;
   font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
   font-size: 15px;
   font-weight: 600;
+  line-height: 1.5;
   color: #c43e1d;
   text-align: center;
 }
 
-/* Featured deal block: the bottom-of-sheet hero. A single dark panel holds
-   the tier label, the price (original → promo with discount chip), the unit
-   line, the blurb, and the perks. This is the buy-decision surface, so it
-   earns the only colored fill on the sheet and gets type weight that beats
-   every other section. */
+/* Featured deal block: the bottom-of-sheet hero. A single dark panel split
+   in two by a dashed vertical rule: the price story on the left, the
+   included benefits on the right. Side-by-side keeps the panel short — the
+   money question and the value answer are read in one glance instead of
+   stacking into a tall wall. This is the buy-decision surface, so it earns
+   the only colored fill on the sheet. */
 .pathlab-poster__deal {
   position: relative;
-  padding: 7mm 8mm 7.5mm;
+  padding: 6.5mm 7.5mm 7mm;
   background: #524746;
   border-radius: 6mm;
   color: #fdf3e6;
@@ -11202,16 +11253,25 @@ summary:focus-visible .radar-expand-indicator {
   border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px;
 }
 
+/* The two halves of the deal: price column sizes to its content, benefits
+   take the rest. Centred against each other so the divider reads as a
+   deliberate rule, not a leftover. */
+.pathlab-poster__deal-body {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 7mm;
+  align-items: center;
+  margin-top: 4.5mm;
+}
+
 /* The price row is the loudest thing on the sheet: original (struck) →
-   promo (big), then a discount chip. The arrow is a deliberate piece of
-   typography, not an icon, so it scales with the same font and inherits
-   the same colour as the promo number. */
+   promo (big). The arrow is a deliberate piece of typography, not an icon,
+   so it scales with the same font and inherits the same colour as the
+   promo number. */
 .pathlab-poster__deal-price {
   display: flex;
   align-items: baseline;
-  gap: 4mm;
-  margin-top: 4.5mm;
-  flex-wrap: wrap;
+  gap: 3mm;
 }
 
 .pathlab-poster__deal-currency {
@@ -11222,7 +11282,7 @@ summary:focus-visible .radar-expand-indicator {
 
 .pathlab-poster__deal-original {
   font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
-  font-size: 30px;
+  font-size: 24px;
   font-weight: 700;
   line-height: 1.1;
   color: rgba(253, 243, 230, 0.55);
@@ -11233,7 +11293,7 @@ summary:focus-visible .radar-expand-indicator {
 
 .pathlab-poster__deal-arrow {
   font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
-  font-size: 30px;
+  font-size: 24px;
   font-weight: 600;
   line-height: 1;
   color: rgba(253, 243, 230, 0.7);
@@ -11241,18 +11301,21 @@ summary:focus-visible .radar-expand-indicator {
 
 .pathlab-poster__deal-promo {
   font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
-  font-size: 64px;
+  font-size: 52px;
   font-weight: 700;
   line-height: 1;
   color: #fdf3e6;
   letter-spacing: -0.02em;
 }
 
+/* The discount chip drops under the price row now that the row shares its
+   panel with the perks — still rotated, still hand-placed. */
 .pathlab-poster__deal-discount {
-  margin-left: auto;
-  padding: 1.8mm 4.5mm;
+  display: inline-block;
+  margin-top: 2mm;
+  padding: 1.5mm 4mm;
   font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1.2;
   color: #c43e1d;
@@ -11262,32 +11325,35 @@ summary:focus-visible .radar-expand-indicator {
 }
 
 .pathlab-poster__deal-unit {
-  margin: 2.5mm 0 0;
-  font-size: 13.5px;
+  margin: 2mm 0 0;
+  font-size: 12.5px;
   line-height: 1.5;
   color: rgba(253, 243, 230, 0.82);
 }
 
 .pathlab-poster__deal-blurb {
-  margin: 2mm 0 0;
-  font-size: 13px;
+  margin: 1.5mm 0 0;
+  /* Narrower than the price column so the beta note never pushes the
+     panel wider than the price needs. */
+  max-width: 62mm;
+  font-size: 12px;
   line-height: 1.6;
   color: rgba(253, 243, 230, 0.78);
 }
 
-/* Perks list: each item is its own line, with a green check chip on the
-   left. Green is the second accent on the sheet — the only colour besides
-   orange/red — so the ✓ reads as "included" without competing with the
-   wordmarks. Two columns on a wide sheet keeps the block short. */
+/* Perks list: the benefits half of the deal panel, one perk per line with
+   a green check chip on the left. Green is the second accent on the sheet —
+   the only colour besides orange/red — so the ✓ reads as "included"
+   without competing with the wordmarks. The dashed left rule is the
+   divider that separates benefits from price. */
 .pathlab-poster__perks {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  column-gap: 7mm;
-  row-gap: 2.2mm;
+  grid-template-columns: 1fr;
+  row-gap: 2.6mm;
   list-style: none;
-  padding: 3mm 0 0;
-  margin: 3mm 0 0;
-  border-top: 1px dashed rgba(253, 243, 230, 0.22);
+  padding: 0 0 0 7mm;
+  margin: 0;
+  border-left: 1.5px dashed rgba(253, 243, 230, 0.25);
 }
 
 .pathlab-poster__perk {
@@ -11655,6 +11721,7 @@ summary:focus-visible .radar-expand-indicator {
   font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
   font-size: 15px;
   font-weight: 600;
+  line-height: 1.5;
   color: #c43e1d;
 }
 
@@ -12193,9 +12260,9 @@ summary:focus-visible .radar-expand-indicator {
 }
 
 .pathlab-social__schedule-dates {
-  font-size: 30px;
+  font-size: 18px;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.35;
   letter-spacing: -0.01em;
 }
 
@@ -14406,46 +14473,7 @@ a.pathlab-fields__button {
   margin-top: 1.4rem;
 }
 
-/* ── Proof: transformation flow + field examples ── */
-
-.pathlab-partner__flow {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.6rem;
-  max-width: 46rem;
-  margin: clamp(1.75rem, 4vw, 2.5rem) auto 0;
-  padding: 0;
-  list-style: none;
-}
-
-@media (min-width: 640px) {
-  .pathlab-partner__flow {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 900px) {
-  .pathlab-partner__flow {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-.pathlab-partner__flow-step {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  padding: 0.8rem 1rem;
-  border-radius: 1rem;
-  background: rgba(82, 71, 70, 0.05);
-  border: 1px solid rgba(82, 71, 70, 0.12);
-}
-
-.pathlab-partner__flow-label {
-  font-size: 0.9rem;
-  font-weight: 600;
-  line-height: 1.5;
-  color: #524746;
-}
+/* ── Proof: field examples ── */
 
 .pathlab-partner__examples {
   display: grid;
@@ -14545,4 +14573,1276 @@ a.pathlab-fields__button {
   line-height: 1.55;
   color: #524746;
   text-align: center;
+}
+
+/* ── Money strip under the exchange cards ── */
+
+.pathlab-partner__money {
+  max-width: 46rem;
+  margin: 1rem auto 0;
+  padding: clamp(1.4rem, 3vw, 2rem);
+  border-radius: 1.25rem;
+  background: #fff;
+  border: 1px solid rgba(82, 71, 70, 0.12);
+  box-shadow: 0 4px 16px rgba(82, 71, 70, 0.08);
+}
+
+.pathlab-partner__money-heading {
+  margin: 0 0 1rem;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #524746;
+}
+
+/* ── Modes: escape hatch for anyone who does not want to pick ── */
+
+.pathlab-partner__mode-help {
+  margin: 0.9rem 0 0;
+  text-align: center;
+}
+
+.pathlab-partner__mode-help a {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #c43e1d;
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 0.28em;
+}
+
+/* ── Map: the DM door directly under the artifact ── */
+
+.pathlab-partner__map-cta {
+  display: flex;
+  justify-content: center;
+  margin-top: clamp(1.5rem, 3.5vw, 2.25rem);
+}
+
+/* ── Floating DM pill: the one door stays within thumb reach ── */
+
+.pathlab-partner__fab {
+  position: fixed;
+  left: 50%;
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.25rem;
+  border-radius: 999px;
+  background: #c43e1d;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(196, 62, 29, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 140%);
+  transition: transform 240ms cubic-bezier(0.05, 0.7, 0.35, 0.99),
+    opacity 200ms ease;
+}
+
+.pathlab-partner__fab svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.pathlab-partner__fab.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pathlab-partner__fab {
+    transition: opacity 120ms ease;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* ── Instagram Poster: 1080×1350 (4:5 Feed), 1080×1080 (1:1), 1080×1920 (9:16) ── */
+
+.pathlab-ig-stage {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: clamp(1rem, 3vw, 2.5rem);
+  background: #524746;
+}
+
+.pathlab-ig-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(40, 33, 32, 0.85);
+  border: 1px solid rgba(253, 243, 230, 0.12);
+  border-radius: 999px;
+  backdrop-filter: blur(12px);
+}
+
+.pathlab-ig-nav__tab {
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: rgba(253, 243, 230, 0.8);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+
+.pathlab-ig-nav__tab:hover {
+  color: #fdf3e6;
+  background: rgba(253, 243, 230, 0.1);
+}
+
+.pathlab-ig-nav__tab--active {
+  color: #524746;
+  background: linear-gradient(100deg, #ffe08a, #ffd561);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.pathlab-ig-nav__divider {
+  width: 1px;
+  height: 18px;
+  background: rgba(253, 243, 230, 0.2);
+  margin: 0 4px;
+}
+
+.pathlab-ig-nav__link {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(253, 243, 230, 0.7);
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.pathlab-ig-nav__link:hover {
+  color: #fdf3e6;
+}
+
+.pathlab-ig-scaler {
+  width: 100%;
+  max-width: 1080px;
+}
+
+/* Base Instagram Card Canvas */
+.pathlab-ig-card {
+  position: relative;
+  width: 1080px;
+  display: flex;
+  flex-direction: column;
+  background: #fdf3e6;
+  color: #524746;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  box-sizing: border-box;
+}
+
+.pathlab-ig-card::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 2.5px solid rgba(196, 62, 29, 0.28);
+  border-radius: 28px 34px 26px 36px / 34px 26px 36px 28px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* 4:5 Portrait Feed (1080 × 1350) */
+.pathlab-ig-card--portrait {
+  height: 1350px;
+  padding: 38px 48px 32px;
+  gap: 18px;
+  justify-content: space-between;
+}
+
+/* 1:1 Square Feed (1080 × 1080) */
+.pathlab-ig-card--square {
+  height: 1080px;
+  padding: 26px 40px 22px;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+/* 9:16 Story (1080 × 1920) */
+.pathlab-ig-card--story {
+  height: 1920px;
+  padding: 64px 52px 52px;
+  gap: 36px;
+  justify-content: space-between;
+}
+
+/* Lockup & Brand Header */
+.pathlab-ig__lockup {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.pathlab-ig__logo {
+  height: 60px;
+  width: auto;
+  display: block;
+}
+
+.pathlab-ig-card--square .pathlab-ig__logo {
+  height: 48px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__logo {
+  height: 76px;
+}
+
+.pathlab-ig__title {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 72px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: #c43e1d;
+  margin: 0;
+}
+
+.pathlab-ig-card--square .pathlab-ig__title {
+  font-size: 56px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__title {
+  font-size: 88px;
+}
+
+.pathlab-ig__hero {
+  text-align: center;
+}
+
+.pathlab-ig__note {
+  margin: 6px 0 0;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.pathlab-ig-card--square .pathlab-ig__note {
+  margin: 3px 0 0;
+  font-size: 14px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__note {
+  margin: 10px 0 0;
+  font-size: 18px;
+}
+
+.pathlab-ig__headline {
+  margin-top: 8px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #524746;
+}
+
+.pathlab-ig-card--square .pathlab-ig__headline {
+  margin-top: 4px;
+  font-size: 22px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__headline {
+  margin-top: 14px;
+  font-size: 32px;
+}
+
+.pathlab-ig__subline {
+  margin-top: 2px;
+  font-size: 15px;
+  color: rgba(82, 71, 70, 0.85);
+}
+
+.pathlab-ig-card--square .pathlab-ig__subline {
+  font-size: 13.5px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__subline {
+  margin-top: 6px;
+  font-size: 18px;
+}
+
+/* Rubber Stamp */
+.pathlab-ig__stamp {
+  position: absolute;
+  top: 32px;
+  right: 36px;
+  width: 92px;
+  height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2.5px solid rgba(196, 62, 29, 0.85);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 34% 30%,
+    rgba(196, 62, 29, 0.14),
+    rgba(196, 62, 29, 0.03) 58%
+  );
+  box-shadow:
+    inset 0 0 0 5px #fdf3e6,
+    inset 0 0 0 6.5px rgba(196, 62, 29, 0.55),
+    0 2px 6px rgba(82, 71, 70, 0.18);
+  transform: rotate(-9deg);
+  z-index: 5;
+}
+
+.pathlab-ig-card--square .pathlab-ig__stamp {
+  top: 20px;
+  right: 24px;
+  width: 76px;
+  height: 76px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__stamp {
+  top: 50px;
+  right: 42px;
+  width: 110px;
+  height: 110px;
+}
+
+.pathlab-ig__stamp::before {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border: 1.4px dashed rgba(196, 62, 29, 0.65);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.pathlab-ig__stamp span {
+  max-width: 60px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.55;
+  text-align: center;
+  letter-spacing: 0.02em;
+  color: #c43e1d;
+}
+
+.pathlab-ig-card--square .pathlab-ig__stamp span {
+  max-width: 50px;
+  font-size: 10.5px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__stamp span {
+  max-width: 75px;
+  font-size: 14px;
+}
+
+.pathlab-ig__stamp span::before,
+.pathlab-ig__stamp span::after {
+  display: block;
+  font-size: 8px;
+  line-height: 1.4;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  color: rgba(196, 62, 29, 0.75);
+}
+
+.pathlab-ig__stamp span::before {
+  content: "★ ★";
+  margin-bottom: 2px;
+}
+
+.pathlab-ig__stamp span::after {
+  content: "★ ★";
+  margin-top: 2px;
+}
+
+/* Sparkles */
+.pathlab-ig__sparkle {
+  position: absolute;
+  color: #c43e1d;
+  z-index: 4;
+}
+
+.pathlab-ig__sparkle--hero-l {
+  top: 130px;
+  left: 64px;
+  width: 24px;
+  transform: rotate(-12deg);
+}
+
+.pathlab-ig__sparkle--hero-r {
+  top: 210px;
+  right: 68px;
+  width: 18px;
+  transform: rotate(9deg);
+  color: rgba(82, 71, 70, 0.55);
+}
+
+.pathlab-ig__sparkle--fields-r {
+  top: 480px;
+  right: 48px;
+  width: 22px;
+  transform: rotate(14deg);
+}
+
+.pathlab-ig__sparkle--price-l {
+  bottom: 80px;
+  left: 32px;
+  width: 18px;
+  transform: rotate(-8deg);
+  color: rgba(82, 71, 70, 0.55);
+}
+
+/* Offers Strip */
+.pathlab-ig__offers-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.pathlab-ig-card--square .pathlab-ig__offers-list {
+  gap: 10px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__offers-list {
+  gap: 18px;
+}
+
+.pathlab-ig__offer {
+  padding: 14px 12px 16px;
+  border-radius: 14px;
+  background: #524746;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.pathlab-ig-card--square .pathlab-ig__offer {
+  padding: 10px 8px 12px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__offer {
+  padding: 20px 16px 22px;
+}
+
+.pathlab-ig__offer:nth-child(1) {
+  transform: rotate(-1.1deg);
+}
+
+.pathlab-ig__offer:nth-child(2) {
+  transform: rotate(0.9deg) translateY(2px);
+}
+
+.pathlab-ig__offer:nth-child(3) {
+  transform: rotate(-0.7deg);
+}
+
+.pathlab-ig__offer-title {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #fdf3e6;
+  margin: 0;
+}
+
+.pathlab-ig-card--square .pathlab-ig__offer-title {
+  font-size: 14.5px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__offer-title {
+  font-size: 21px;
+}
+
+.pathlab-ig__offer-body {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(253, 243, 230, 0.86);
+}
+
+.pathlab-ig-card--square .pathlab-ig__offer-body {
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.pathlab-ig-card--story .pathlab-ig__offer-body {
+  margin-top: 6px;
+  font-size: 15.5px;
+  line-height: 1.7;
+}
+
+/* Fields Strip */
+.pathlab-ig__fields {
+  text-align: center;
+}
+
+.pathlab-ig__fields-heading {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 19px;
+  font-weight: 600;
+  color: #c43e1d;
+  margin: 0;
+}
+
+.pathlab-ig-card--square .pathlab-ig__fields-heading {
+  font-size: 16.5px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__fields-heading {
+  font-size: 24px;
+}
+
+.pathlab-ig__squiggle {
+  display: block;
+  width: 110px;
+  margin: 2px auto 0;
+  color: #c43e1d;
+  opacity: 0.8;
+}
+
+.pathlab-ig__fields-list {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-top: 12px;
+  list-style: none;
+  padding: 0;
+}
+
+.pathlab-ig-card--square .pathlab-ig__fields-list {
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__fields-list {
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.pathlab-ig__field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pathlab-ig__field::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  z-index: 3;
+  width: 50px;
+  height: 16px;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 236, 170, 0.9),
+    rgba(255, 226, 140, 0.85)
+  );
+  box-shadow: 0 1px 2px rgba(82, 71, 70, 0.15);
+}
+
+.pathlab-ig__field:nth-child(-n + 2)::before {
+  left: -8px;
+  transform: rotate(-40deg);
+}
+
+.pathlab-ig__field:nth-child(n + 3)::before {
+  right: -8px;
+  transform: rotate(40deg);
+}
+
+.pathlab-ig__field:nth-child(1) {
+  transform: rotate(-1.3deg);
+}
+
+.pathlab-ig__field:nth-child(2) {
+  transform: rotate(1.1deg) translateY(3px);
+}
+
+.pathlab-ig__field:nth-child(3) {
+  transform: rotate(-0.9deg);
+}
+
+.pathlab-ig__field:nth-child(4) {
+  transform: rotate(1.2deg) translateY(2px);
+}
+
+.pathlab-ig__field-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  box-shadow: 0 3px 10px rgba(82, 71, 70, 0.18);
+}
+
+.pathlab-ig__field .pathlab-note {
+  position: relative;
+  z-index: 2;
+  margin-top: -12px;
+  font-size: 13px;
+}
+
+.pathlab-ig-card--square .pathlab-ig__field .pathlab-note {
+  margin-top: -10px;
+  font-size: 11px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__field .pathlab-note {
+  margin-top: -14px;
+  font-size: 15px;
+}
+
+/* Schedule Line */
+.pathlab-ig__schedule {
+  margin-top: 10px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 16.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #c43e1d;
+  text-align: center;
+}
+
+.pathlab-ig-card--square .pathlab-ig__schedule {
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__schedule {
+  margin-top: 16px;
+  font-size: 20px;
+}
+
+/* Featured Deal Block */
+.pathlab-ig__deal {
+  position: relative;
+  padding: 22px 28px;
+  background: #524746;
+  border-radius: 18px;
+  color: #fdf3e6;
+  background-image: linear-gradient(
+      180deg,
+      rgba(196, 62, 29, 0.18),
+      rgba(196, 62, 29, 0) 24px
+    ),
+    radial-gradient(
+      ellipse at 92% 0%,
+      rgba(255, 213, 97, 0.12),
+      rgba(255, 213, 97, 0) 60%
+    );
+  box-sizing: border-box;
+}
+
+.pathlab-ig-card--square .pathlab-ig__deal {
+  padding: 16px 20px;
+  border-radius: 14px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__deal {
+  padding: 32px 36px;
+  border-radius: 24px;
+}
+
+.pathlab-ig__deal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pathlab-ig__deal-title {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #fdf3e6;
+  margin: 0;
+}
+
+.pathlab-ig-card--square .pathlab-ig__deal-title {
+  font-size: 18px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__deal-title {
+  font-size: 28px;
+}
+
+.pathlab-ig__deal-chip {
+  padding: 3px 10px;
+  background: #ffe08a;
+  border-radius: 6px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #c43e1d;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  transform: rotate(1.2deg);
+}
+
+.pathlab-ig__deal-body {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 24px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.pathlab-ig-card--square .pathlab-ig__deal-body {
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__deal-body {
+  gap: 32px;
+  margin-top: 20px;
+}
+
+.pathlab-ig__deal-price {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.pathlab-ig__deal-currency {
+  font-size: 0.55em;
+  font-weight: 600;
+  margin-right: 2px;
+}
+
+.pathlab-ig__deal-original {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: rgba(253, 243, 230, 0.55);
+  text-decoration: line-through;
+}
+
+.pathlab-ig-card--square .pathlab-ig__deal-original {
+  font-size: 19px;
+}
+
+.pathlab-ig__deal-arrow {
+  font-size: 24px;
+  font-weight: 600;
+  color: rgba(253, 243, 230, 0.7);
+}
+
+.pathlab-ig__deal-promo {
+  font-size: 52px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fdf3e6;
+  letter-spacing: -0.02em;
+}
+
+.pathlab-ig-card--square .pathlab-ig__deal-promo {
+  font-size: 40px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__deal-promo {
+  font-size: 64px;
+}
+
+.pathlab-ig__deal-discount {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 9px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #c43e1d;
+  background: #ffe08a;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transform: rotate(-1.5deg);
+}
+
+.pathlab-ig-card--square .pathlab-ig__deal-discount {
+  font-size: 11.5px;
+  padding: 2px 7px;
+}
+
+.pathlab-ig__deal-unit {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: rgba(253, 243, 230, 0.82);
+}
+
+.pathlab-ig-card--square .pathlab-ig__deal-unit {
+  font-size: 11px;
+}
+
+.pathlab-ig__deal-blurb {
+  margin: 4px 0 0;
+  max-width: 220px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: rgba(253, 243, 230, 0.78);
+}
+
+.pathlab-ig-card--square .pathlab-ig__deal-blurb {
+  display: none; /* Keep square concise */
+}
+
+.pathlab-ig__perks {
+  list-style: none;
+  padding: 0 0 0 20px;
+  margin: 0;
+  border-left: 1.5px dashed rgba(253, 243, 230, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.pathlab-ig-card--square .pathlab-ig__perks {
+  padding-left: 14px;
+  gap: 5px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__perks {
+  padding-left: 28px;
+  gap: 12px;
+}
+
+.pathlab-ig__perk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: rgba(253, 243, 230, 0.92);
+}
+
+.pathlab-ig-card--square .pathlab-ig__perk {
+  font-size: 11.5px;
+  line-height: 1.45;
+  gap: 6px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__perk {
+  font-size: 16.5px;
+  gap: 12px;
+}
+
+.pathlab-ig__check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #4e8752;
+  color: #fdf3e6;
+  flex-shrink: 0;
+}
+
+.pathlab-ig-card--square .pathlab-ig__check {
+  width: 14px;
+  height: 14px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__check {
+  width: 22px;
+  height: 22px;
+}
+
+.pathlab-ig__check svg {
+  width: 11px;
+  height: 11px;
+}
+
+.pathlab-ig-card--square .pathlab-ig__check svg {
+  width: 9px;
+  height: 9px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__check svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Footer / Instagram CTA */
+.pathlab-ig__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 0;
+  border-top: 1.5px dashed rgba(196, 62, 29, 0.3);
+  margin-top: auto;
+}
+
+.pathlab-ig__footer-handle {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #c43e1d;
+}
+
+.pathlab-ig__footer-cta {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: rgba(82, 71, 70, 0.85);
+}
+
+.pathlab-ig-card--square .pathlab-ig__footer-handle {
+  font-size: 14px;
+}
+
+.pathlab-ig-card--square .pathlab-ig__footer-cta {
+  font-size: 12px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__footer-handle {
+  font-size: 20px;
+}
+
+.pathlab-ig-card--story .pathlab-ig__footer-cta {
+  font-size: 16px;
+}
+
+
+/* ==================================================================
+   /pathlab/poster/how-we-learn — A4 sheet that explains how a Pathlab runs.
+   Lives next to /pathlab/poster (sell) and /pathlab/poster/social (share).
+   Same dark stage, same hand-markered cream paper, same scaled mobile
+   preview, but a quieter three-band layout: brand row, the island trail
+   (the centerpiece), three example days from the Web Dev path, and a
+   single CTA footer. Authored in mm against A4, like the sibling poster.
+   ================================================================== */
+
+.pathlab-how-stage {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 28px;
+  padding: clamp(1rem, 4vw, 3rem);
+  background: #524746;
+}
+
+.pathlab-how {
+  position: relative;
+  width: 210mm;
+  min-height: 297mm;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5mm;
+  padding: 9mm 13mm 8mm;
+  background: #fdf3e6;
+  color: #524746;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+/* Softer hand-drawn frame, between v1 (heavier) and v2 (thinnest): wide
+   corner variance so it reads as a pencil rule, not a UI border. */
+.pathlab-how::before {
+  content: "";
+  position: absolute;
+  inset: 5mm;
+  border: 1.5px solid rgba(196, 62, 29, 0.22);
+  border-radius: 24px 30px 20px 30px / 28px 20px 30px 24px;
+  pointer-events: none;
+}
+
+/* Tier 4 brand row, top of the sheet. Quiet confirmation of who made it,
+   left aligned so the eye flows past it to the title. */
+.pathlab-how__brand {
+  display: flex;
+  align-items: baseline;
+  gap: 3.5mm;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  color: rgba(82, 71, 70, 0.75);
+}
+
+.pathlab-how__logo {
+  height: 9mm;
+  width: auto;
+  display: block;
+}
+
+.pathlab-how__brand-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.pathlab-how__brand-path {
+  font-size: 14px;
+  color: rgba(82, 71, 70, 0.55);
+}
+
+/* Tier 1: the name of this sheet. Reads from across the room. */
+.pathlab-how__title {
+  margin: 4mm 0 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 92px;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  color: #c43e1d;
+  text-align: center;
+}
+
+/* Tier 2: the promise. Centered, one sentence, generous leading. */
+.pathlab-how__promise {
+  margin: 2mm auto 0;
+  max-width: 160mm;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  text-align: center;
+  color: rgba(82, 71, 70, 0.92);
+}
+
+/* The single margin note tucked into the top-right corner, on its own
+   absolute line so it does not push the title block down. */
+.pathlab-how__note {
+  position: absolute;
+  top: 14mm;
+  right: 18mm;
+  margin: 0;
+  max-width: 58mm;
+  font-size: 13.5px;
+  line-height: 1.55;
+  z-index: 2;
+}
+
+/* Tier 3: the island trail. Sized in px against the fixed A4 sheet so the
+   internal layout reads the same on screen and in the printed PNG. */
+.pathlab-how__islands {
+  margin-top: 1mm;
+  text-align: center;
+}
+
+.pathlab-how__eyebrow {
+  margin: 0 0 2mm;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #c43e1d;
+}
+
+.pathlab-how__eyebrow--center {
+  text-align: center;
+}
+
+.pathlab-how__eyebrow-chip {
+  display: inline-block;
+  padding: 0.6mm 2.5mm;
+  margin-right: 1.8mm;
+  border-radius: 999px;
+  background: rgba(196, 62, 29, 0.12);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  vertical-align: 1px;
+}
+
+/* The zigzag trail container. Width is fixed px so the 0-100 viewBox in
+   the connector SVG and the 18/50/82 percentage stops line up against
+   the same canvas regardless of viewport. */
+.pathlab-how__trail {
+  position: relative;
+  margin: 0 auto;
+  width: 760px;
+  max-width: 100%;
+}
+
+.pathlab-how__trail-path {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.pathlab-how__stop {
+  position: absolute;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.4mm;
+  width: 130px;
+}
+
+.pathlab-how__stop-sprite {
+  display: block;
+  width: 24mm;
+  height: 24mm;
+  object-fit: contain;
+  filter: drop-shadow(0 3mm 5mm rgba(82, 71, 70, 0.28));
+}
+
+.pathlab-how__stop-title {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  max-width: 130px;
+  text-wrap: balance;
+  color: rgba(82, 71, 70, 0.85);
+}
+
+/* When the fetch fails or is still loading, the static PathLab screenshot
+   fills the same slot. Sized to match the trail's natural box. */
+.pathlab-how__fallback {
+  display: block;
+  width: 760px;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border-radius: 2.5mm;
+}
+
+.pathlab-how__hint {
+  margin: 2mm 0 0;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 13px;
+}
+
+/* Tier 4: three example day cards. Slight alternating tilt keeps the row
+   from looking stamped from a mould. */
+.pathlab-how__days {
+  margin-top: 2mm;
+}
+
+.pathlab-how__days-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4mm;
+  margin: 2mm 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pathlab-how__day {
+  position: relative;
+  padding: 5mm 4.5mm 5.5mm;
+  border-radius: 4mm;
+  background: rgba(196, 62, 29, 0.06);
+  border: 1px solid rgba(196, 62, 29, 0.18);
+}
+
+.pathlab-how__day:nth-child(1) {
+  transform: rotate(-0.9deg);
+}
+.pathlab-how__day:nth-child(2) {
+  transform: rotate(0.6deg) translateY(1mm);
+}
+.pathlab-how__day:nth-child(3) {
+  transform: rotate(-0.5deg);
+}
+
+.pathlab-how__day-number {
+  display: inline-block;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #c43e1d;
+}
+
+.pathlab-how__day-title {
+  margin: 1.5mm 0 1mm;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #524746;
+}
+
+.pathlab-how__day-doing {
+  margin: 0 0 2mm;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(82, 71, 70, 0.85);
+}
+
+.pathlab-how__day-gets {
+  display: inline-block;
+  padding: 1mm 2.5mm;
+  border-radius: 999px;
+  background: #c43e1d;
+  color: #fdf3e6;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Tier 5 footer: a single quiet line so the reader knows what to do next. */
+.pathlab-how__cta {
+  margin-top: auto;
+  padding-top: 4mm;
+  text-align: center;
+  border-top: 1px solid rgba(196, 62, 29, 0.18);
+}
+
+.pathlab-how__cta-eyebrow {
+  display: block;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 13px;
+  color: rgba(82, 71, 70, 0.7);
+}
+
+.pathlab-how__cta-handle {
+  display: block;
+  margin-top: 1mm;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #c43e1d;
+}
+
+/* Mobile preview scales the fixed A4 sheet, the same way v1 and v2 do. */
+@media (max-width: 760px) {
+  .pathlab-how {
+    zoom: 0.68;
+  }
+}
+
+@media (max-width: 540px) {
+  .pathlab-how {
+    zoom: 0.48;
+  }
+}
+
+@media (max-width: 400px) {
+  .pathlab-how {
+    zoom: 0.36;
+  }
+}
+
+/* v3 prints the same way: full A4, no shadow, no stage. */
+@media print {
+  .pathlab-how-stage {
+    padding: 0;
+    gap: 0;
+    background: #fff;
+  }
+  .pathlab-how {
+    zoom: 1;
+    box-shadow: none;
+  }
+  /* The download button is a screen affordance; it must never print. */
+  .pathlab-social__actions {
+    display: none;
+  }
 }

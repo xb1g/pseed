@@ -659,7 +659,13 @@ export async function generateDraftPlan(
   });
 
   if (matchedCompetitions.length > 0) {
-    matchedCompetitions.slice(0, 3).forEach((comp) => {
+    // Select highest-weight (highest impact) opportunities first, then arrange chronologically
+    const topCompetitions = [...matchedCompetitions]
+      .sort((a, b) => b.weight - a.weight || (a.deadline || "").localeCompare(b.deadline || ""))
+      .slice(0, 3)
+      .sort((a, b) => (a.deadline || "").localeCompare(b.deadline || ""));
+
+    topCompetitions.forEach((comp) => {
       timeline.push({
         month: formatMonthTh(comp.application_opens || comp.deadline),
         title: comp.name_th,

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import {
   HERO,
   NOTES,
@@ -130,6 +131,22 @@ export default function PathlabPosterPage() {
 
   return (
     <main className="pathlab-poster-stage">
+      <nav className="pathlab-ig-nav" aria-label="เลือกรูปแบบโปสเตอร์">
+        <span className="pathlab-ig-nav__tab pathlab-ig-nav__tab--active">
+          A4 Print
+        </span>
+        <span className="pathlab-ig-nav__divider" aria-hidden="true" />
+        <Link href="/pathlab/poster/how-we-learn" className="pathlab-ig-nav__link">
+          How We Learn
+        </Link>
+        <Link href="/pathlab/poster/instagram" className="pathlab-ig-nav__link">
+          Instagram (4:5 · 1:1 · 9:16)
+        </Link>
+        <Link href="/pathlab/poster/social" className="pathlab-ig-nav__link">
+          Social Card (1200×630)
+        </Link>
+      </nav>
+
       <article
         id="pathlab-poster-sheet"
         className="pathlab-poster"
@@ -139,8 +156,8 @@ export default function PathlabPosterPage() {
           {/* Logo sits next to the big "Pathlab" wordmark so the title is
               the brand — the word carries the room, the logo confirms it.
               The plain <img> keeps the html-to-image export reliable. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <div className="pathlab-poster__lockup">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/passion-seed-logo.png"
               alt="Passion Seed"
@@ -224,47 +241,60 @@ export default function PathlabPosterPage() {
               ) : null}
             </div>
 
-            <div className="pathlab-poster__deal-price">
-              {featured.originalAmount ? (
-                <span className="pathlab-poster__deal-original">
-                  <span className="pathlab-poster__deal-currency">
-                    {featured.currency}
+            {/* Price on the left, benefits on the right: the money question
+                and the value answer sit side by side, separated by a dashed
+                rule, instead of stacking into one tall wall. */}
+            <div className="pathlab-poster__deal-body">
+              <div className="pathlab-poster__deal-main">
+                <div className="pathlab-poster__deal-price">
+                  {featured.originalAmount ? (
+                    <span className="pathlab-poster__deal-original">
+                      <span className="pathlab-poster__deal-currency">
+                        {featured.currency}
+                      </span>
+                      {featured.originalAmount}
+                    </span>
+                  ) : null}
+                  <span
+                    className="pathlab-poster__deal-arrow"
+                    aria-hidden="true"
+                  >
+                    →
                   </span>
-                  {featured.originalAmount}
-                </span>
-              ) : null}
-              <span className="pathlab-poster__deal-arrow" aria-hidden="true">
-                →
-              </span>
-              <span className="pathlab-poster__deal-promo">
-                <span className="pathlab-poster__deal-currency">
-                  {featured.currency}
-                </span>
-                {featured.amount}
-              </span>
-              {discount !== null ? (
-                <span className="pathlab-poster__deal-discount">
-                  ลด {discount}%
-                </span>
+                  <span className="pathlab-poster__deal-promo">
+                    <span className="pathlab-poster__deal-currency">
+                      {featured.currency}
+                    </span>
+                    {featured.amount}
+                  </span>
+                </div>
+
+                {discount !== null ? (
+                  <span className="pathlab-poster__deal-discount">
+                    ลด {discount}%
+                  </span>
+                ) : null}
+
+                <p className="pathlab-poster__deal-unit">{featured.unit}</p>
+
+                {featured.blurb ? (
+                  <p className="pathlab-poster__deal-blurb">
+                    {featured.blurb}
+                  </p>
+                ) : null}
+              </div>
+
+              {featured.perks && featured.perks.length > 0 ? (
+                <ul className="pathlab-poster__perks">
+                  {featured.perks.map((perk) => (
+                    <li key={perk} className="pathlab-poster__perk">
+                      <CheckMark />
+                      <span>{perk}</span>
+                    </li>
+                  ))}
+                </ul>
               ) : null}
             </div>
-
-            <p className="pathlab-poster__deal-unit">{featured.unit}</p>
-
-            {featured.blurb ? (
-              <p className="pathlab-poster__deal-blurb">{featured.blurb}</p>
-            ) : null}
-
-            {featured.perks && featured.perks.length > 0 ? (
-              <ul className="pathlab-poster__perks">
-                {featured.perks.map((perk) => (
-                  <li key={perk} className="pathlab-poster__perk">
-                    <CheckMark />
-                    <span>{perk}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
           </section>
         ) : null}
       </article>

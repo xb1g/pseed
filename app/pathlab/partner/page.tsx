@@ -4,8 +4,10 @@ import { PartnerHero } from "@/components/pathlab/partner/PartnerHero";
 import { PartnerGoal } from "@/components/pathlab/partner/PartnerGoal";
 import { PartnerModes } from "@/components/pathlab/partner/PartnerModes";
 import { PartnerProof } from "@/components/pathlab/partner/PartnerProof";
+import { PartnerMap } from "@/components/pathlab/partner/PartnerMap";
 import { PartnerExchange } from "@/components/pathlab/partner/PartnerExchange";
 import { PartnerContact } from "@/components/pathlab/partner/PartnerContact";
+import { PartnerDmFab } from "@/components/pathlab/partner/PartnerDmFab";
 import { PARTNER_MARQUEE } from "@/lib/content/pathlab-partner";
 
 export const metadata: Metadata = {
@@ -50,8 +52,10 @@ export default function PathlabPartnerPage() {
       <PartnerGoal />
       <PartnerModes />
       <PartnerProof />
+      <PartnerMap />
       <PartnerExchange />
       <PartnerContact />
+      <PartnerDmFab />
     </main>
   );
 }

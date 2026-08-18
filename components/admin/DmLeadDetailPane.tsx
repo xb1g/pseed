@@ -20,6 +20,7 @@ import { BUCKET_NEXT_RUNG, RUNG_META } from "@/lib/dm-leads/scripts";
 import { COHORT_META } from "@/lib/dm-leads/scoring";
 import { DmLeadManageBar } from "@/components/admin/DmLeadManageBar";
 import { DmLeadReplyForm } from "@/components/admin/DmLeadReplyForm";
+import { DmLeadProfileEditor } from "@/components/admin/DmLeadProfileEditor";
 import { DmLeadTagsEditor } from "@/components/admin/DmLeadTagsEditor";
 import { LeadTagBadges } from "@/components/admin/LeadTagBadges";
 import { DmMessageBubble } from "@/components/admin/DmMessageBubble";
@@ -286,24 +287,12 @@ export function DmLeadDetailPane({
             </Link>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-1 text-[11px]">
+        <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
           <Badge variant="outline" className="px-1.5 py-0 text-[10px] capitalize">
             {conversation.platform}
           </Badge>
-          {conversation.grade_level && (
-            <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-              {conversation.grade_level}
-            </Badge>
-          )}
-          <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
-            {conversation.stage}
-          </Badge>
+          <DmLeadProfileEditor conversation={conversation} onChange={onMetaChange} />
           <LeadTagBadges tags={conversation} />
-          {conversation.interests.length > 0 && (
-            <span className="truncate text-muted-foreground">
-              · {conversation.interests.join(", ")}
-            </span>
-          )}
         </div>
         <DmLeadTagsEditor conversation={conversation} onChange={onMetaChange} />
       </div>

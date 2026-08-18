@@ -33,7 +33,7 @@ export const PARTNER_NAV_LINKS = [
 export const PARTNER_MARQUEE = [
   "เปลี่ยนประสบการณ์จริงให้เป็น PathLab",
   "ชื่อและเสียงของคุณอยู่กับผลงาน",
-  "คุณอนุมัติก่อนเผยแพร่เสมอ",
+  "เริ่มจากคุยสั้นๆ ไม่ต้องเตรียมตัว",
   "ทีมเราจัดการระบบให้ทั้งหมด",
   "จากหน้างานจริงสู่มือนักเรียน",
 ] as const;
@@ -52,7 +52,9 @@ export const PARTNER_HERO = {
     "ไม่ว่าจะเป็นคอร์สที่คุณสอน งานที่คุณทำจริง หรือเคสที่มีแค่คุณเท่านั้นที่เล่าได้ เราช่วยเรียบเรียง สร้างระบบ และเผยแพร่โดยยังมีชื่อและเสียงของคุณอยู่กับผลงาน",
   ctas: {
     primary: { label: "ทัก DM ใน Instagram", href: PARTNER_IG_DM_URL },
-    secondary: { label: "ดูตัวอย่าง PathLab", href: "#partner-proof" },
+    /* "Show me a sample" must land on the real artifact, not the field
+       examples: the live map is the strongest proof this page has. */
+    secondary: { label: "ดู PathLab จริงที่ใช้อยู่ตอนนี้", href: "#partner-map" },
   },
 } as const;
 
@@ -60,7 +62,7 @@ export const PARTNER_HERO = {
  *  Deliberately honest: no revenue terms until the actual model exists. */
 export const PARTNER_METRICS = [
   { value: "10-15 นาที", label: "เริ่มจากการคุยสั้นๆ หรือส่งของเพียงชิ้นเดียว" },
-  { value: "คุณอนุมัติก่อนเสมอ", label: "ไม่มี PathLab ไหนเผยแพร่โดยไม่ผ่านคุณ" },
+  { value: "คุยกันก่อนได้", label: "ไม่ต้องสมัครสมาชิก ไม่ต้องตัดสินใจตอนนี้" },
   { value: "ชื่อของคุณ", label: "ติดอยู่กับผลงานทุกชิ้นที่คุณร่วมสร้าง" },
   { value: "เราทำระบบให้", label: "โครงสร้าง การเขียน อินเทอร์แอกชัน และ QA" },
 ] as const;
@@ -99,6 +101,11 @@ export const PARTNER_MODES = {
   kicker: "เลือกวิธีที่ตรงกับคุณ",
   heading: "คุณมีอะไรอยากแบ่งปัน?",
   tablistLabel: "เลือกรูปแบบการแบ่งปัน",
+  /** The panel most experts arriving from a forwarded link see themselves
+      in: real work experience, not an existing course. */
+  defaultMode: "work" as ContributionMode,
+  /** Escape hatch for anyone who does not want to pick a mode at all. */
+  helpCta: "ไม่แน่ใจว่าเข้าข่ายไหน? ทักมาถามได้เลย",
   rows: {
     bring: "คุณนำมา",
     effort: "ใช้แรงเท่าไหร่",
@@ -163,14 +170,7 @@ export interface PartnerProofExample {
 
 export const PARTNER_PROOF = {
   kicker: "จากประสบการณ์จริง สู่ PathLab",
-  heading: "ความรู้ของคุณกลายเป็นแบบนี้",
-  /** The transformation every contribution goes through. */
-  flow: [
-    "ความรู้ดิบจากผู้เชี่ยวชาญ",
-    "โจทย์จากงานจริง",
-    "ผลงานที่นักเรียนทำจริง",
-    "PathLab พร้อมชื่อคุณ",
-  ],
+  heading: "สิ่งที่คุณรู้ กลายเป็นโจทย์แบบนี้",
   insightLabel: "จากประสบการณ์จริง",
   taskLabel: "นักเรียนได้ลอง",
   examples: [
@@ -207,6 +207,17 @@ export const PARTNER_PROOF = {
   ] as PartnerProofExample[],
 } as const;
 
+/* ── The real map ── */
+
+export const PARTNER_MAP = {
+  kicker: "ของจริงที่เราสร้างแล้ว",
+  heading: "นี่คือ PathLab ที่นักเรียนกำลังเดินอยู่ตอนนี้",
+  body: "แผนที่จริงจากระบบ ไม่ใช่ภาพ mockup ลาก ซูม แล้วแตะแต่ละจุดดูได้เลยว่านักเรียนทำอะไรในแต่ละก้าว สิ่งที่คุณรู้จะกลายเป็นแผนที่แบบนี้ พร้อมชื่อคุณอยู่บนนั้น",
+  /* The emotional peak of the page must not dead-end: the DM door sits
+     directly under the artifact. */
+  ctaLabel: "อยากให้สิ่งที่คุณรู้กลายเป็นแบบนี้ ทัก DM เลย",
+} as const;
+
 /* ── The exchange ── */
 
 export interface PartnerExchangeCard {
@@ -232,10 +243,33 @@ export const PARTNER_EXCHANGE = {
     },
     {
       title: "คุณได้รับ",
-      body: "โปรไฟล์ผู้เชี่ยวชาญ เครดิตบนผลงาน ข้อมูลผลการเรียนของนักเรียน และค่าตอบแทนหรือส่วนแบ่งรายได้ตามที่ตกลงร่วมกัน",
+      body: "โปรไฟล์ผู้เชี่ยวชาญ เครดิตบนผลงาน ข้อมูลผลการเรียนของนักเรียน และช่องทางหารายได้จากนักเรียนที่อยากไปต่อ",
     },
   ] as PartnerExchangeCard[],
-};
+  /** The money question, answered with only what is true today: no invented
+      revenue-share percentages. */
+  money: {
+    heading: "เรื่องเงิน พูดกันตรงๆ",
+    rows: [
+      {
+        label: "เราส่งคนให้คุณ",
+        body: "นักเรียนที่เดิน PathLab ของคุณจบและอยากไปต่อ สามารถจองคุยกับคุณได้โดยตรง คุณตั้งราคาและเงื่อนไขเอง",
+      },
+      {
+        label: "ค่าตอบแทนเนื้อหา",
+        body: "ตกลงกันเป็นรายโปรเจกต์ ขึ้นกับขนาดและรูปแบบของสิ่งที่คุณนำมา คุยกันให้ชัดก่อนเริ่มเสมอ",
+      },
+      {
+        label: "คุณไม่ออกทุน",
+        body: "เราลงทุนสร้างระบบ เขียนเนื้อหา และหานักเรียนเองทั้งหมด",
+      },
+      {
+        label: "ขอดูข้อตกลงก่อนได้",
+        body: "เราสรุปเงื่อนไขและค่าตอบแทนให้อ่านใน DM ก่อนตัดสินใจเสมอ ไม่มีอะไรซ่อนไว้",
+      },
+    ],
+  },
+} as const;
 
 /* ── Closing: start the real flow ── */
 
@@ -250,7 +284,7 @@ export const PARTNER_CONTACT = {
     "เผยแพร่พร้อมชื่อคุณ",
   ],
   primaryLabel: "ทัก DM ใน Instagram",
-  secondaryLabel: "ดูตัวอย่าง PathLab",
-  secondaryHref: "#partner-proof",
+  secondaryLabel: "ดู PathLab จริง",
+  secondaryHref: "#partner-map",
   small: "คุณอนุมัติทุกอย่างก่อนเผยแพร่ และถอนเนื้อหาได้ทุกเมื่อ",
 } as const;

@@ -17,8 +17,10 @@ import type { ContributionMode } from "@/types/expert-interview";
  * opens a DM thread with the team on Instagram.
  */
 export function PartnerModes() {
+  /* Most experts arriving from a forwarded link have real work experience,
+     not an existing course, so the universal panel is the default. */
   const [selected, setSelected] = useState<ContributionMode>(
-    PARTNER_MODES.modes[0].id
+    PARTNER_MODES.defaultMode
   );
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
@@ -90,6 +92,12 @@ export function PartnerModes() {
           </button>
         ))}
       </div>
+
+      <p className="pathlab-partner__mode-help">
+        <a href={PARTNER_IG_DM_URL} target="_blank" rel="noopener noreferrer">
+          {PARTNER_MODES.helpCta}
+        </a>
+      </p>
 
       <div
         key={active.id}

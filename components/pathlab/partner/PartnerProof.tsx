@@ -2,11 +2,12 @@ import { NOTES } from "@/lib/content/pathlab-page";
 import { PARTNER_PROOF } from "@/lib/content/pathlab-partner";
 
 /**
- * "ความรู้ของคุณกลายเป็นแบบนี้" — the proof block. First the transformation
- * every contribution goes through (raw insight → real task → student output
- * → published PathLab), then examples from many fields so any expert can see
- * their own work in the pattern. One EE example may remain, but it sits
- * beside medicine, design, business, software, and media.
+ * "สิ่งที่คุณรู้ กลายเป็นโจทย์แบบนี้" — the proof block: real examples from
+ * many fields so any expert can see their own work in the pattern. The
+ * transformation narrative lives in the exchange cards and contact steps;
+ * stacking a third proof device here only made the page longer. One EE
+ * example remains, but it sits beside medicine, design, business, software,
+ * and media.
  */
 export function PartnerProof() {
   return (
@@ -19,17 +20,6 @@ export function PartnerProof() {
       <h2 id="partner-proof-heading" className="pathlab-partner__heading">
         {PARTNER_PROOF.heading}
       </h2>
-
-      <ol className="pathlab-partner__flow">
-        {PARTNER_PROOF.flow.map((step, index) => (
-          <li key={step} className="pathlab-partner__flow-step">
-            <span className="pathlab-partner__day-num" aria-hidden="true">
-              {index + 1}
-            </span>
-            <span className="pathlab-partner__flow-label">{step}</span>
-          </li>
-        ))}
-      </ol>
 
       <ul className="pathlab-partner__examples">
         {PARTNER_PROOF.examples.map((example) => (

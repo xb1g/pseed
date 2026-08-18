@@ -39,6 +39,21 @@ export function PartnerExchange() {
         })}
       </ul>
 
+      {/* The money question, answered with only what is true today. */}
+      <div className="pathlab-partner__money">
+        <h3 className="pathlab-partner__money-heading">
+          {PARTNER_EXCHANGE.money.heading}
+        </h3>
+        <dl className="pathlab-partner__mode-rows">
+          {PARTNER_EXCHANGE.money.rows.map((row) => (
+            <div key={row.label} className="pathlab-partner__mode-row">
+              <dt className="pathlab-partner__mode-row-label">{row.label}</dt>
+              <dd className="pathlab-partner__mode-row-body">{row.body}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+
       <p className="pathlab-note-row">
         <span className="pathlab-note pathlab-note--tilt-r-sm">
           {NOTES.partnerExchange}

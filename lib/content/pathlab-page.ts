@@ -362,7 +362,7 @@ export const POSTER = {
   /** The four fields the poster promotes, matched against FIELDS by label. */
   fieldLabels: ["Web Dev", "Game Dev", "Business Innovation", "Medical"],
   /** The round's actual meeting times, under the fields. */
-  schedule: "เจอกัน 22-23, 26-28 · 19:00-21:00",
+  schedule: "เจอกัน เสาร์-อาทิตย์ 22-23 และ พุธ-ศุกร์ 26-28 · 19:00-21:00",
   /** Rubber-stamp badge tossed beside the hero: the number-one worry, answered.
       The space is deliberate — it sets the line break inside the stamp. */
   stamp: "ไม่ต้องมี พื้นฐาน",
@@ -398,6 +398,40 @@ export const POSTER = {
   priceUnits: { solo: "ต่อคน", group: "ทั้งกลุ่ม 4 คน · private class" },
   /** 999 ÷ 4 — the group deal quietly beats going solo. */
   priceNote: "มาเป็นกลุ่ม ตกคนละไม่ถึง 250 เอง",
+} as const;
+
+/**
+ * Poster-only copy for /pathlab/poster/how-we-learn — the print artifact
+ * that explains how a Pathlab actually runs. Same editorial rule as POSTER:
+ * wording lives here, but the example days and field labels are pulled from
+ * FIELDS at render time so the example can never drift away from the
+ * product.
+ *
+ * The page shows a live zigzag island trail fetched from
+ * /api/maps/public-preview (so the islands are real PathLab nodes), then
+ * pulls three example days from the Web Dev path so a reader can see what
+ * "ทำ Project จริง" actually looks like, day by day.
+ */
+export const POSTER_HOW = {
+  /** The big Tier 1 title. Reads from across the room. */
+  title: "เรียนยังไง?",
+  /** The Tier 2 promise under the title. One sentence, no list. */
+  promise:
+    "ทำ Project จริงทีละเกาะ เริ่มจากโจทย์ แล้วเดินต่อจนได้ของที่คนใช้ได้จริง",
+  /** The single margin note tucked into a top corner. */
+  note: "แผนที่นี้คือ PathLab ที่น้อง ๆ กำลังเดินอยู่ตอนนี้",
+  /** Section eyebrow over the island trail. */
+  islandEyebrow: "แผนที่จริง",
+  islandHint: "แต่ละเกาะคือขั้นที่น้อง ๆ ต้องเดินผ่าน",
+  /** Section eyebrow over the example days. */
+  daysEyebrow: "ตัวอย่าง 3 วันจากสาย Web Dev",
+  /** Three sample days — Web Dev's actual days, picked to show the arc:
+      setup → first working thing → ship. The component pulls these from
+      FIELDS so the wording never drifts from the live product. */
+  daysIndices: [0, 1, 4] as const,
+  /** Footer CTA on the sheet. */
+  ctaEyebrow: "อยากลองเดินเอง",
+  ctaHandle: "IG: @passion_seed.th",
 } as const;
 
 export interface PriceTier {
