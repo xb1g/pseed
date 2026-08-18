@@ -39,7 +39,13 @@ import { SocialCardDownload } from "@/components/pathlab/SocialCardDownload";
 
 const DEMO_MAP_ID = "00000000-0000-0000-0000-000000000020";
 const SPRITE_PX = 96;
-const JOURNEY_FALLBACK = "/pathlab/pathlabmap.png";
+/**
+ * Static fallback for the island trail. We point at the WebP build of the
+ * MapView screenshot (`journey.webp`, 79KB, 4:3) instead of the full
+ * `pathlabmap.png` (795KB, 16:9) so the A4 island slot gets a tighter,
+ * cheaper picture that fills the box without huge whitespace.
+ */
+const JOURNEY_FALLBACK = "/pathlab/journey.webp";
 
 /* Three example days, chosen by index in POSTER_HOW.daysIndices so editorial
    selection lives next to the rest of the poster copy. Pulled from the Web

@@ -210,7 +210,7 @@ export const PROOF_PROJECTS: ProofProject[] = [
 export const JOURNEY = {
   heading: "Learning journey เป็นยังไง",
   body: "นี่คือแผนที่จริงจาก PathLab ที่นักเรียนกำลังเดินอยู่ตอนนี้ ลาก ซูม แล้วแตะแต่ละจุดดูได้เลยว่าแต่ละก้าวทำอะไร",
-  src: "/pathlab/pathlabmap.png",
+  src: "/pathlab/journey.webp",
   alt: "หน้าจอ Pathlab learning journey แสดงแผนที่โปรเจกต์และรายละเอียดกิจกรรมของนักเรียน",
 } as const;
 
