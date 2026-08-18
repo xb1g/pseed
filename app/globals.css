@@ -15858,3 +15858,975 @@ a.pathlab-fields__button {
     display: none;
   }
 }
+
+/* ==================================================================
+   /pathlab/poster/teachers — A4 sheet that names the experts behind each
+   PathLab brief. Lives next to /pathlab/poster (sell) and
+   /pathlab/poster/how-we-learn (mechanic). Same dark stage, same
+   hand-markered cream paper, same scaled mobile preview, but the layout
+   is a 2x2 grid of named experts: each tile pairs a drawn avatar with a
+   contribution row in the exact "ออกแบบโจทย์ร่วมกับ {expert} · {field}" shape
+   the live site uses in FIELDS[i].detail.briefBy, so the print artifact
+   never drifts away from the brief a reader sees on /pathlab.
+   ================================================================== */
+
+.pathlab-teachers-stage {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 28px;
+  padding: clamp(1rem, 4vw, 3rem);
+  background: #524746;
+}
+
+.pathlab-teachers {
+  position: relative;
+  width: 210mm;
+  min-height: 297mm;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5mm;
+  padding: 9mm 13mm 8mm;
+  background: #fdf3e6;
+  color: #524746;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+/* Same hand-drawn frame treatment as the sibling poster; rounded corners
+   use a slightly different asymmetry so the two sheets never read as
+   photocopies of each other. */
+.pathlab-teachers::before {
+  content: "";
+  position: absolute;
+  inset: 5mm;
+  border: 1.5px solid rgba(196, 62, 29, 0.22);
+  border-radius: 26px 22px 30px 22px / 22px 30px 22px 28px;
+  pointer-events: none;
+}
+
+/* Tier 4 brand row, same construction as /pathlab/poster/how-we-learn so
+   a reader sees the maker immediately when stacking the two sheets. */
+.pathlab-teachers__brand {
+  display: flex;
+  align-items: baseline;
+  gap: 3.5mm;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  color: rgba(82, 71, 70, 0.75);
+}
+
+.pathlab-teachers__logo {
+  height: 9mm;
+  width: auto;
+  display: block;
+}
+
+.pathlab-teachers__brand-name {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.pathlab-teachers__brand-path {
+  font-size: 14px;
+  color: rgba(82, 71, 70, 0.55);
+}
+
+/* Tier 1: the name of this sheet. Reads from across the room. Same scale
+   as the how-we-learn title so the two posters balance on a wall. */
+.pathlab-teachers__title {
+  margin: 4mm 0 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 92px;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  color: #c43e1d;
+  text-align: center;
+}
+
+/* Tier 2: the promise. Same scale as the how-we-learn promise so the two
+   sheets share the same readable rhythm when stacked. */
+.pathlab-teachers__promise {
+  margin: 2mm auto 0;
+  max-width: 170mm;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  text-align: center;
+  color: rgba(82, 71, 70, 0.92);
+}
+
+/* The single margin note tucked into the top-right corner, on its own
+   absolute line so it does not push the title block down. */
+.pathlab-teachers__note {
+  position: absolute;
+  top: 14mm;
+  right: 18mm;
+  margin: 0;
+  max-width: 58mm;
+  font-size: 13.5px;
+  line-height: 1.55;
+  z-index: 2;
+}
+
+/* Tier 3: the 2x2 grid of expert tiles. Eyebrow chip in the same
+   construction as the how-we-learn islands eyebrow so the two sheets
+   match at a glance. */
+.pathlab-teachers__grid {
+  margin-top: 2mm;
+}
+
+.pathlab-teachers__eyebrow {
+  margin: 0 0 3mm;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #c43e1d;
+  line-height: 1.2;
+}
+
+.pathlab-teachers__eyebrow--center {
+  text-align: center;
+}
+
+.pathlab-teachers__eyebrow-chip {
+  display: inline-block;
+  padding: 0.8mm 3mm;
+  border-radius: 999px;
+  background: rgba(196, 62, 29, 0.12);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  vertical-align: 2px;
+  transform: translateY(-1px);
+}
+
+.pathlab-teachers__grid-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5mm;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The four tiles: a portrait on the left, body text on the right, on a
+   cream card with a thin terracotta rule. Slight alternating tilts so
+   the row looks highlighted by hand, not stamped from a mould. */
+.pathlab-teachers__tile {
+  position: relative;
+  display: grid;
+  grid-template-columns: 36mm 1fr;
+  gap: 4mm;
+  padding: 4.5mm 5mm;
+  border-radius: 4mm;
+  background: rgba(196, 62, 29, 0.05);
+  border: 1px solid rgba(196, 62, 29, 0.18);
+  align-items: start;
+}
+
+.pathlab-teachers__tile--tilt-1 {
+  transform: rotate(-0.7deg);
+}
+.pathlab-teachers__tile--tilt-2 {
+  transform: rotate(0.5deg);
+}
+.pathlab-teachers__tile--tilt-3 {
+  transform: rotate(0.6deg) translateY(0.8mm);
+}
+.pathlab-teachers__tile--tilt-4 {
+  transform: rotate(-0.6deg);
+}
+
+.pathlab-teachers__portrait {
+  display: block;
+  width: 36mm;
+  height: 36mm;
+  border-radius: 4mm;
+  box-shadow: 0 2mm 4mm rgba(82, 71, 70, 0.18);
+}
+
+.pathlab-teachers__tile-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1mm;
+  min-width: 0;
+}
+
+.pathlab-teachers__tile-name {
+  margin: 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #524746;
+}
+
+.pathlab-teachers__tile-role {
+  margin: 0 0 1mm;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(82, 71, 70, 0.65);
+}
+
+.pathlab-teachers__tile-insight {
+  margin: 0 0 2.5mm;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(82, 71, 70, 0.88);
+}
+
+/* The contribution row. The "ออกแบบโจทย์ร่วมกับ" prefix is its own span so
+   it can stay terracotta and read as a tagline; the name follows in
+   dark text so the eye lands on the person, not the label. */
+.pathlab-teachers__contribution {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: rgba(82, 71, 70, 0.78);
+}
+
+.pathlab-teachers__contribution-prefix {
+  font-weight: 700;
+  color: #c43e1d;
+}
+
+.pathlab-teachers__contribution-name {
+  font-weight: 700;
+}
+
+.pathlab-teachers__contribution-field {
+  font-weight: 500;
+}
+
+.pathlab-teachers__contribution-mode {
+  display: block;
+  margin-top: 1mm;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(82, 71, 70, 0.55);
+}
+
+/* Tier 4: the legend under the grid. A single quiet row, no box, so the
+   grid stays the visual centrepiece. */
+.pathlab-teachers__legend {
+  margin-top: 1mm;
+}
+
+.pathlab-teachers__legend-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4mm;
+  margin: 1mm 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pathlab-teachers__legend-item {
+  display: inline-block;
+  padding: 1.2mm 3mm;
+  border-radius: 999px;
+  background: rgba(196, 62, 29, 0.08);
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(82, 71, 70, 0.78);
+}
+
+/* Tier 5 footer: a single quiet line so the reader knows what to do next.
+   Same construction as the how-we-learn footer. */
+.pathlab-teachers__cta {
+  margin-top: auto;
+  padding-top: 4mm;
+  text-align: center;
+  border-top: 1px solid rgba(196, 62, 29, 0.18);
+}
+
+.pathlab-teachers__cta-eyebrow {
+  display: block;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 13px;
+  color: rgba(82, 71, 70, 0.7);
+}
+
+.pathlab-teachers__cta-handle {
+  display: block;
+  margin-top: 1mm;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #c43e1d;
+}
+
+/* Mobile preview scales the fixed A4 sheet, the same way v1 and v2 do. */
+@media (max-width: 760px) {
+  .pathlab-teachers {
+    zoom: 0.68;
+  }
+}
+
+@media (max-width: 540px) {
+  .pathlab-teachers {
+    zoom: 0.48;
+  }
+}
+
+@media (max-width: 400px) {
+  .pathlab-teachers {
+    zoom: 0.36;
+  }
+}
+
+/* v1 prints the same way: full A4, no shadow, no stage. */
+@media print {
+  .pathlab-teachers-stage {
+    padding: 0;
+    gap: 0;
+    background: #fff;
+  }
+  .pathlab-teachers {
+    zoom: 1;
+    box-shadow: none;
+  }
+  /* The download button is a screen affordance; it must never print. */
+  .pathlab-teachers-stage .pathlab-social__actions {
+    display: none;
+  }
+}
+
+/* ==================================================================
+   /pathlab/poster/instagram-hero — 10x rebuild of the A4 poster for
+   Instagram Feed (4:5), Square (1:1), and Story (9:16). Drops the
+   paper-and-pen treatment in favour of a hero-sheet that reads at
+   thumb's length: one huge brand line, one short promise, three proof
+   bullets, two alumni quotes, the round dates, and the next step.
+   ================================================================== */
+
+.pathlab-ig-hero-stage {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: clamp(1rem, 3vw, 2.5rem);
+  background: #524746;
+}
+
+.pathlab-ig-hero-scaler {
+  width: 100%;
+  max-width: 1080px;
+}
+
+.pathlab-ig-hero {
+  position: relative;
+  width: 1080px;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #1a0a14 0%, #2b0e1a 55%, #1f0a16 100%);
+  color: #fdf3e6;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
+  /* A subtle warm wash so the headline gold can breathe. */
+  background-image: radial-gradient(
+      ellipse 70% 60% at 50% 18%,
+      rgba(255, 213, 97, 0.18),
+      rgba(255, 213, 97, 0) 70%
+    ),
+    radial-gradient(
+      ellipse 60% 50% at 50% 92%,
+      rgba(196, 62, 29, 0.35),
+      rgba(196, 62, 29, 0) 70%
+    ),
+    linear-gradient(180deg, #1a0a14 0%, #2b0e1a 55%, #1f0a16 100%);
+}
+
+/* 4:5 Portrait Feed (1080 × 1350) */
+.pathlab-ig-hero--portrait {
+  height: 1350px;
+  padding: 56px 56px 48px;
+  gap: 28px;
+  justify-content: flex-start;
+}
+
+/* 1:1 Square Feed (1080 × 1080) */
+.pathlab-ig-hero--square {
+  height: 1080px;
+  padding: 40px 44px 36px;
+  gap: 18px;
+  justify-content: flex-start;
+}
+
+/* 9:16 Story (1080 × 1920) */
+.pathlab-ig-hero--story {
+  height: 1920px;
+  padding: 80px 60px 64px;
+  gap: 36px;
+  justify-content: flex-start;
+}
+
+/* Same wobbly markered frame as the A4 sheet, but on dark. The warm
+   gold reads like a highlighter border on the dark surface. */
+.pathlab-ig-hero::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border: 2.5px solid rgba(255, 213, 97, 0.55);
+  border-radius: 28px 34px 26px 36px / 34px 26px 36px 28px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Rubber stamp, gold instead of orange so it reads on the dark hero. */
+.pathlab-ig-hero__stamp {
+  position: absolute;
+  top: 38px;
+  right: 44px;
+  width: 104px;
+  height: 104px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2.5px solid rgba(255, 213, 97, 0.92);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 34% 30%,
+    rgba(255, 213, 97, 0.22),
+    rgba(255, 213, 97, 0.04) 58%
+  );
+  box-shadow:
+    inset 0 0 0 5px #1f0a16,
+    inset 0 0 0 6.5px rgba(255, 213, 97, 0.6),
+    0 2px 6px rgba(0, 0, 0, 0.5);
+  transform: rotate(-9deg);
+  z-index: 5;
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__stamp {
+  top: 24px;
+  right: 28px;
+  width: 84px;
+  height: 84px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__stamp {
+  top: 60px;
+  right: 52px;
+  width: 124px;
+  height: 124px;
+}
+
+.pathlab-ig-hero__stamp::before {
+  content: "";
+  position: absolute;
+  inset: 11px;
+  border: 1.4px dashed rgba(255, 213, 97, 0.7);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.pathlab-ig-hero__stamp span {
+  max-width: 64px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.55;
+  text-align: center;
+  letter-spacing: 0.02em;
+  color: #fed95c;
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__stamp span {
+  font-size: 11px;
+  max-width: 52px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__stamp span {
+  font-size: 15px;
+  max-width: 78px;
+}
+
+.pathlab-ig-hero__stamp span::before,
+.pathlab-ig-hero__stamp span::after {
+  display: block;
+  font-size: 8px;
+  line-height: 1.4;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  color: rgba(255, 213, 97, 0.85);
+}
+
+.pathlab-ig-hero__stamp span::before {
+  content: "★ ★";
+  margin-bottom: 2px;
+}
+
+.pathlab-ig-hero__stamp span::after {
+  content: "★ ★";
+  margin-top: 2px;
+}
+
+/* Sparkles — gold on the dark hero, hand-rotated. */
+.pathlab-ig-hero__sparkle {
+  position: absolute;
+  color: #fed95c;
+  z-index: 4;
+}
+
+.pathlab-ig-hero__sparkle--hero-l {
+  top: 80px;
+  left: 36px;
+  width: 22px;
+  transform: rotate(-12deg);
+}
+
+.pathlab-ig-hero__sparkle--hero-r {
+  top: 200px;
+  right: 50px;
+  width: 16px;
+  transform: rotate(9deg);
+  color: rgba(253, 243, 230, 0.55);
+}
+
+.pathlab-ig-hero__sparkle--proof-r {
+  top: 520px;
+  right: 32px;
+  width: 18px;
+  transform: rotate(14deg);
+}
+
+.pathlab-ig-hero__sparkle--cta-l {
+  bottom: 80px;
+  left: 28px;
+  width: 16px;
+  transform: rotate(-8deg);
+  color: rgba(253, 243, 230, 0.55);
+}
+
+/* Tier 1 brand: eyebrow + name + promise. */
+.pathlab-ig-hero__brand {
+  text-align: center;
+  padding-top: 8px;
+}
+
+.pathlab-ig-hero__eyebrow {
+  display: inline-block;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 213, 97, 0.92);
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 213, 97, 0.42);
+  border-radius: 999px;
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__eyebrow {
+  font-size: 16px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__eyebrow {
+  font-size: 24px;
+  padding: 8px 18px;
+}
+
+.pathlab-ig-hero__title {
+  margin: 18px 0 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 220px;
+  line-height: 0.92;
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  color: #fdf3e6;
+  text-align: center;
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__title {
+  font-size: 168px;
+  margin-top: 12px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__title {
+  font-size: 280px;
+  margin-top: 22px;
+}
+
+.pathlab-ig-hero__promise {
+  margin: 22px auto 0;
+  max-width: 880px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__promise {
+  margin-top: 16px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__promise {
+  margin-top: 28px;
+}
+
+.pathlab-ig-hero__promise-strong {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 52px;
+  line-height: 1.1;
+  font-weight: 700;
+  color: #fed95c;
+  letter-spacing: -0.015em;
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__promise-strong {
+  font-size: 38px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__promise-strong {
+  font-size: 64px;
+}
+
+.pathlab-ig-hero__promise-soft {
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 38px;
+  line-height: 1.25;
+  font-weight: 500;
+  color: rgba(253, 243, 230, 0.86);
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__promise-soft {
+  font-size: 28px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__promise-soft {
+  font-size: 46px;
+}
+
+/* Tier 3 proof: three numbered bullets in a tight row. */
+.pathlab-ig-hero__proof {
+  margin-top: 16px;
+  padding: 32px 36px;
+  border-radius: 28px;
+  background: rgba(255, 213, 97, 0.06);
+  border: 1px solid rgba(255, 213, 97, 0.22);
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__proof {
+  padding: 22px 24px;
+  border-radius: 22px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__proof {
+  padding: 42px 44px;
+  border-radius: 32px;
+}
+
+.pathlab-ig-hero__proof-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__proof-list {
+  gap: 12px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__proof-list {
+  gap: 24px;
+}
+
+.pathlab-ig-hero__proof-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__proof-item {
+  gap: 12px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__proof-item {
+  gap: 22px;
+}
+
+.pathlab-ig-hero__proof-bullet {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(140deg, #fed95c, #ffb347);
+  color: #1f0a16;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 2px;
+  box-shadow: 0 2px 8px rgba(255, 213, 97, 0.32);
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__proof-bullet {
+  width: 34px;
+  height: 34px;
+  font-size: 17px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__proof-bullet {
+  width: 54px;
+  height: 54px;
+  font-size: 27px;
+}
+
+.pathlab-ig-hero__proof-text {
+  flex: 1 1 auto;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 28px;
+  line-height: 1.45;
+  color: rgba(253, 243, 230, 0.94);
+  padding-top: 4px;
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__proof-text {
+  font-size: 21px;
+  padding-top: 2px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__proof-text {
+  font-size: 34px;
+  padding-top: 6px;
+}
+
+/* Tier 4 alumni: two warm quotes that ground the promise. */
+.pathlab-ig-hero__alumni {
+  margin-top: 16px;
+}
+
+.pathlab-ig-hero__alumni-eyebrow {
+  margin: 0 0 18px;
+  text-align: center;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 213, 97, 0.78);
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__alumni-eyebrow {
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__alumni-eyebrow {
+  font-size: 22px;
+  margin-bottom: 24px;
+}
+
+.pathlab-ig-hero__alumni-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__alumni-list {
+  gap: 12px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__alumni-list {
+  gap: 22px;
+}
+
+.pathlab-ig-hero__alumni-item {
+  padding: 20px 22px;
+  border-radius: 20px;
+  background: rgba(253, 243, 230, 0.05);
+  border-left: 4px solid rgba(255, 213, 97, 0.78);
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__alumni-item {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border-left-width: 3px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__alumni-item {
+  padding: 26px 28px;
+  border-radius: 24px;
+  border-left-width: 5px;
+}
+
+.pathlab-ig-hero__alumni-quote {
+  margin: 0;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 19px;
+  line-height: 1.55;
+  color: rgba(253, 243, 230, 0.94);
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__alumni-quote {
+  font-size: 14px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__alumni-quote {
+  font-size: 23px;
+}
+
+.pathlab-ig-hero__alumni-ig {
+  margin: 12px 0 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fed95c;
+  letter-spacing: 0.04em;
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__alumni-ig {
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__alumni-ig {
+  font-size: 19px;
+  margin-top: 16px;
+}
+
+/* Tier 5 schedule: the next window, large enough to read from the grid. */
+.pathlab-ig-hero__schedule {
+  margin-top: 12px;
+  text-align: center;
+  padding: 22px 16px;
+  border-radius: 22px;
+  border: 1px dashed rgba(255, 213, 97, 0.42);
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__schedule {
+  padding: 14px 12px;
+  border-radius: 18px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__schedule {
+  padding: 28px 18px;
+  border-radius: 26px;
+}
+
+.pathlab-ig-hero__schedule-eyebrow {
+  margin: 0 0 6px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 213, 97, 0.7);
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__schedule-eyebrow {
+  font-size: 12px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__schedule-eyebrow {
+  font-size: 19px;
+}
+
+.pathlab-ig-hero__schedule-dates {
+  margin: 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 32px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: #fdf3e6;
+  letter-spacing: -0.01em;
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__schedule-dates {
+  font-size: 24px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__schedule-dates {
+  font-size: 40px;
+}
+
+/* Tier 6 CTA: quiet but present, with a single margin note under the
+   handle so the sheet still carries the seasoning. */
+.pathlab-ig-hero__cta {
+  margin-top: auto;
+  padding: 24px 0 4px;
+  text-align: center;
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__cta {
+  padding: 16px 0 0;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__cta {
+  padding: 32px 0 4px;
+}
+
+.pathlab-ig-hero__cta-eyebrow {
+  margin: 0 0 6px;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 22px;
+  color: rgba(253, 243, 230, 0.72);
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__cta-eyebrow {
+  font-size: 16px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__cta-eyebrow {
+  font-size: 26px;
+}
+
+.pathlab-ig-hero__cta-handle {
+  margin: 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 64px;
+  font-weight: 700;
+  color: #fed95c;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__cta-handle {
+  font-size: 48px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__cta-handle {
+  font-size: 80px;
+}
+
+.pathlab-ig-hero__note {
+  margin: 18px auto 0;
+  display: inline-block;
+  max-width: 720px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__note {
+  margin-top: 24px;
+}
+
+.pathlab-ig-hero__note .pathlab-note {
+  font-size: 18px;
+}
+
+.pathlab-ig-hero--square .pathlab-ig-hero__note .pathlab-note {
+  font-size: 14px;
+}
+
+.pathlab-ig-hero--story .pathlab-ig-hero__note .pathlab-note {
+  font-size: 22px;
+}

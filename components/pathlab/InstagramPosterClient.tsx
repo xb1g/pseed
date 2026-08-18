@@ -147,6 +147,9 @@ export function InstagramPosterClient() {
         <Link href="/pathlab/poster/how-we-learn" className="pathlab-ig-nav__link">
           How We Learn
         </Link>
+        <Link href="/pathlab/poster/teachers" className="pathlab-ig-nav__link">
+          Who Teaches
+        </Link>
         <Link href="/pathlab/poster" className="pathlab-ig-nav__link">
           A4 Print
         </Link>

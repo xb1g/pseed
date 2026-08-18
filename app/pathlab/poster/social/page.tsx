@@ -116,8 +116,14 @@ export default function PathlabSocialCardPage() {
         <Link href="/pathlab/poster/how-we-learn" className="pathlab-ig-nav__link">
           How We Learn
         </Link>
+        <Link href="/pathlab/poster/teachers" className="pathlab-ig-nav__link">
+          Who Teaches
+        </Link>
         <Link href="/pathlab/poster/instagram" className="pathlab-ig-nav__link">
           Instagram (4:5 · 1:1 · 9:16)
+        </Link>
+        <Link href="/pathlab/poster/instagram-hero" className="pathlab-ig-nav__link">
+          IG Hero (10x)
         </Link>
         <Link href="/pathlab/poster" className="pathlab-ig-nav__link">
           A4 Print

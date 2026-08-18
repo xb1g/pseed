@@ -178,11 +178,20 @@ export function HowWeLearnPosterClient() {
           How We Learn
         </span>
         <span className="pathlab-ig-nav__divider" aria-hidden="true" />
+        <Link href="/pathlab/poster/teachers" className="pathlab-ig-nav__link">
+          Who Teaches
+        </Link>
         <Link href="/pathlab/poster" className="pathlab-ig-nav__link">
           A4 Print
         </Link>
         <Link href="/pathlab/poster/instagram" className="pathlab-ig-nav__link">
           Instagram
+        </Link>
+        <Link
+          href="/pathlab/poster/instagram-hero"
+          className="pathlab-ig-nav__link"
+        >
+          IG Hero (10x)
         </Link>
         <Link href="/pathlab/poster/social" className="pathlab-ig-nav__link">
           Social Card
