@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import {
   HERO,
+  NOTES,
+  POSTER,
   OFFER_CARDS,
   FIELDS,
-  REVIEWS,
   PRICE_TIERS,
-  CONTACT,
+  type PriceTier,
 } from "@/lib/content/pathlab-page";
+import { SocialCardDownload } from "@/components/pathlab/SocialCardDownload";
 
 export const metadata: Metadata = {
   title: "Pathlab Poster — Passion Seed",
@@ -15,114 +17,182 @@ export const metadata: Metadata = {
 };
 
 /**
- * A4 promotional poster for Pathlab, built from the same copy and palette as
- * the /pathlab page so the two never drift apart. One sheet, portrait,
- * print-ready: `@page` and the mm sizing live in globals.css next to the
- * other pathlab styles.
+ * A4 promotional poster for Pathlab. A print artifact with its own curated
+ * copy (POSTER in lib/content/pathlab-page.ts): real round dates and
+ * hand-picked comments. Amounts and field labels still come from the shared
+ * data so the numbers never drift from the site.
+ *
+ * The sheet should read like a senior jotted on it, not a grid of boxes:
+ * marker highlights and small casual tilts (.pathlab-note) do the talking.
+ * One note per section, never more.
  *
  * Server component: a poster has nothing to hydrate, and the print path must
  * not depend on client JS.
  */
-export default function PathlabPosterPage() {
-  /* The two quotes that fit a poster: one short punch, one that answers the
-     "but I have no background" worry. Picked by handle so reordering the
-     REVIEWS array does not silently swap the poster's picks. */
-  const posterReviews = ["IG:_ppangkorn", "IG:xn_z96x"]
-    .map((handle) => REVIEWS.find((r) => r.ig === handle))
-    .filter((r) => r !== undefined);
 
-  /* The poster pushes only the two fields being promoted right now, not the
-     full open list — picked by label so data edits elsewhere do not silently
-     change the poster. */
-  const posterFields = ["Web Dev", "Business Innovation"]
+/* Four fields, four tilts: each marker swipe sits at its own angle so the
+   row looks highlighted by hand, not stamped from a mould. "" keeps the base
+   .pathlab-note tilt. */
+const FIELD_TILTS = [
+  "",
+  "pathlab-note--tilt-r",
+  "pathlab-note--tilt-l-sm",
+  "pathlab-note--tilt-r-sm",
+] as const;
+
+/** A four-point sparkle tossed into the quiet corners of the sheet. Purely
+    decorative, so hidden from assistive tech. Position comes from the
+    modifier class; the sheet is a fixed A4 canvas, so mm coordinates are
+    deterministic. */
+function Sparkle({ className }: { className: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M12 1.5c.9 6.1 4 9.4 10.5 10.5-6.5 1.1-9.6 4.4-10.5 10.5-.9-6.1-4-9.4-10.5-10.5C8 10.9 11.1 7.6 12 1.5Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+export default function PathlabPosterPage() {
+  /* The poster sells paid rounds only, so the free Micro Pathlab tier stays
+     on the website. */
+  const posterPrices = PRICE_TIERS.filter(
+    (tier): tier is PriceTier & { tone: "solo" | "group" } =>
+      tier.tone !== "free",
+  );
+
+  /* Picked by label so a renamed field in FIELDS shows up here too rather
+     than forking the name. */
+  const posterFields = POSTER.fieldLabels
     .map((label) => FIELDS.find((f) => f.label === label))
     .filter((f) => f !== undefined);
 
   return (
     <main className="pathlab-poster-stage">
-      <article className="pathlab-poster" aria-label="โปสเตอร์ Pathlab">
+      <article
+        id="pathlab-poster-sheet"
+        className="pathlab-poster"
+        aria-label="โปสเตอร์ Pathlab"
+      >
         <header className="pathlab-poster__top">
-          <span className="pathlab-poster__brand">Passion Seed</span>
-          <span className="pathlab-poster__brand-tag">
-            ทำ Project จริงกับผู้เชี่ยวชาญ
-          </span>
+          {/* plain img, not next/image: keeps html-to-image export reliable */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/passion-seed-logo.png"
+            alt="Passion Seed"
+            className="pathlab-poster__logo"
+          />
         </header>
 
         <section className="pathlab-poster__hero">
           <h1 className="pathlab-poster__title">{HERO.title}</h1>
-          <p className="pathlab-poster__subtitle">
-            {HERO.subtitleLines.map((line) => (
-              <span key={line}>{line}</span>
-            ))}
+          <p className="pathlab-poster__note">
+            <span className="pathlab-note pathlab-note--tilt-r">
+              {NOTES.hero}
+            </span>
           </p>
+          <h2 className="pathlab-poster__headline">{POSTER.headline}</h2>
+          <p className="pathlab-poster__subline">{POSTER.subline}</p>
         </section>
 
-        <ul className="pathlab-poster__offers">
-          {OFFER_CARDS.map((card) => (
-            <li key={card.title} className="pathlab-poster__offer">
-              <h2 className="pathlab-poster__offer-title">{card.title}</h2>
-              <p className="pathlab-poster__offer-body">{card.body}</p>
-            </li>
-          ))}
-        </ul>
+        {/* The number-one worry, answered with a rubber stamp rather than a
+            bullet point. */}
+        <div className="pathlab-poster__stamp">
+          <span>{POSTER.stamp}</span>
+        </div>
+
+        <Sparkle className="pathlab-poster__sparkle pathlab-poster__sparkle--hero-l" />
+        <Sparkle className="pathlab-poster__sparkle pathlab-poster__sparkle--hero-r" />
+        <Sparkle className="pathlab-poster__sparkle pathlab-poster__sparkle--fields-r" />
+        <Sparkle className="pathlab-poster__sparkle pathlab-poster__sparkle--price-l" />
+
+        <section className="pathlab-poster__offers">
+          <ul className="pathlab-poster__offers-list">
+            {OFFER_CARDS.map((card) => (
+              <li key={card.title} className="pathlab-poster__offer">
+                <h2 className="pathlab-poster__offer-title">{card.title}</h2>
+                <p className="pathlab-poster__offer-body">{card.body}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
 
         <section className="pathlab-poster__fields">
           <h2 className="pathlab-poster__fields-heading">สายที่เปิดตอนนี้</h2>
+          <svg
+            className="pathlab-poster__squiggle"
+            viewBox="0 0 122 12"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path
+              d="M3 8.5 Q 13 3.5, 23 7.5 T 43 7.5 T 63 7.5 T 83 7.5 T 103 7.5 T 119 7"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+            />
+          </svg>
           <ul className="pathlab-poster__fields-list">
-            {posterFields.map((field) => (
+            {posterFields.map((field, i) => (
               <li key={field.label} className="pathlab-poster__field">
-                {field.label}
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="pathlab-poster__reviews">
-          <h2 className="pathlab-poster__reviews-heading">Review จากรุ่นพี่</h2>
-          <ul className="pathlab-poster__reviews-list">
-            {posterReviews.map((review) => (
-              <li key={review.ig} className="pathlab-poster__review">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={field.src as string}
+                  alt={field.alt ?? ""}
+                  className="pathlab-poster__field-img"
+                />
                 <span
-                  className="pathlab-poster__review-mark pathlab-poster__review-mark--open"
-                  aria-hidden="true"
+                  className={`pathlab-note ${FIELD_TILTS[i % FIELD_TILTS.length]}`}
                 >
-                  “
+                  {field.label}
                 </span>
-                <blockquote className="pathlab-poster__review-quote">
-                  {review.quote}
-                </blockquote>
-                <p className="pathlab-poster__review-ig">{review.ig}</p>
-                {review.by && (
-                  <p className="pathlab-poster__review-by">{review.by}</p>
-                )}
               </li>
             ))}
           </ul>
+          <p className="pathlab-poster__schedule">{POSTER.schedule}</p>
         </section>
 
-        <ul className="pathlab-poster__prices">
-          {PRICE_TIERS.map((tier) => (
-            <li
-              key={tier.label}
-              className={`pathlab-poster__price pathlab-poster__price--${tier.tone}`}
-            >
-              <span className="pathlab-poster__price-label">{tier.label}</span>
-              <span className="pathlab-poster__price-amount">
-                {tier.currency}
-                {tier.amount}
-              </span>
-              <span className="pathlab-poster__price-unit">{tier.unit}</span>
-            </li>
-          ))}
-        </ul>
-
-        <footer className="pathlab-poster__cta">
-          <p className="pathlab-poster__cta-line">{CONTACT.line}</p>
-          <p className="pathlab-poster__cta-handle">
-            IG: <strong>{CONTACT.handle}</strong>
+        <section className="pathlab-poster__prices">
+          <ul className="pathlab-poster__prices-list">
+            {posterPrices.map((tier) => (
+              <li
+                key={tier.label}
+                className={`pathlab-poster__price pathlab-poster__price--${tier.tone}`}
+              >
+                <span className="pathlab-poster__price-amount">
+                  {tier.currency}
+                  {tier.amount}
+                </span>
+                <span className="pathlab-poster__price-unit">
+                  {POSTER.priceUnits[tier.tone]}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="pathlab-poster__section-note">
+            <span className="pathlab-note pathlab-note--tilt-r-sm">
+              {POSTER.priceNote}
+            </span>
           </p>
-        </footer>
+        </section>
       </article>
+
+      {/* Captured at 2x so the A4 sheet is usable in print, not just on
+          screen. Never inside the article, so it cannot leak into the PNG. */}
+      <SocialCardDownload
+        targetId="pathlab-poster-sheet"
+        fileName="pathlab-poster-a4"
+        scale={2}
+        label="ดาวน์โหลด PNG (A4)"
+      />
     </main>
   );
 }
