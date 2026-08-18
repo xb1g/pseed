@@ -108,7 +108,7 @@ export function LandingExpertCta() {
             ))}
           </div>
 
-          <Link href="/expert-interview" className="ei-button-dusk font-[family-name:var(--font-bai-jamjuree)]" style={{ fontSize: "1.125rem", padding: "1rem 2.5rem", borderRadius: "14px" }}>
+          <Link href="/expert-interview?source=landing" className="ei-button-dusk font-[family-name:var(--font-bai-jamjuree)]" style={{ fontSize: "1.125rem", padding: "1rem 2.5rem", borderRadius: "14px" }}>
             {t.cta}
             <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
           </Link>

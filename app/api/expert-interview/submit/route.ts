@@ -28,6 +28,9 @@ const submitSchema = z.object({
     preference: z.enum(["none", "free", "paid"]),
     bookingUrl: z.string().url().optional().or(z.literal("")),
   }),
+  // Acquisition tracking, threaded from the referring page's query params.
+  source: z.string().trim().toLowerCase().max(50).optional(),
+  contributionMode: z.enum(["course", "work", "case", "other"]).optional(),
 });
 
 function getClientIp(request: NextRequest): string {
@@ -50,7 +53,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { sessionId, interviewData, interviewTranscript, profile, mentoring } = parsed.data;
+    const { sessionId, interviewData, interviewTranscript, profile, mentoring, source, contributionMode } = parsed.data;
 
     const supabase = createAdminClient();
 
@@ -90,6 +93,8 @@ export async function POST(request: NextRequest) {
         interview_transcript: interviewTranscript,
         mentoring_preference: mentoring.preference,
         booking_url: sanitizeUrl(mentoring.bookingUrl) ?? null,
+        source: source ?? null,
+        contribution_mode: contributionMode ?? null,
         ip_address: getClientIp(request),
         user_agent: request.headers.get("user-agent") ?? null,
         status: "pending",

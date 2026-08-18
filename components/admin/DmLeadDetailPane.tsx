@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ExternalLink, RefreshCw } from "lucide-react";
+import { ExternalLink, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { getThread, syncLeadMessages, type LeadMetaPatch } from "@/app/admin/dm-leads/actions";
@@ -17,15 +17,20 @@ import {
 import { deriveSignalsFromMessages } from "@/lib/dm-leads/signals";
 import { isWithinMessagingWindow } from "@/lib/dm-leads/messaging-window";
 import { BUCKET_NEXT_RUNG, RUNG_META } from "@/lib/dm-leads/scripts";
+import { COHORT_META } from "@/lib/dm-leads/scoring";
 import { DmLeadManageBar } from "@/components/admin/DmLeadManageBar";
-import { DM_REPLY_TEXTAREA_ID, DmLeadReplyForm } from "@/components/admin/DmLeadReplyForm";
-import { DmLeadScripts } from "@/components/admin/DmLeadScripts";
+import { DmLeadReplyForm } from "@/components/admin/DmLeadReplyForm";
 import { DmLeadTagsEditor } from "@/components/admin/DmLeadTagsEditor";
 import { LeadTagBadges } from "@/components/admin/LeadTagBadges";
 import { DmMessageBubble } from "@/components/admin/DmMessageBubble";
 import { DmLeadPublicReplyBar } from "@/components/admin/DmLeadPublicReplyBar";
 import { ChatAppLink } from "@/components/admin/ChatAppLink";
 import type { DmConversationWithBucket, DmConversationWithMessages } from "@/types/dm-leads";
+
+function instagramHandle(username: string | null): string | null {
+  const handle = username?.trim().replace(/^@+/, "");
+  return handle ? `@${handle}` : null;
+}
 
 const COVERAGE_BADGE: Record<FieldCoverage, { label: string; className: string }> = {
   covered: {
@@ -50,37 +55,62 @@ const COVERAGE_BADGE: Record<FieldCoverage, { label: string; className: string }
  * the answer to "what do I say?" — it sits above the transcript on purpose.
  */
 function RoutingHeader({
+  conversation,
   bucket,
   coverage,
 }: {
+  conversation: DmConversationWithBucket;
   bucket: DmLeadBucket;
   coverage: FieldCoverage;
 }) {
   const meta = BUCKET_META[bucket];
   const badge = COVERAGE_BADGE[coverage];
   const rung = RUNG_META[BUCKET_NEXT_RUNG[bucket]];
+  const cohortMeta = conversation.cohort ? COHORT_META[conversation.cohort] : null;
 
   return (
-    <div className="space-y-0.5 text-[11px]">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-        <span className="font-semibold">{meta.label}</span>
+    <div className="flex flex-wrap items-center justify-between gap-x-2.5 gap-y-1 text-xs">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="font-semibold text-foreground">{meta.label}</span>
         <span
           className={cn("rounded-full border px-1.5 py-0 text-[10px] font-medium", badge.className)}
         >
           {badge.label}
         </span>
-        <span className="text-muted-foreground">ตาต่อไป:</span>
-        <span className="font-medium">{rung.label}</span>
-        <span className="truncate text-muted-foreground" title={rung.goal}>
-          {rung.goal}
-        </span>
+        {cohortMeta && (
+          <span
+            className={cn("rounded-full border px-1.5 py-0 text-[10px] font-medium", cohortMeta.badgeClass)}
+            title={cohortMeta.description}
+          >
+            {cohortMeta.label}
+          </span>
+        )}
+        {conversation.propensity_score !== undefined && (
+          <span
+            className={cn(
+              "rounded px-1.5 py-0 font-mono text-[10px]",
+              conversation.propensity_score >= 0.8
+                ? "bg-red-500/15 font-semibold text-red-600 dark:text-red-400"
+                : "bg-muted text-muted-foreground"
+            )}
+            title={`ML Propensity: ${Math.round(conversation.propensity_score * 100)}%`}
+          >
+            ML: {Math.round(conversation.propensity_score * 100)}%
+          </span>
+        )}
       </div>
-      <p
-        className="truncate text-muted-foreground"
-        title={`${meta.why} · ข้อเสนอ: ${COVERAGE_OFFER[coverage]}`}
-      >
-        ข้อเสนอ: <span className="font-medium text-foreground">{COVERAGE_OFFER[coverage]}</span>
-      </p>
+
+      <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+        <span title={COVERAGE_OFFER[coverage]}>
+          ข้อเสนอ: <span className="font-medium text-foreground">{COVERAGE_OFFER[coverage]}</span>
+        </span>
+        {cohortMeta && (
+          <span className="hidden xl:inline font-medium text-foreground/80" title={cohortMeta.recommendedAction}>
+            · 💡 {cohortMeta.recommendedAction}
+          </span>
+        )}
+        <span className="text-muted-foreground">· ตาต่อไป: <strong className="text-foreground">{rung.label}</strong></span>
+      </div>
     </div>
   );
 }
@@ -117,7 +147,6 @@ export function DmLeadDetailPane({
   const [internalSyncing, setInternalSyncing] = useState(false);
   const isSyncing = propIsSyncing ?? internalSyncing;
   const [syncNotice, setSyncNotice] = useState<{ message: string; type: "warning" | "error" | "info" } | null>(null);
-  const [scriptsOpen, setScriptsOpen] = useState(false);
   const threadRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -182,12 +211,6 @@ export function DmLeadDetailPane({
   }, [thread]);
   const messagingWindowOpen = isWithinMessagingWindow(lastInboundMessageAt);
 
-  /** Scripts drop straight into the reply box, then focus it for editing. */
-  const insertScript = (script: string) => {
-    onBodyChange(script);
-    document.getElementById(DM_REPLY_TEXTAREA_ID)?.focus();
-  };
-
   const handleSync = async () => {
     setInternalSyncing(true);
     setSyncNotice(null);
@@ -231,9 +254,16 @@ export function DmLeadDetailPane({
     <div className="flex h-full flex-col overflow-hidden rounded-lg border">
       <div className="space-y-1.5 border-b px-3 py-2">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <h3 className="max-w-45 truncate text-base font-semibold">
-            {conversation.display_name || conversation.username || conversation.platform_user_id}
-          </h3>
+          <div className="min-w-0">
+            <h3 className="truncate text-base font-semibold">
+              {conversation.display_name || conversation.username || conversation.platform_user_id}
+            </h3>
+            {conversation.display_name && conversation.username && (
+              <p className="truncate text-[11px] text-muted-foreground">
+                {instagramHandle(conversation.username)}
+              </p>
+            )}
+          </div>
           <div className="ml-auto flex items-center gap-1.5">
             <button
               type="button"
@@ -298,31 +328,8 @@ export function DmLeadDetailPane({
         </div>
       )}
 
-      <div className="shrink-0 border-b bg-muted/30 px-3 py-1.5">
-        <RoutingHeader bucket={bucket} coverage={coverage} />
-        <button
-          type="button"
-          onClick={() => setScriptsOpen((open) => !open)}
-          className="mt-0.5 flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left text-[11px] font-medium transition-colors hover:bg-muted/60"
-        >
-          สคริปต์ที่ใช้ได้
-          <ChevronDown
-            className={cn(
-              "ml-auto h-3.5 w-3.5 text-muted-foreground transition-transform",
-              scriptsOpen && "rotate-180"
-            )}
-          />
-        </button>
-        {scriptsOpen && (
-          <div className="mt-1 max-h-52 overflow-y-auto pr-1">
-            <DmLeadScripts
-              bucket={bucket}
-              coverage={coverage}
-              conversationId={conversation.id}
-              onInsert={insertScript}
-            />
-          </div>
-        )}
+      <div className="shrink-0 border-b bg-muted/20 px-3 py-1.5">
+        <RoutingHeader conversation={conversation} bucket={bucket} coverage={coverage} />
       </div>
 
       <DmLeadPublicReplyBar conversation={conversation} thread={thread} />
@@ -347,6 +354,8 @@ export function DmLeadDetailPane({
         )}
         <DmLeadReplyForm
           conversation={conversation}
+          bucket={bucket}
+          coverage={coverage}
           body={body}
           onBodyChange={onBodyChange}
           onSent={handleSent}

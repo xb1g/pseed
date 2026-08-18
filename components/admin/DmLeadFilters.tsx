@@ -80,6 +80,8 @@ const STATUS_OPTIONS = [
 const SORT_OPTIONS = [
   { value: "newest", label: "ล่าสุดก่อน" },
   { value: "waiting", label: "ค้างตอบนานสุด" },
+  { value: "propensity", label: "🎯 โอกาสปิดการขายสูงสุด (ML)" },
+  { value: "engagement", label: "⚡ คะแนน Engagement (RFM-E)" },
 ];
 
 const TOGGLE_CHIPS: {
@@ -260,7 +262,7 @@ export function DmLeadFilters({
           id={DM_LEAD_SEARCH_INPUT_ID}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="ค้นหา…  ( / )"
+          placeholder="ค้นหาชื่อหรือ @username… ( / )"
           className="h-8 w-40 pl-7 pr-6 text-xs"
         />
         {search && (

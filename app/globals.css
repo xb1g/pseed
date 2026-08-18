@@ -10096,7 +10096,7 @@ summary:focus-visible .radar-expand-indicator {
 .pathlab-journey-map__trail {
   position: relative;
   margin: 0 auto;
-  max-width: 26rem;
+  max-width: clamp(24rem, 85vw, 36rem);
 }
 
 .pathlab-journey-map__trail-path {
@@ -10116,8 +10116,8 @@ summary:focus-visible .radar-expand-indicator {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  width: 7.5rem;
+  gap: 0.35rem;
+  width: 10.5rem;
   background: none;
   border: none;
   padding: 0;
@@ -10126,15 +10126,36 @@ summary:focus-visible .radar-expand-indicator {
   transition: filter 160ms ease;
 }
 
+.pathlab-journey-map__stop-sprite {
+  display: block;
+  filter: drop-shadow(0 12px 20px rgba(82, 71, 70, 0.32));
+  transition: transform 220ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99)),
+    filter 220ms ease-out;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .pathlab-journey-map__stop:hover .pathlab-journey-map__stop-sprite {
+    transform: translateY(-4px) scale(1.06);
+    filter: drop-shadow(0 18px 26px rgba(196, 62, 29, 0.42));
+  }
+}
+
 .pathlab-journey-map__stop.is-selected {
-  filter: drop-shadow(0 0 14px rgba(196, 62, 29, 0.55));
+  filter: drop-shadow(0 0 16px rgba(196, 62, 29, 0.55));
+}
+
+.pathlab-journey-map__stop.is-selected .pathlab-journey-map__stop-sprite {
+  transform: scale(1.1);
+  filter: drop-shadow(0 18px 28px rgba(196, 62, 29, 0.55));
 }
 
 .pathlab-journey-map__stop-title {
-  font-size: 0.75rem;
+  font-size: 0.88rem;
   font-weight: 600;
   text-align: center;
-  line-height: 1.25;
+  line-height: 1.35;
+  max-width: 10rem;
+  text-wrap: balance;
 }
 
 .pathlab-journey-map__map-chip {
@@ -10211,8 +10232,8 @@ summary:focus-visible .radar-expand-indicator {
    the sprite's centre rather than through the text. */
 .journey-island {
   position: relative;
-  width: 96px;
-  height: 96px;
+  width: 120px;
+  height: 120px;
   cursor: pointer;
 }
 
@@ -11738,17 +11759,18 @@ summary:focus-visible .radar-expand-indicator {
 .pathlab-price__tiers {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1rem;
+  gap: 1.15rem;
   list-style: none;
-  margin: clamp(1.75rem, 4vw, 2.75rem) 0 0;
+  margin: clamp(1.75rem, 4vw, 2.75rem) auto 0;
   padding: 0;
+  max-width: 52rem;
 }
 
-@media (min-width: 720px) {
+@media (min-width: 680px) {
   .pathlab-price__tiers {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: stretch;
-    gap: 1.15rem;
+    gap: 1.35rem;
   }
 }
 
@@ -11757,7 +11779,7 @@ summary:focus-visible .radar-expand-indicator {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  padding: 1.35rem 1.25rem 1.45rem;
+  padding: 1.5rem 1.35rem 1.6rem;
   border-radius: 1.25rem;
   background: rgba(255, 255, 255, 0.55);
   border: 1px solid rgba(82, 71, 70, 0.12);
@@ -11784,23 +11806,26 @@ summary:focus-visible .radar-expand-indicator {
   border-color: rgba(196, 62, 29, 0.28);
 }
 
-.pathlab-price__tier--group {
+.pathlab-price__tier--group,
+.pathlab-price__tier--featured {
   background: #524746;
   border-color: #524746;
   color: #fdf3e6;
 }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .pathlab-price__tier--group:hover {
+  .pathlab-price__tier--group:hover,
+  .pathlab-price__tier--featured:hover {
     border-color: #524746;
     box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28), 0 0 44px rgba(232, 155, 96, 0.28);
   }
 }
 
-/* Featured tier only: a slow, quiet pulse on the chip so the "best value"
+/* Featured tier only: a slow, quiet pulse on the chip so the highlighted
    card draws the eye without competing with the other sections' motion. */
 @media (prefers-reduced-motion: no-preference) {
-  .pathlab-price__tier--group .pathlab-price__chip {
+  .pathlab-price__tier--group .pathlab-price__chip,
+  .pathlab-price__tier--featured .pathlab-price__chip {
     animation: pathlab-chip-pulse 4001ms ease-in-out infinite;
   }
 }
@@ -11829,7 +11854,8 @@ summary:focus-visible .radar-expand-indicator {
   letter-spacing: 0.03em;
 }
 
-.pathlab-price__tier--group .pathlab-price__chip {
+.pathlab-price__tier--group .pathlab-price__chip,
+.pathlab-price__tier--featured .pathlab-price__chip {
   background: #fdf3e6;
   color: #c43e1d;
 }
@@ -11844,21 +11870,68 @@ summary:focus-visible .radar-expand-indicator {
   color: #524746;
 }
 
-.pathlab-price__tier--group .pathlab-price__tier-label {
+.pathlab-price__tier--group .pathlab-price__tier-label,
+.pathlab-price__tier--featured .pathlab-price__tier-label {
   color: #fdf3e6;
+}
+
+.pathlab-price__tier-pricing {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.55rem 0 0;
+}
+
+.pathlab-price__original {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+}
+
+.pathlab-price__original-strike {
+  font-size: clamp(1.05rem, 2vw, 1.2rem);
+  font-weight: 500;
+  text-decoration: line-through;
+  color: rgba(82, 71, 70, 0.5);
+}
+
+.pathlab-price__tier--group .pathlab-price__original-strike,
+.pathlab-price__tier--featured .pathlab-price__original-strike {
+  color: rgba(253, 243, 230, 0.55);
+}
+
+.pathlab-price__discount-tag {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(196, 62, 29, 0.1);
+  border: 1px solid rgba(196, 62, 29, 0.25);
+  color: #c43e1d;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.pathlab-price__tier--group .pathlab-price__discount-tag,
+.pathlab-price__tier--featured .pathlab-price__discount-tag {
+  background: rgba(246, 196, 180, 0.22);
+  border-color: rgba(246, 196, 180, 0.4);
+  color: #f6c4b4;
 }
 
 .pathlab-price__tier-amount {
   display: flex;
   align-items: baseline;
   gap: 0.15rem;
-  margin: 0.55rem 0 0;
+  margin: 0;
   font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
   line-height: 1;
   color: #c43e1d;
 }
 
-.pathlab-price__tier--group .pathlab-price__tier-amount {
+.pathlab-price__tier--group .pathlab-price__tier-amount,
+.pathlab-price__tier--featured .pathlab-price__tier-amount {
   color: #f6c4b4;
 }
 
@@ -11881,21 +11954,74 @@ summary:focus-visible .radar-expand-indicator {
   color: #6a5c5a;
 }
 
-.pathlab-price__tier--group .pathlab-price__tier-unit {
+.pathlab-price__tier--group .pathlab-price__tier-unit,
+.pathlab-price__tier--featured .pathlab-price__tier-unit {
   color: rgba(253, 243, 230, 0.72);
 }
 
 .pathlab-price__tier-blurb {
   margin: 0.7rem 0 0;
   font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
-  font-size: 0.98rem;
-  line-height: 1.7;
+  font-size: 0.95rem;
+  line-height: 1.65;
   color: #524746;
   text-wrap: pretty;
 }
 
-.pathlab-price__tier--group .pathlab-price__tier-blurb {
+.pathlab-price__tier--group .pathlab-price__tier-blurb,
+.pathlab-price__tier--featured .pathlab-price__tier-blurb {
   color: rgba(253, 243, 230, 0.88);
+}
+
+.pathlab-price__tier-perks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0.95rem 0 0;
+  padding: 0.85rem 0 0;
+  border-top: 1px dashed rgba(82, 71, 70, 0.15);
+}
+
+.pathlab-price__tier--group .pathlab-price__tier-perks,
+.pathlab-price__tier--featured .pathlab-price__tier-perks {
+  border-top-color: rgba(253, 243, 230, 0.18);
+}
+
+.pathlab-price__tier-perk {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: #524746;
+}
+
+.pathlab-price__tier--group .pathlab-price__tier-perk,
+.pathlab-price__tier--featured .pathlab-price__tier-perk {
+  color: rgba(253, 243, 230, 0.92);
+}
+
+.pathlab-price__perk-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  background: rgba(196, 62, 29, 0.15);
+  color: #c43e1d;
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 0.12rem;
+}
+
+.pathlab-price__tier--group .pathlab-price__perk-icon,
+.pathlab-price__tier--featured .pathlab-price__perk-icon {
+  background: rgba(255, 222, 138, 0.2);
+  color: #ffde8a;
 }
 
 .pathlab-price__notes {
@@ -12584,4 +12710,674 @@ a.pathlab-fields__button {
 .learning-content-text hr {
   border-color: rgb(68 64 60);
   margin: 2rem 0;
+}
+
+/* ==================================================================
+   /pathlab/partner — EE co-creator pitch page
+   Rides on the cream .pathlab-page canvas and reuses .pathlab-nav,
+   .pathlab-note, .pathlab-hero__cta and .talent-marquee. The blocks
+   below are the partner-only pieces: hero, metric chips, the day arc,
+   and the brown value cards (the same inversion as
+   .pathlab-offer__card).
+   ================================================================== */
+
+/* ── Hero ── */
+
+.pathlab-partner__hero {
+  padding: clamp(2.5rem, 7vw, 5rem) clamp(1.25rem, 5vw, 4rem)
+    clamp(4rem, 9vw, 6.5rem);
+  max-width: 56rem;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.pathlab-partner__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0.35rem 0.95rem;
+  border-radius: 999px;
+  border: 1.5px solid rgba(196, 62, 29, 0.35);
+  background: rgba(196, 62, 29, 0.07);
+  color: #c43e1d;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.pathlab-partner__eyebrow-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex-shrink: 0;
+}
+
+.pathlab-partner__title {
+  margin: 1.25rem 0 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: clamp(2rem, 5.6vw, 3.4rem);
+  line-height: 1.35;
+  font-weight: 600;
+  color: #524746;
+  text-wrap: balance;
+}
+
+.pathlab-partner__title-accent {
+  color: #c43e1d;
+}
+
+.pathlab-partner__subtitle {
+  margin: 1.1rem auto 0;
+  max-width: 42rem;
+  font-size: clamp(1rem, 2.2vw, 1.2rem);
+  line-height: 1.9;
+  font-weight: 500;
+  color: #6a5c5a;
+  text-wrap: pretty;
+}
+
+.pathlab-partner__subtitle strong {
+  color: #524746;
+  font-weight: 700;
+}
+
+/* Centre the shared pill CTAs inside the partner hero and contact. */
+.pathlab-partner__ctas {
+  justify-content: center;
+}
+
+/* ── Metric chips under the hero ── */
+
+.pathlab-partner__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  max-width: 44rem;
+  margin: clamp(2rem, 5vw, 2.75rem) auto 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .pathlab-partner__metrics {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.pathlab-partner__metric {
+  padding: 0.85rem 0.75rem;
+  border-radius: 1rem;
+  background: #fff;
+  border: 1px solid rgba(82, 71, 70, 0.12);
+  box-shadow: 0 2px 8px rgba(82, 71, 70, 0.06);
+}
+
+.pathlab-partner__metric-value {
+  margin: 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: clamp(0.95rem, 2vw, 1.1rem);
+  font-weight: 600;
+  color: #c43e1d;
+}
+
+.pathlab-partner__metric-label {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #6a5c5a;
+}
+
+/* ── Shared section shell ── */
+
+.pathlab-partner__section {
+  padding: 0 clamp(1.25rem, 5vw, 4rem) clamp(4.5rem, 10vw, 8rem);
+  max-width: 64rem;
+  margin-inline: auto;
+  /* Clears the sticky nav on anchor jumps. */
+  scroll-margin-top: 4.5rem;
+}
+
+/* Same recipe as .pathlab-offer__heading: Kodchasan, terracotta, centred. */
+.pathlab-partner__heading {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: clamp(1.7rem, 4.6vw, 2.9rem);
+  line-height: 1.4;
+  font-weight: 600;
+  color: #c43e1d;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.pathlab-partner__kicker {
+  margin: 0 0 0.5rem;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #6a5c5a;
+}
+
+.pathlab-partner__body {
+  margin: 1.5rem auto 0;
+  max-width: 46rem;
+  font-size: clamp(0.98rem, 2vw, 1.1rem);
+  line-height: 1.95;
+  color: #524746;
+  text-align: center;
+  text-wrap: pretty;
+}
+
+.pathlab-partner__body strong {
+  color: #c43e1d;
+}
+
+/* ── Goal: mission statement on a brown card ── */
+
+.pathlab-partner__mission {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  max-width: 46rem;
+  margin: 1.75rem auto 0;
+  padding: clamp(1.25rem, 3vw, 1.75rem);
+  border-radius: 1.25rem;
+  background: #524746;
+  color: #fdf3e6;
+  text-align: left;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+}
+
+.pathlab-partner__mission-icon {
+  width: 1.35rem;
+  height: 1.35rem;
+  flex-shrink: 0;
+  margin-top: 0.3rem;
+  /* Highlighter yellow, matching .pathlab-note's marker. */
+  color: #ffd561;
+}
+
+.pathlab-partner__mission-text {
+  margin: 0;
+  font-size: clamp(0.95rem, 2vw, 1.05rem);
+  line-height: 1.9;
+}
+
+.pathlab-partner__mission-text strong {
+  color: #ffd561;
+}
+
+/* ── Draft arc ── */
+
+.pathlab-partner__arc-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.pathlab-partner__chip {
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(82, 71, 70, 0.06);
+  border: 1px solid rgba(82, 71, 70, 0.14);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6a5c5a;
+}
+
+.pathlab-partner__days {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: clamp(2rem, 5vw, 3rem) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pathlab-partner__day {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: clamp(1.15rem, 2.5vw, 1.6rem);
+  border-radius: 1.25rem;
+  background: #fff;
+  border: 1px solid rgba(82, 71, 70, 0.12);
+  box-shadow: 0 2px 8px rgba(82, 71, 70, 0.05);
+  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (hover: hover) {
+  .pathlab-partner__day:hover {
+    transform: translateY(-2px);
+    border-color: rgba(196, 62, 29, 0.35);
+    box-shadow: 0 6px 16px rgba(82, 71, 70, 0.1);
+  }
+}
+
+.pathlab-partner__day-num {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 999px;
+  border: 1.5px solid rgba(196, 62, 29, 0.4);
+  color: #c43e1d;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.pathlab-partner__day--finale .pathlab-partner__day-num {
+  background: #c43e1d;
+  border-color: #c43e1d;
+  color: #fdf3e6;
+}
+
+.pathlab-partner__day-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.pathlab-partner__day-titles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+}
+
+.pathlab-partner__day-title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: #524746;
+}
+
+.pathlab-partner__day-en {
+  font-family: "Monaco", "Courier New", monospace;
+  font-size: 0.78rem;
+  color: rgba(196, 62, 29, 0.8);
+}
+
+.pathlab-partner__day-body {
+  margin: 0.45rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.85;
+  color: #6a5c5a;
+}
+
+.pathlab-partner__skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pathlab-partner__skill {
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(82, 71, 70, 0.16);
+  background: rgba(82, 71, 70, 0.04);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #6a5c5a;
+}
+
+/* ── Value cards (brown inversion, same as .pathlab-offer__card) ── */
+
+.pathlab-partner__values {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin: clamp(2rem, 5vw, 3rem) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .pathlab-partner__values {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.pathlab-partner__value {
+  padding: clamp(1.4rem, 3vw, 1.9rem);
+  border-radius: 1.25rem;
+  background: #524746;
+  color: #fdf3e6;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+}
+
+.pathlab-partner__value-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-bottom: 0.9rem;
+  border-radius: 0.85rem;
+  background: rgba(255, 213, 97, 0.14);
+  border: 1px solid rgba(255, 213, 97, 0.3);
+  color: #ffd561;
+}
+
+.pathlab-partner__value-icon-svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.pathlab-partner__value-title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #fdf3e6;
+}
+
+.pathlab-partner__value-body {
+  margin: 0.5rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.85;
+  color: rgba(253, 243, 230, 0.82);
+}
+
+/* ── Closing contact ── */
+
+.pathlab-partner__contact {
+  padding: 0 clamp(1.25rem, 5vw, 4rem) clamp(6rem, 14vw, 10rem);
+  max-width: 64rem;
+  margin-inline: auto;
+  text-align: center;
+  scroll-margin-top: 4.5rem;
+}
+
+.pathlab-partner__cta-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.pathlab-partner__contact-small {
+  margin: 1rem auto 0;
+  max-width: 30rem;
+  font-size: 0.82rem;
+  line-height: 1.7;
+  color: #6a5c5a;
+}
+
+/* ── Contribution-mode selector ── */
+
+.pathlab-partner__mode-tabs {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+  max-width: 46rem;
+  margin: clamp(1.75rem, 4vw, 2.5rem) auto 0;
+}
+
+@media (min-width: 640px) {
+  .pathlab-partner__mode-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .pathlab-partner__mode-tabs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.pathlab-partner__mode-tab {
+  /* Thumbs, not cursors: well above the 44px touch-target floor. */
+  min-height: 3.25rem;
+  padding: 0.7rem 1rem;
+  border-radius: 1rem;
+  background: #fff;
+  border: 1.5px solid rgba(82, 71, 70, 0.14);
+  box-shadow: 0 2px 8px rgba(82, 71, 70, 0.05);
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #524746;
+  cursor: pointer;
+  transition: border-color 160ms cubic-bezier(0.4, 0, 0.2, 1),
+    background 160ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 160ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pathlab-partner__mode-tab[aria-selected="true"] {
+  background: #c43e1d;
+  border-color: #c43e1d;
+  color: #fdf3e6;
+  box-shadow: 0 4px 14px rgba(196, 62, 29, 0.28);
+}
+
+@media (hover: hover) {
+  .pathlab-partner__mode-tab:hover {
+    border-color: rgba(196, 62, 29, 0.45);
+  }
+
+  .pathlab-partner__mode-tab[aria-selected="true"]:hover {
+    background: #a83318;
+  }
+}
+
+.pathlab-partner__mode-tab:focus-visible {
+  outline: 2px solid #c43e1d;
+  outline-offset: 3px;
+}
+
+.pathlab-partner__mode-panel {
+  max-width: 46rem;
+  margin: 1rem auto 0;
+  padding: clamp(1.4rem, 3vw, 2rem);
+  border-radius: 1.25rem;
+  background: #fff;
+  border: 1px solid rgba(82, 71, 70, 0.12);
+  box-shadow: 0 4px 16px rgba(82, 71, 70, 0.08);
+  animation: pathlab-partner-panel-in 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes pathlab-partner-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pathlab-partner__mode-panel {
+    animation: none;
+  }
+}
+
+.pathlab-partner__mode-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin: 0;
+}
+
+.pathlab-partner__mode-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.15rem;
+}
+
+@media (min-width: 640px) {
+  .pathlab-partner__mode-row {
+    grid-template-columns: 9.5rem 1fr;
+    gap: 0.9rem;
+    align-items: baseline;
+  }
+}
+
+.pathlab-partner__mode-row-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #c43e1d;
+}
+
+.pathlab-partner__mode-row-body {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.85;
+  color: #524746;
+}
+
+.pathlab-partner__mode-cta {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.4rem;
+}
+
+/* ── Proof: transformation flow + field examples ── */
+
+.pathlab-partner__flow {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+  max-width: 46rem;
+  margin: clamp(1.75rem, 4vw, 2.5rem) auto 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .pathlab-partner__flow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .pathlab-partner__flow {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.pathlab-partner__flow-step {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.8rem 1rem;
+  border-radius: 1rem;
+  background: rgba(82, 71, 70, 0.05);
+  border: 1px solid rgba(82, 71, 70, 0.12);
+}
+
+.pathlab-partner__flow-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #524746;
+}
+
+.pathlab-partner__examples {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin: clamp(1.75rem, 4vw, 2.5rem) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .pathlab-partner__examples {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .pathlab-partner__examples {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.pathlab-partner__example {
+  padding: clamp(1.15rem, 2.5vw, 1.5rem);
+  border-radius: 1.25rem;
+  background: #fff;
+  border: 1px solid rgba(82, 71, 70, 0.12);
+  box-shadow: 0 2px 8px rgba(82, 71, 70, 0.05);
+  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 160ms cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (hover: hover) {
+  .pathlab-partner__example:hover {
+    transform: translateY(-2px);
+    border-color: rgba(196, 62, 29, 0.35);
+    box-shadow: 0 6px 16px rgba(82, 71, 70, 0.1);
+  }
+}
+
+.pathlab-partner__example-field {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(196, 62, 29, 0.08);
+  border: 1px solid rgba(196, 62, 29, 0.3);
+  color: #c43e1d;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.pathlab-partner__example-row {
+  margin: 0.6rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.8;
+  color: #6a5c5a;
+}
+
+.pathlab-partner__example-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #524746;
+}
+
+/* ── Closing steps: what happens next ── */
+
+.pathlab-partner__steps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  max-width: 40rem;
+  margin: 1.75rem auto 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .pathlab-partner__steps {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.pathlab-partner__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.9rem 0.7rem;
+  border-radius: 1rem;
+  background: #fff;
+  border: 1px solid rgba(82, 71, 70, 0.12);
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.55;
+  color: #524746;
+  text-align: center;
 }

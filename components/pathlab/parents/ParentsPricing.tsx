@@ -24,7 +24,7 @@ export function ParentsPricing() {
         align="center"
       />
 
-      <ul className="mx-auto mt-10 grid max-w-3xl gap-4 sm:grid-cols-2">
+      <ul className="mx-auto mt-10 grid max-w-xl gap-4">
         {PARENTS_PRICE.tiers.map((tier) => (
           <li
             key={tier.label}
@@ -35,7 +35,17 @@ export function ParentsPricing() {
             <p className="font-space-mono text-xs uppercase tracking-[0.18em] text-blue-200/80">
               {tier.label}
             </p>
-            <p className="mt-4 font-kodchasan text-5xl font-medium text-amber-200">
+            {"originalAmount" in tier && tier.originalAmount && (
+              <div className="mt-3 flex items-center justify-center gap-2 font-kodchasan">
+                <span className="text-base text-slate-400 line-through">
+                  {tier.originalAmount}฿
+                </span>
+                <span className="rounded-full bg-amber-400/10 px-2.5 py-0.5 font-bai-jamjuree text-xs font-semibold text-amber-200">
+                  ลด 57% ช่วง Beta
+                </span>
+              </div>
+            )}
+            <p className="mt-2 font-kodchasan text-5xl font-medium text-amber-200">
               {tier.amount}
               <span className="ml-1 text-2xl">฿</span>
             </p>
@@ -45,6 +55,21 @@ export function ParentsPricing() {
             <p className="mt-4 font-bai-jamjuree text-sm leading-7 text-slate-300">
               {tier.blurb}
             </p>
+            {"perks" in tier && Array.isArray(tier.perks) && (
+              <ul className="mt-5 space-y-2 border-t border-slate-700/60 pt-4 text-left">
+                {tier.perks.map((perk: string) => (
+                  <li
+                    key={perk}
+                    className="flex items-center gap-2 font-bai-jamjuree text-sm text-amber-100"
+                  >
+                    <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-400/20 text-xs font-bold text-amber-300">
+                      ✓
+                    </span>
+                    <span>{perk}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </li>
         ))}
       </ul>

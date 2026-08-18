@@ -3,7 +3,7 @@
  * sent by ANY tool through the account's inbox (including a third-party
  * automation), not just what our webhook received. Run: pnpm backfill:dm-conversations
  */
-import { listInstagramConversations, getConversationMessages } from "../lib/meta/graph";
+import { listInstagramConversations, getConversationMessages, getInstagramProfile } from "../lib/meta/graph";
 import { recordBackfilledMessage, applyClassification } from "../lib/supabase/dm-leads";
 import { classifyConversationText } from "../lib/meta/classify";
 import { sleep, withRetry } from "./lib/rate-limit-retry";
@@ -47,6 +47,8 @@ async function main() {
     }
 
     try {
+      const profile = await withRetry(() => getInstagramProfile(participant.id));
+      await sleep(300);
       const messages = await withRetry(() => getConversationMessages(convo.id));
       await sleep(300); // pace requests so we don't re-trigger the rate limit
 
@@ -60,7 +62,8 @@ async function main() {
           platform: "instagram",
           platformThreadId: participant.id,
           platformUserId: participant.id,
-          username: participant.username ?? null,
+          username: profile.username ?? participant.username ?? null,
+          displayName: profile.displayName ?? undefined,
           direction,
           body: msg.message,
           platformMessageId: msg.id,

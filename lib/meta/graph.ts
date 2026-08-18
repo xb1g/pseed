@@ -178,24 +178,35 @@ async function sendMetaMessagePayload(
 }
 
 /**
- * Resolves an IGSID (the sender.id in a messaging webhook event, which is
- * NOT a username) to a display username. The messaging webhook payload
- * never includes username — this is the only way to get it.
+ * Resolves an IGSID (the sender.id in a messaging webhook event) to the
+ * profile fields we can use to identify the person in the admin inbox.
+ * The messaging webhook payload does not include these fields.
  */
-export async function getInstagramUsername(igsid: string): Promise<string | null> {
+export async function getInstagramProfile(igsid: string): Promise<{
+  displayName: string | null;
+  username: string | null;
+}> {
   const accessToken = requireAccessToken();
 
   const res = await fetch(
-    `${IG_GRAPH_HOST}/${GRAPH_API_VERSION}/${igsid}?fields=username&access_token=${encodeURIComponent(accessToken)}`
+    `${IG_GRAPH_HOST}/${GRAPH_API_VERSION}/${igsid}?fields=name,username&access_token=${encodeURIComponent(accessToken)}`
   );
 
   if (!res.ok) {
-    console.error(`Failed to resolve Meta username (${res.status})`);
-    return null;
+    console.error(`Failed to resolve Meta profile (${res.status})`);
+    return { displayName: null, username: null };
   }
 
-  const json: { username?: string } = await res.json();
-  return json.username ?? null;
+  const json: { name?: string; username?: string } = await res.json();
+  return {
+    displayName: json.name ?? null,
+    username: json.username ?? null,
+  };
+}
+
+/** Backwards-compatible username-only lookup for existing scripts/callers. */
+export async function getInstagramUsername(igsid: string): Promise<string | null> {
+  return (await getInstagramProfile(igsid)).username;
 }
 
 function requireAccessToken(): string {

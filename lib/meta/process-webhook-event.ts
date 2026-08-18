@@ -6,11 +6,11 @@ import {
   markOutboundRead,
   reconcileOutboundEcho,
   recordInboundMessage,
-  updateConversationUsername,
+  updateConversationProfile,
 } from "@/lib/supabase/dm-leads";
 import { applyCommentClassification, upsertComment } from "@/lib/supabase/ig-comments";
 import { classifyConversationText } from "@/lib/meta/classify";
-import { getInstagramUsername } from "@/lib/meta/graph";
+import { getInstagramProfile } from "@/lib/meta/graph";
 import type { NormalizedAttachment, NormalizedMetaEvent } from "@/lib/meta/webhook-events";
 import type { MetaWebhookEventResult } from "@/lib/supabase/meta-webhook-events";
 import type { DmMessageType } from "@/types/dm-leads";
@@ -33,18 +33,18 @@ async function classifyNewTextMessage(conversationId: string): Promise<void> {
   await applyClassification(conversationId, classifyConversationText(inboundText));
 }
 
-async function enrichInstagramUsername(
+async function enrichInstagramProfile(
   conversationId: string,
   senderId: string,
-  currentUsername: string | null
+  currentProfile: { username: string | null; displayName: string | null }
 ): Promise<boolean> {
-  if (currentUsername) return false;
+  if (currentProfile.username && currentProfile.displayName) return false;
   try {
-    const username = await getInstagramUsername(senderId);
-    if (username) await updateConversationUsername(conversationId, username);
+    const profile = await getInstagramProfile(senderId);
+    await updateConversationProfile(conversationId, profile);
     return false;
   } catch (error) {
-    console.error("Instagram username enrichment failed after message persistence:", error);
+    console.error("Instagram profile enrichment failed after message persistence:", error);
     return true;
   }
 }
@@ -100,10 +100,13 @@ async function processMessage(
   }
 
   const enrichmentFailed = event.platform === "instagram"
-    ? await enrichInstagramUsername(
+    ? await enrichInstagramProfile(
         write.conversation.id,
         event.senderId,
-        write.conversation.username
+        {
+          username: write.conversation.username,
+          displayName: write.conversation.display_name,
+        }
       )
     : false;
   if (event.text || event.quickReplyPayload) {

@@ -51,7 +51,10 @@ function parseFilters(raw: RawParams): DmLeadFilters {
       raw.platform && raw.platform !== "all" ? (raw.platform as DmPlatform) : undefined,
     myTurnOnly: raw.turn === "mine",
     search: raw.search?.trim() || undefined,
-    sort: raw.sort === "waiting" ? "waiting" : "newest",
+    sort:
+      raw.sort === "waiting" || raw.sort === "propensity" || raw.sort === "engagement"
+        ? raw.sort
+        : "newest",
     pathlabLinkSent: raw.link === "pathlab",
     starredOnly: raw.star === "1",
     followUpDue: raw.followup === "due",

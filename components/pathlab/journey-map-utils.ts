@@ -30,7 +30,7 @@ export interface TrailStop {
 }
 
 export const TRAIL_X_PCT = [18, 50, 82, 50] as const;
-export const TRAIL_ROW_PX = 120;
+export const TRAIL_ROW_PX = 160;
 export const FALLBACK_SPRITE = "/islands/crystal.png";
 
 /**

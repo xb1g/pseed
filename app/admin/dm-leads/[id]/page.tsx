@@ -11,6 +11,11 @@ import { RefreshButton } from "@/components/admin/RefreshButton";
 
 export const dynamic = "force-dynamic";
 
+function instagramHandle(username: string | null): string | null {
+  const handle = username?.trim().replace(/^@+/, "");
+  return handle ? `@${handle}` : null;
+}
+
 export default async function DmLeadDetailPage({
   params,
 }: {
@@ -28,6 +33,11 @@ export default async function DmLeadDetailPage({
             <h2 className="text-2xl font-semibold">
               {conversation.display_name || conversation.username || conversation.platform_user_id}
             </h2>
+            {conversation.display_name && conversation.username && (
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                {instagramHandle(conversation.username)}
+              </p>
+            )}
             <div className="mt-2 flex flex-wrap gap-2 text-sm">
               <Badge variant="outline" className="capitalize">{conversation.platform}</Badge>
               {conversation.grade_level && <Badge variant="outline">{conversation.grade_level}</Badge>}

@@ -37,6 +37,7 @@ const SPRITE_CATEGORIES: SpriteCategory[] = [
       "/islands/launchpad/day3.png",
       "/islands/launchpad/day4.png",
       "/islands/launchpad/day5.png",
+      "/islands/launchpad/day6.png",
     ],
   },
   {

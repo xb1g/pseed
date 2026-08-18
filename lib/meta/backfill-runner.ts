@@ -1,4 +1,10 @@
-import { listInstagramConversations, getConversationMessages, listInstagramMedia, getMediaComments } from "@/lib/meta/graph";
+import {
+  listInstagramConversations,
+  getConversationMessages,
+  getInstagramProfile,
+  listInstagramMedia,
+  getMediaComments,
+} from "@/lib/meta/graph";
 import { recordBackfilledMessage, applyClassification } from "@/lib/supabase/dm-leads";
 import { upsertComment, applyCommentClassification } from "@/lib/supabase/ig-comments";
 import { classifyConversationText } from "@/lib/meta/classify";
@@ -48,6 +54,7 @@ export async function runDmConversationBackfillBatch(deadlineMs: number): Promis
     const participant = convo.participants!.data.find((p) => p.id !== igUserId)!;
 
     try {
+      const profile = await getInstagramProfile(participant.id);
       const messages = await getConversationMessages(convo.id);
 
       let conversationId: string | null = null;
@@ -60,7 +67,8 @@ export async function runDmConversationBackfillBatch(deadlineMs: number): Promis
           platform: "instagram",
           platformThreadId: participant.id,
           platformUserId: participant.id,
-          username: participant.username ?? null,
+          username: profile.username ?? participant.username ?? null,
+          displayName: profile.displayName ?? undefined,
           direction,
           body: msg.message,
           platformMessageId: msg.id,

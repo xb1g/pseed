@@ -130,6 +130,8 @@ export const DM_LEAD_LIST_COLUMNS = [
 
 export type DmConversationListColumn = (typeof DM_LEAD_LIST_COLUMNS)[number];
 
+import type { LeadCohort, PropensityTier } from "@/lib/dm-leads/scoring";
+
 /**
  * A conversation with its playbook classification already applied, so the UI
  * never has to reclassify (and never disagrees with the bucket counts).
@@ -140,6 +142,10 @@ export interface DmConversationWithBucket
   last_inbound_message_at: string | null;
   bucket: DmLeadBucket;
   coverage: FieldCoverage;
+  engagement_index?: number;
+  propensity_score?: number;
+  cohort?: LeadCohort;
+  tier?: PropensityTier;
 }
 
 export interface DmLeadClassification {

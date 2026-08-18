@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { isWithinMessagingWindow } from "@/lib/dm-leads/messaging-window";
 import { contextFromConversation, getQuickReplies } from "@/lib/dm-leads/quick-replies";
 import { deriveSignalsFromMessages } from "@/lib/dm-leads/signals";
+import { COHORT_META } from "@/lib/dm-leads/scoring";
 import { getThread, syncLeadMessages, updateLead, type LeadMetaPatch } from "@/app/admin/dm-leads/actions";
 import { DmLeadDetailPane } from "@/components/admin/DmLeadDetailPane";
 import { DM_REPLY_TEXTAREA_ID } from "@/components/admin/DmLeadReplyForm";
@@ -17,7 +18,6 @@ import {
   isFollowUpDue,
 } from "@/components/admin/DmLeadManageBar";
 import type {
-  DmConversation,
   DmConversationWithBucket,
   DmConversationWithMessages,
   DmLeadStage,
@@ -47,6 +47,11 @@ function timeAgo(iso: string): string {
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d`;
   return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+}
+
+function instagramHandle(username: string | null): string | null {
+  const handle = username?.trim().replace(/^@+/, "");
+  return handle ? `@${handle}` : null;
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -474,9 +479,39 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversationW
                         title="Your turn to reply"
                       />
                     )}
-                    <span className="truncate text-sm font-medium">
-                      {c.display_name || c.username || c.platform_user_id}
-                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium">
+                        {c.display_name || c.username || c.platform_user_id}
+                      </div>
+                      {c.display_name && c.username && (
+                        <div className="truncate text-[11px] text-muted-foreground">
+                          {instagramHandle(c.username)}
+                        </div>
+                      )}
+                    </div>
+                    {c.tier === "high_value" ? (
+                      <span
+                        className="shrink-0 rounded bg-red-500/15 px-1 py-0.2 text-[10px] font-semibold text-red-600 dark:text-red-400"
+                        title="High-Value Target (Propensity Score ≥ 85%)"
+                      >
+                        🔥 HVT {Math.round((c.propensity_score ?? 0) * 100)}%
+                      </span>
+                    ) : c.tier === "high_intent" ? (
+                      <span
+                        className="shrink-0 rounded bg-amber-500/15 px-1 py-0.2 text-[10px] font-medium text-amber-600 dark:text-amber-400"
+                        title="High-Intent Lead (Propensity Score ≥ 50%)"
+                      >
+                        🎯 {Math.round((c.propensity_score ?? 0) * 100)}%
+                      </span>
+                    ) : null}
+                    {c.engagement_index !== undefined && c.engagement_index >= 40 && (
+                      <span
+                        className="shrink-0 rounded bg-sky-500/10 px-1 py-0.2 font-mono text-[9px] text-sky-700 dark:text-sky-300"
+                        title={`Engagement Index (RFM-E): ${c.engagement_index}/100`}
+                      >
+                        ⚡{c.engagement_index}
+                      </span>
+                    )}
                     {c.follow_up_at && (
                       <Bell
                         className={cn(
@@ -514,10 +549,21 @@ export function DmLeadsInbox({ conversations }: { conversations: DmConversationW
                       </button>
                     </div>
                   </div>
-                  <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                     <Badge variant={STAGE_VARIANT[c.stage]} className="px-1.5 py-0 text-[10px]">
                       {STAGE_LABEL[c.stage]}
                     </Badge>
+                    {c.cohort && c.cohort !== "casual_browser" && COHORT_META[c.cohort] && (
+                      <span
+                        className={cn(
+                          "shrink-0 rounded border px-1 text-[9px] font-medium",
+                          COHORT_META[c.cohort].badgeClass
+                        )}
+                        title={COHORT_META[c.cohort].description}
+                      >
+                        {COHORT_META[c.cohort].label}
+                      </span>
+                    )}
                     <MessagingWindowBadge
                       lastInboundMessageAt={c.last_inbound_message_at}
                     />

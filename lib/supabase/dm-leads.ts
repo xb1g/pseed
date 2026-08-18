@@ -13,6 +13,7 @@ import {
 } from "@/lib/dm-leads/playbook";
 import { messageSignalFlags, signalsFor } from "@/lib/dm-leads/signals";
 import { gateDraft } from "@/lib/dm-leads/send-gate";
+import { scoreLead } from "@/lib/dm-leads/scoring";
 import type { DmScriptRung } from "@/lib/dm-leads/scripts";
 import { DM_LEAD_LIST_COLUMNS } from "@/types/dm-leads";
 import type {
@@ -189,6 +190,7 @@ export async function recordBackfilledMessage(params: {
   platformThreadId: string;
   platformUserId: string;
   username?: string | null;
+  displayName?: string | null;
   direction: DmMessageDirection;
   body: string;
   platformMessageId: string;
@@ -206,6 +208,7 @@ export async function recordBackfilledMessage(params: {
         platform_thread_id: params.platformThreadId,
         platform_user_id: params.platformUserId,
         username: params.username ?? null,
+        ...(params.displayName !== undefined ? { display_name: params.displayName } : {}),
         last_message_at: params.sentAt,
         last_message_direction: params.direction,
       },
@@ -282,6 +285,27 @@ export async function updateConversationUsername(
   }
 }
 
+export async function updateConversationProfile(
+  conversationId: string,
+  profile: { displayName?: string | null; username?: string | null }
+): Promise<void> {
+  const patch: { display_name?: string; username?: string } = {};
+  if (profile.displayName?.trim()) patch.display_name = profile.displayName.trim();
+  if (profile.username?.trim()) patch.username = profile.username.trim();
+  if (Object.keys(patch).length === 0) return;
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("dm_conversations")
+    .update(patch)
+    .eq("id", conversationId);
+
+  if (error) {
+    console.error("Error updating dm_conversation profile:", error);
+    throw new Error("Failed to update profile");
+  }
+}
+
 export type DmLeadIntentFilter =
   | "pay_ready"
   | "pathlab"
@@ -298,8 +322,8 @@ export interface DmLeadFilters {
   myTurnOnly?: boolean;
   /** Case-insensitive match on username / display name. */
   search?: string;
-  /** "newest" (default) or "waiting" (oldest unanswered first). */
-  sort?: "newest" | "waiting";
+  /** "newest" (default), "waiting", "propensity" (ML score), or "engagement" (RFM-E). */
+  sort?: "newest" | "waiting" | "propensity" | "engagement";
   /** Only conversations where we already sent a /pathlab link (outbound). */
   pathlabLinkSent?: boolean;
   starredOnly?: boolean;
@@ -477,11 +501,18 @@ function withBucket(
   signals: DmLeadSignalMap
 ): DmConversationWithBucket {
   const conversationSignals = signalsFor(signals, conversation.id);
+  const scoreResult = scoreLead(conversation, {
+    signals: conversationSignals,
+  });
   return {
     ...conversation,
     last_inbound_message_at: conversationSignals.lastInboundMessageAt,
     bucket: classifyBucket(conversation, conversationSignals),
     coverage: getFieldCoverage(conversation.interests),
+    engagement_index: scoreResult.engagementIndex,
+    propensity_score: scoreResult.propensityScore,
+    cohort: scoreResult.cohort,
+    tier: scoreResult.tier,
   };
 }
 
@@ -516,12 +547,20 @@ export async function getConversationsForAdmin(
   // is built from DM_LEAD_LIST_COLUMNS so the columns and the type stay one
   // source. That shared constant is what makes this cast safe.
   const rows = (data ?? []) as unknown as Pick<DmConversation, DmConversationListColumn>[];
-  const classified = rows.map((row) => withBucket(row, signals));
+  let classified = rows.map((row) => withBucket(row, signals));
   // Bucket is derived, so it cannot be pushed into SQL — filter last, after the
   // DB has already narrowed the set as far as it can.
-  return filters.bucket
-    ? classified.filter((c) => c.bucket === filters.bucket)
-    : classified;
+  if (filters.bucket) {
+    classified = classified.filter((c) => c.bucket === filters.bucket);
+  }
+
+  if (filters.sort === "propensity") {
+    classified.sort((a, b) => (b.propensity_score ?? 0) - (a.propensity_score ?? 0));
+  } else if (filters.sort === "engagement") {
+    classified.sort((a, b) => (b.engagement_index ?? 0) - (a.engagement_index ?? 0));
+  }
+
+  return classified;
 }
 
 export interface DmLeadFacets {

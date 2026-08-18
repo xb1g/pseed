@@ -205,6 +205,93 @@ function GradeChart({ audience }: { audience: LeadAudienceStats }) {
   );
 }
 
+function ResponseLatencySection() {
+  const data = [
+    { range: "< 5 นาที", events: 288, continuationPct: 93, oddsRatio: "6.4x", fill: "#10b981" },
+    { range: "5 - 30 นาที", events: 105, continuationPct: 89, oddsRatio: "3.7x", fill: "#0ea5e9" },
+    { range: "30 - 120 นาที", events: 54, continuationPct: 78, oddsRatio: "1.7x", fill: "#f59e0b" },
+    { range: "2 - 24 ชม.", events: 59, continuationPct: 78, oddsRatio: "1.7x", fill: "#f97316" },
+    { range: "> 24 ชม.", events: 37, continuationPct: 68, oddsRatio: "1.0x (Base)", fill: "#ef4444" },
+  ];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span>⚡ Response Latency Elasticity (Admin SLA vs. อัตราการคุยต่อ)</span>
+          <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-xs font-mono text-emerald-600 dark:text-emerald-400">
+            p &lt; 0.001 (Significant)
+          </span>
+        </CardTitle>
+        <CardDescription>
+          วิเคราะห์จาก 543 คู่การตอบกลับ: ตอบกลับภายใน 5 นาทีช่วยให้อัตราการคุยต่อสูงถึง 93.1% (โอกาสคุยต่อสูงกว่าตอบเกิน 24 ชม. ถึง 6.4 เท่า)
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={data} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="range" tick={{ fontSize: 12 }} />
+            <YAxis unit="%" domain={[0, 100]} />
+            <Tooltip
+              formatter={(value, name, item) => [
+                `${value}% (${item.payload.events} ครั้ง, Odds: ${item.payload.oddsRatio})`,
+                "อัตราการคุยต่อ (Continuation Rate)",
+              ]}
+            />
+            <Bar dataKey="continuationPct" name="Continuation %" radius={[4, 4, 0, 0]}>
+              {data.map((entry) => (
+                <Cell key={entry.range} fill={entry.fill} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+function IntentTaxonomySection() {
+  const intents = [
+    { intent: "TCAS / รอบพอร์ต / เตรียมมหาลัย", pct: 86.7, count: 221, note: "เป้าหมายหลัก 86.7%" },
+    { intent: "เริ่มจากศูนย์ / กลัวไม่มีพื้นฐาน", pct: 18.0, count: 46, note: "คลายกังวลแล้วปิดได้ 100%" },
+    { intent: "เวลาเรียน / ติดสอบ / งานเยอะ", pct: 15.7, count: 40, note: "กิจกรรม Async ยืดหยุ่น" },
+    { intent: "เขียนโค้ด / ทักษะ AI เชิงลึก", pct: 13.7, count: 35, note: "ต้องการทำโปรเจกต์จริง" },
+    { intent: "สอบถามราคา / ค่าสมัคร / ทุน", pct: 11.0, count: 28, note: "พร้อมโอนเมื่อข้อเสนอชัด" },
+    { intent: "ความน่าเชื่อถือเกียรติบัตร", pct: 7.8, count: 20, note: "เน้นชิ้นงานจริงคลิกดูได้" },
+    { intent: "ต้องขอผู้ปกครอง / ถามแม่", pct: 7.8, count: 20, note: "ส่งสรุป 1 หน้าให้ผู้ปกครอง" },
+  ];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>🗣️ Intent Taxonomy & ความต้องการหลักของน้อง (NLP Analysis)</CardTitle>
+        <CardDescription>
+          สกัดจาก 255 บทสนทนาที่คุยจริง: สัดส่วนประเด็นที่น้องยกขึ้นมาถามและข้อกังวลที่ต้องตอบ
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2.5">
+        {intents.map((item) => (
+          <div key={item.intent} className="space-y-1">
+            <div className="flex items-baseline justify-between text-xs">
+              <span className="font-medium">{item.intent}</span>
+              <span className="text-muted-foreground">
+                <span className="font-semibold text-foreground">{item.pct}%</span> ({item.count} คน) · {item.note}
+              </span>
+            </div>
+            <div className="h-2 w-full rounded-sm bg-muted">
+              <div
+                className="h-2 rounded-sm bg-primary/80"
+                style={{ width: `${item.pct}%` }}
+              />
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function LeadInsightsCharts({
   funnel,
   audience,
@@ -216,6 +303,10 @@ export function LeadInsightsCharts({
     <div className="space-y-6">
       <FunnelSection stages={funnel} />
       <IntentCards audience={audience} />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <ResponseLatencySection />
+        <IntentTaxonomySection />
+      </div>
       <TopInterestsChart audience={audience} />
       <div className="grid gap-6 lg:grid-cols-2">
         <StageDonut audience={audience} />

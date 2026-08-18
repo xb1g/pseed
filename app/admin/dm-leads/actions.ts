@@ -202,7 +202,7 @@ export async function syncLeadMessages(conversationId: string) {
     const supabase = createAdminClient();
     const { data: conv, error: convError } = await supabase
       .from("dm_conversations")
-      .select("id, platform, platform_user_id, platform_thread_id, username")
+      .select("id, platform, platform_user_id, platform_thread_id, username, display_name")
       .eq("id", conversationId)
       .single();
 
@@ -222,10 +222,10 @@ export async function syncLeadMessages(conversationId: string) {
       process.env.META_PAGE_ACCESS_TOKEN
     ) {
       try {
-        const { findInstagramConversationForUser, getConversationMessages } = await import(
+        const { findInstagramConversationForUser, getConversationMessages, getInstagramProfile } = await import(
           "@/lib/meta/graph"
         );
-        const { recordBackfilledMessage, applyClassification } = await import(
+        const { recordBackfilledMessage, applyClassification, updateConversationProfile } = await import(
           "@/lib/supabase/dm-leads"
         );
         const { classifyConversationText } = await import("@/lib/meta/classify");
@@ -236,6 +236,8 @@ export async function syncLeadMessages(conversationId: string) {
 
         if (graphConvoId) {
           metaFound = true;
+          const profile = await getInstagramProfile(targetUserId);
+          await updateConversationProfile(conversationId, profile);
           const messages = await getConversationMessages(graphConvoId);
           const inboundBodies: string[] = [];
 
@@ -266,7 +268,8 @@ export async function syncLeadMessages(conversationId: string) {
               platform: "instagram",
               platformThreadId: conv.platform_thread_id,
               platformUserId: conv.platform_user_id,
-              username: conv.username ?? null,
+              username: profile.username ?? conv.username ?? null,
+              displayName: profile.displayName ?? conv.display_name ?? null,
               direction,
               body: bodyText || "[Attachment]",
               platformMessageId: msg.id,
@@ -321,5 +324,4 @@ export async function syncLeadMessages(conversationId: string) {
     return { ok: false, conversation: null, error: message, isRateLimited: false };
   }
 }
-
 

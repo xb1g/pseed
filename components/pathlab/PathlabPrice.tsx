@@ -37,14 +37,39 @@ export function PathlabPrice() {
               <span className="pathlab-price__chip">{tier.chip}</span>
             )}
             <h3 className="pathlab-price__tier-label">{tier.label}</h3>
-            <p className="pathlab-price__tier-amount">
-              {tier.currency && (
-                <span className="pathlab-price__currency">{tier.currency}</span>
+            <div className="pathlab-price__tier-pricing">
+              {tier.originalAmount && (
+                <div className="pathlab-price__original">
+                  <span className="pathlab-price__original-strike">
+                    {tier.currency && <span>{tier.currency}</span>}
+                    {tier.originalAmount}
+                  </span>
+                  <span className="pathlab-price__discount-tag">ลด 57% พิเศษช่วง Beta</span>
+                </div>
               )}
-              <span className="pathlab-price__figure">{tier.amount}</span>
-            </p>
+              <p className="pathlab-price__tier-amount">
+                {tier.currency && (
+                  <span className="pathlab-price__currency">{tier.currency}</span>
+                )}
+                <span className="pathlab-price__figure">{tier.amount}</span>
+              </p>
+            </div>
             <p className="pathlab-price__tier-unit">{tier.unit}</p>
             <p className="pathlab-price__tier-blurb">{tier.blurb}</p>
+
+            {tier.perks && tier.perks.length > 0 && (
+              <ul className="pathlab-price__tier-perks" aria-label="สิทธิประโยชน์ที่ได้รับ">
+                {tier.perks.map((perk) => (
+                  <li key={perk} className="pathlab-price__tier-perk">
+                    <span className="pathlab-price__perk-icon" aria-hidden="true">
+                      ✓
+                    </span>
+                    <span>{perk}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
             {tier.cta && (
               <a
                 className="pathlab-price__tier-cta"

@@ -19,11 +19,13 @@ import { Globe } from "lucide-react";
 import { useLanguage } from "@/lib/i18n/language-context";
 import type {
   ChatMessage,
+  ContributionMode,
   ExtractedCareerData,
   InterviewProgress,
   InterviewQuestion,
   InterviewType,
 } from "@/types/expert-interview";
+import { CONTRIBUTION_MODES } from "@/types/expert-interview";
 
 type Step =
   | "loading"
@@ -59,6 +61,20 @@ export default function ExpertInterviewPage() {
   const searchParams = useSearchParams();
   const interviewType: InterviewType =
     searchParams.get("type") === "student" ? "student" : "expert";
+
+  // Acquisition tracking, e.g. /expert-interview?source=partner&mode=course.
+  // Threaded through to the submit payload so the contribution loop can be
+  // measured from landing page to published PathLab.
+  const sourceParam = searchParams.get("source");
+  const source = sourceParam
+    ? sourceParam.trim().toLowerCase().slice(0, 50)
+    : undefined;
+  const modeParam = searchParams.get("mode");
+  const contributionMode = CONTRIBUTION_MODES.includes(
+    modeParam as ContributionMode,
+  )
+    ? (modeParam as ContributionMode)
+    : undefined;
 
   const [step, setStep] = useState<Step>("loading");
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
@@ -313,6 +329,8 @@ export default function ExpertInterviewPage() {
       interviewTranscript: transcript,
       profile: profileData,
       mentoring: mentoringData,
+      source,
+      contributionMode,
     };
     console.log("[mentoring-submit] Sending payload", payload);
 

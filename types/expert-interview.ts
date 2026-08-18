@@ -3,6 +3,20 @@ export type ExpertStatus = "pending" | "approved" | "rejected" | "claimed";
 export type GenerationStatus = "pending" | "generating" | "completed" | "failed";
 export type InterviewType = "expert" | "student";
 
+/**
+ * What an expert wants to share, selected on /pathlab/partner and threaded
+ * through the interview as `?mode=`. Kept separate from InterviewType so the
+ * existing student interview path stays stable.
+ */
+export type ContributionMode = "course" | "work" | "case" | "other";
+
+export const CONTRIBUTION_MODES: readonly ContributionMode[] = [
+  "course",
+  "work",
+  "case",
+  "other",
+];
+
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -91,6 +105,10 @@ export interface ExpertProfile {
   interviewTranscript: ChatMessage[];
   mentoringPreference: MentoringPreference;
   bookingUrl?: string;
+  /** Acquisition source, e.g. "partner" for /pathlab/partner. */
+  source?: string | null;
+  /** What the expert wants to contribute, when they arrived with a mode. */
+  contributionMode?: ContributionMode | null;
   status: ExpertStatus;
   adminNotes?: string;
   ipAddress?: string;

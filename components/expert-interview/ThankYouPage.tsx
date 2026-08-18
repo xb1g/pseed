@@ -11,22 +11,24 @@ export function ThankYouPage() {
   const content = {
     en: {
       title: "Thank you!",
-      subtitle: "Your interview has been submitted for review. Once approved, we'll turn it into a 5-day career exploration for students.",
+      subtitle: "Your interview has been submitted. We'll draft a PathLab from what you shared, and you review and approve it before any student sees it.",
       nextTitle: "What happens next",
-      step1: "Check your email — we sent you a link to claim your profile and manage your data.",
+      step1: "Check your email: we sent you a link to claim your profile and manage your data.",
       step2: "Our team reviews your submission (usually within 3 days)",
-      step3: "We generate a PathLab from your career insights",
-      step4: "Students explore your career through hands-on activities",
+      step3: "We draft a PathLab from what you shared",
+      step4: "You review, request changes, or approve. Nothing publishes without you.",
+      step5: "Students explore your career through hands-on activities, with your name on it",
       homeBtn: "Back to home"
     },
     th: {
       title: "ขอบคุณ!",
-      subtitle: "การสัมภาษณ์ของคุณถูกส่งไปตรวจสอบแล้ว เมื่อได้รับการอนุมัติ เราจะเปลี่ยนเป็นภารกิจสำรวจอาชีพ 5 วันสำหรับนักเรียน",
+      subtitle: "ส่งข้อมูลเรียบร้อยแล้ว เราจะสร้างร่าง PathLab จากสิ่งที่คุณแบ่งปัน แล้วให้คุณรีวิวและอนุมัติก่อนที่นักเรียนจะได้เห็น",
       nextTitle: "ขั้นตอนต่อไป",
-      step1: "ตรวจสอบอีเมลของคุณ — เราส่งลิงก์ให้คุณยืนยันโปรไฟล์และจัดการข้อมูลของคุณแล้ว",
+      step1: "ตรวจสอบอีเมลของคุณ: เราส่งลิงก์ให้คุณยืนยันโปรไฟล์และจัดการข้อมูลของคุณแล้ว",
       step2: "ทีมงานของเราตรวจสอบข้อมูลของคุณ (ปกติภายใน 3 วัน)",
-      step3: "เราสร้าง PathLab จากข้อมูลเชิงลึกในอาชีพของคุณ",
-      step4: "นักเรียนจะได้สำรวจอาชีพของคุณผ่านกิจกรรมลงมือทำจริง",
+      step3: "เราสร้างร่าง PathLab จากสิ่งที่คุณแบ่งปัน",
+      step4: "คุณรีวิว ขอแก้ไข หรืออนุมัติ ไม่มีอะไรเผยแพร่โดยไม่ผ่านคุณ",
+      step5: "นักเรียนได้ลงมือทำจริง พร้อมชื่อคุณอยู่บนผลงาน",
       homeBtn: "กลับสู่หน้าหลัก"
     }
   };
@@ -64,6 +66,10 @@ export function ThankYouPage() {
           <li className="flex items-start gap-2">
             <span className="text-purple-400 mt-0.5">4.</span>
             {t.step4}
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-purple-400 mt-0.5">5.</span>
+            {t.step5}
           </li>
         </ul>
       </div>

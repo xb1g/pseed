@@ -28,7 +28,7 @@ import {
 
 const DEMO_MAP_ID = "00000000-0000-0000-0000-000000000020";
 
-const STOP_SPRITE_PX = 64;
+const STOP_SPRITE_PX = 112;
 
 function ScreenshotFallback() {
   return (
@@ -177,8 +177,8 @@ export default function PathlabJourneyMap() {
               aria-label={selected.title}
               className="pathlab-journey-map__popup"
               style={{
-                top: selected.row * TRAIL_ROW_PX + 96,
-                left: `clamp(8.5rem, ${selected.xPct}%, calc(100% - 8.5rem))`,
+                top: selected.row * TRAIL_ROW_PX + 130,
+                left: `clamp(9.5rem, ${selected.xPct}%, calc(100% - 9.5rem))`,
               }}
             >
               <button

@@ -1,9 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { FileText, Film, ImageIcon, ListChecks, Music, Paperclip, Sparkles, X } from "lucide-react";
+import { BookOpen, FileText, Film, ImageIcon, ListChecks, Music, Paperclip, Sparkles, X } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { personalizeLeadCopyAction, replyToLead, sendQuickReplyButtons } from "@/app/admin/dm-leads/actions";
 import { uploadDmAttachment } from "@/lib/dm-leads/upload-image-client";
@@ -13,9 +20,11 @@ import {
   type QuickReply,
 } from "@/lib/dm-leads/quick-replies";
 import { QUICK_REPLY_SETS } from "@/lib/dm-leads/quick-reply-buttons";
+import { DmLeadScripts } from "@/components/admin/DmLeadScripts";
 import { PlanGeneratorModal } from "@/components/admin/PlanGeneratorModal";
 import type { MetaAttachmentType } from "@/lib/meta/graph";
 import type { DmConversation } from "@/types/dm-leads";
+import type { DmLeadBucket, FieldCoverage } from "@/lib/dm-leads/playbook";
 
 const TONE_STYLES: Record<string, string> = {
   cta: "border-emerald-300 bg-emerald-50 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/70",
@@ -51,6 +60,8 @@ interface DmLeadReplyFormProps {
     | "wants_talent"
     | "has_hands_on_experience"
   >;
+  bucket?: DmLeadBucket;
+  coverage?: FieldCoverage;
   /** Controlled body — when provided, onBodyChange must be too. */
   body?: string;
   onBodyChange?: (body: string) => void;
@@ -72,6 +83,8 @@ interface DmLeadReplyFormProps {
 
 export function DmLeadReplyForm({
   conversation,
+  bucket,
+  coverage,
   body: controlledBody,
   onBodyChange,
   attachedFile: controlledAttachedFile,
@@ -205,10 +218,12 @@ export function DmLeadReplyForm({
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-1.5">
+      {/* Unified Reply Assistant Toolbar */}
+      <div className="flex flex-wrap items-center justify-between gap-1.5 rounded-lg border bg-muted/30 px-2.5 py-1.5">
+        {/* Left: Quick replies suggestions */}
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Sparkles className="h-3 w-3" /> Quick replies
+          <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+            <Sparkles className="h-3 w-3 text-amber-500" /> แนะนำ:
           </span>
           {suggestions.map((s, i) => (
             <button
@@ -218,7 +233,7 @@ export function DmLeadReplyForm({
               onClick={() => void insertSuggestion(s)}
               disabled={isPending || personalizingId !== null}
               className={cn(
-                "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50",
+                "rounded-full border px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-50",
                 TONE_STYLES[s.tone]
               )}
             >
@@ -229,27 +244,75 @@ export function DmLeadReplyForm({
           ))}
         </div>
 
-        <PlanGeneratorModal
-          conversation={conversation}
-          onInsertReply={(text) => setBody(text)}
-        />
-      </div>
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-          <ListChecks className="h-3 w-3" /> ส่งปุ่มถาม
-        </span>
-        {QUICK_REPLY_SETS.map((set) => (
-          <button
-            key={set.id}
-            type="button"
-            title={`${set.prompt} (${set.options.map((o) => o.title).join(" / ")})`}
-            onClick={() => handleSendQuickReplySet(set.id)}
-            disabled={quickReplyPending !== null}
-            className="rounded-full border border-dashed px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
-          >
-            {quickReplyPending === set.id ? "กำลังส่ง…" : set.label}
-          </button>
-        ))}
+        {/* Right: Integrated Tool Actions */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {/* 1. Scripts & Objections Popover */}
+          {bucket && coverage && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-6.5 gap-1 rounded-full px-2 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+                >
+                  <BookOpen className="h-3 w-3" />
+                  สคริปต์ &amp; ตอบข้อโต้แย้ง ▾
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-88 max-h-[420px] overflow-y-auto p-3 text-xs shadow-lg">
+                <DmLeadScripts
+                  bucket={bucket}
+                  coverage={coverage}
+                  conversationId={conversation.id}
+                  onInsert={(text) => {
+                    setBody(text);
+                    document.getElementById(DM_REPLY_TEXTAREA_ID)?.focus();
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+          )}
+
+          {/* 2. Interactive Quick Reply Buttons Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-6.5 gap-1 rounded-full px-2 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+                disabled={quickReplyPending !== null}
+              >
+                <ListChecks className="h-3 w-3" />
+                {quickReplyPending ? "กำลังส่ง…" : "ส่งปุ่มถาม ▾"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-60">
+              {QUICK_REPLY_SETS.map((set) => (
+                <DropdownMenuItem
+                  key={set.id}
+                  onClick={() => handleSendQuickReplySet(set.id)}
+                  className="cursor-pointer text-xs flex flex-col items-start py-1.5"
+                >
+                  <span className="font-semibold text-foreground">{set.label}</span>
+                  <span className="text-[10px] text-muted-foreground line-clamp-1">
+                    {set.prompt} ({set.options.map((o) => o.title).join(" / ")})
+                  </span>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* 3. Plan Generator Modal Button */}
+          <PlanGeneratorModal
+            conversation={conversation}
+            onInsertReply={(text) => setBody(text)}
+            triggerVariant="outline"
+            triggerClassName="h-6.5 text-[11px] gap-1 px-2 rounded-full border-sky-500/30 bg-sky-500/10 text-sky-700 hover:bg-sky-500/20 dark:text-sky-300 font-medium"
+            compact={true}
+          />
+        </div>
       </div>
       {quickReplyError && <p className="text-sm text-destructive">{quickReplyError}</p>}
       {attachedFile && (

@@ -55,6 +55,7 @@ interface PlanGeneratorModalProps {
   onInsertReply?: (text: string) => void;
   triggerClassName?: string;
   triggerVariant?: "default" | "outline" | "secondary" | "ghost";
+  compact?: boolean;
 }
 
 export function PlanGeneratorModal({
@@ -62,6 +63,7 @@ export function PlanGeneratorModal({
   onInsertReply,
   triggerClassName = "",
   triggerVariant = "outline",
+  compact = false,
 }: PlanGeneratorModalProps) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -287,7 +289,7 @@ export function PlanGeneratorModal({
           className={`h-8 gap-1.5 border-cyan-500/40 bg-cyan-950/20 text-xs font-semibold text-cyan-300 hover:bg-cyan-900/40 hover:text-cyan-100 ${triggerClassName}`}
         >
           <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
-          <span className="truncate">⚡ สร้างแผนพอร์ต ({leadHandle})</span>
+          <span className="truncate">{compact ? "แผนพอร์ต" : `⚡ สร้างแผนพอร์ต (${leadHandle})`}</span>
         </Button>
       </DialogTrigger>
 

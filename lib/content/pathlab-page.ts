@@ -294,7 +294,7 @@ export const FIELD_DETAIL_LABELS = {
   basisAnswer: "ไม่ต้อง เริ่มจากศูนย์ได้",
   /** Suffixed with the field label so the DM arrives with context. */
   ctaPrefix: "ทัก IG ถามเรื่องสาย",
-  price: "299฿ เดี่ยว · 999฿ กลุ่ม 4 คน · เลื่อนลงดูรายละเอียดราคา",
+  price: "โปร ส.ค. 299฿ (ปกติ 699฿) ฟรี Community + Mentoring · เลื่อนลงดูรายละเอียดราคา",
   /** Appended to the card's accessible name. */
   cardAction: "ดูรายละเอียด 5 วัน",
   cardCue: "ดู 5 วันนี้ →",
@@ -334,11 +334,19 @@ export const NOTES = {
   proof: "ทุกคนเริ่มจากไม่มีพอร์ตเหมือนกัน",
   journey: "แผนที่จริงที่น้อง ๆ ใช้อยู่ตอนนี้เลย",
   reviews: "รุ่นพี่เขียนเองทุกคน ไม่ได้จ้างนะ",
-  price: "ลองอันฟรีก่อนได้ ค่อยตัดสินใจทีหลัง",
+  price: "ราคานี้เฉพาะช่วงทดสอบ Beta เท่านั้น ได้ทั้งโปรเจกต์ทั้งคอมมูนิตี้",
   contact: "ทักมาเล่น ๆ ก่อนก็ได้ ยังไม่ต้องสมัคร",
   parentsWhat: "ลูกไม่ต้องเก่งมาก่อน แค่พร้อมลองทำจริง",
   parentsProof: "เราดูที่ของที่เด็กทำได้ ไม่ได้ดูแค่ชั่วโมงเรียน",
   parentsPrice: "มีคำถามเรื่องรอบหรือเวลา ทักมาถามก่อนได้เลย",
+  /* /pathlab/partner — the expert invitation. These talk to the expert the
+     link was forwarded to, not to students. */
+  partnerHero: "ถ้าเพื่อนส่งลิงก์นี้มาให้ แปลว่าเขานับถือฝีมือคุณนะ",
+  partnerGoal: "เด็กท่องสูตรเก่ง แต่ไม่เคยเห็นหน้างานจริงสักครั้ง",
+  partnerModes: "เลือกอันที่ใกล้ตัวคุณที่สุดได้เลย ไม่ต้องมีครบทุกแบบ",
+  partnerProof: "ทุกตัวอย่างเริ่มจากคนที่ทำงานจริง",
+  partnerExchange: "งานของคุณ คุณคุมเองได้เสมอ",
+  partnerContact: "คุยกันก่อนได้ ยังไม่ต้องตัดสินใจ",
 } as const;
 
 export interface PriceTier {
@@ -346,14 +354,18 @@ export interface PriceTier {
   label: string;
   /** The figure alone, so it can be coloured without markup in the string. */
   amount: string;
+  /** Original regular price shown with strikethrough when discounted. */
+  originalAmount?: string;
   /** Currency or free marker shown before/with amount. */
   currency?: string;
   /** What the figure covers. */
   unit: string;
   /** One-line pitch under the price. */
   blurb: string;
-  /** Visual weight: free is soft, featured is the group deal. */
-  tone: "free" | "solo" | "group";
+  /** Key perks / bonuses included in this tier. */
+  perks?: string[];
+  /** Visual weight: free is soft, featured is the highlighted deal. */
+  tone: "free" | "solo" | "featured" | "group";
   /** Optional chip above the amount. */
   chip?: string;
   /** Optional in-card action — the free tier plays straight into the product. */
@@ -365,7 +377,7 @@ export const PRICE_TIERS: PriceTier[] = [
     label: "Micro Pathlab",
     amount: "ฟรี",
     unit: "วันละ 1 ครั้ง · ~10 นาที",
-    blurb: "ลองโปรเจกต์จิ๋วทุกวัน ไม่เสียตัง รู้เร็วว่าสายนี้ดึงดูดไหม",
+    blurb: "ลองโปรเจกต์จิ๋วทุกวัน ไม่เสียค่าใช้จ่าย รู้เร็วว่าสายนี้ดึงดูดไหม",
     tone: "free",
     chip: "เริ่มวันนี้",
     /* Zero-friction lead into the product once a sample map exists; until
@@ -375,29 +387,28 @@ export const PRICE_TIERS: PriceTier[] = [
       : { label: "ทัก LINE OA →", href: CONTACT.lineHref },
   },
   {
-    label: "เดี่ยว",
+    label: "Pathlab รอบเต็ม",
+    originalAmount: "699",
     amount: "299",
     currency: "฿",
-    unit: "ต่อคน · รอบ 4-6 วัน",
-    blurb: "มาคนเดียวได้ เราจัดกลุ่ม + mentor ให้ใกล้ชิด",
-    tone: "solo",
-  },
-  {
-    label: "กลุ่ม 4 คน",
-    amount: "999",
-    currency: "฿",
-    unit: "ทั้งกลุ่ม · เลือกวันเริ่มได้",
-    blurb: "มาเป็นทีม ประหยัดกว่า และวางตารางเองได้",
-    tone: "group",
-    chip: "คุ้มสุด",
+    unit: "ต่อคน · รอบ 4-6 วัน (ราคาปกติ 699฿)",
+    blurb: "ราคาพิเศษเฉพาะเดือนสิงหาคม ช่วงทดสอบระบบ Beta เพื่อนำฟีดแบ็กจริงมาพัฒนาโปรดักต์",
+    tone: "featured",
+    chip: "โปรพิเศษ ส.ค. (Beta Launch)",
+    perks: [
+      "+ ฟรี! 1 เดือน Project Community (มูลค่า 679฿ / เดือน)",
+      "+ ฟรี! Interview Hack Mentoring ซ้อมสัมภาษณ์พอร์ต",
+      "ทำ Project จริง 1 ชิ้น จบใน 4-6 วัน มีผลงานลง Port ทันที",
+      "มี Mentor ดูแลใกล้ชิดตลอดทั้งรอบ",
+    ],
   },
 ];
 
 /** How the rounds work. Authored as lines so the breaks are deliberate. */
 export const PRICE_NOTES: string[] = [
-  "Pathlab จัดรอบละ 4 คน ถ้ามาเดี่ยวเราจัดกลุ่มให้ แต่ละกลุ่มมี mentor ดูแลใกล้ชิด",
-  "สมัครแบบกลุ่มเลือกวันเริ่มได้ · มาเดี่ยว admin หาเวลาร่วมของแต่ละคน",
-  "Micro Pathlab ฟรีวันละหนึ่งรอบ ใช้ลองก่อนค่อยอัปเป็นรอบเต็ม",
+  "ราคาพิเศษ 299฿ (จากปกติ 699฿) เฉพาะเดือนสิงหาคมนี้ สำหรับช่วงทดสอบระบบ Beta เพื่อนำฟีดแบ็กจริงมาพัฒนาต่อ",
+  "รับฟรีทันที! สิทธิ์เข้า Project Community 1 เดือน (มูลค่า 679฿) และ Interview Hack Mentoring ซ้อมสัมภาษณ์พอร์ตกับ Mentor",
+  "Pathlab จัดรอบละ 4 คน เราจัดกลุ่มและหาเวลาร่วมให้ พร้อม mentor ดูแลใกล้ชิดตลอด 4-6 วัน",
 ];
 
 /** Booking actions under the price notes: IG first, LINE as the easier door. */
