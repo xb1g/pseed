@@ -401,6 +401,51 @@ export const POSTER = {
 } as const;
 
 /**
+ * Poster-only copy for the IG Hero poster (`/pathlab/poster/instagram-hero`).
+ * A 10x rebuild of the A4 markered sheet, refitted for an Instagram feed
+ * thumb-stop. Lives here so the hero sheet never has to reach into the
+ * landing-page copy. Three variants (4:5 portrait, 1:1 square, 9:16 story)
+ * share the same word bank: tier-1 name, tier-2 promise, tier-3 proof,
+ * tier-4 alumni, tier-5 schedule, tier-6 CTA.
+ */
+export const POSTER_HERO = {
+  /** Tiny eyebrow above the name, set in gold for warmth on dark hero. */
+  eyebrow: "Pathlab × Passion Seed",
+  /** Tier 1: the brand line a teen reads first. */
+  name: "Pathlab",
+  /** Tier 2: the single promise that fits a 4-second thumb-stop. */
+  promise: "ทำ Project จริง จบใน 4-6 วัน",
+  /** Tier 2b: the consequence, the moment the eye stays. */
+  consequence: "ได้ผลงานลง Port ทันที",
+  /** Three short lines that earn the promise. Read as one breath. */
+  proofLines: [
+    "ทำ Project ออกแบบร่วมกับผู้เชี่ยวชาญของสายนั้น",
+    "มี Mentor ดูแลใกล้ชิด กลุ่มละ 4 คน",
+    "เลือกสายที่อยากลอง ไม่ต้องมีพื้นฐาน",
+  ],
+  /** Two alumni quotes, the line under the proof. */
+  alumni: [
+    {
+      quote: "เริ่มจากศูนย์ ได้ลงมือเขียนโค้ดจริง ทำโปรเจกต์จริง",
+      ig: "IG:xn_z96x",
+    },
+    {
+      quote: "เรียนสนุก ได้ทั้งเพื่อน �ุ่นพี่ และแรงบันดาลใจ",
+      ig: "IG:cathatput_02",
+    },
+  ],
+  /** Tier 4: dates, so the reader knows the window. */
+  schedule: "เสาร์-อาทิตย์ 22-23 และ พุธ-ศุกร์ 26-28",
+  /** Tier 5: the next step. Quiet, two lines. */
+  ctaEyebrow: "สนใจทักมาคุยกันได้เลย",
+  ctaHandle: "IG @passion_seed.th",
+  /** The stamp message that lives in the corner seal. */
+  stamp: "ไม่ต้องมีพื้นฐาน",
+  /** The single margin note tucked into a top corner. */
+  note: "Project ที่ออกแบบร่วมกับผู้เชี่ยวชาญของสายนั้น",
+} as const;
+
+/**
  * Poster-only copy for /pathlab/poster/how-we-learn — the print artifact
  * that explains how a Pathlab actually runs. Same editorial rule as POSTER:
  * wording lives here, but the example days and field labels are pulled from
