@@ -7,9 +7,20 @@ const STORAGE_KEY_TOKEN = "psdmlp.copilot.token";
 const STORAGE_KEY_API = "psdmlp.copilot.apiBase";
 const DEFAULT_API_BASE = "https://www.passionseed.org";
 
+/**
+ * The API base must be https in production. We also allow a loopback origin so
+ * the extension can be pointed at `pnpm dev` before the routes ship.
+ */
+function isAllowedApiBase(value: string): boolean {
+  if (value.startsWith("https://")) return true;
+  return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(value.replace(/\/$/, ""));
+}
+
+
 const tokenEl = document.getElementById("token") as HTMLInputElement;
 const apiEl = document.getElementById("api") as HTMLInputElement;
 const saveBtn = document.getElementById("save") as HTMLButtonElement;
+const testBtn = document.getElementById("test") as HTMLButtonElement;
 const clearBtn = document.getElementById("clear") as HTMLButtonElement;
 const statusEl = document.getElementById("status") as HTMLDivElement;
 
@@ -36,8 +47,8 @@ saveBtn.addEventListener("click", async () => {
     setStatus("token ต้องขึ้นต้นด้วย psdmlp_", "bad");
     return;
   }
-  if (!apiBase.startsWith("https://")) {
-    setStatus("API base ต้องเป็น https://", "bad");
+  if (!isAllowedApiBase(apiBase)) {
+    setStatus("API base ต้องเป็น https:// (หรือ http://localhost สำหรับ dev)", "bad");
     return;
   }
   await chrome.storage.local.set({
@@ -45,6 +56,54 @@ saveBtn.addEventListener("click", async () => {
     [STORAGE_KEY_API]: apiBase,
   });
   setStatus("saved", "ok");
+});
+
+/**
+ * Turns the API's machine reason into something the operator can act on.
+ * These are the only four `verifyCopilotToken` can return.
+ */
+function explainReason(reason: string): string {
+  if (reason === "unknown") return "token นี้ไม่มีในระบบ — copy ไม่ครบ? mint ใหม่ที่ /admin/dm-leads/copilot";
+  if (reason === "expired") return "token หมดอายุแล้ว — mint ใหม่";
+  if (reason === "revoked") return "token ถูก revoke ไปแล้ว — mint ใหม่";
+  if (reason === "malformed" || reason === "missing_bearer") return "token ผิดรูปแบบ — ต้องขึ้นต้นด้วย psdmlp_";
+  return reason;
+}
+
+/**
+ * Probes /api/copilot/ping with whatever is typed in the fields right now, so
+ * a bad paste can be caught before it is saved.
+ */
+testBtn.addEventListener("click", async () => {
+  const token = tokenEl.value.trim();
+  const apiBase = (apiEl.value.trim() || DEFAULT_API_BASE).replace(/\/$/, "");
+  if (!isAllowedApiBase(apiBase)) {
+    setStatus("API base ต้องเป็น https:// (หรือ http://localhost สำหรับ dev)", "bad");
+    return;
+  }
+  setStatus("testing…", "ok");
+  try {
+    const res = await fetch(`${apiBase}/api/copilot/ping`, {
+      headers: { Authorization: `Bearer ${token}` },
+      credentials: "omit",
+    });
+    const payload = (await res.json().catch(() => null)) as
+      | { ok?: boolean; reason?: string; name?: string; expiresAt?: string }
+      | null;
+    if (res.ok && payload?.ok) {
+      const until = payload.expiresAt ? new Date(payload.expiresAt).toLocaleDateString() : "?";
+      setStatus(`ok · ${payload.name ?? "token"} · หมดอายุ ${until}`, "ok");
+      return;
+    }
+    setStatus(`${res.status}: ${explainReason(payload?.reason ?? "no_reason")}`, "bad");
+  } catch (error) {
+    // A network-layer throw here means the API base is wrong or the server is
+    // down — it never means the token is bad.
+    setStatus(
+      `ต่อ ${apiBase} ไม่ได้: ${error instanceof Error ? error.message : "network error"}`,
+      "bad"
+    );
+  }
 });
 
 clearBtn.addEventListener("click", async () => {

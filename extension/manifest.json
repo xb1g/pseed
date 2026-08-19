@@ -6,11 +6,14 @@
   "description": "Surfaces the PassionSeed playbook + drafts above Instagram's compose box. Read-only: never sends a message.",
   "minimum_chrome_version": "120",
   "permissions": [
-    "storage"
+    "storage",
+    "scripting"
   ],
   "host_permissions": [
     "https://www.instagram.com/*",
-    "https://www.passionseed.org/*"
+    "https://www.passionseed.org/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
   ],
   "action": {
     "default_popup": "popup/settings.html",
@@ -65,5 +68,6 @@
         "<all_urls>"
       ]
     }
-  ]
+  ],
+  "devtools_page": "devtools/devtools.html"
 }

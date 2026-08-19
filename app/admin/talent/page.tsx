@@ -1,4 +1,3 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -17,6 +16,9 @@ import {
 } from "@/lib/talent-admin";
 import { TRACK_LABEL } from "@/lib/talent-work";
 import { safeExternalUrl } from "@/lib/talent-url";
+import { DawnScene } from "@/components/projectseed/dawn-scene";
+import { StatTile } from "./_components/Stats";
+import { Panel } from "./_components/Panel";
 
 export const dynamic = "force-dynamic";
 
@@ -30,22 +32,11 @@ function formatDate(iso: string) {
   });
 }
 
-function StatCard({ label, value }: { label: string; value: number | string }) {
-  return (
-    <Card>
-      <CardContent className="pt-6">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-3xl font-bold">{value}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
 function BriefsTable({ briefs }: { briefs: ProjectBrief[] }) {
   if (briefs.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">
-        No project briefs yet.
+      <p className="px-6 py-12 text-center text-sm text-stone-400">
+        ยังไม่มีคนทักทายเข้ามาเลย — พอมีใครส่ง Interest? มา จะโผล่ที่นี่นะ
       </p>
     );
   }
@@ -53,20 +44,24 @@ function BriefsTable({ briefs }: { briefs: ProjectBrief[] }) {
   return (
     <Table>
       <TableHeader>
-        <TableRow>
-          <TableHead className="w-[190px]">Received</TableHead>
-          <TableHead className="w-[220px]">Contact</TableHead>
-          <TableHead>Brief</TableHead>
+        <TableRow className="border-white/5 hover:bg-transparent">
+          <TableHead className="w-[190px] text-stone-400">Received</TableHead>
+          <TableHead className="w-[220px] text-stone-400">Contact</TableHead>
+          <TableHead className="text-stone-400">Brief</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {briefs.map((brief) => (
-          <TableRow key={brief.id}>
-            <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+          <TableRow key={brief.id} className="border-white/5">
+            <TableCell className="whitespace-nowrap text-sm text-stone-400">
               {formatDate(brief.created_at)}
             </TableCell>
-            <TableCell className="font-medium break-all">{brief.contact}</TableCell>
-            <TableCell className="whitespace-pre-wrap text-sm">{brief.brief}</TableCell>
+            <TableCell className="break-all font-medium text-white">
+              {brief.contact}
+            </TableCell>
+            <TableCell className="whitespace-pre-wrap text-sm text-stone-300">
+              {brief.brief}
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>
@@ -77,8 +72,8 @@ function BriefsTable({ briefs }: { briefs: ProjectBrief[] }) {
 function SignupsTable({ signups }: { signups: TalentSignup[] }) {
   if (signups.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">
-        No student signups yet.
+      <p className="px-6 py-12 text-center text-sm text-stone-400">
+        ยังไม่มีนักเรียนสมัครเข้ามา — พอมีคนกรอกฟอร์ม จะโผล่ที่นี่นะ
       </p>
     );
   }
@@ -86,29 +81,33 @@ function SignupsTable({ signups }: { signups: TalentSignup[] }) {
   return (
     <Table>
       <TableHeader>
-        <TableRow>
-          <TableHead className="w-[170px]">Signed up</TableHead>
-          <TableHead>Student</TableHead>
-          <TableHead className="w-[120px]">Track</TableHead>
-          <TableHead className="w-[200px]">Contact</TableHead>
-          <TableHead>Tools & links</TableHead>
-          <TableHead className="w-[150px]">Public</TableHead>
+        <TableRow className="border-white/5 hover:bg-transparent">
+          <TableHead className="w-[170px] text-stone-400">Signed up</TableHead>
+          <TableHead className="text-stone-400">Student</TableHead>
+          <TableHead className="w-[120px] text-stone-400">Track</TableHead>
+          <TableHead className="w-[200px] text-stone-400">Contact</TableHead>
+          <TableHead className="text-stone-400">Tools & links</TableHead>
+          <TableHead className="w-[170px] text-stone-400">Public</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {signups.map((s) => (
-          <TableRow key={s.id}>
-            <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+          <TableRow
+            key={s.id}
+            className="border-white/5"
+            data-verified={s.verified || undefined}
+          >
+            <TableCell className="whitespace-nowrap text-sm text-stone-400">
               {formatDate(s.created_at)}
             </TableCell>
             <TableCell>
-              <p className="font-medium">
+              <p className="font-medium text-white">
                 {s.nickname}{" "}
-                <span className="font-normal text-muted-foreground">
+                <span className="font-normal text-stone-400">
                   · {s.full_name}
                 </span>
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-stone-500">
                 {[s.age !== null ? `${s.age} yrs` : null, s.school]
                   .filter(Boolean)
                   .join(" · ")}
@@ -117,13 +116,15 @@ function SignupsTable({ signups }: { signups: TalentSignup[] }) {
             <TableCell>
               <Badge variant="secondary">{TRACK_LABEL[s.track] ?? s.track}</Badge>
             </TableCell>
-            <TableCell className="text-sm break-all">
+            <TableCell className="break-all text-sm text-stone-300">
               {[s.line_id ? `LINE: ${s.line_id}` : null, s.phone]
                 .filter(Boolean)
                 .join(" · ") || "—"}
             </TableCell>
             <TableCell className="text-sm">
-              {s.tools.length > 0 && <p>{s.tools.join(", ")}</p>}
+              {s.tools.length > 0 && (
+                <p className="text-stone-300">{s.tools.join(", ")}</p>
+              )}
               {s.portfolio_links.map((url) => {
                 const safe = safeExternalUrl(url);
 
@@ -147,7 +148,7 @@ function SignupsTable({ signups }: { signups: TalentSignup[] }) {
                     href={safe}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block break-all text-xs text-primary hover:underline"
+                    className="block break-all text-xs text-[#fed95c] hover:underline"
                   >
                     {url}
                   </a>
@@ -178,36 +179,55 @@ export default async function AdminTalentPage() {
   const pending = signups.filter((s) => !s.verified).length;
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Project briefs (hirers)" value={briefs.length} />
-        <StatCard label="Student signups" value={signups.length} />
-        <StatCard label="Awaiting review" value={pending} />
-      </div>
+    <div className="dawn-theme relative min-h-screen overflow-hidden">
+      <DawnScene />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Project briefs — hirer side</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Submissions from the &ldquo;Interest?&rdquo; form on /talent. Newest first.
-          </p>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
+      <div className="relative z-10 mx-auto max-w-7xl space-y-10 px-4 py-10 sm:px-6 lg:px-8">
+        {/* Hero — one gold keynote statement for the page, per design system. */}
+        <header className="space-y-4">
+          <p className="dawn-eyebrow">Talent Ops</p>
+          <div className="dawn-keynote space-y-3 px-5 py-5">
+            <h1 className="font-kodchasan text-3xl font-semibold text-white sm:text-4xl">
+              นักเรียนที่พร้อมเป็นที่รู้จัก
+            </h1>
+            <p className="max-w-2xl text-sm text-stone-300">
+              รีวิวงานที่ส่งมาจากฟอร์ม <span className="text-stone-200">/talent</span>{" "}
+              แล้วเปิดให้คนภายนอกเห็นเมื่อพร้อม
+            </p>
+          </div>
+          <div className="dawn-rule" aria-hidden="true" />
+        </header>
+
+        {/* Stat row — three glass tiles, pending one gets the gold pulse. */}
+        <section
+          aria-label="Talent funnel summary"
+          className="grid gap-4 sm:grid-cols-3"
+        >
+          <StatTile label="Project briefs (hirers)" value={briefs.length} />
+          <StatTile label="Student signups" value={signups.length} />
+          <StatTile
+            label="Awaiting review"
+            value={pending}
+            emphasis={pending > 0}
+          />
+        </section>
+
+        <Panel
+          eyebrow="Hirer side"
+          title="Project briefs"
+          description="Submissions from the “Interest?” form on /talent. Newest first."
+        >
           <BriefsTable briefs={briefs} />
-        </CardContent>
-      </Card>
+        </Panel>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Student signups</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Hidden signups do not appear on the public page until published.
-          </p>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <Panel
+          eyebrow="Student side"
+          title="Signups"
+          description="Hidden signups do not appear on the public page until published."
+        >
           <SignupsTable signups={signups} />
-        </CardContent>
-      </Card>
+        </Panel>
+      </div>
     </div>
   );
 }

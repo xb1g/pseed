@@ -32,12 +32,14 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 export async function POST(request: NextRequest) {
   const bearer = extractBearerFromHeader(request.headers.get("authorization"));
   if (!bearer) {
+    console.warn("[copilot log] rejected: missing_bearer");
     return NextResponse.json({ ok: false, error: "missing_bearer" }, { status: 401 });
   }
 
   const supabase = createServiceRoleClient();
   const verified = await verifyCopilotToken({ supabase: supabase as unknown as SupabaseLookupClient, raw: bearer });
   if (!verified.ok) {
+    console.warn(`[copilot log] rejected: ${verified.reason}`);
     return NextResponse.json({ ok: false, error: verified.reason }, { status: 401 });
   }
 

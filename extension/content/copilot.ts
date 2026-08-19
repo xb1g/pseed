@@ -1,18 +1,13 @@
 /**
  * Chip tray above Instagram's compose box.
  *
- * Listens to the snapshot stream from instagram.ts, calls /api/copilot/advise,
+ * Subscribes to the snapshot bus from instagram.ts, calls /api/copilot/advise,
  * and renders the returned chips. A click pastes the body into IG's compose
  * box via the helper from instagram.ts. After the operator hits send in IG,
  * we POST to /api/copilot/log so the playbook log stays in sync.
  */
 
-interface Snapshot {
-  username: string | null;
-  displayName: string | null;
-  messages: { direction: "inbound" | "outbound"; body: string; sent_at: string }[];
-  hasCompose: boolean;
-}
+import { getBus, debugLog, type ThreadSnapshot as Snapshot } from "./bus";
 
 interface AdviseResponse {
   ok: boolean;
@@ -28,6 +23,7 @@ interface AdviseResponse {
   lastInboundAt: string | null;
   hasInbound: boolean;
   scripts: { id: string; label: string; rung: number; body: string }[];
+  aiDrafts: { id: string; label: string; body: string }[];
   quickReplies: { id: string; label: string; tone: string; body: string }[];
 }
 
@@ -36,18 +32,12 @@ interface LogResponse {
   messageId: string | null;
 }
 
-declare global {
-  interface Window {
-    __psdmlpCopilot?: {
-      pasteIntoCompose: (text: string) => boolean;
-    };
-  }
-}
-
-const tray = document.createElement("div");
-tray.id = "psdmlp-copilot-tray";
+const TRAY_ID = "psdmlp-copilot-tray";
+// Reuse an existing tray so a manual re-injection does not stack two of them.
+const tray = document.getElementById(TRAY_ID) ?? document.createElement("div");
+tray.id = TRAY_ID;
 tray.style.display = "none";
-document.body.appendChild(tray);
+if (!tray.isConnected) document.body.appendChild(tray);
 
 let latestSnapshot: Snapshot | null = null;
 let latestAdvise: AdviseResponse | null = null;
@@ -89,6 +79,22 @@ function renderAdvise(data: AdviseResponse): void {
       <span class="psdmlp-window ${win.cls}">${escapeHtml(win.text)}</span>
     </header>
     <div class="psdmlp-chips">${chips}</div>
+    ${
+      data.aiDrafts?.length
+        ? `<div class="psdmlp-ai">
+            <div class="psdmlp-ai-title">🤖 ตอบตามบทสนทนา</div>
+            ${data.aiDrafts
+              .map(
+                (d) =>
+                  `<button class="psdmlp-ai-draft" data-ai-id="${escapeHtml(d.id)}" title="${escapeHtml(d.body)}">
+                     <span class="psdmlp-ai-label">${escapeHtml(d.label)}</span>
+                     <span class="psdmlp-ai-body">${escapeHtml(d.body)}</span>
+                   </button>`
+              )
+              .join("")}
+          </div>`
+        : ""
+    }
     <details class="psdmlp-scripts">
       <summary>rung ${data.rung} · ${data.scripts.length} scripts</summary>
       <ol>
@@ -111,6 +117,13 @@ function renderAdvise(data: AdviseResponse): void {
       pasteAndMaybeLog(reply.body, data);
     });
   });
+  tray.querySelectorAll<HTMLButtonElement>(".psdmlp-ai-draft").forEach((button) => {
+    button.addEventListener("click", () => {
+      const draft = data.aiDrafts.find((d) => d.id === button.dataset.aiId);
+      if (!draft) return;
+      pasteAndMaybeLog(draft.body, data);
+    });
+  });
   tray.querySelectorAll<HTMLButtonElement>(".psdmlp-scripts button").forEach((button) => {
     button.addEventListener("click", () => {
       const id = button.dataset.scriptId;
@@ -122,7 +135,7 @@ function renderAdvise(data: AdviseResponse): void {
 }
 
 function pasteAndMaybeLog(body: string, advise: AdviseResponse): void {
-  if (!window.__psdmlpCopilot?.pasteIntoCompose(body)) {
+  if (!getBus().pasteIntoCompose?.(body)) {
     renderEmpty("Compose box ไม่พร้อม — รอ IG โหลดแชทให้เสร็จก่อน");
     return;
   }
@@ -149,11 +162,23 @@ async function requestAdvise(snapshot: Snapshot): Promise<void> {
       undefined
     );
     if (!response || !response.ok) {
-      renderEmpty("token หายหรือหมดอายุ — ไปที่ popup ของ extension แล้วใส่ใหม่");
+      // Surface the server's reason verbatim; "unknown" vs "expired" vs
+      // "revoked" is the whole difference when a bearer stops working.
+      const reason =
+        (response?.data as { reason?: string } | null)?.reason ?? response?.error ?? "no_response";
+      console.warn("[copilot] advise rejected", response?.status, reason);
+      debugLog("error", "advise_rejected", { status: response?.status ?? 0, reason });
+      renderEmpty(`advise ${response?.status ?? 0}: ${reason} — เช็ค token ใน popup`);
       latestAdvise = null;
       return;
     }
     latestAdvise = response.data as AdviseResponse;
+    debugLog("info", "advise_ok", {
+      bucket: latestAdvise.bucket,
+      conversationId: latestAdvise.conversationId,
+      chips: latestAdvise.quickReplies.length,
+      scripts: latestAdvise.scripts.length,
+    });
     renderAdvise(latestAdvise);
   } catch (error) {
     renderEmpty(error instanceof Error ? error.message : "advise_failed");
@@ -163,26 +188,31 @@ async function requestAdvise(snapshot: Snapshot): Promise<void> {
   }
 }
 
-window.addEventListener("message", (event) => {
-  if (event.source !== window) return;
-  const data = event.data;
-  if (!data || data.source !== "psdmlp.copilot.instagram") return;
-  if (data.type === "snapshot") {
-    latestSnapshot = data.snapshot as Snapshot;
-    if (!latestSnapshot.username) {
-      renderEmpty("ยังหา username ของน้องไม่เจอ — รอ IG โหลด header ให้เสร็จ");
-      return;
-    }
-    if (!latestSnapshot.hasCompose) {
-      renderEmpty("IG compose ยังโหลดไม่เสร็จ — รอสักครู่");
-      return;
-    }
-    requestAdvise(latestSnapshot);
+function handleSnapshot(snapshot: Snapshot): void {
+  latestSnapshot = snapshot;
+  if (!snapshot.messages.length) {
+    debugLog("warn", "no_messages_parsed", { username: snapshot.username });
+    renderEmpty("ยังอ่านข้อความในแชทไม่ได้ — เลื่อนแชทขึ้นลงสักครั้ง");
+    return;
   }
-});
+  // A missing @handle is not fatal. The playbook runs off the messages; only
+  // the stored lead context and the outbound log need a matched conversation.
+  if (!snapshot.username) {
+    debugLog("warn", "no_username_advising_anyway", { messages: snapshot.messages.length });
+  }
+  requestAdvise(snapshot);
+}
 
-chrome.runtime.sendMessage({ type: "copilot.tokenStatus" }, (status: { ok: boolean; hasToken: boolean } | undefined) => {
-  if (!status?.hasToken) {
-    renderEmpty("ใส่ token ใน extension popup ก่อนเริ่มใช้งาน");
-  }
-});
+if (!getBus().ready.tray) {
+  getBus().ready.tray = true;
+  getBus().onSnapshot(handleSnapshot);
+  debugLog("info", "tray_content_script_loaded");
+  chrome.runtime.sendMessage(
+    { type: "copilot.tokenStatus" },
+    (status: { ok: boolean; hasToken: boolean } | undefined) => {
+      if (!status?.hasToken) {
+        renderEmpty("ใส่ token ใน extension popup ก่อนเริ่มใช้งาน");
+      }
+    }
+  );
+}

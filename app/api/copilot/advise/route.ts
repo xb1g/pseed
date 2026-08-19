@@ -41,6 +41,7 @@ import {
   type QuickReply,
 } from "@/lib/dm-leads/quick-replies";
 import { getMessagingWindowMode } from "@/lib/dm-leads/messaging-window";
+import { draftFromThread } from "@/lib/dm-leads/thread-advisor";
 
 interface RawMessage {
   direction: "inbound" | "outbound";
@@ -55,8 +56,12 @@ interface AdviseBody {
   partnerDisplayName?: string | null;
 }
 
-const ADVISE_REJECT = (reason: string, status = 401) =>
-  NextResponse.json({ ok: false, reason }, { status });
+const ADVISE_REJECT = (reason: string, status = 401) => {
+  // Auth failures are silent in the tray, so name the reason server-side.
+  // Only the non-secret prefix of the bearer is ever logged.
+  console.warn(`[copilot advise] rejected: ${reason}`);
+  return NextResponse.json({ ok: false, reason }, { status });
+};
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -197,6 +202,23 @@ export async function POST(request: NextRequest) {
   const windowMode = getMessagingWindowMode(signals.lastInboundMessageAt);
   const windowOpen = windowMode !== "closed";
 
+  // Free-form drafts read the actual conversation, so they can answer a
+  // question the ladder has no chip for. Additive: the deterministic chips
+  // above stand on their own if this returns nothing.
+  const aiDrafts = await draftFromThread({
+    messages,
+    bucketLabel: BUCKET_META[bucket].label,
+    coverageOffer: COVERAGE_OFFER[coverage],
+    coverage,
+    rung: BUCKET_NEXT_RUNG[bucket],
+    lead: {
+      displayName: conversation?.display_name ?? body.partnerDisplayName ?? null,
+      username: conversation?.username ?? username,
+      gradeLevel: conversation?.grade_level ?? null,
+      interests: conversation?.interests ?? [],
+    },
+  });
+
   await touchCopilotToken({ supabase: supabase as unknown as SupabaseUpdateClient, tokenId: verified.token.id });
   await supabase.from("dm_copilot_audit_log").insert({
     token_id: verified.token.id,
@@ -230,5 +252,6 @@ export async function POST(request: NextRequest) {
       tone: r.tone,
       body: r.body,
     })),
+    aiDrafts,
   });
 }

@@ -64,8 +64,31 @@ once per machine.
      again. The tray greys out the chips.
 3. Click a chip to paste its body into IG's compose box. Edit, then press send
    in IG.
+   Under the playbook chips sits **🤖 ตอบตามบทสนทนา**: drafts written from the
+   thread itself, for the questions the ladder has no chip for. They obey the
+   same guardrails (no invented dates, prices, or links) and disappear
+   silently when the model is unreachable.
+   The lead's @handle is optional. Without it the playbook still runs off the
+   messages; what you lose is stored lead context and the outbound log.
 4. `/api/copilot/log` writes the outbound to `dm_messages` so the playbook log
    in `/admin/dm-leads` stays correct.
+
+## Debugging: the DevTools panel
+
+Open DevTools on the Instagram tab → **DM Copilot** tab. It shows the whole
+pipeline in one place, which the tray cannot: API base, whether a token is
+stored, whether both content scripts loaded, the parsed path / username /
+message count / compose box, and the last advise result or rejection reason.
+
+- **Rescan thread** forces a fresh DOM read (IG mutates lazily).
+- **Test token** hits `/api/copilot/ping` and logs the reason on failure.
+- **Load full history** scrolls the thread back until IG stops rendering
+  older messages (IG virtualises the list, so only rendered bubbles exist),
+  then rescans. Capped at 25 passes / 20s.
+- **Clear log** empties the buffer.
+
+The buffer lives in `chrome.storage.session`, capped at 300 entries, and dies
+with the browser session. It holds metadata only, never message bodies.
 
 ## What it does NOT do
 

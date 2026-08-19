@@ -1,10 +1,13 @@
 /**
- * Server-only client for the tailnet Qwen chat-completions endpoint.
+ * Server-only client for the DM-drafting chat-completions endpoint.
  *
- * This host is an OpenAI-compatible llama.cpp server. Thinking must be
- * disabled (`chat_template_kwargs.enable_thinking: false`) or the model
- * spends its token budget on `reasoning_content` and returns an empty
- * `content` field.
+ * Any OpenAI-compatible host works; pick one with QWEN_BASE_URL /
+ * QWEN_API_KEY / QWEN_MODEL. The name is historical: the first host was a
+ * tailnet Qwen box, which is still the fallback default below.
+ *
+ * `chat_template_kwargs.enable_thinking: false` is required by llama.cpp
+ * hosts, which otherwise spend the token budget on `reasoning_content` and
+ * return an empty `content`. Gateways that do not know the field ignore it.
  */
 
 export const QWEN_DEFAULT_BASE_URL = "http://100.107.213.73:8765/v1";

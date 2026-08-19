@@ -1,0 +1,384 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" width="1000" height="700" role="img" aria-labelledby="title desc">
+  <title id="title">Animated chibi cat-eared character</title>
+  <desc id="desc">A stylized SVG chibi character with black-and-blue cat ears, big blue eyes, peace sign, laptop, tie, and swishing tail.</desc>
+
+  <defs>
+    <radialGradient id="skinGrad" cx="45%" cy="28%" r="80%">
+      <stop offset="0%" stop-color="#fff7f5"/>
+      <stop offset="55%" stop-color="#ffe9e8"/>
+      <stop offset="100%" stop-color="#ffd7df"/>
+    </radialGradient>
+
+    <linearGradient id="hairGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#59616b"/>
+      <stop offset="55%" stop-color="#424951"/>
+      <stop offset="100%" stop-color="#2e353d"/>
+    </linearGradient>
+
+    <linearGradient id="blueGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2674e6"/>
+      <stop offset="45%" stop-color="#145ec8"/>
+      <stop offset="100%" stop-color="#063f96"/>
+    </linearGradient>
+
+    <radialGradient id="eyeGrad" cx="50%" cy="74%" r="75%">
+      <stop offset="0%" stop-color="#6eb2ff"/>
+      <stop offset="40%" stop-color="#236fdb"/>
+      <stop offset="75%" stop-color="#0e56bd"/>
+      <stop offset="100%" stop-color="#063987"/>
+    </radialGradient>
+
+    <linearGradient id="shirtGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="70%" stop-color="#f4f6ff"/>
+      <stop offset="100%" stop-color="#c6cce0"/>
+    </linearGradient>
+
+    <linearGradient id="laptopGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4b535b"/>
+      <stop offset="100%" stop-color="#252b31"/>
+    </linearGradient>
+
+    <radialGradient id="blushGrad">
+      <stop offset="0%" stop-color="#ff9fb1" stop-opacity=".55"/>
+      <stop offset="100%" stop-color="#ff9fb1" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="flameGrad" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ff8b00"/>
+      <stop offset="55%" stop-color="#ffc22f"/>
+      <stop offset="100%" stop-color="#fff06e"/>
+    </linearGradient>
+
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="4" flood-color="#000" flood-opacity=".55"/>
+    </filter>
+
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <style>
+    :root {
+      --ink: #070700;
+    }
+
+    svg {
+      background: #000;
+    }
+
+    .ink {
+      stroke: var(--ink);
+      stroke-width: 9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .thinInk {
+      stroke: var(--ink);
+      stroke-width: 5.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .line {
+      fill: none;
+      stroke: var(--ink);
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    #character {
+      transform-origin: 700px 390px;
+      animation: bob 3.2s ease-in-out infinite;
+    }
+
+    #ears {
+      transform-origin: 735px 190px;
+      animation: earWiggle 3.2s ease-in-out infinite;
+    }
+
+    #tail {
+      transform-origin: 860px 500px;
+      animation: tailSwish 2.4s ease-in-out infinite;
+    }
+
+    #peace {
+      transform-origin: 470px 490px;
+      animation: wave 2.1s ease-in-out infinite;
+    }
+
+    #tie {
+      transform-origin: 720px 565px;
+      animation: tieSwing 3.3s ease-in-out infinite;
+    }
+
+    .eye {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: blink 5.2s ease-in-out infinite;
+    }
+
+    #laptopGlow {
+      animation: pulseGlow 1.8s ease-in-out infinite;
+    }
+
+    .sparkle {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: sparkle 2s ease-in-out infinite;
+    }
+
+    .sparkle:nth-of-type(2) {
+      animation-delay: .6s;
+    }
+
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    @keyframes earWiggle {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-1.6deg); }
+      70% { transform: rotate(1.8deg); }
+    }
+
+    @keyframes tailSwish {
+      0%, 100% { transform: rotate(-5deg); }
+      50% { transform: rotate(8deg); }
+    }
+
+    @keyframes wave {
+      0%, 100% { transform: rotate(-5deg) translateY(0); }
+      50% { transform: rotate(8deg) translateY(-5px); }
+    }
+
+    @keyframes tieSwing {
+      0%, 100% { transform: rotate(-2deg); }
+      50% { transform: rotate(3deg); }
+    }
+
+    @keyframes blink {
+      0%, 92%, 100% { transform: scaleY(1); }
+      95%, 97% { transform: scaleY(.08); }
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { opacity: .25; }
+      50% { opacity: .75; }
+    }
+
+    @keyframes sparkle {
+      0%, 100% { opacity: .1; transform: scale(.7) rotate(0deg); }
+      50% { opacity: 1; transform: scale(1.15) rotate(18deg); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #character, #ears, #tail, #peace, #tie, .eye, #laptopGlow, .sparkle {
+        animation: none;
+      }
+    }
+  </style>
+
+  <rect width="1000" height="700" fill="#000"/>
+
+  <g id="character" filter="url(#softShadow)">
+
+    <!-- Tail -->
+    <g id="tail">
+      <path d="M863 465 C934 495 930 583 890 633 C868 661 834 637 854 607 C887 557 892 517 858 494"
+            fill="none" stroke="#070700" stroke-width="37" stroke-linecap="round"/>
+      <path d="M863 465 C934 495 930 583 890 633 C868 661 834 637 854 607 C887 557 892 517 858 494"
+            fill="none" stroke="#3e464f" stroke-width="25" stroke-linecap="round"/>
+      <path d="M862 469 C900 494 906 558 877 599"
+            fill="none" stroke="#1b66d3" stroke-width="8" stroke-linecap="round" opacity=".75"/>
+      <ellipse cx="877" cy="585" rx="5" ry="3" fill="#242b32" transform="rotate(14 877 585)"/>
+      <ellipse cx="884" cy="596" rx="6" ry="3" fill="#242b32" transform="rotate(14 884 596)"/>
+    </g>
+
+    <!-- Back blue hair -->
+    <path d="M790 480 C850 500 899 555 909 622 C874 612 855 586 848 557 C841 605 817 639 784 656 C796 597 775 535 790 480Z"
+          fill="url(#blueGrad)" class="ink"/>
+    <path d="M818 500 C850 529 866 575 860 621" class="line" opacity=".8"/>
+
+    <!-- Cat ears -->
+    <g id="ears">
+      <path d="M531 292 C518 223 539 113 581 84 C621 56 704 120 758 190 C696 197 604 239 531 292Z"
+            fill="url(#hairGrad)" class="ink"/>
+      <path d="M561 246 C554 194 568 128 592 111 C619 93 681 139 719 180 C662 187 604 216 561 246Z"
+            fill="url(#blueGrad)" class="thinInk"/>
+      <path d="M584 231 C592 190 616 159 652 147" class="line" opacity=".45"/>
+
+      <path d="M735 250 C765 166 870 78 931 65 C970 82 994 180 968 271 C904 235 816 228 735 250Z"
+            fill="url(#hairGrad)" class="ink"/>
+      <path d="M773 224 C810 163 884 97 923 91 C948 106 964 183 947 241 C900 219 836 214 773 224Z"
+            fill="url(#blueGrad)" class="thinInk"/>
+      <path d="M801 218 C833 164 878 128 916 119" class="line" opacity=".38"/>
+    </g>
+
+    <!-- Body -->
+    <g id="body">
+      <path d="M612 535 C562 579 552 651 606 682 C669 718 823 714 873 660 C893 607 854 544 803 526 C761 561 674 562 632 528 Z"
+            fill="url(#shirtGrad)" class="ink"/>
+
+      <path d="M760 541 C814 570 843 623 845 682 C875 663 886 621 863 578 C849 550 828 533 803 526 C790 536 776 541 760 541Z"
+            fill="#b7bed7" opacity=".5"/>
+
+      <path d="M638 536 L718 591 L672 628 L602 565 Z"
+            fill="#ffffff" class="thinInk"/>
+      <path d="M802 532 L725 591 L766 630 L838 564 Z"
+            fill="#ffffff" class="thinInk"/>
+
+      <g id="tie">
+        <path d="M707 587 L737 587 L747 617 L720 636 L694 617 Z"
+              fill="url(#blueGrad)" class="thinInk"/>
+        <path d="M720 633 L753 681 L724 697 L693 681 Z"
+              fill="url(#blueGrad)" class="thinInk"/>
+      </g>
+
+      <path d="M643 654 C688 674 765 675 820 651" class="thinInk" fill="none" opacity=".25"/>
+    </g>
+
+    <!-- Laptop -->
+    <g id="laptop">
+      <path d="M420 515 L648 594 L634 686 L414 609 Z"
+            fill="url(#laptopGrad)" class="ink"/>
+      <path d="M648 594 L664 604 L651 692 L634 686 Z"
+            fill="#171b20" class="thinInk"/>
+      <path d="M453 540 L616 598 L607 653 L446 599 Z"
+            fill="#5b646d" opacity=".22"/>
+      <path id="laptopGlow" d="M449 537 L620 598"
+            stroke="#7eaaff" stroke-width="8" stroke-linecap="round" opacity=".3" filter="url(#glow)"/>
+
+      <!-- Fire sticker -->
+      <g transform="translate(493 585) rotate(13)">
+        <path d="M2 53 C-18 30 -7 4 13 -13 C12 5 24 -9 32 -27 C37 -8 59 -4 63 -28 C82 -3 68 11 85 7 C78 25 88 38 71 55 C52 75 20 75 2 53Z"
+              fill="url(#flameGrad)" class="thinInk"/>
+        <ellipse cx="39" cy="40" rx="35" ry="27" fill="#15191d" class="thinInk"/>
+        <circle cx="23" cy="35" r="10" fill="#fff"/>
+        <circle cx="55" cy="43" r="10" fill="#fff"/>
+        <circle cx="26" cy="37" r="3.8" fill="#070700"/>
+        <circle cx="52" cy="41" r="3.8" fill="#070700"/>
+      </g>
+    </g>
+
+    <!-- Head and face -->
+    <g id="head">
+      <!-- Human ear right -->
+      <path d="M913 382 C948 360 984 394 976 438 C968 482 929 489 907 457"
+            fill="url(#skinGrad)" class="ink"/>
+      <path d="M946 423 L965 442 M965 423 L946 442" class="line" stroke-width="7"/>
+
+      <!-- Face -->
+      <path d="M512 398 C508 304 575 239 706 237 C842 235 931 303 938 411 C946 539 850 591 708 591 C577 591 514 523 512 398Z"
+            fill="url(#skinGrad)" class="ink"/>
+
+      <!-- Cheeks -->
+      <ellipse cx="625" cy="524" rx="45" ry="31" fill="url(#blushGrad)"/>
+      <ellipse cx="836" cy="524" rx="48" ry="31" fill="url(#blushGrad)"/>
+
+      <!-- Hair cap -->
+      <g id="hair">
+        <path d="M512 389 C505 303 531 228 584 188 C626 157 680 190 733 245 C752 207 811 168 872 169 C856 202 826 250 803 306 C875 293 938 326 966 386 C942 374 918 377 900 392 C939 431 936 506 890 555 C879 514 850 485 815 480 C789 520 752 532 721 501 C688 537 635 520 606 560 C596 515 544 509 521 465 C514 443 509 415 512 389Z"
+              fill="url(#hairGrad)" class="ink"/>
+
+        <!-- Blue hair shapes -->
+        <path d="M533 402 C529 330 544 255 582 216 C589 277 624 306 622 348 C584 341 558 363 533 402Z"
+              fill="url(#blueGrad)" opacity=".95"/>
+        <path d="M682 353 C717 391 760 462 802 493 C778 512 748 508 722 481 C692 451 671 403 682 353Z"
+              fill="url(#blueGrad)" opacity=".95"/>
+        <path d="M803 308 C858 306 920 334 946 387 C921 378 891 382 858 407 C856 454 839 502 809 531 C789 473 769 416 780 365 C784 342 791 323 803 308Z"
+              fill="url(#blueGrad)" opacity=".95"/>
+        <path d="M520 446 C541 498 570 528 606 560 C593 558 572 543 554 520 C545 555 534 583 514 599 C511 539 503 492 520 446Z"
+              fill="#2f363e" class="thinInk"/>
+
+        <!-- Light patches on hair -->
+        <ellipse cx="642" cy="306" rx="34" ry="12" fill="#a9bbd5" opacity=".75" transform="rotate(-16 642 306)"/>
+        <ellipse cx="702" cy="315" rx="12" ry="7" fill="#a9bbd5" opacity=".7" transform="rotate(28 702 315)"/>
+        <ellipse cx="744" cy="450" rx="17" ry="57" fill="#b6cae8" opacity=".9" transform="rotate(-5 744 450)"/>
+        <ellipse cx="696" cy="440" rx="10" ry="36" fill="#b6cae8" opacity=".85" transform="rotate(8 696 440)"/>
+        <ellipse cx="782" cy="440" rx="10" ry="35" fill="#b6cae8" opacity=".7" transform="rotate(-8 782 440)"/>
+        <ellipse cx="611" cy="444" rx="42" ry="17" fill="#b6cae8" opacity=".75" transform="rotate(-25 611 444)"/>
+
+        <!-- Hair detail strokes -->
+        <path d="M523 389 C553 341 598 340 628 385 C651 420 650 452 641 475" class="line"/>
+        <path d="M553 477 C596 438 653 400 713 383" class="line"/>
+        <path d="M740 381 C768 335 812 312 858 302" class="line"/>
+        <path d="M829 373 C878 360 923 369 957 392" class="line"/>
+        <path d="M898 397 C933 427 951 466 960 514" class="line"/>
+      </g>
+
+      <!-- Eyes -->
+      <g id="leftEye" class="eye">
+        <path d="M590 410 C598 361 638 338 676 369 C704 392 706 473 677 513 C653 543 608 533 591 497 C579 469 578 438 590 410Z"
+              fill="url(#eyeGrad)" class="ink"/>
+        <ellipse cx="636" cy="498" rx="32" ry="24" fill="#67aaff" opacity=".75"/>
+        <ellipse cx="628" cy="393" rx="13" ry="25" fill="#9bc7ff" opacity=".8" transform="rotate(12 628 393)"/>
+        <path d="M591 410 C605 355 652 338 683 377"
+              fill="none" stroke="#050500" stroke-width="11" stroke-linecap="round"/>
+      </g>
+
+      <g id="rightEye" class="eye">
+        <path d="M760 404 C783 353 849 348 878 397 C908 449 890 529 836 539 C789 548 748 501 750 448 C751 431 754 416 760 404Z"
+              fill="url(#eyeGrad)" class="ink"/>
+        <ellipse cx="833" cy="504" rx="41" ry="28" fill="#67aaff" opacity=".78"/>
+        <ellipse cx="820" cy="387" rx="15" ry="31" fill="#9bc7ff" opacity=".65" transform="rotate(12 820 387)"/>
+        <path d="M760 405 C785 352 849 344 884 396"
+              fill="none" stroke="#050500" stroke-width="12" stroke-linecap="round"/>
+      </g>
+
+      <!-- Small brows / cheek marks -->
+      <path d="M574 505 C579 503 584 503 589 506" class="line" stroke-width="5"/>
+      <path d="M872 506 C878 503 884 504 889 508" class="line" stroke-width="5"/>
+      <path d="M590 516 C583 517 579 520 577 524" class="line" stroke-width="5"/>
+      <path d="M896 520 C902 522 906 526 909 532" class="line" stroke-width="5"/>
+
+      <!-- Mouth -->
+      <path d="M701 525 C712 537 730 537 739 525 C745 539 769 538 781 526"
+            fill="none" stroke="#070700" stroke-width="6" stroke-linecap="round"/>
+
+      <!-- Face shine dots -->
+      <circle cx="583" cy="533" r="6" fill="#fff" opacity=".9"/>
+      <circle cx="858" cy="533" r="7" fill="#fff" opacity=".8"/>
+    </g>
+
+    <!-- Peace hand -->
+    <g id="peace">
+      <path d="M462 516 C443 503 427 482 416 453 C402 418 414 409 428 430 C437 445 445 460 454 460 C451 428 432 374 448 367 C468 359 477 427 481 452 C488 424 493 364 511 366 C532 369 518 433 508 461 C525 447 541 424 555 433 C569 441 537 479 515 498 C500 517 480 526 462 516Z"
+            fill="url(#skinGrad)" class="ink"/>
+      <path d="M481 452 C478 426 472 394 464 377" class="line" stroke-width="5.5"/>
+      <path d="M508 461 C515 432 520 397 514 377" class="line" stroke-width="5.5"/>
+      <path d="M454 461 C439 462 428 443 421 430" class="line" stroke-width="5.5"/>
+      <path d="M505 493 C491 495 481 488 476 477" class="line" stroke-width="5.5"/>
+      <path d="M432 420 C441 430 446 443 451 455" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".65"/>
+      <ellipse cx="455" cy="497" rx="16" ry="23" fill="#f5bdd0" opacity=".35" transform="rotate(-20 455 497)"/>
+    </g>
+
+    <!-- Front hand holding tie -->
+    <g id="frontHand">
+      <path d="M710 623 C736 615 755 638 749 665 C743 693 713 699 691 680 C670 661 679 630 710 623Z"
+            fill="url(#skinGrad)" class="ink"/>
+      <path d="M701 637 C713 645 724 653 733 664" class="line" stroke-width="5.5"/>
+      <path d="M690 652 C701 660 710 669 718 682" class="line" stroke-width="5.5"/>
+    </g>
+
+    <!-- Tiny animated sparkles -->
+    <g class="sparkle" opacity=".8">
+      <path d="M875 313 L881 326 L895 332 L881 338 L875 352 L869 338 L855 332 L869 326 Z"
+            fill="#2a79ea"/>
+    </g>
+
+    <g class="sparkle" opacity=".8">
+      <path d="M566 300 L570 309 L580 313 L570 317 L566 327 L562 317 L552 313 L562 309 Z"
+            fill="#2a79ea"/>
+    </g>
+
+  </g>
+</svg>

@@ -14,7 +14,17 @@ const STORAGE_KEY_TOKEN = "psdmlp.copilot.token";
 const STORAGE_KEY_API = "psdmlp.copilot.apiBase";
 const DEFAULT_API_BASE = "https://www.passionseed.org";
 
-type ApiPath = "/api/copilot/advise" | "/api/copilot/log";
+/**
+ * The API base must be https in production. We also allow a loopback origin so
+ * the extension can be pointed at `pnpm dev` before the routes ship.
+ */
+function isAllowedApiBase(value: string): boolean {
+  if (value.startsWith("https://")) return true;
+  return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(value.replace(/\/$/, ""));
+}
+
+
+type ApiPath = "/api/copilot/advise" | "/api/copilot/log" | "/api/copilot/ping";
 
 interface ApiResult<T> {
   ok: boolean;
@@ -27,7 +37,7 @@ async function getConfig(): Promise<{ token: string; apiBase: string }> {
   const stored = await chrome.storage.local.get([STORAGE_KEY_TOKEN, STORAGE_KEY_API]);
   const token = typeof stored[STORAGE_KEY_TOKEN] === "string" ? stored[STORAGE_KEY_TOKEN] : "";
   const apiBase =
-    typeof stored[STORAGE_KEY_API] === "string" && stored[STORAGE_KEY_API].startsWith("https://")
+    typeof stored[STORAGE_KEY_API] === "string" && isAllowedApiBase(stored[STORAGE_KEY_API])
       ? stored[STORAGE_KEY_API]
       : DEFAULT_API_BASE;
   return { token, apiBase };
@@ -38,14 +48,15 @@ export async function apiCall<T>(path: ApiPath, body: unknown): Promise<ApiResul
   if (!token) {
     return { ok: false, status: 401, data: null, error: "missing_token" };
   }
+  // `ping` is a GET probe; the other two post a payload.
+  const isProbe = path === "/api/copilot/ping";
   try {
     const res = await fetch(`${apiBase}${path}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(body),
+      method: isProbe ? "GET" : "POST",
+      headers: isProbe
+        ? { Authorization: `Bearer ${token}` }
+        : { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: isProbe ? undefined : JSON.stringify(body),
       credentials: "omit",
     });
     let payload: T | null = null;
@@ -65,6 +76,62 @@ export async function apiCall<T>(path: ApiPath, body: unknown): Promise<ApiResul
   }
 }
 
+/**
+ * Ring buffer of debug events for the DevTools panel.
+ *
+ * MV3 workers are killed between events, so the buffer lives in
+ * `chrome.storage.session` — it survives worker restarts but dies with the
+ * browser session, which is exactly right for debug output containing DM
+ * metadata.
+ */
+const DEBUG_KEY = "psdmlp.copilot.debug";
+const DEBUG_CAP = 300;
+
+interface DebugEntry {
+  at: string;
+  level: "info" | "warn" | "error";
+  event: string;
+  detail: unknown;
+  url?: string;
+  tabId?: number;
+}
+
+async function pushDebug(entry: DebugEntry): Promise<void> {
+  const stored = await chrome.storage.session.get([DEBUG_KEY]);
+  const log: DebugEntry[] = Array.isArray(stored[DEBUG_KEY]) ? stored[DEBUG_KEY] : [];
+  log.push(entry);
+  await chrome.storage.session.set({ [DEBUG_KEY]: log.slice(-DEBUG_CAP) });
+}
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg?.type === "copilot.debug" && msg.entry) {
+    // A content script knows its tab from the sender; the DevTools panel has
+    // to tell us, so only override when the sender actually is a tab.
+    const entry = msg.entry as DebugEntry;
+    pushDebug(sender.tab?.id === undefined ? entry : { ...entry, tabId: sender.tab.id }).then(() =>
+      sendResponse({ ok: true })
+    );
+    return true;
+  }
+  if (msg?.type === "copilot.debugRead") {
+    chrome.storage.session.get([DEBUG_KEY]).then((stored) => {
+      sendResponse({ ok: true, log: Array.isArray(stored[DEBUG_KEY]) ? stored[DEBUG_KEY] : [] });
+    });
+    return true;
+  }
+  if (msg?.type === "copilot.debugClear") {
+    chrome.storage.session.remove([DEBUG_KEY]).then(() => sendResponse({ ok: true }));
+    return true;
+  }
+  if (msg?.type === "copilot.config") {
+    getConfig().then(({ token, apiBase }) =>
+      sendResponse({ ok: true, apiBase, hasToken: token.startsWith("psdmlp_"), tokenLength: token.length })
+    );
+    return true;
+  }
+  return false;
+});
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (!msg || typeof msg !== "object") return false;
   if (msg.type === "copilot.advise") {
@@ -73,6 +140,10 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   }
   if (msg.type === "copilot.log") {
     apiCall("/api/copilot/log", msg.body).then(sendResponse);
+    return true;
+  }
+  if (msg.type === "copilot.ping") {
+    apiCall("/api/copilot/ping", null).then(sendResponse);
     return true;
   }
   if (msg.type === "copilot.tokenStatus") {

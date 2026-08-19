@@ -1,0 +1,520 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="100%" height="100%" role="img" aria-labelledby="title desc">
+  <title id="title">Animated chibi blue cat character</title>
+  <desc id="desc">A chibi cat-eared character with blue eyes, gray and blue hair, a peace sign, laptop, tie, and swishing tail.</desc>
+
+  <defs>
+    <linearGradient id="hairGrad" x1="760" y1="240" x2="1240" y2="720" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#56606b"/>
+      <stop offset="0.45" stop-color="#3f4751"/>
+      <stop offset="1" stop-color="#252c34"/>
+    </linearGradient>
+
+    <linearGradient id="blueGrad" x1="770" y1="250" x2="1320" y2="820" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2c82ff"/>
+      <stop offset="0.5" stop-color="#1668d5"/>
+      <stop offset="1" stop-color="#0647a9"/>
+    </linearGradient>
+
+    <linearGradient id="eyeGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#003d9f"/>
+      <stop offset="0.52" stop-color="#1165d4"/>
+      <stop offset="1" stop-color="#77b8ff"/>
+    </linearGradient>
+
+    <radialGradient id="skinGrad" cx="50%" cy="38%" r="76%">
+      <stop offset="0" stop-color="#fffdfb"/>
+      <stop offset="0.78" stop-color="#fff5f2"/>
+      <stop offset="1" stop-color="#ffd6dc"/>
+    </radialGradient>
+
+    <radialGradient id="blushGrad">
+      <stop offset="0" stop-color="#ff9db8" stop-opacity="0.85"/>
+      <stop offset="0.72" stop-color="#ffb9c8" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#ffb9c8" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="shirtGrad" x1="930" y1="650" x2="1240" y2="940" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.72" stop-color="#f8f9ff"/>
+      <stop offset="1" stop-color="#c6cdea"/>
+    </linearGradient>
+
+    <linearGradient id="metalGrad" x1="670" y1="700" x2="940" y2="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#555e66"/>
+      <stop offset="1" stop-color="#2f363d"/>
+    </linearGradient>
+
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+  </defs>
+
+  <style>
+    .ink {
+      stroke: #070704;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .thick { stroke-width: 12; }
+    .med { stroke-width: 7; }
+    .thin { stroke-width: 4.5; }
+    .nofill { fill: none; }
+
+    .eye {
+      transform-box: fill-box;
+      transform-origin: 50% 55%;
+      animation: blink 5s infinite;
+    }
+
+    @keyframes blink {
+      0%, 90%, 100% { transform: scaleY(1); }
+      93%, 95% { transform: scaleY(0.08); }
+    }
+
+    .glint {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: glint 2.6s ease-in-out infinite;
+    }
+
+    @keyframes glint {
+      0%, 100% { opacity: .78; transform: translate(0,0) scale(1); }
+      50% { opacity: .35; transform: translate(-3px,-4px) scale(1.12); }
+    }
+
+    .blush {
+      animation: blushPulse 3.2s ease-in-out infinite;
+    }
+
+    @keyframes blushPulse {
+      0%, 100% { opacity: .55; }
+      50% { opacity: .82; }
+    }
+  </style>
+
+  <!-- Background: remove this rect for transparency -->
+  <rect width="1600" height="900" fill="#000"/>
+
+  <g id="character">
+    <animateTransform
+      attributeName="transform"
+      type="translate"
+      values="0 4; 0 -7; 0 4"
+      dur="3.1s"
+      repeatCount="indefinite"/>
+
+    <!-- Tail behind character -->
+    <g id="tail">
+      <animateTransform
+        attributeName="transform"
+        type="rotate"
+        values="-5 1300 760; 7 1300 760; -5 1300 760"
+        dur="3.4s"
+        repeatCount="indefinite"/>
+      <path class="ink thick" fill="#444b54"
+        d="M1242 724
+           C1327 687 1369 619 1341 558
+           C1322 515 1275 511 1250 543
+           C1218 584 1249 626 1304 645
+           C1405 680 1483 777 1451 854
+           C1424 921 1344 927 1308 877
+           C1295 858 1291 835 1301 810
+           C1335 827 1373 807 1380 772
+           C1388 737 1356 705 1317 710
+           C1288 713 1265 720 1242 724 Z"/>
+      <path fill="#246fe0" opacity="0.9"
+        d="M1324 533
+           C1358 560 1373 595 1360 628
+           C1331 612 1301 596 1283 577
+           C1264 556 1295 516 1324 533 Z"/>
+      <path fill="#252c33" opacity="0.55"
+        d="M1365 672
+           C1412 710 1456 781 1430 844
+           C1412 890 1360 905 1330 881
+           C1377 875 1412 839 1410 790
+           C1408 742 1387 702 1365 672 Z"/>
+      <path class="ink med nofill"
+        d="M1304 811 C1332 825 1369 811 1380 772"/>
+      <ellipse cx="1418" cy="830" rx="9" ry="5" fill="#262d35"/>
+      <ellipse cx="1422" cy="848" rx="7" ry="4" fill="#262d35"/>
+    </g>
+
+    <!-- Back blue hair locks -->
+    <g id="back-hair">
+      <path class="ink thick" fill="url(#blueGrad)"
+        d="M823 572
+           C764 634 724 720 719 799
+           C749 775 784 736 818 694
+           C814 747 836 803 884 829
+           C866 737 877 649 921 586 Z"/>
+      <path class="ink thick" fill="url(#blueGrad)"
+        d="M1188 586
+           C1270 628 1342 699 1389 773
+           C1338 761 1286 725 1249 685
+           C1260 744 1254 807 1218 846
+           C1209 749 1179 663 1137 609 Z"/>
+    </g>
+
+    <!-- Torso base -->
+    <g id="torso-base">
+      <path class="ink thick" fill="url(#shirtGrad)"
+        d="M896 673
+           C842 717 820 842 861 890
+           C916 957 1232 960 1292 889
+           C1335 838 1301 718 1242 675
+           C1195 641 946 642 896 673 Z"/>
+      <path fill="#cdd5ee" opacity="0.65"
+        d="M1135 704
+           C1215 762 1246 835 1238 913
+           C1291 893 1310 833 1296 778
+           C1284 728 1244 689 1196 667
+           C1174 673 1153 686 1135 704 Z"/>
+      <path fill="#d9def1" opacity="0.6"
+        d="M890 792 C920 850 1003 890 1085 900 L864 900 C829 860 839 815 890 792 Z"/>
+    </g>
+
+    <!-- Cat ears -->
+    <g id="cat-ears">
+      <g id="left-cat-ear">
+        <animateTransform
+          attributeName="transform"
+          type="rotate"
+          values="0 860 430; -8 860 430; 3 860 430; 0 860 430"
+          keyTimes="0; .08; .15; 1"
+          dur="4.2s"
+          repeatCount="indefinite"/>
+        <path class="ink thick" fill="url(#hairGrad)"
+          d="M765 449
+             C756 371 771 279 810 227
+             C835 195 875 198 922 221
+             C974 246 1058 292 1117 351
+             C1012 342 922 378 843 457
+             C813 488 779 486 765 449 Z"/>
+        <path fill="url(#blueGrad)"
+          d="M781 379
+             C792 301 816 243 850 227
+             C892 209 1005 283 1076 333
+             C1025 315 944 290 903 291
+             C938 330 930 358 902 356
+             C862 354 829 332 781 379 Z"/>
+        <path fill="#303841" opacity="0.65"
+          d="M806 423
+             C803 357 825 287 858 261
+             C894 281 963 323 1021 363
+             C954 371 896 394 846 444 Z"/>
+      </g>
+
+      <g id="right-cat-ear">
+        <animateTransform
+          attributeName="transform"
+          type="rotate"
+          values="0 1160 420; 6 1160 420; -2 1160 420; 0 1160 420"
+          keyTimes="0; .1; .18; 1"
+          dur="4.9s"
+          repeatCount="indefinite"/>
+        <path class="ink thick" fill="url(#hairGrad)"
+          d="M1086 410
+             C1122 302 1232 192 1350 165
+             C1374 160 1430 274 1448 374
+             C1462 451 1448 492 1424 492
+             C1322 467 1218 420 1111 463
+             C1081 475 1072 453 1086 410 Z"/>
+        <path fill="url(#blueGrad)"
+          d="M1130 366
+             C1186 267 1273 210 1349 192
+             C1381 228 1410 302 1427 367
+             C1370 353 1308 354 1258 377
+             C1211 399 1165 419 1111 451
+             C1117 420 1123 390 1130 366 Z"/>
+        <path fill="#373f49" opacity="0.8"
+          d="M1165 408
+             C1216 315 1288 254 1354 239
+             C1381 274 1410 340 1420 405
+             C1332 394 1239 398 1165 408 Z"/>
+        <path fill="#1b6fdc"
+          d="M1274 390
+             C1320 400 1374 418 1424 443
+             C1423 463 1417 476 1405 479
+             C1353 464 1305 438 1274 390 Z"/>
+      </g>
+    </g>
+
+    <!-- Head / face base -->
+    <path class="ink thick" fill="url(#skinGrad)"
+      d="M782 470
+         C750 534 759 640 816 693
+         C896 765 1114 758 1225 704
+         C1288 674 1315 616 1304 543
+         C1289 440 1182 356 1035 350
+         C906 345 821 388 782 470 Z"/>
+
+    <!-- Right human ear -->
+    <g id="human-ear">
+      <path class="ink thick" fill="url(#skinGrad)"
+        d="M1269 509
+           C1312 497 1349 535 1343 588
+           C1338 636 1295 664 1258 641
+           C1232 626 1239 527 1269 509 Z"/>
+      <path fill="#ffd2dc" opacity="0.75"
+        d="M1284 533
+           C1307 535 1323 557 1320 583
+           C1317 607 1295 624 1272 616
+           C1289 600 1292 570 1284 533 Z"/>
+      <path class="ink thin nofill"
+        d="M1304 562 L1267 598 M1269 562 L1301 596"/>
+    </g>
+
+    <!-- Hair cap -->
+    <g id="hair-main">
+      <path class="ink thick" fill="url(#hairGrad)"
+        d="M770 535
+           C746 468 783 381 856 341
+           C946 293 1068 315 1173 362
+           C1261 402 1310 469 1322 545
+           C1284 514 1228 501 1188 511
+           C1231 537 1255 570 1255 611
+           C1199 584 1161 552 1101 536
+           C1130 580 1118 628 1092 647
+           C1056 623 1031 586 1007 549
+           C993 605 968 655 925 676
+           C923 629 901 577 861 542
+           C836 583 804 622 778 655
+           C781 610 779 570 770 535 Z"/>
+
+      <path fill="url(#blueGrad)"
+        d="M806 406
+           C819 351 859 320 909 321
+           C984 323 1083 365 1151 420
+           C1079 397 997 387 938 413
+           C967 450 945 479 914 470
+           C875 459 850 431 806 406 Z"/>
+
+      <path fill="url(#blueGrad)"
+        d="M1196 508
+           C1250 521 1292 558 1312 609
+           C1268 587 1222 575 1184 577
+           C1204 558 1208 533 1196 508 Z"/>
+
+      <path fill="#aebfda" opacity="0.78"
+        d="M844 445
+           C883 410 969 407 1024 427
+           C985 451 954 486 906 490
+           C865 494 838 476 844 445 Z"/>
+
+      <path fill="#aebfda" opacity="0.78"
+        d="M985 445
+           C1018 469 1037 527 1027 581
+           C1002 553 982 505 985 445 Z"/>
+
+      <path fill="#aebfda" opacity="0.75"
+        d="M1080 435
+           C1132 435 1191 460 1222 500
+           C1172 493 1125 476 1080 435 Z"/>
+
+      <path fill="#aebfda" opacity="0.72"
+        d="M881 545
+           C924 535 963 547 981 572
+           C958 597 914 605 877 590
+           C852 579 853 552 881 545 Z"/>
+
+      <path class="ink med nofill" opacity="0.65"
+        d="M837 384 C900 397 956 434 989 486"/>
+      <path class="ink med nofill" opacity="0.65"
+        d="M1130 455 C1185 468 1234 491 1280 535"/>
+      <path class="ink med nofill" opacity="0.65"
+        d="M839 548 C812 584 795 615 779 655"/>
+    </g>
+
+    <!-- Blush under eyes -->
+    <ellipse class="blush" cx="882" cy="682" rx="71" ry="45" fill="url(#blushGrad)" filter="url(#soft)"/>
+    <ellipse class="blush" cx="1174" cy="682" rx="75" ry="46" fill="url(#blushGrad)" filter="url(#soft)"/>
+
+    <!-- Eyes -->
+    <g id="face">
+      <g class="eye" id="left-eye">
+        <path class="ink thick" fill="url(#eyeGrad)"
+          d="M861 516
+             C824 547 812 638 845 678
+             C873 712 936 708 958 653
+             C983 590 926 490 861 516 Z"/>
+        <ellipse cx="913" cy="660" rx="55" ry="32" fill="#5fa9ff" opacity="0.55"/>
+        <ellipse class="glint" cx="896" cy="572" rx="13" ry="35" fill="#9ccfff" opacity="0.75"
+          transform="rotate(14 896 572)"/>
+        <circle class="glint" cx="916" cy="649" r="13" fill="#8cc6ff" opacity="0.55"/>
+      </g>
+
+      <g class="eye" id="right-eye">
+        <path class="ink thick" fill="url(#eyeGrad)"
+          d="M1118 504
+             C1077 535 1065 640 1101 680
+             C1138 720 1222 710 1247 636
+             C1274 552 1190 460 1118 504 Z"/>
+        <ellipse cx="1189" cy="656" rx="67" ry="35" fill="#65aaff" opacity="0.55"/>
+        <ellipse class="glint" cx="1152" cy="560" rx="16" ry="47" fill="#9dcfff" opacity="0.7"
+          transform="rotate(16 1152 560)"/>
+        <circle class="glint" cx="1195" cy="639" r="17" fill="#8dc8ff" opacity="0.55"/>
+      </g>
+
+      <path class="ink med nofill"
+        d="M838 515 C878 493 930 511 964 552"/>
+      <path class="ink med nofill"
+        d="M1082 522 C1131 482 1211 491 1256 545"/>
+
+      <path class="ink med nofill"
+        d="M978 691
+           C991 705 1012 705 1024 690
+           C1038 704 1062 699 1071 686"/>
+
+      <path class="ink thin nofill" d="M848 667 C858 661 867 663 872 670"/>
+      <path class="ink thin nofill" d="M1229 667 C1240 661 1249 664 1253 672"/>
+      <circle cx="847" cy="690" r="7" fill="#fff" opacity="0.95"/>
+      <circle cx="1227" cy="692" r="7" fill="#fff" opacity="0.95"/>
+    </g>
+
+    <!-- Front bangs, including blue central lock -->
+    <g id="front-bangs">
+      <path class="ink thick" fill="url(#blueGrad)"
+        d="M1018 524
+           C1050 589 1094 630 1144 646
+           C1107 695 1030 667 996 596
+           C978 558 988 532 1018 524 Z"/>
+      <path class="ink thick" fill="#2d353e"
+        d="M817 535
+           C786 568 767 617 759 665
+           C794 633 828 589 858 546
+           C843 539 831 535 817 535 Z"/>
+      <path class="ink thick" fill="#2b333c"
+        d="M1257 565
+           C1294 611 1314 668 1309 719
+           C1282 682 1248 638 1210 606
+           C1223 583 1238 570 1257 565 Z"/>
+      <path class="ink med nofill" opacity="0.65"
+        d="M972 520 C990 572 1020 617 1064 645"/>
+      <path class="ink med nofill" opacity="0.65"
+        d="M1178 576 C1210 599 1235 631 1255 668"/>
+    </g>
+
+    <!-- Collar and tie -->
+    <g id="collar-tie">
+      <path class="ink thick" fill="#ffffff"
+        d="M913 707 L1005 735 L970 796 L884 738 Z"/>
+      <path class="ink thick" fill="#ffffff"
+        d="M1125 706 L1054 736 L1106 798 L1201 736 Z"/>
+      <path fill="#d5dced" opacity="0.9"
+        d="M1005 735 L1030 760 L970 796 Z"/>
+      <path fill="#d5dced" opacity="0.9"
+        d="M1054 736 L1030 760 L1106 798 Z"/>
+      <path class="ink thick" fill="url(#blueGrad)"
+        d="M1017 746 L1070 746 L1087 868 L1034 886 L994 805 Z"/>
+      <path class="ink med nofill"
+        d="M1017 746 C1033 763 1054 764 1070 746"/>
+      <path class="ink med nofill"
+        d="M977 796 L930 870"/>
+      <path class="ink med nofill"
+        d="M1106 798 L1158 870"/>
+    </g>
+
+    <!-- Laptop / tablet -->
+    <g id="laptop">
+      <path class="ink thick" fill="url(#metalGrad)"
+        d="M679 709 L946 805 L923 891 L670 800 Z"/>
+      <path fill="#2f363d" opacity="0.65"
+        d="M699 733 L921 811 L905 865 L696 791 Z"/>
+      <path class="ink med nofill"
+        d="M679 709 L946 805"/>
+      <path fill="#1f252b" opacity="0.35"
+        d="M814 825 L923 891 L920 850 Z"/>
+
+      <g transform="translate(803 804) rotate(18)">
+        <g>
+          <animateTransform
+            attributeName="transform"
+            type="scale"
+            values="1; 1.08; .98; 1.04; 1"
+            dur=".72s"
+            repeatCount="indefinite"/>
+          <path class="ink med" fill="#ffc022"
+            d="M-45 22
+               C-61 -11 -42 -39 -18 -45
+               C-14 -67 11 -58 8 -31
+               C25 -48 51 -27 42 -2
+               C62 7 52 39 24 48
+               C-4 58 -33 48 -45 22 Z"/>
+          <path fill="#ff9418"
+            d="M-30 23
+               C-39 4 -27 -15 -10 -21
+               C-8 -37 11 -34 9 -15
+               C20 -26 36 -13 31 5
+               C42 15 32 35 12 40
+               C-7 45 -23 38 -30 23 Z"/>
+          <circle class="ink med" cx="0" cy="8" r="28" fill="#171b20"/>
+          <circle cx="-10" cy="4" r="6" fill="#fff"/>
+          <circle cx="13" cy="12" r="7" fill="#fff"/>
+          <circle cx="-8" cy="6" r="2.6" fill="#070704"/>
+          <circle cx="12" cy="14" r="2.8" fill="#070704"/>
+        </g>
+      </g>
+    </g>
+
+    <!-- Small front fist holding tie -->
+    <g id="front-fist">
+      <path class="ink thick" fill="url(#skinGrad)"
+        d="M1037 786
+           C1001 791 988 829 1015 859
+           C1043 887 1098 876 1110 836
+           C1122 799 1081 778 1037 786 Z"/>
+      <path class="ink thin nofill"
+        d="M1018 815 C1035 835 1060 846 1087 844"/>
+      <path class="ink thin nofill"
+        d="M1034 800 C1047 814 1066 822 1088 823"/>
+    </g>
+
+    <!-- Peace sign hand -->
+    <g id="peace-hand">
+      <animateTransform
+        attributeName="transform"
+        type="rotate"
+        values="-4 742 640; 8 742 640; -4 742 640"
+        dur="1.65s"
+        repeatCount="indefinite"/>
+      <path class="ink thick" fill="url(#skinGrad)"
+        d="M698 663
+           C674 627 657 570 674 561
+           C691 553 712 604 722 620
+           C721 583 724 515 745 511
+           C765 509 773 530 769 556
+           C766 585 766 609 775 620
+           C787 594 805 556 824 562
+           C846 569 837 596 820 618
+           C806 636 798 649 803 660
+           C821 654 843 656 847 673
+           C852 697 822 719 789 722
+           C748 725 721 700 698 663 Z"/>
+      <path fill="#ffd5dd" opacity="0.55"
+        d="M704 664
+           C689 631 681 594 686 575
+           C698 599 711 627 728 646
+           C741 660 763 674 788 676
+           C766 696 726 695 704 664 Z"/>
+      <path class="ink med nofill"
+        d="M722 620 C735 648 753 663 779 663"/>
+      <path class="ink med nofill"
+        d="M775 620 C784 639 793 651 803 660"/>
+      <path class="ink med nofill"
+        d="M790 691 C805 688 818 679 826 667"/>
+    </g>
+
+    <!-- Tiny animated sparkles -->
+    <g id="sparkles">
+      <path fill="#2d86ff"
+        d="M733 502 L744 523 L767 530 L745 539 L736 562 L724 540 L701 532 L723 523 Z">
+        <animate attributeName="opacity" values=".25;.95;.25" dur="1.6s" repeatCount="indefinite"/>
+      </path>
+      <path fill="#2d86ff"
+        d="M1367 402 L1377 420 L1397 426 L1378 434 L1370 453 L1360 435 L1340 428 L1359 420 Z">
+        <animate attributeName="opacity" values=".2;.85;.2" dur="1.9s" repeatCount="indefinite"/>
+      </path>
+    </g>
+  </g>
+</svg>

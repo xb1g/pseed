@@ -22,10 +22,18 @@ const ENTRIES = [
   "content/instagram.ts",
   "content/copilot.ts",
   "popup/settings.ts",
+  "devtools/devtools.ts",
+  "devtools/panel.ts",
 ];
 
 /** Content scripts cannot be ESM; only the service worker may be a module. */
-const IIFE_ENTRIES = new Set(["content/instagram.ts", "content/copilot.ts", "popup/settings.ts"]);
+const IIFE_ENTRIES = new Set([
+  "content/instagram.ts",
+  "content/copilot.ts",
+  "popup/settings.ts",
+  "devtools/devtools.ts",
+  "devtools/panel.ts",
+]);
 
 async function bundleEntry(entry) {
   await build({
@@ -63,11 +71,20 @@ async function main() {
   const manifest = JSON.parse(await readFile(join(src, "manifest.json"), "utf8"));
   await writeFile(join(out, "manifest.json"), JSON.stringify(retargetManifest(manifest), null, 2));
 
-  const html = (await readFile(join(src, "popup/settings.html"), "utf8")).replace(
-    'src="settings.ts"',
-    'src="settings.js"'
+  // HTML pages are copied verbatim except for their script src, which must
+  // point at the built .js.
+  for (const page of ["popup/settings.html", "devtools/panel.html"]) {
+    const html = (await readFile(join(src, page), "utf8")).replace(
+      /src="([^"]+)\.ts"/g,
+      'src="$1.js"'
+    );
+    await mkdir(dirname(join(out, page)), { recursive: true });
+    await writeFile(join(out, page), html);
+  }
+  await writeFile(
+    join(out, "devtools/devtools.html"),
+    '<!doctype html>\n<meta charset="utf-8" />\n<script src="devtools.js"></script>\n'
   );
-  await writeFile(join(out, "popup/settings.html"), html);
   await cp(join(src, "content/style.css"), join(out, "content/style.css"));
   await cp(join(src, "icons"), join(out, "icons"), { recursive: true });
 
