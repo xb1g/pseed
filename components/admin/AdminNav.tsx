@@ -16,6 +16,7 @@ const ADMIN_NAV_ITEMS = [
   { href: "/admin/experts", label: "Experts" },
   { href: "/admin/dm-leads", label: "DM Leads" },
   { href: "/admin/dm-leads/insights", label: "Lead Insights" },
+  { href: "/admin/dm-leads/copilot", label: "DM Copilot" },
   { href: "/admin/meta-webhooks", label: "Meta Webhooks" },
   { href: "/admin/competitions", label: "Competitions" },
   { href: "/admin/ig-comments", label: "IG Comments" },

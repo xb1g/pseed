@@ -42,7 +42,8 @@
     "bot:dev": "dotenv -e .env.local -o -- tsx watch bot/src/index.ts",
     "bot:start": "tsx bot/src/index.ts",
     "bot:register": "dotenv -e .env.local -o -- tsx bot/src/index.ts --register-commands",
-    "cleanup:self-comments": "dotenv -e .env.local -o -- tsx scripts/mark-self-comments-replied.ts"
+    "cleanup:self-comments": "dotenv -e .env.local -o -- tsx scripts/mark-self-comments-replied.ts",
+    "build:extension": "node scripts/build-extension.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.38",

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>DM Copilot settings</title>
+    <style>
+      :root {
+        --bg: #1a103a;
+        --bg-card: rgba(255, 255, 255, 0.05);
+        --border: rgba(255, 255, 255, 0.12);
+        --text: #f4ecff;
+        --muted: rgba(244, 236, 255, 0.65);
+        --accent: #fb923c;
+        --ok: #34d399;
+        --bad: #f87171;
+      }
+      body {
+        margin: 0;
+        padding: 14px 16px;
+        width: 320px;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+          "Noto Sans Thai", sans-serif;
+        font-size: 13px;
+      }
+      h1 {
+        font-size: 14px;
+        margin: 0 0 8px;
+      }
+      label {
+        display: block;
+        font-size: 11px;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 6px 8px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.25);
+        color: var(--text);
+        font: inherit;
+      }
+      input:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+      .row {
+        margin-bottom: 10px;
+      }
+      button {
+        padding: 6px 10px;
+        border-radius: 8px;
+        border: 1px solid var(--accent);
+        background: rgba(251, 146, 60, 0.18);
+        color: var(--text);
+        font: inherit;
+        cursor: pointer;
+      }
+      button.ghost {
+        border-color: var(--border);
+        background: transparent;
+      }
+      .status {
+        margin-top: 10px;
+        padding: 6px 8px;
+        border-radius: 8px;
+        font-size: 11px;
+      }
+      .status.ok {
+        background: rgba(52, 211, 153, 0.12);
+        color: var(--ok);
+      }
+      .status.bad {
+        background: rgba(248, 113, 113, 0.12);
+        color: var(--bad);
+      }
+      .help {
+        margin-top: 10px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>DM Copilot</h1>
+    <div class="row">
+      <label for="token">Bearer token</label>
+      <input id="token" type="password" placeholder="psdmlp_..." autocomplete="off" />
+    </div>
+    <div class="row">
+      <label for="api">API base</label>
+      <input id="api" type="text" placeholder="https://www.passionseed.org" />
+    </div>
+    <div style="display: flex; gap: 8px">
+      <button id="save">Save</button>
+      <button id="clear" class="ghost">Clear</button>
+    </div>
+    <div id="status" class="status" hidden></div>
+    <p class="help">
+      Tokens are minted at <strong>/admin/dm-leads/copilot</strong>. Each one is
+      revocable from the same page.
+    </p>
+    <script src="settings.ts"></script>
+  </body>
+</html>

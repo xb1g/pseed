@@ -1,0 +1,69 @@
+{
+  "manifest_version": 3,
+  "name": "PassionSeed DM Copilot",
+  "short_name": "DM Copilot",
+  "version": "0.1.0",
+  "description": "Surfaces the PassionSeed playbook + drafts above Instagram's compose box. Read-only: never sends a message.",
+  "minimum_chrome_version": "120",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://www.instagram.com/*",
+    "https://www.passionseed.org/*"
+  ],
+  "action": {
+    "default_popup": "popup/settings.html",
+    "default_title": "DM Copilot settings",
+    "default_icon": {
+      "16": "icons/16.png",
+      "48": "icons/48.png",
+      "128": "icons/128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/16.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "background": {
+    "service_worker": "background/service-worker.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.instagram.com/direct/*"
+      ],
+      "js": [
+        "content/instagram.ts"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    },
+    {
+      "matches": [
+        "https://www.instagram.com/direct/*"
+      ],
+      "js": [
+        "content/copilot.ts"
+      ],
+      "css": [
+        "content/style.css"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "popup/settings.html",
+        "popup/settings.ts"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}

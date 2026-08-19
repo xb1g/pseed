@@ -1,0 +1,162 @@
+/* DM Copilot tray — sits above Instagram's compose box.
+ * Mirrors the project's ei-card / ei-button-dusk language but stays self
+ * contained so we don't depend on globals.css (which isn't loaded inside IG).
+ */
+
+:root {
+  --psdmlp-bg: rgba(20, 14, 38, 0.92);
+  --psdmlp-bg-card: rgba(255, 255, 255, 0.05);
+  --psdmlp-border: rgba(255, 255, 255, 0.12);
+  --psdmlp-text: #f4ecff;
+  --psdmlp-text-muted: rgba(244, 236, 255, 0.65);
+  --psdmlp-accent: #fb923c;
+  --psdmlp-ok: #34d399;
+  --psdmlp-warn: #fbbf24;
+  --psdmlp-bad: #f87171;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --psdmlp-bg: rgba(255, 255, 255, 0.95);
+    --psdmlp-bg-card: rgba(15, 23, 42, 0.04);
+    --psdmlp-border: rgba(15, 23, 42, 0.12);
+    --psdmlp-text: #1f1147;
+    --psdmlp-text-muted: rgba(31, 17, 71, 0.65);
+  }
+}
+
+#psdmlp-copilot-tray {
+  position: fixed;
+  bottom: 90px;
+  right: 24px;
+  z-index: 2147483646;
+  width: min(420px, calc(100vw - 48px));
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--psdmlp-bg);
+  border: 1px solid var(--psdmlp-border);
+  color: var(--psdmlp-text);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(251, 146, 60, 0.16);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+    "Noto Sans Thai", sans-serif;
+  font-size: 13px;
+  backdrop-filter: blur(12px);
+}
+
+.psdmlp-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  margin-bottom: 8px;
+  font-size: 11px;
+}
+
+.psdmlp-bucket,
+.psdmlp-coverage,
+.psdmlp-window {
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: var(--psdmlp-bg-card);
+  border: 1px solid var(--psdmlp-border);
+}
+
+.psdmlp-window.psdmlp-ok {
+  border-color: rgba(52, 211, 153, 0.4);
+  color: var(--psdmlp-ok);
+}
+.psdmlp-window.psdmlp-warn {
+  border-color: rgba(251, 191, 36, 0.4);
+  color: var(--psdmlp-warn);
+}
+.psdmlp-window.psdmlp-bad {
+  border-color: rgba(248, 113, 113, 0.4);
+  color: var(--psdmlp-bad);
+}
+
+.psdmlp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.psdmlp-chip {
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  background: rgba(251, 146, 60, 0.1);
+  color: var(--psdmlp-text);
+  border: 1px solid rgba(251, 146, 60, 0.25);
+  transition: transform 120ms ease-out, background 120ms ease-out;
+}
+
+.psdmlp-chip:hover {
+  background: rgba(251, 146, 60, 0.2);
+  transform: translateY(-1px);
+}
+
+.psdmlp-chip.psdmlp-guide {
+  background: rgba(56, 189, 248, 0.1);
+  border-color: rgba(56, 189, 248, 0.25);
+}
+.psdmlp-chip.psdmlp-qualify {
+  background: rgba(167, 139, 250, 0.12);
+  border-color: rgba(167, 139, 250, 0.25);
+}
+.psdmlp-chip.psdmlp-cta {
+  background: rgba(52, 211, 153, 0.12);
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+.psdmlp-scripts {
+  margin-top: 8px;
+  border-top: 1px solid var(--psdmlp-border);
+  padding-top: 6px;
+  font-size: 11px;
+  color: var(--psdmlp-text-muted);
+}
+
+.psdmlp-scripts summary {
+  cursor: pointer;
+  user-select: none;
+}
+
+.psdmlp-scripts ol {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.psdmlp-scripts li button {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 4px 8px;
+  color: var(--psdmlp-text);
+  cursor: pointer;
+  font: inherit;
+}
+
+.psdmlp-scripts li button:hover {
+  background: var(--psdmlp-bg-card);
+  border-color: var(--psdmlp-border);
+}
+
+.psdmlp-rung {
+  display: inline-block;
+  width: 18px;
+  color: var(--psdmlp-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.psdmlp-empty {
+  font-size: 12px;
+  color: var(--psdmlp-text-muted);
+}
