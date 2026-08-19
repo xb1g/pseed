@@ -43,7 +43,8 @@
     "bot:start": "tsx bot/src/index.ts",
     "bot:register": "dotenv -e .env.local -o -- tsx bot/src/index.ts --register-commands",
     "cleanup:self-comments": "dotenv -e .env.local -o -- tsx scripts/mark-self-comments-replied.ts",
-    "build:extension": "node scripts/build-extension.mjs"
+    "build:extension": "tsc --noEmit -p extension/tsconfig.json && node scripts/build-extension.mjs",
+    "typecheck:extension": "tsc --noEmit -p extension/tsconfig.json"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.38",
@@ -136,6 +137,7 @@
     "lodash": "^4.18.1",
     "lucide-react": "^0.454.0",
     "marked": "^16.4.2",
+    "mediabunny": "^1.55.1",
     "mime": "^4.1.0",
     "ml-kmeans": "^7.0.0",
     "next": "16.2.1",
@@ -180,6 +182,7 @@
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
+    "@types/chrome": "^0.2.6",
     "@types/diff": "^8.0.0",
     "@types/jest": "^30.0.0",
     "@types/marked": "^6.0.0",
