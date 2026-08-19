@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { InstagramPosterClient } from "@/components/pathlab/InstagramPosterClient";
+import InstagramPosterVideo from "@/components/pathlab/InstagramPosterVideo";
 
 export const metadata: Metadata = {
   title: "Pathlab Instagram Poster — Passion Seed",
@@ -8,5 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default function PathlabInstagramPosterPage() {
-  return <InstagramPosterClient />;
+  return (
+    <>
+      <InstagramPosterClient />
+      <InstagramPosterVideo />
+    </>
+  );
 }
