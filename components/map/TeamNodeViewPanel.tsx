@@ -898,6 +898,7 @@ export function TeamNodeViewPanel({
             <LearningContentView
               nodeContent={nodeData?.node_content || []}
               nodeTitle={nodeData?.title}
+              hasAssessment={!!assessment}
             />
 
             {/* Team Management Section (for leaders) */}
@@ -1140,6 +1141,7 @@ export function TeamNodeViewPanel({
             {assessment && showAssessmentForm && (
               <AssessmentSection
                 nodeId={selectedNode.id}
+                mapId={mapId}
                 assessment={assessment}
                 canResubmit={canResubmit}
                 showAssessmentForm={showAssessmentForm}

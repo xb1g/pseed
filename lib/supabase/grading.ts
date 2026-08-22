@@ -22,6 +22,7 @@ export type SubmissionWithDetails = {
   file_urls: string[] | null; // Changed from file_url to file_urls
   image_url: string | null;
   quiz_answers: Record<string, string> | null;
+  metadata: Record<string, any> | null;
   student_node_progress: {
     id: string;
     status: string;

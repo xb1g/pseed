@@ -60,7 +60,14 @@ export function MissedCommentsCard({
     setRunning(true);
     setConfirming(false);
     stopRequested.current = false;
-    const totals: BulkReplyResult = { sent: 0, failed: 0, skipped: 0, errors: [] };
+    const totals: BulkReplyResult = {
+      sent: 0,
+      failed: 0,
+      skipped: 0,
+      errors: [],
+      sentTo: [],
+      unreachable: 0,
+    };
     let passes = 0;
 
     try {
@@ -71,7 +78,9 @@ export function MissedCommentsCard({
         totals.failed += pass.failed;
         totals.skipped = pass.skipped;
         totals.errors.push(...pass.errors);
-        setResult({ ...totals, errors: [...totals.errors] });
+        totals.sentTo.push(...pass.sentTo);
+        totals.unreachable += pass.unreachable;
+        setResult({ ...totals, errors: [...totals.errors], sentTo: [...totals.sentTo] });
         setRuns(passes);
 
         const madeProgress = pass.sent > 0;
@@ -116,6 +125,7 @@ export function MissedCommentsCard({
         {result && (
           <p className="text-sm">
             Sent {result.sent}, failed {result.failed}
+            {result.unreachable > 0 && ` (${result.unreachable} comment${result.unreachable === 1 ? "" : "s"} deleted, retired)`}
             {result.skipped > 0 && `, ${result.skipped} still queued`}
             {runs > 1 && ` · ${runs} runs`}
             {running && " · running…"}.
@@ -126,6 +136,19 @@ export function MissedCommentsCard({
               </span>
             )}
           </p>
+        )}
+
+        {result && result.sentTo.length > 0 && (
+          <details className="rounded-md border bg-muted/40 p-3 text-sm">
+            <summary className="cursor-pointer font-medium">
+              Replied to {result.sentTo.length} {result.sentTo.length === 1 ? "person" : "people"}
+              {running ? " so far" : ""}
+            </summary>
+            {/* Selectable so the list can be copied out before the card refreshes. */}
+            <p className="mt-2 max-h-48 overflow-y-auto break-words font-mono text-xs leading-5 select-text">
+              {result.sentTo.join(", ")}
+            </p>
+          </details>
         )}
 
         {running ? (

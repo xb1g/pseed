@@ -32,10 +32,11 @@ const openai = createOpenAI({
 });
 
 const KIMI_API_KEY = process.env.KIMI_API_KEY || "";
+const KIMI_BASE_URL = process.env.KIMI_BASE_URL || "https://api.moonshot.ai/v1";
+const KIMI_MODEL = process.env.KIMI_MODEL || "kimi-k3";
 const kimi = createOpenAI({
   apiKey: KIMI_API_KEY,
-  baseURL: "https://api.fireworks.ai/inference/v1",
-  compatibility: "compatible",
+  baseURL: KIMI_BASE_URL,
 });
 
 // Allow up to 300 seconds (5 minutes) for AI generation to handle 65 concurrent users
@@ -65,7 +66,7 @@ export const AVAILABLE_MODELS = {
     // { id: 'codex-mini-latest', name: 'Codex Mini', speed: 'medium', cost: 'medium' },
   ],
   kimi: [
-    { id: 'kimi-for-coding', name: 'Kimi K2.6 Turbo', speed: 'fast', cost: 'low' },
+    { id: 'kimi-for-coding', name: 'Kimi K3', speed: 'fast', cost: 'low' },
   ],
   // DeepSeek disabled - not used in A/B testing
   // deepseek: [
@@ -81,6 +82,15 @@ export function getAllModels() {
   return Object.entries(AVAILABLE_MODELS).flatMap(([provider, models]) =>
     models.map(model => ({ ...model, provider }))
   );
+}
+
+export function getKimiModel() {
+  if (!KIMI_API_KEY) {
+    throw new Error(
+      "KIMI_API_KEY is not set. Please set the KIMI_API_KEY environment variable to use the Kimi provider."
+    );
+  }
+  return kimi.chat(KIMI_MODEL);
 }
 
 /**
@@ -142,12 +152,7 @@ export function getModel(modelName?: string) {
 
   // Kimi Models (OpenAI-compatible endpoint)
   if (resolvedModelName === 'kimi-for-coding') {
-    if (!KIMI_API_KEY) {
-      throw new Error(
-        `KIMI_API_KEY is not set. Please set the KIMI_API_KEY environment variable to use the Kimi provider.`
-      );
-    }
-    return kimi('accounts/fireworks/routers/kimi-k2p6-turbo');
+    return getKimiModel();
   }
 
   // DeepSeek Models (2 variants)

@@ -116,7 +116,22 @@ export type ContentType =
   | "image"
   | "pdf"
   | "resource_link"
-  | "order_code";
+  | "order_code"
+  | "webtoon";
+
+// A single slice of a webtoon. The author uploads one long image; the editor
+// cuts it into ordered panels so each upload stays under the image API cap and
+// under the browser's decode ceiling for very tall images.
+export interface WebtoonPanel {
+  url: string;
+  w: number;
+  h: number;
+}
+
+// Shape stored as JSON in node_content.content_body when content_type is "webtoon".
+export interface WebtoonBody {
+  panels: WebtoonPanel[];
+}
 
 export interface NodeContent {
   id: string; // uuid
@@ -134,7 +149,20 @@ export type AssessmentType =
   | "text_answer"
   | "file_upload"
   | "image_upload"
-  | "checklist";
+  | "checklist"
+  | "ai_chat";
+
+export interface AIChatAssessmentMetadata extends Record<string, unknown> {
+  system_prompt?: string;
+  opening_message?: string;
+  objective?: string;
+  completion_criteria?: string;
+  model?: "kimi-for-coding";
+  max_turns?: number;
+  auto_pass?: boolean;
+  feedback_enabled?: boolean;
+  feedback_instructions?: string;
+}
 
 export interface NodeAssessment {
   id: string; // uuid

@@ -38,6 +38,7 @@ import {
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/components/ui/use-toast";
+import { AIChatAssessment } from "./AIChatAssessment";
 
 // Utility function to create a deterministic random number generator
 function createSeededRandom(seed: string) {
@@ -91,6 +92,7 @@ interface AssessmentSectionProps {
     | "submitted"
     | "passed"
     | "failed";
+  onAIChatComplete?: () => void | Promise<void>;
 }
 
 const renderQuizQuestion = (
@@ -169,6 +171,7 @@ export function AssessmentSection({
   nodeId,
   mapId,
   progressStatus,
+  onAIChatComplete,
 }: AssessmentSectionProps) {
   const [isFileRequired, setIsFileRequired] = useState(false);
   const [fileUrls, setFileUrls] = useState<string[]>([]);
@@ -685,7 +688,19 @@ export function AssessmentSection({
             </div>
           )}
 
+        {assessment.assessment_type === "ai_chat" &&
+          (showAssessmentForm ||
+            progressStatus === "submitted" ||
+            progressStatus === "passed" ||
+            progressStatus === "failed") && (
+            <AIChatAssessment
+              assessmentId={assessment.id}
+              onComplete={onAIChatComplete}
+            />
+          )}
+
         {showAssessmentForm &&
+          assessment.assessment_type !== "ai_chat" &&
           !(
             assessment.is_group_assessment &&
             assessment.group_submission_mode === "single_submission" &&

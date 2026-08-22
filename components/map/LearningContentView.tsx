@@ -8,33 +8,44 @@ import { renderContent } from "./nodeViewHelpers";
 interface LearningContentViewProps {
   nodeContent: NodeContent[];
   nodeTitle?: string | null;
+  /**
+   * Whether the node also shows an assessment below this section. When it does,
+   * an empty content list needs no placeholder: the assessment is the activity,
+   * and "content will be added soon" reads as something missing rather than a
+   * node that was deliberately built assessment-only.
+   */
+  hasAssessment?: boolean;
 }
 
 // Memoized component to prevent unnecessary re-renders
-const LearningContentView = memo(({ nodeContent, nodeTitle }: LearningContentViewProps) => {
+const LearningContentView = memo(({ nodeContent, nodeTitle, hasAssessment = false }: LearningContentViewProps) => {
   console.log("📚 LearningContentView rendering with", nodeContent.length, "content items");
+
+  if (!nodeContent?.length) {
+    // Nothing to show, and the assessment below carries the node on its own.
+    if (hasAssessment) return null;
+
+    return (
+      <Card className="border-dashed">
+        <CardContent className="p-8 text-center">
+          <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+          <p className="text-muted-foreground">
+            No learning content available yet.
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Content will be added soon.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <>
-      {nodeContent?.length > 0 ? (
-        <div className="space-y-6">
-          {nodeContent.map((content) => (
-            <div key={content.id}>{renderContent(content, nodeTitle)}</div>
-          ))}
-        </div>
-      ) : (
-        <Card className="border-dashed">
-          <CardContent className="p-8 text-center">
-            <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-            <p className="text-muted-foreground">
-              No learning content available yet.
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Content will be added soon.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-    </>
+    <div className="space-y-6">
+      {nodeContent.map((content) => (
+        <div key={content.id}>{renderContent(content, nodeTitle)}</div>
+      ))}
+    </div>
   );
 });
 
@@ -44,6 +55,10 @@ LearningContentView.displayName = "LearningContentView";
 const areEqual = (prevProps: LearningContentViewProps, nextProps: LearningContentViewProps) => {
   // Title affects per-item heading dedupe
   if (prevProps.nodeTitle !== nextProps.nodeTitle) {
+    return false;
+  }
+  // Decides whether an empty node renders a placeholder or nothing at all
+  if (prevProps.hasAssessment !== nextProps.hasAssessment) {
     return false;
   }
   // Quick length check first
