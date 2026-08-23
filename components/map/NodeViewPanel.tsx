@@ -1071,7 +1071,6 @@ export function NodeViewPanel({
                   onAIChatComplete={async () => {
                     await loadProgress();
                     onProgressUpdate?.();
-                    onNodeCompleted?.();
                   }}
                 />
               )}
@@ -1219,7 +1218,6 @@ export function NodeViewPanel({
                     onAIChatComplete={async () => {
                       await loadProgress();
                       onProgressUpdate?.();
-                      onNodeCompleted?.();
                     }}
                   />
                 )}

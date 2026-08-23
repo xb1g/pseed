@@ -38,6 +38,7 @@ export function AIChatAssessment({
   const { toast } = useToast();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
+  const [personaName, setPersonaName] = useState("AI mentor");
   const [objective, setObjective] = useState("");
   const [completionPercentage, setCompletionPercentage] = useState(0);
   const [turnCount, setTurnCount] = useState(0);
@@ -48,7 +49,7 @@ export function AIChatAssessment({
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
-  const endRef = useRef<HTMLDivElement>(null);
+  const chatLogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,6 +64,7 @@ export function AIChatAssessment({
         if (cancelled) return;
 
         setObjective(data.objective || "");
+        setPersonaName(data.persona_name || "AI mentor");
         setMaxTurns(data.max_turns || 12);
         if (data.session) {
           setMessages(data.messages || []);
@@ -98,7 +100,13 @@ export function AIChatAssessment({
 
   useEffect(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    endRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
+    const chatLog = chatLogRef.current;
+    if (!chatLog) return;
+
+    chatLog.scrollTo({
+      top: chatLog.scrollHeight,
+      behavior: reduceMotion ? "auto" : "smooth",
+    });
   }, [messages, isSending]);
 
   const sendMessage = async () => {
@@ -153,13 +161,14 @@ export function AIChatAssessment({
     }
   };
 
-  const resetConversation = async () => {
-    if (isSending || isResetting || isCompleted) return;
+  const resetConversation = async (mode: "reset" | "retry" = "reset") => {
+    const isRetry = mode === "retry";
+    if (isSending || isResetting || (isCompleted && !isRetry)) return;
 
     setIsResetting(true);
     try {
       const response = await fetch(
-        `/api/map/assessments/${assessmentId}/ai-chat`,
+        `/api/map/assessments/${assessmentId}/ai-chat${isRetry ? "?retry=1" : ""}`,
         { method: "DELETE" },
       );
       const data = await response.json();
@@ -172,13 +181,15 @@ export function AIChatAssessment({
       );
       setInput("");
       setObjective(data.objective || objective);
+      setPersonaName(data.persona_name || personaName);
       setMaxTurns(data.max_turns || maxTurns);
       setCompletionPercentage(0);
       setTurnCount(0);
       setIsCompleted(false);
       setCompletionReason(null);
       setFeedback(null);
-      toast({ title: "Conversation reset" });
+      toast({ title: isRetry ? "New attempt started" : "Conversation reset" });
+      if (isRetry) await onComplete?.();
     } catch (error) {
       toast({
         title: "Could not reset conversation",
@@ -211,7 +222,7 @@ export function AIChatAssessment({
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2">
-                <h4 className="font-semibold text-amber-50">AI mentor</h4>
+                <h4 className="font-semibold text-amber-50">{personaName}</h4>
                 {isCompleted && (
                   <CheckCircle2 className="h-4 w-4 text-emerald-300" aria-label="Completed" />
                 )}
@@ -267,7 +278,8 @@ export function AIChatAssessment({
       </div>
 
       <div
-        className="max-h-[28rem] min-h-72 space-y-4 overflow-y-auto p-4"
+        ref={chatLogRef}
+        className="h-[22rem] space-y-4 overflow-y-auto overscroll-contain p-4 sm:h-[28rem]"
         role="log"
         aria-live="polite"
         aria-label="AI assessment conversation"
@@ -291,13 +303,21 @@ export function AIChatAssessment({
         ))}
         {isSending && (
           <div className="flex justify-start">
-            <div className="flex items-center gap-2 rounded-2xl rounded-bl-sm border border-white/10 bg-white/[0.07] px-4 py-3 text-sm text-stone-400">
-              <Sparkles className="h-4 w-4 text-amber-300" aria-hidden="true" />
-              Kimi is thinking...
+            <div className="flex items-center gap-2 rounded-2xl rounded-bl-sm border border-white/10 bg-white/[0.07] px-4 py-3 text-sm text-stone-300">
+              <span className="sr-only">{personaName} is typing</span>
+              <span aria-hidden="true">{personaName}</span>
+              <span className="flex items-end gap-1" aria-hidden="true">
+                {[0, 150, 300].map((delay) => (
+                  <span
+                    key={delay}
+                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-300 motion-reduce:animate-none"
+                    style={{ animationDelay: `${delay}ms` }}
+                  />
+                ))}
+              </span>
             </div>
           </div>
         )}
-        <div ref={endRef} />
       </div>
 
       <div className="border-t border-amber-200/10 bg-slate-950/70 p-4">
@@ -319,6 +339,43 @@ export function AIChatAssessment({
                 </p>
               </div>
             )}
+            <div className="mt-3 border-t border-emerald-200/15 pt-3">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isResetting}
+                    className="min-h-11 gap-2 border-emerald-200/25 bg-transparent text-emerald-50 hover:bg-emerald-200/10 hover:text-white"
+                  >
+                    {isResetting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                    )}
+                    Retry conversation
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Start a new attempt?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This removes this completed result, feedback, and chat transcript, then starts a new attempt. Your other map work is not affected.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Keep result</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => void resetConversation("retry")}
+                      className="bg-amber-500 text-slate-950 hover:bg-amber-400"
+                    >
+                      Start new attempt
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
         ) : (
           <div className="flex items-end gap-2">
@@ -332,7 +389,7 @@ export function AIChatAssessment({
                 }
               }}
               placeholder="Write your response..."
-              aria-label="Message to AI mentor"
+              aria-label={`Message to ${personaName}`}
               disabled={isSending}
               rows={2}
               className="min-h-12 resize-none border-white/10 bg-white/[0.05] text-stone-100"

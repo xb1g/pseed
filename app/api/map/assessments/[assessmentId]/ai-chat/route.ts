@@ -306,6 +306,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
       session,
       messages,
       objective: config.objective,
+      persona_name: config.personaName,
       opening_message: config.openingMessage,
       max_turns: config.maxTurns,
     });
@@ -315,7 +316,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   }
 }
 
-export async function DELETE(_request: NextRequest, { params }: RouteContext) {
+export async function DELETE(request: NextRequest, { params }: RouteContext) {
   try {
     const { assessmentId } = await params;
     const authorized = await getAuthorizedAssessment(assessmentId);
@@ -329,23 +330,42 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
     const config = resolveMapAIChatConfig(
       authorized.assessment.metadata as AIChatAssessmentMetadata | null,
     );
+    const isRetry = request.nextUrl.searchParams.get("retry") === "1";
     const admin = createAdminClient();
     const { data: session, error: sessionError } = await admin
       .from("node_ai_chat_sessions")
-      .select("id, is_completed")
+      .select("id, progress_id, is_completed")
       .eq("assessment_id", assessmentId)
       .eq("user_id", authorized.user.id)
       .maybeSingle();
 
     if (sessionError) throw new Error(sessionError.message);
-    if (session?.is_completed) {
+    if (session?.is_completed && !isRetry) {
       return NextResponse.json(
-        { error: "A completed AI Chat cannot be reset" },
+        { error: "Use Retry to start a new attempt after completion" },
         { status: 409 },
       );
     }
 
-    if (session) {
+    if (session?.is_completed) {
+      const { data: didReset, error: retryError } = await admin.rpc(
+        "reset_completed_ai_chat_attempt",
+        {
+          p_session_id: session.id,
+          p_assessment_id: assessmentId,
+          p_progress_id: session.progress_id,
+          p_user_id: authorized.user.id,
+          p_node_id: authorized.assessment.node_id,
+        },
+      );
+      if (retryError) throw new Error(retryError.message);
+      if (!didReset) {
+        return NextResponse.json(
+          { error: "The completed attempt changed. Reload and try again." },
+          { status: 409 },
+        );
+      }
+    } else if (session) {
       const { data: deletedSession, error: deleteError } = await admin
         .from("node_ai_chat_sessions")
         .delete()
@@ -358,7 +378,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
       if (deleteError) throw new Error(deleteError.message);
       if (!deletedSession) {
         return NextResponse.json(
-          { error: "A completed AI Chat cannot be reset" },
+          { error: "The conversation changed. Reload and try again." },
           { status: 409 },
         );
       }
@@ -366,7 +386,9 @@ export async function DELETE(_request: NextRequest, { params }: RouteContext) {
 
     return NextResponse.json({
       reset: true,
+      retry: isRetry,
       objective: config.objective,
+      persona_name: config.personaName,
       opening_message: config.openingMessage,
       max_turns: config.maxTurns,
     });

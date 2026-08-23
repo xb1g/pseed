@@ -154,6 +154,7 @@ export type AssessmentType =
 
 export interface AIChatAssessmentMetadata extends Record<string, unknown> {
   system_prompt?: string;
+  persona_name?: string;
   opening_message?: string;
   objective?: string;
   completion_criteria?: string;

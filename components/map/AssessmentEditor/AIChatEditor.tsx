@@ -27,6 +27,7 @@ export function AIChatEditor({
 }: AIChatEditorProps) {
   const { toast } = useToast();
   const current = (assessment.metadata || {}) as AIChatAssessmentMetadata;
+  const [personaName, setPersonaName] = useState(current.persona_name || "AI mentor");
   const [systemPrompt, setSystemPrompt] = useState(current.system_prompt || DEFAULT_PROMPT);
   const [openingMessage, setOpeningMessage] = useState(
     current.opening_message || "Hi! I’ll help you work through this assessment. What are your first thoughts?",
@@ -47,6 +48,7 @@ export function AIChatEditor({
 
   useEffect(() => {
     const metadata = (assessment.metadata || {}) as AIChatAssessmentMetadata;
+    setPersonaName(metadata.persona_name || "AI mentor");
     setSystemPrompt(metadata.system_prompt || DEFAULT_PROMPT);
     setOpeningMessage(
       metadata.opening_message ||
@@ -63,10 +65,15 @@ export function AIChatEditor({
   }, [assessment.id, assessment.metadata]);
 
   const handleSave = async () => {
-    if (!systemPrompt.trim() || !objective.trim() || !completionCriteria.trim()) {
+    if (
+      !personaName.trim() ||
+      !systemPrompt.trim() ||
+      !objective.trim() ||
+      !completionCriteria.trim()
+    ) {
       toast({
         title: "Complete the AI Chat settings",
-        description: "AI instructions, objective, and completion criteria are required.",
+        description: "Persona name, AI instructions, objective, and completion criteria are required.",
         variant: "destructive",
       });
       return;
@@ -85,6 +92,7 @@ export function AIChatEditor({
     try {
       const metadata: AIChatAssessmentMetadata = {
         ...(assessment.metadata || {}),
+        persona_name: personaName.trim(),
         system_prompt: systemPrompt.trim(),
         opening_message: openingMessage.trim(),
         objective: objective.trim(),
@@ -115,12 +123,26 @@ export function AIChatEditor({
         <div className="flex items-start gap-3">
           <Bot className="mt-0.5 h-5 w-5 text-amber-300" aria-hidden="true" />
           <div>
-            <p className="font-medium text-amber-50">Kimi AI mentor</p>
+            <p className="font-medium text-amber-50">AI chat persona</p>
             <p className="mt-1 text-xs text-stone-400">
-              The API key stays on the server. Students only receive the mentor response.
+              The provider stays hidden. Students see the persona name and its responses.
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor={`ai-persona-${assessment.id}`}>Persona name</Label>
+        <Input
+          id={`ai-persona-${assessment.id}`}
+          value={personaName}
+          onChange={(event) => setPersonaName(event.target.value.slice(0, 60))}
+          maxLength={60}
+          placeholder="For example: Mina, Coach Beam, or Patient Fah"
+        />
+        <p className="text-xs text-stone-400">
+          Shown in the chat header and typing indicator.
+        </p>
       </div>
 
       <div className="space-y-2">
