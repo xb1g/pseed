@@ -46,18 +46,28 @@ export function AssessmentEditor({
 
   const handleAddAssessment = useCallback(
     async (type: AssessmentType) => {
-      console.log("➕ Creating assessment in database for node:", nodeId);
+      // Unsaved nodes only have a client-side temp id, which is not a uuid.
+      // Build the assessment locally and let Save All persist it alongside
+      // the node, mirroring the temp guard in handleDeleteAssessment.
+      const isUnsavedNode = nodeId.startsWith("temp_");
 
       try {
-        const savedAssessment = await createNodeAssessment({
-          node_id: nodeId,
-          assessment_type: type,
-          points_possible: 10,
-          is_graded: false,
-          metadata: {},
-        });
-
-        console.log("✅ Assessment created in database:", savedAssessment);
+        const savedAssessment = isUnsavedNode
+          ? ({
+              id: `temp_assessment_${Date.now()}_${Math.random().toString(36).substring(2)}`,
+              node_id: nodeId,
+              assessment_type: type,
+              points_possible: 10,
+              is_graded: false,
+              metadata: {},
+            } as NodeAssessment)
+          : await createNodeAssessment({
+              node_id: nodeId,
+              assessment_type: type,
+              points_possible: 10,
+              is_graded: false,
+              metadata: {},
+            });
 
         // Ensure quiz_questions array exists
         const assessmentWithDefaults: NodeAssessment = {

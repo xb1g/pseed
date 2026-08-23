@@ -30,7 +30,7 @@ import {
   batchUpdateMap,
   BatchMapUpdate,
 } from "@/lib/supabase/maps";
-import { MapCategory } from "@/types/map";
+import { MapCategory, NodeAssessment } from "@/types/map";
 import {
   Loader2,
   Trash2,
@@ -372,6 +372,20 @@ export default function EditMapPage({
           } else {
             batchUpdate.nodes.create.push(nodeData);
           }
+
+          // Assessments added to a not-yet-saved node are only in local state.
+          // Carry them over keyed by the node's temp id — batchUpdateMap
+          // resolves it to the real node uuid once the node is inserted.
+          (node_assessments || []).forEach((ca: NodeAssessment) => {
+            const { quiz_questions, id: assessmentId, ...assessmentData } = ca;
+            batchUpdate.assessments.create.push({
+              ...assessmentData,
+              node_id: id,
+              ...(assessmentId?.startsWith('temp_')
+                ? { temp_id: assessmentId }
+                : {}),
+            });
+          });
         } else {
           // Check for differences
           const hasChanges =
