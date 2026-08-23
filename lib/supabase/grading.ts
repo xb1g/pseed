@@ -12,6 +12,7 @@ import {
   Grade,
   ProgressStatus,
 } from "@/types/map";
+import { isAbortError } from "./errors";
 
 // --- Grading Functions ---
 
@@ -40,6 +41,17 @@ export type SubmissionWithDetails = {
       title: string;
       map_id: string;
     };
+    /**
+     * Quiz questions for this assessment, if any. Joined on demand so the
+     * instructor sees the question text alongside the student's answer;
+     * without it the grader is guessing what was asked.
+     */
+    quiz_questions?: {
+      id: string;
+      question_text: string;
+      options: unknown | null;
+      correct_option: string | null;
+    }[];
   };
   submission_grades: {
     grade: string;
@@ -77,6 +89,12 @@ export const getSubmissionsForMap = async (
           id,
           title,
           map_id
+        ),
+        quiz_questions (
+          id,
+          question_text,
+          options,
+          correct_option
         )
       ),
       submission_grades (
@@ -98,6 +116,13 @@ export const getSubmissionsForMap = async (
     .order("submitted_at", { ascending: false });
 
   if (error) {
+    // Polling and remounts (React StrictMode, Fast Refresh, parent re-renders)
+    // frequently cancel the in-flight Supabase request. Treat those as a
+    // no-op rather than a user-visible "Could not fetch submissions" error.
+    if (isAbortError(error)) {
+      console.warn("[grading] Submissions fetch aborted:", error);
+      return [];
+    }
     console.error("Error fetching submissions:", error);
     throw new Error("Could not fetch submissions for this map.");
   }

@@ -39,6 +39,7 @@ import { CommentNode } from "@/components/map/CommentNode";
 import { SubmissionList } from "./SubmissionList";
 import { InlineGradingForm } from "./InlineGradingForm";
 import { getSubmissionsForMap } from "@/lib/supabase/grading";
+import { isAbortError } from "@/lib/supabase/errors";
 import {
   getTeamMapClassroomInfo,
   getUserClassroomRoleClient,
@@ -832,7 +833,12 @@ export function MapViewer({
       const submissions = await getSubmissionsForMap(map.id);
       setAllSubmissions(submissions);
     } catch (error) {
-      console.error("Error loading submissions:", error);
+      // Aborts are expected when a new poll cancels the previous one.
+      // getSubmissionsForMap already downgrades them to console.warn;
+      // we just keep the loading state consistent here.
+      if (!isAbortError(error)) {
+        console.error("Error loading submissions:", error);
+      }
     } finally {
       setIsLoadingSubmissions(false);
     }
@@ -841,18 +847,30 @@ export function MapViewer({
   useEffect(() => {
     if (currentUser) {
       loadAllProgress();
-      if (isInstructorOrTA) {
-        loadAllSubmissions();
-
-        // Set up periodic refresh for real-time updates (every 30 seconds)
-        const interval = setInterval(() => {
-          loadAllSubmissions();
-        }, 30000);
-
-        return () => clearInterval(interval);
-      }
     }
-  }, [currentUser, map, isInstructorOrTA]);
+  }, [currentUser, loadAllProgress]);
+
+  useEffect(() => {
+    if (!currentUser || !isInstructorOrTA) return;
+
+    // Single-flight: skip a tick while a fetch is already in progress so
+    // slow queries don't pile up overlapping requests.
+    const inFlightRef = { current: false };
+
+    const runPoll = async () => {
+      if (inFlightRef.current) return;
+      inFlightRef.current = true;
+      try {
+        await loadAllSubmissions();
+      } finally {
+        inFlightRef.current = false;
+      }
+    };
+
+    runPoll();
+    const interval = setInterval(runPoll, 30000);
+    return () => clearInterval(interval);
+  }, [currentUser, isInstructorOrTA, map.id, loadAllSubmissions]);
 
   // Check if map is a team map and get classroom role
   useEffect(() => {

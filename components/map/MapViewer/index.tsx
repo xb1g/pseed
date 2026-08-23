@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   useNodesState,
   useEdgesState,
@@ -23,6 +23,12 @@ import {
   getTeamMapClassroomInfo,
   getUserClassroomRoleClient,
 } from "@/lib/supabase/maps";
+import {
+  buildTranslationMap,
+  filterPrimaryNodes,
+  isTranslationNode,
+  type TranslationMap,
+} from "@/lib/utils/bilingual-nodes";
 
 // Import refactored modules
 import { MapViewerProps, MapViewerNode, UserRole, PanelRefs } from "./types";
@@ -47,6 +53,11 @@ function MapViewer({ map, seedRoomId, seedTitle, seedId }: MapViewerProps) {
   const [classroomRole, setClassroomRole] = useState<string | null>(null);
   const [isTeamMap, setIsTeamMap] = useState(false);
   const [teamId, setTeamId] = useState<string | null>(null);
+
+  // Bilingual support: map primary node ID -> Thai translation node
+  const translationMap = useMemo<TranslationMap>(() => {
+    return buildTranslationMap(map.map_nodes as any[]);
+  }, [map.id, map.map_nodes]);
 
   // Seed completion state
   const [showCompletionModal, setShowCompletionModal] = useState(false);
@@ -156,7 +167,12 @@ function MapViewer({ map, seedRoomId, seedTitle, seedId }: MapViewerProps) {
 
   // Transform and set nodes/edges when dependencies change
   useEffect(() => {
-    const transformedNodes = map.map_nodes.map((node) => {
+    // Filter out translation nodes so the canvas shows one node per day.
+    // Thai translation nodes are linked via metadata.translation_of and
+    // displayed through a language toggle in the NodeViewPanel.
+    const primaryNodes = filterPrimaryNodes(map.map_nodes as any[]);
+
+    const transformedNodes = primaryNodes.map((node) => {
       // Determine node type - check for node_type property
       let nodeType = "default"; // learning node
       if ((node as any)?.node_type === "text") {
@@ -187,7 +203,7 @@ function MapViewer({ map, seedRoomId, seedTitle, seedId }: MapViewerProps) {
     });
 
     const transformedEdges = [];
-    map.map_nodes.forEach((node) => {
+    primaryNodes.forEach((node) => {
       node.node_paths_source.forEach((path) => {
         const sourceProgress = progressMap[path.source_node_id];
         const sourceStatus = sourceProgress?.status || (sourceProgress as any)?.status;
@@ -535,6 +551,7 @@ function MapViewer({ map, seedRoomId, seedTitle, seedId }: MapViewerProps) {
             isInstructorOrTA={isInstructorOrTA}
             isPanelMinimized={isPanelMinimized}
             onTogglePanelSize={togglePanelSize}
+            translationMap={translationMap}
           />
         </ResizablePanel>
       </ResizablePanelGroup>

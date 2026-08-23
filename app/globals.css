@@ -7402,6 +7402,148 @@ summary:focus-visible .radar-expand-indicator {
   border-bottom: 1px solid rgba(254, 217, 92, 0.14);
 }
 
+/* ── Submission list skeleton (loading state) ────────────────────────────
+ * Used by <LoadingShell /> and <SubmissionListSkeleton /> in components/map/.
+ *
+ * Performance on bad networks / packet loss:
+ *
+ *   - Bars are static divs. Shimmer is a single shared overlay (one
+ *     animation, one compositor layer) positioned over the whole list.
+ *     Per-bar `::after` animations were the previous version; on a
+ *     CPU-throttled phone with N bars they summed to measurable jank.
+ *
+ *   - `will-change` is only applied to the overlay (one layer), never
+ *     to individual bars.
+ *
+ *   - No image fetches, no web fonts, no layout-triggering animations.
+ *
+ *   - Dawn palette so the skeleton belongs to the same atmosphere as
+ *     .dawn-panel chrome rather than reading as a foreign grey loader.
+ */
+.skeleton-bar {
+  border-radius: 6px;
+  background-color: rgba(254, 217, 92, 0.06);
+}
+
+.skeleton-bar--avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+.skeleton-bar--name {
+  width: 38%;
+  height: 12px;
+}
+.skeleton-bar--node {
+  width: 52%;
+  height: 10px;
+  opacity: 0.7;
+}
+.skeleton-bar--chip {
+  width: 56px;
+  height: 18px;
+  border-radius: 4px;
+}
+.skeleton-bar--badge {
+  width: 72px;
+  height: 18px;
+  border-radius: 4px;
+}
+.skeleton-bar--line {
+  width: 100%;
+  height: 8px;
+  opacity: 0.55;
+}
+.skeleton-bar--line-2 {
+  width: 64%;
+}
+
+/* Single shared shimmer overlay. The wrapper .skeleton-shimmer sits
+   absolutely over the list; its inner span drifts `transform: translateX`
+   across the overlay area. `pointer-events: none` so it never blocks
+   clicks on any underlying interactive state (e.g. the underlying
+   retry button in slow mode). */
+.skeleton-shimmer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: 12px;
+  /* Promote one layer; this is the only promoted element in the
+     skeleton subtree. */
+  will-change: opacity;
+  transform: translateZ(0);
+}
+
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(254, 217, 92, 0.12) 50%,
+    transparent 100%
+  );
+  /* Pure transform — width/margin never change, so no layout per frame. */
+  transform: translateX(-100%);
+  animation: skeleton-shimmer 1800ms linear infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Dawn atmospheric horizon band that sits behind the skeleton rows.
+   Same warm-gold tone as the panel header strip, so the loading state
+   reads as part of the same atmosphere rather than a foreign element. */
+.loading-shell__horizon {
+  position: absolute;
+  inset: auto 0 -1px 0;
+  height: 60px;
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    rgba(254, 217, 92, 0.08) 0%,
+    rgba(254, 217, 92, 0.02) 60%,
+    transparent 100%
+  );
+  /* Faint pulse, prime duration so it never visually syncs with the
+     per-row shimmer (1800ms) — they're guaranteed not to coincide. */
+  animation: loading-horizon-pulse 4231ms var(--ease-tension, cubic-bezier(0.05, 0.7, 0.35, 0.99)) infinite;
+  will-change: opacity;
+  z-index: 0;
+}
+
+@keyframes loading-horizon-pulse {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* When the user prefers reduced motion, the skeletons stay (so layout
+   doesn't shift when data lands) but everything stops shimmering. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer::after {
+    animation: none;
+    transform: translateX(0);
+    opacity: 0.18;
+  }
+  .loading-shell__horizon {
+    animation: none;
+  }
+}
+
 /* ── My Path: Dawn journey home ──────────────────────────────────────────
  * `.ei-card` keeps its shared material and motion structure. The scoped
  * modifier below replaces Dusk amber with the student/parent Dawn palette.

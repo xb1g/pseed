@@ -10,6 +10,7 @@ import {
 
 import { NodeViewPanel } from "@/components/map/NodeViewPanel";
 import { MapViewerNode, UserRole } from "../types";
+import { TranslationMap } from "@/lib/utils/bilingual-nodes";
 
 interface MapSidebarProps {
   selectedNode: MapViewerNode | null;
@@ -20,6 +21,7 @@ interface MapSidebarProps {
   isInstructorOrTA: boolean;
   isPanelMinimized: boolean;
   onTogglePanelSize: () => void;
+  translationMap?: TranslationMap;
 }
 
 export function MapSidebar({
@@ -31,6 +33,7 @@ export function MapSidebar({
   isInstructorOrTA,
   isPanelMinimized,
   onTogglePanelSize,
+  translationMap,
 }: MapSidebarProps) {
   return (
     <>
@@ -58,6 +61,7 @@ export function MapSidebar({
             isNodeUnlocked={isNodeUnlocked}
             userRole={userRole}
             isInstructorOrTA={isInstructorOrTA}
+            translationMap={translationMap}
           />
         )}
       </div>

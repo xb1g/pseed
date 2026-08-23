@@ -23,6 +23,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { SubmissionWithDetails } from "@/lib/supabase/grading";
+import { LoadingShell } from "./LoadingShell";
 
 interface SubmissionListProps {
   submissions: SubmissionWithDetails[];
@@ -116,10 +117,23 @@ export function SubmissionList({
   );
 
   if (isLoading) {
+    // Keep the header (count, refresh, filters) mounted so the user doesn't
+    // lose their search/filter context when a refresh starts. The body
+    // area is replaced by <LoadingShell />, which handles the slow-network
+    // state and aria-live announcements.
     return (
-      <div className="p-4 flex items-center justify-center">
-        <RefreshCw className="h-6 w-6 animate-spin mr-2" />
-        Loading submissions...
+      <div className="h-full flex flex-col">
+        <div className="flex-shrink-0 border-b p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold">Submissions</h3>
+            <Button size="sm" variant="outline" onClick={onRefresh}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          <LoadingShell isLoading rows={3} onRetry={onRefresh} />
+        </div>
       </div>
     );
   }

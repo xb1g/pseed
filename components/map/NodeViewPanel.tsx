@@ -40,6 +40,11 @@ import {
   getTeamMapClassroomInfo,
   getUserClassroomRoleClient,
 } from "@/lib/supabase/maps";
+import {
+  getTranslationNode,
+  type TranslationMap,
+} from "@/lib/utils/bilingual-nodes";
+import { LanguageToggle } from "./LanguageToggle";
 
 interface NodeViewPanelProps {
   // React Flow Node requires a generic that extends Record<string, unknown>
