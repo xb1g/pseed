@@ -47,4 +47,14 @@ export const ASSESSMENT_TYPE_CONFIG = {
     description: "Submit documents",
     icon: "📎",
   },
+  image_upload: {
+    label: "Image Upload",
+    description: "Submit images",
+    icon: "🖼️",
+  },
+  ai_chat: {
+    label: "AI Chat",
+    description: "Chat with an AI mentor",
+    icon: "🤖",
+  },
 } as const;

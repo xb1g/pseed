@@ -73,12 +73,36 @@ export interface BulkReplyResult {
   /** Missed comments beyond the batch cap — not attempted this run. */
   skipped: number;
   errors: string[];
+  /**
+   * Handles that actually received a reply, in send order. Counts alone cannot
+   * answer "who did we already message?" after a run is stopped part way, and
+   * the sent rows drop straight out of the queue, so the record has to come
+   * back with the result.
+   */
+  sentTo: string[];
+  /**
+   * Failures whose comment no longer exists on Instagram. Counted separately
+   * because they are retired rather than retried, so they leave the queue for
+   * good and are not a problem to act on.
+   */
+  unreachable: number;
+}
+
+/**
+ * Instagram reports a deleted, hidden, or otherwise unreachable comment as
+ * error code 100 with subcode 33 ("does not exist, cannot be loaded due to
+ * missing permissions, or does not support this operation"). Nothing about
+ * that changes on a retry, unlike a rate limit or a network blip.
+ */
+function isUnrecoverableCommentError(message: string): boolean {
+  return message.includes('"code":100') && message.includes('"error_subcode":33');
 }
 
 /**
  * Sends the default "please DM us first" public reply to every comment the DM
  * automation never reached. One failure never aborts the batch — the comment
- * just stays unreplied and shows up again next run.
+ * just stays unreplied and shows up again next run, unless it is unreachable,
+ * in which case it is retired so it stops occupying a slot.
  */
 export async function replyToAllMissedComments(): Promise<BulkReplyResult> {
   await requireAdmin();
@@ -90,6 +114,8 @@ export async function replyToAllMissedComments(): Promise<BulkReplyResult> {
     failed: 0,
     skipped: missed.length - batch.length,
     errors: [],
+    sentTo: [],
+    unreachable: 0,
   };
 
   for (const comment of batch) {
@@ -102,10 +128,21 @@ export async function replyToAllMissedComments(): Promise<BulkReplyResult> {
       await replyToComment(comment.ig_comment_id, reply);
       await markCommentReplied(comment.id);
       result.sent += 1;
+      result.sentTo.push(who);
     } catch (error) {
       console.error(`replyToAllMissedComments failed for ${who}:`, error);
       result.failed += 1;
-      result.errors.push(`${who}: ${error instanceof Error ? error.message : "unknown error"}`);
+      const message = error instanceof Error ? error.message : "unknown error";
+      result.errors.push(`${who}: ${message}`);
+      // A comment that no longer exists can never be replied to, so retiring it
+      // keeps it from taking a slot in every future batch and re-reporting the
+      // same error. Other failures stay unmarked so they are retried.
+      if (isUnrecoverableCommentError(message)) {
+        result.unreachable += 1;
+        await markCommentReplied(comment.id).catch((markError) => {
+          console.error(`Could not retire unreachable comment ${who}:`, markError);
+        });
+      }
     }
     await new Promise((resolve) => setTimeout(resolve, BULK_REPLY_DELAY_MS));
   }

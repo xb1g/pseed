@@ -100,7 +100,7 @@ CREATE POLICY "competitions_admin_write"
 
 INSERT INTO public.competitions (
   name_th, name_en, field, grade_levels, weight,
-  application_opens, deadline, recurrence_pattern, url, notes, source_checked_at
+  application_opens, deadline, url, notes, source_checked_at
 ) VALUES
 
 -- ══════════════════════════════════════════════════════════════════════════

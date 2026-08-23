@@ -7,6 +7,8 @@ import Embed, { defaultProviders } from "react-tiny-oembed";
 import { CanvaEmbed } from "./CanvaEmbed";
 import { marked } from "marked";
 import { OrderCodeActivity } from "./OrderCodeActivity";
+import { WebtoonReader } from "./WebtoonReader";
+import { parseWebtoonBody } from "@/lib/utils/webtoon-slice";
 import { sanitizeHtml } from "@/lib/security/sanitize-html";
 
 // Configure marked options for security and consistency
@@ -477,6 +479,16 @@ export const renderContent = (
           </div>
         </div>
       );
+
+    case "webtoon": {
+      const { panels } = parseWebtoonBody(content.content_body);
+      return (
+        <div key={contentKey}>
+          {TitleSection}
+          <WebtoonReader panels={panels} title={contentTitle} />
+        </div>
+      );
+    }
 
     case "order_code":
       try {

@@ -11171,7 +11171,11 @@ summary:focus-visible .radar-expand-indicator {
 .pathlab-poster__field-img {
   display: block;
   width: 100%;
-  height: auto;
+  /* Fixed height so all four field photos render the same size on the row
+     regardless of source aspect ratio (some are 876x1171 portrait, Web Dev
+     is 1600x1067, Game Dev is 1200x675). object-fit crops to fill. */
+  height: 24mm;
+  object-fit: cover;
   border-radius: 3mm;
   box-shadow: 0 2px 8px rgba(82, 71, 70, 0.18);
 }
@@ -12346,6 +12350,1968 @@ summary:focus-visible .radar-expand-indicator {
 }
 
 /* ── Fields: the paths currently open ── */
+
+.pathlab-tech-stage {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+  background: #524746;
+}
+
+.pathlab-tech-poster {
+  position: relative;
+  width: 794px;
+  min-height: 1123px;
+  box-sizing: border-box;
+  padding: 56px 54px 50px;
+  background: #fdf3e6;
+  color: #524746;
+  text-align: center;
+  font-family: var(--font-bai-jamjuree), sans-serif;
+}
+
+/* Marker frame just inside the edge: slightly uneven corners keep it
+   hand-drawn rather than machined. Mirrors the base poster's frame. */
+.pathlab-tech-poster::before {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  border: 2px solid rgba(196, 62, 29, 0.28);
+  border-radius: 18px 22px 16px 24px / 22px 16px 24px 18px;
+  pointer-events: none;
+}
+
+/* Logo + "Tech Path" wordmark sit on a single centred lockup so the title
+   IS the brand. The orange mark pairs with the orange wordmark — no second
+   colour enters the lockup. */
+.pathlab-tech-poster__lockup {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.pathlab-tech-poster__lockup-logo {
+  height: 56px;
+  width: auto;
+  display: block;
+}
+
+.pathlab-tech-poster__title {
+  margin: 0;
+  color: #c43e1d;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 76px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.pathlab-tech-poster__kicker {
+  margin: 10px 0 0;
+  color: #c43e1d;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.pathlab-tech-poster__note {
+  margin: 14px 0 0;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.pathlab-tech-poster__headline {
+  margin: 18px 0 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #524746;
+}
+
+.pathlab-tech-poster__subline {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: rgba(82, 71, 70, 0.85);
+}
+
+/* Premium seal beside the title lockup, high on the sheet where the eye
+   lands first. Three rings do the work: a bold outer ring, a perforated
+   dashed ring, then the words bracketed by tiny stars. Soft radial wash
+   makes the ink read as pressed into the paper, and a faint drop shadow
+   lifts the seal off the sheet like a wax stamp. Smaller than the base
+   poster's so the Tech wordmark stays the dominant mark. */
+.pathlab-tech-poster__stamp {
+  position: absolute;
+  top: 48px;
+  right: 72px;
+  width: 84px;
+  height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(196, 62, 29, 0.85);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 34% 30%,
+    rgba(196, 62, 29, 0.14),
+    rgba(196, 62, 29, 0.03) 58%
+  );
+  box-shadow:
+    inset 0 0 0 4px #fdf3e6,
+    inset 0 0 0 calc(4px + 1px) rgba(196, 62, 29, 0.55),
+    0 1.5px 4px rgba(82, 71, 70, 0.18);
+  transform: rotate(-9deg);
+}
+
+/* The perforated inner ring: inset from the outer ring so a sliver of
+   paper shows between the two, like a postage seal. */
+.pathlab-tech-poster__stamp::before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border: 1px dashed rgba(196, 62, 29, 0.65);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.pathlab-tech-poster__stamp span {
+  max-width: 56px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  letter-spacing: 0.02em;
+  color: #c43e1d;
+}
+
+/* Tiny seal stars bracketing the words, the way certificate seals frame
+   their motto. Purely decorative ink. */
+.pathlab-tech-poster__stamp span::before,
+.pathlab-tech-poster__stamp span::after {
+  display: block;
+  font-size: 7px;
+  line-height: 1.5;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  color: rgba(196, 62, 29, 0.75);
+}
+
+.pathlab-tech-poster__stamp span::before {
+  content: "★ ★";
+  margin-bottom: 1px;
+}
+
+.pathlab-tech-poster__stamp span::after {
+  content: "★ ★";
+  margin-top: 1px;
+}
+
+/* Sparkles tossed into the quiet corners. Each sits at a hand-picked
+   coordinate with its own size, colour and angle. */
+.pathlab-tech-poster__sparkle {
+  position: absolute;
+  color: #c43e1d;
+}
+
+.pathlab-tech-poster__sparkle--hero-l {
+  top: 200px;
+  left: 40px;
+  width: 22px;
+  transform: rotate(-12deg);
+}
+
+.pathlab-tech-poster__sparkle--hero-r {
+  top: 220px;
+  right: 36px;
+  width: 16px;
+  transform: rotate(9deg);
+  color: rgba(82, 71, 70, 0.55);
+}
+
+.pathlab-tech-poster__sparkle--projects-r {
+  top: 410px;
+  right: 28px;
+  width: 18px;
+  transform: rotate(14deg);
+}
+
+.pathlab-tech-poster__sparkle--deal-l {
+  top: 940px;
+  left: 18px;
+  width: 16px;
+  transform: rotate(-8deg);
+  color: rgba(82, 71, 70, 0.55);
+}
+
+.pathlab-tech-poster__projects {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.pathlab-tech-poster__projects-heading {
+  margin: 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #c43e1d;
+}
+
+/* Hand-drawn wavy underline under the projects heading. */
+.pathlab-tech-poster__squiggle {
+  display: block;
+  width: 154px;
+  margin: 6px auto 0;
+  color: #c43e1d;
+  opacity: 0.8;
+}
+
+/* Each project photo shows its real artwork (the same field cards the
+   base poster uses), hand-placed at a slight angle, with the path
+   label stuck on as a marker swipe that overlaps the photo's bottom
+   edge. The title sits underneath the photo, not inside the dark card,
+   so the sheet stays in the cream palette. */
+.pathlab-tech-poster__projects-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pathlab-tech-poster__project {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pathlab-tech-poster__project:nth-child(1) {
+  transform: rotate(-1.1deg);
+}
+
+.pathlab-tech-poster__project:nth-child(2) {
+  transform: rotate(1deg) translateY(2px);
+}
+
+.pathlab-tech-poster__project-img {
+  display: block;
+  width: 100%;
+  /* Fixed height so both project photos fill the same area regardless of
+     their source aspect ratio (Web Dev is portrait-leaning 1600x1067, Game
+     Dev is landscape 1200x675). object-fit crops them to match. */
+  height: 220px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(82, 71, 70, 0.18);
+}
+
+/* Washi tape across a top corner of each photo, so the cards read as
+   physically stuck onto the sheet. Alternates corner by position. */
+.pathlab-tech-poster__project-tape {
+  position: absolute;
+  top: -8px;
+  z-index: 2;
+  width: 48px;
+  height: 14px;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 236, 170, 0.9),
+    rgba(255, 226, 140, 0.85)
+  );
+  box-shadow: 0 1px 2px rgba(82, 71, 70, 0.15);
+}
+
+.pathlab-tech-poster__project-tape--l {
+  left: -10px;
+  transform: rotate(-40deg);
+}
+
+.pathlab-tech-poster__project-tape--r {
+  right: -10px;
+  transform: rotate(40deg);
+}
+
+/* The path label rides the photo's bottom edge like a caption stuck on
+   after. */
+.pathlab-tech-poster__project .pathlab-note {
+  position: relative;
+  z-index: 1;
+  margin-top: -10px;
+  font-size: 22px;
+  padding: 0.18em 0.7em 0.32em;
+}
+
+.pathlab-tech-poster__project-title {
+  margin: 10px 0 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #c43e1d;
+  line-height: 1.3;
+}
+
+.pathlab-tech-poster__project-body {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: rgba(82, 71, 70, 0.85);
+}
+
+/* Featured deal block: the bottom-of-sheet hero. A single dark panel split
+   in two by a dashed vertical rule: the price story on the left, the
+   included benefits on the right. Side-by-side keeps the panel short — the
+   money question and the value answer are read in one glance instead of
+   stacking into a tall wall. */
+.pathlab-tech-poster__deal {
+  position: relative;
+  margin-top: 30px;
+  padding: 22px 24px 24px;
+  background: #524746;
+  border-radius: 18px;
+  color: #fdf3e6;
+  background-image: linear-gradient(
+      180deg,
+      rgba(196, 62, 29, 0.18),
+      rgba(196, 62, 29, 0) 22px
+    ),
+    radial-gradient(
+      ellipse at 92% 0%,
+      rgba(255, 213, 97, 0.12),
+      rgba(255, 213, 97, 0) 60%
+    );
+}
+
+.pathlab-tech-poster__deal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pathlab-tech-poster__deal-title {
+  margin: 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #fdf3e6;
+}
+
+/* The promo chip rides top-right of the deal head, on the same baseline as
+   the tier label so the eye pairs them as one header unit. */
+.pathlab-tech-poster__deal-chip {
+  flex-shrink: 0;
+  padding: 5px 14px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: #524746;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 224, 138, 0.95),
+    rgba(255, 213, 97, 0.92)
+  );
+  border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px;
+}
+
+/* The two halves of the deal: price column sizes to its content, benefits
+   take the rest. Centred against each other so the divider reads as a
+   deliberate rule, not a leftover. */
+.pathlab-tech-poster__deal-body {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 22px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.pathlab-tech-poster__deal-price {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.pathlab-tech-poster__deal-currency {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-weight: 700;
+  margin-right: 1px;
+}
+
+.pathlab-tech-poster__deal-original {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: rgba(253, 243, 230, 0.55);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: rgba(253, 243, 230, 0.6);
+}
+
+.pathlab-tech-poster__deal-arrow {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+  color: rgba(253, 243, 230, 0.7);
+}
+
+.pathlab-tech-poster__deal-promo {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fdf3e6;
+  letter-spacing: -0.02em;
+}
+
+/* The discount chip drops under the price row. Still rotated, still
+   hand-placed. */
+.pathlab-tech-poster__deal-discount {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 4px 12px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #c43e1d;
+  background: #fdf3e6;
+  border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px;
+  transform: rotate(-1.5deg);
+}
+
+.pathlab-tech-poster__deal-unit {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(253, 243, 230, 0.82);
+}
+
+.pathlab-tech-poster__deal-blurb {
+  margin: 4px 0 0;
+  max-width: 62mm;
+  font-size: 11px;
+  line-height: 1.6;
+  color: rgba(253, 243, 230, 0.78);
+}
+
+/* Perks list: the benefits half of the deal panel, one perk per line with
+   a green check chip on the left. Green is the second accent on the sheet
+   — the only colour besides orange/red — so the ✓ reads as "included"
+   without competing with the wordmarks. The dashed left rule is the
+   divider that separates benefits from price. */
+.pathlab-tech-poster__perks {
+  display: grid;
+  grid-template-columns: 1fr;
+  row-gap: 8px;
+  list-style: none;
+  padding: 0 0 0 22px;
+  margin: 0;
+  border-left: 1.5px dashed rgba(253, 243, 230, 0.25);
+}
+
+.pathlab-tech-poster__perk {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #fdf3e6;
+}
+
+.pathlab-tech-poster__perk span:last-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pathlab-tech-poster__check {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border-radius: 50%;
+  background: #6fa86b;
+  color: #fdf3e6;
+}
+
+.pathlab-tech-poster__check svg {
+  width: 78%;
+  height: 78%;
+}
+
+.pathlab-tech-poster__schedule {
+  margin: 18px 0 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #ffd561;
+  text-align: center;
+}
+
+.pathlab-tech-poster__footer {
+  margin-top: 20px;
+  color: #c43e1d;
+  font-weight: 700;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Preview convenience on screens narrower than the sheet. zoom (not
+   transform) so the layout box shrinks too and no ghost scroll area
+   remains. */
+@media (max-width: 900px) {
+  .pathlab-tech-poster {
+    zoom: 0.78;
+  }
+}
+
+@media (max-width: 700px) {
+  .pathlab-tech-poster {
+    zoom: 0.55;
+  }
+}
+
+@media (max-width: 520px) {
+  .pathlab-tech-poster {
+    zoom: 0.4;
+  }
+}
+
+/* ── Med A4 print poster ── */
+
+.pathlab-med-stage {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+  background: #524746;
+}
+
+.pathlab-med-poster {
+  position: relative;
+  width: 794px;
+  min-height: 1123px;
+  box-sizing: border-box;
+  padding: 40px 54px 30px;
+  background: #fdf3e6;
+  color: #524746;
+  text-align: center;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+}
+
+/* Marker frame just inside the edge: slightly uneven corners keep it
+   hand-drawn rather than machined. */
+.pathlab-med-poster::before {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  border: 2px solid rgba(196, 62, 29, 0.28);
+  border-radius: 18px 22px 16px 24px / 22px 16px 24px 18px;
+  pointer-events: none;
+}
+
+/* Logo + "Med Path" wordmark sit on a single centred lockup so the title
+   IS the brand. */
+.pathlab-med-poster__lockup {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.pathlab-med-poster__lockup-logo {
+  height: 56px;
+  width: auto;
+  display: block;
+}
+
+.pathlab-med-poster__title {
+  margin: 0;
+  color: #c43e1d;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 64px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.pathlab-med-poster__kicker {
+  margin: 8px 0 0;
+  color: #c43e1d;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.pathlab-med-poster__note {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.pathlab-med-poster__headline {
+  margin: 12px 0 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #524746;
+}
+
+.pathlab-med-poster__subline {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: rgba(82, 71, 70, 0.85);
+}
+
+/* Premium seal beside the title lockup, high on the sheet where the eye
+   lands first. */
+.pathlab-med-poster__stamp {
+  position: absolute;
+  top: 48px;
+  right: 72px;
+  width: 84px;
+  height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(196, 62, 29, 0.85);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 34% 30%,
+    rgba(196, 62, 29, 0.14),
+    rgba(196, 62, 29, 0.03) 58%
+  );
+  box-shadow:
+    inset 0 0 0 4px #fdf3e6,
+    inset 0 0 0 calc(4px + 1px) rgba(196, 62, 29, 0.55),
+    0 1.5px 4px rgba(82, 71, 70, 0.18);
+  transform: rotate(-9deg);
+}
+
+.pathlab-med-poster__stamp::before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border: 1px dashed rgba(196, 62, 29, 0.65);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.pathlab-med-poster__stamp span {
+  max-width: 56px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  letter-spacing: 0.02em;
+  color: #c43e1d;
+}
+
+.pathlab-med-poster__stamp span::before,
+.pathlab-med-poster__stamp span::after {
+  display: block;
+  font-size: 7px;
+  line-height: 1.5;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  color: rgba(196, 62, 29, 0.75);
+}
+
+.pathlab-med-poster__stamp span::before {
+  content: "★ ★";
+  margin-bottom: 1px;
+}
+
+.pathlab-med-poster__stamp span::after {
+  content: "★ ★";
+  margin-top: 1px;
+}
+
+/* Sparkles tossed into the quiet corners. */
+.pathlab-med-poster__sparkle {
+  position: absolute;
+  color: #c43e1d;
+}
+
+.pathlab-med-poster__sparkle--hero-l {
+  top: 200px;
+  left: 40px;
+  width: 22px;
+  transform: rotate(-12deg);
+}
+
+.pathlab-med-poster__sparkle--hero-r {
+  top: 220px;
+  right: 36px;
+  width: 16px;
+  transform: rotate(9deg);
+  color: rgba(82, 71, 70, 0.55);
+}
+
+.pathlab-med-poster__sparkle--days-r {
+  top: 480px;
+  right: 28px;
+  width: 18px;
+  transform: rotate(14deg);
+}
+
+.pathlab-med-poster__sparkle--deal-l {
+  top: 940px;
+  left: 18px;
+  width: 16px;
+  transform: rotate(-8deg);
+  color: rgba(82, 71, 70, 0.55);
+}
+
+/* Zigzag island trail — the exact same vocabulary PathlabJourneyMap uses
+   on /pathlab. Live islands from the demo map, with each island
+   carrying the matching POSTER_MED day. Falls back to a 5-row trail
+   of the fallback sprite when the demo map isn't seeded. No day
+   cards on the print sheet; just like /pathlab, the day content lives
+   under each island as a small chip + title. */
+.pathlab-med-poster__trail {
+  margin-top: 8px;
+  text-align: center;
+}
+
+.pathlab-med-poster__trail-eyebrow {
+  margin: 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #524746;
+}
+
+.pathlab-med-poster__trail-chip {
+  display: inline-block;
+  padding: 3px 10px;
+  margin-right: 6px;
+  border-radius: 999px;
+  background: rgba(196, 62, 29, 0.12);
+  color: #c43e1d;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+/* Hand-drawn wavy underline under the eyebrow, matching the base
+   poster's __squiggle vocabulary. */
+.pathlab-med-poster__squiggle {
+  display: block;
+  width: 154px;
+  margin: 4px auto 8px;
+  color: #c43e1d;
+  opacity: 0.85;
+}
+
+.pathlab-med-poster__trail-hint {
+  margin: 0 0 6px;
+  font-size: 11px;
+  color: rgba(82, 71, 70, 0.85);
+}
+
+.pathlab-med-poster__trail-canvas {
+  position: relative;
+  margin: 0 auto;
+  /* Same width rhythm as PathlabJourneyMap: the trail spans most of
+     the A4 sheet width so the zigzag uses the full page. The 100px
+     row pitch gives each 96px sprite breathing room above and below
+     so islands don't crash into each other. */
+  width: 100%;
+  max-width: 44rem;
+  --trail-row: 100px;
+}
+
+.pathlab-med-poster__trail-path {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Stop = one island. Mirrors .pathlab-journey-map__stop so the print
+   sheet and the live page read as the same artefact. */
+.pathlab-med-poster__stop {
+  position: absolute;
+  z-index: 5;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 9rem;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.pathlab-med-poster__stop-sprite {
+  display: block;
+  width: 96px;
+  height: 96px;
+  filter: drop-shadow(0 12px 20px rgba(82, 71, 70, 0.32));
+}
+
+.pathlab-med-poster__stop-chip {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(82, 71, 70, 0.88);
+  color: #fdf3e6;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.pathlab-med-poster__stop-title {
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #524746;
+  text-align: center;
+  text-wrap: balance;
+  max-width: 9rem;
+}
+
+/* Featured deal block: the bottom-of-sheet hero. */
+.pathlab-med-poster__deal {
+  position: relative;
+  margin-top: 8px;
+  padding: 10px 14px 10px;
+  background: #524746;
+  border-radius: 14px;
+  color: #fdf3e6;
+  background-image: linear-gradient(
+      180deg,
+      rgba(196, 62, 29, 0.18),
+      rgba(196, 62, 29, 0) 18px
+    ),
+    radial-gradient(
+      ellipse at 92% 0%,
+      rgba(255, 213, 97, 0.12),
+      rgba(255, 213, 97, 0) 60%
+    );
+}
+
+.pathlab-med-poster__deal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pathlab-med-poster__deal-title {
+  margin: 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #fdf3e6;
+}
+
+.pathlab-med-poster__deal-chip {
+  flex-shrink: 0;
+  padding: 5px 14px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: #524746;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 224, 138, 0.95),
+    rgba(255, 213, 97, 0.92)
+  );
+  border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px;
+}
+
+.pathlab-med-poster__deal-body {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 22px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.pathlab-med-poster__deal-main {
+  min-width: 0;
+}
+
+.pathlab-med-poster__deal-price {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.pathlab-med-poster__deal-currency {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-weight: 700;
+  margin-right: 1px;
+}
+
+.pathlab-med-poster__deal-original {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: rgba(253, 243, 230, 0.55);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: rgba(253, 243, 230, 0.6);
+}
+
+.pathlab-med-poster__deal-arrow {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+  color: rgba(253, 243, 230, 0.7);
+}
+
+.pathlab-med-poster__deal-promo {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fdf3e6;
+  letter-spacing: -0.02em;
+}
+
+.pathlab-med-poster__deal-discount {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 4px 12px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #c43e1d;
+  background: #fdf3e6;
+  border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px;
+  transform: rotate(-1.5deg);
+}
+
+.pathlab-med-poster__deal-unit {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(253, 243, 230, 0.82);
+}
+
+.pathlab-med-poster__deal-blurb {
+  margin: 4px 0 0;
+  max-width: 62mm;
+  font-size: 11px;
+  line-height: 1.6;
+  color: rgba(253, 243, 230, 0.78);
+}
+
+.pathlab-med-poster__perks {
+  display: grid;
+  grid-template-columns: 1fr;
+  row-gap: 8px;
+  list-style: none;
+  padding: 0 0 0 22px;
+  margin: 0;
+  border-left: 1.5px dashed rgba(253, 243, 230, 0.25);
+}
+
+.pathlab-med-poster__perk {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #fdf3e6;
+}
+
+.pathlab-med-poster__perk span:last-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pathlab-med-poster__check {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border-radius: 50%;
+  background: #6fa86b;
+  color: #fdf3e6;
+}
+
+.pathlab-med-poster__check svg {
+  width: 78%;
+  height: 78%;
+}
+
+.pathlab-med-poster__schedule {
+  margin: 18px 0 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #ffd561;
+  text-align: center;
+}
+
+.pathlab-med-poster__footer {
+  margin-top: 20px;
+  color: #c43e1d;
+  font-weight: 700;
+  font-size: 13px;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .pathlab-med-poster {
+    zoom: 0.78;
+  }
+}
+
+@media (max-width: 700px) {
+  .pathlab-med-poster {
+    zoom: 0.55;
+  }
+}
+
+@media (max-width: 520px) {
+  .pathlab-med-poster {
+    zoom: 0.4;
+  }
+}
+
+.pathlab-tech-social {
+  position: relative;
+  width: 1200px;
+  height: 630px;
+  box-sizing: border-box;
+  padding: 38px 56px 28px;
+  background: #fdf3e6;
+  color: #524746;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  overflow: hidden;
+  display: grid;
+  /* Two columns: hero on the left, projects on the right. The deal panel
+     and footer span the full width as their own band underneath. */
+  grid-template-columns: 380px 1fr;
+  grid-template-rows: 1fr auto auto;
+  gap: 24px 36px;
+}
+
+/* Marker frame just inside the edge: slightly uneven corners keep it
+   hand-drawn rather than machined. */
+.pathlab-tech-social::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border: 1.5px solid rgba(196, 62, 29, 0.28);
+  border-radius: 14px 18px 12px 20px / 18px 12px 20px 14px;
+  pointer-events: none;
+}
+
+/* Sparkles tossed into the quiet corners. Each sits at a hand-picked
+   coordinate with its own size, colour and angle. */
+.pathlab-tech-social__sparkle {
+  position: absolute;
+  color: #c43e1d;
+}
+
+.pathlab-tech-social__sparkle--hero-l {
+  top: 38px;
+  left: 28px;
+  width: 14px;
+  transform: rotate(-12deg);
+}
+
+.pathlab-tech-social__sparkle--hero-r {
+  top: 70px;
+  right: 28px;
+  width: 11px;
+  transform: rotate(9deg);
+  color: rgba(82, 71, 70, 0.55);
+}
+
+.pathlab-tech-social__sparkle--projects-r {
+  bottom: 132px;
+  right: 14px;
+  width: 12px;
+  transform: rotate(14deg);
+}
+
+/* Premium seal tucked into the top-right corner. Three rings do the work:
+   a bold outer ring, a perforated dashed ring, then the words bracketed by
+   tiny stars. Soft radial wash makes the ink read as pressed into the
+   paper, and a faint drop shadow lifts the seal off the card like a wax
+   stamp. */
+.pathlab-tech-social__stamp {
+  position: absolute;
+  top: 30px;
+  right: 52px;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.8px solid rgba(196, 62, 29, 0.85);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 34% 30%,
+    rgba(196, 62, 29, 0.14),
+    rgba(196, 62, 29, 0.03) 58%
+  );
+  box-shadow:
+    inset 0 0 0 3px #fdf3e6,
+    inset 0 0 0 calc(3px + 1px) rgba(196, 62, 29, 0.55),
+    0 1.5px 4px rgba(82, 71, 70, 0.18);
+  transform: rotate(-9deg);
+}
+
+.pathlab-tech-social__stamp::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px dashed rgba(196, 62, 29, 0.65);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.pathlab-tech-social__stamp span {
+  max-width: 42px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+  letter-spacing: 0.02em;
+  color: #c43e1d;
+}
+
+.pathlab-tech-social__stamp span::before,
+.pathlab-tech-social__stamp span::after {
+  display: block;
+  font-size: 6px;
+  line-height: 1.4;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  color: rgba(196, 62, 29, 0.75);
+}
+
+.pathlab-tech-social__stamp span::before {
+  content: "★ ★";
+  margin-bottom: 0.5px;
+}
+
+.pathlab-tech-social__stamp span::after {
+  content: "★ ★";
+  margin-top: 0.5px;
+}
+
+/* Hero column on the left: logo lockup, kicker, big title, marker note,
+   lead. Stacks tight so the wordmark stays the dominant mark. */
+.pathlab-tech-social__hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  /* Pin the hero to the top of its grid cell so the wordmark reads high,
+     while the projects section sits a notch lower on the card. */
+  justify-content: flex-start;
+  /* Small top nudge so the hero doesn't press right against the marker
+     frame — leaves breathing room under the card's top edge. */
+  margin-top: 18px;
+}
+
+.pathlab-tech-social__lockup-logo {
+  height: 38px;
+  width: auto;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.pathlab-tech-social__kicker {
+  margin: 0;
+  color: #c43e1d;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.pathlab-tech-social__title {
+  margin: 6px 0 0;
+  color: #c43e1d;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 78px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.pathlab-tech-social__note {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.pathlab-tech-social__lead {
+  margin: 14px 0 0;
+  font-size: 17px;
+  line-height: 1.45;
+  font-weight: 700;
+  color: #524746;
+}
+
+/* Projects column on the right: two stacked photo cards, each with its
+   own tilt. Photo crops to fill a fixed height so both rows look the same
+   regardless of source aspect ratio. */
+.pathlab-tech-social__projects {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  /* A larger top nudge so the projects column sits noticeably lower than
+     the hero — the hero wants to read high (logo + title pair), while the
+     project cards look better visually offset, like a poster row pulled
+     down a notch from the heading. */
+  margin-top: 64px;
+  align-content: start;
+  min-width: 0;
+}
+
+.pathlab-tech-social__project {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pathlab-tech-social__project--top {
+  transform: rotate(-1.1deg);
+}
+
+.pathlab-tech-social__project--bottom {
+  transform: rotate(1deg) translateY(2px);
+}
+
+.pathlab-tech-social__project-img {
+  display: block;
+  width: 100%;
+  /* Fixed height so both project photos fill the same area regardless of
+     their source aspect ratio (Web Dev is 1600x1067, Game Dev is 1200x675). */
+  height: 200px;
+  object-fit: cover;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(82, 71, 70, 0.18);
+}
+
+/* Washi tape across a top corner of each photo so the cards read as
+   physically stuck onto the share card. Alternates corner by position. */
+.pathlab-tech-social__project-tape {
+  position: absolute;
+  top: -7px;
+  z-index: 2;
+  width: 44px;
+  height: 13px;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 236, 170, 0.9),
+    rgba(255, 226, 140, 0.85)
+  );
+  box-shadow: 0 1px 2px rgba(82, 71, 70, 0.15);
+}
+
+.pathlab-tech-social__project-tape--l {
+  left: -9px;
+  transform: rotate(-40deg);
+}
+
+.pathlab-tech-social__project-tape--r {
+  right: -9px;
+  transform: rotate(40deg);
+}
+
+/* The path label rides the photo's bottom edge like a caption stuck on
+   after. */
+.pathlab-tech-social__project .pathlab-note {
+  position: relative;
+  z-index: 1;
+  margin-top: -10px;
+  font-size: 14px;
+}
+
+.pathlab-tech-social__project-title {
+  margin: 10px 0 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #c43e1d;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.pathlab-tech-social__project-body {
+  margin: 4px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: rgba(82, 71, 70, 0.85);
+  text-align: center;
+}
+
+/* Featured deal band spanning the full width. A single dark panel split
+   in two by a dashed vertical rule: the price story on the left, the
+   included benefits on the right. Side-by-side keeps the panel short —
+   the money question and the value answer are read in one glance. */
+.pathlab-tech-social__deal {
+  grid-column: 1 / -1;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 24px;
+  align-items: center;
+  padding: 14px 22px;
+  background: #524746;
+  border-radius: 14px;
+  color: #fdf3e6;
+  background-image: linear-gradient(
+      180deg,
+      rgba(196, 62, 29, 0.18),
+      rgba(196, 62, 29, 0) 16px
+    ),
+    radial-gradient(
+      ellipse at 92% 0%,
+      rgba(255, 213, 97, 0.12),
+      rgba(255, 213, 97, 0) 60%
+    );
+}
+
+.pathlab-tech-social__deal-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pathlab-tech-social__deal-price {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.pathlab-tech-social__deal-currency {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-weight: 700;
+  margin-right: 1px;
+}
+
+.pathlab-tech-social__deal-original {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: rgba(253, 243, 230, 0.55);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: rgba(253, 243, 230, 0.6);
+}
+
+.pathlab-tech-social__deal-arrow {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+  color: rgba(253, 243, 230, 0.7);
+}
+
+.pathlab-tech-social__deal-promo {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fdf3e6;
+  letter-spacing: -0.02em;
+}
+
+.pathlab-tech-social__deal-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Discount chip next to the unit, hand-placed with a small tilt. */
+.pathlab-tech-social__deal-discount {
+  display: inline-block;
+  padding: 3px 10px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #c43e1d;
+  background: #fdf3e6;
+  border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px;
+  transform: rotate(-1.5deg);
+}
+
+.pathlab-tech-social__deal-unit {
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(253, 243, 230, 0.82);
+}
+
+/* Perks: the benefits half of the deal panel, one perk per line with a
+   green check chip on the left. The dashed left rule is the divider that
+   separates benefits from price. */
+.pathlab-tech-social__perks {
+  display: grid;
+  grid-template-columns: 1fr;
+  row-gap: 4px;
+  list-style: none;
+  padding: 0 0 0 16px;
+  margin: 0;
+  border-left: 1.5px dashed rgba(253, 243, 230, 0.25);
+  min-width: 0;
+}
+
+.pathlab-tech-social__perk {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #fdf3e6;
+}
+
+.pathlab-tech-social__perk span:last-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pathlab-tech-social__check {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: #6fa86b;
+  color: #fdf3e6;
+}
+
+.pathlab-tech-social__check svg {
+  width: 78%;
+  height: 78%;
+}
+
+/* Schedule stacks under the deal: lead-in quiet, dates set medium, no
+   time on the share format — the A4 poster carries the time instead. */
+.pathlab-tech-social__schedule {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 0 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffd561;
+  text-align: center;
+}
+
+.pathlab-tech-social__schedule-lead {
+  color: rgba(82, 71, 70, 0.7);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pathlab-tech-social__schedule-dates {
+  font-size: 13px;
+}
+
+.pathlab-tech-social__footer {
+  grid-column: 1 / -1;
+  margin: 0;
+  text-align: center;
+  color: #c43e1d;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+/* ── Med 1200x630 social card ── */
+
+.pathlab-med-social {
+  position: relative;
+  width: 1200px;
+  height: 630px;
+  box-sizing: border-box;
+  padding: 28px 56px 22px;
+  background: #fdf3e6;
+  color: #524746;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  overflow: hidden;
+  display: grid;
+  /* Two columns: hero on the left, island trail on the right. The deal
+     panel and footer span the full width as their own band underneath. */
+  grid-template-columns: 360px 1fr;
+  grid-template-rows: 1fr auto auto;
+  gap: 18px 28px;
+}
+
+/* Marker frame just inside the edge: slightly uneven corners keep it
+   hand-drawn rather than machined. */
+.pathlab-med-social::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border: 1.5px solid rgba(196, 62, 29, 0.28);
+  border-radius: 14px 18px 12px 20px / 18px 12px 20px 14px;
+  pointer-events: none;
+}
+
+/* Sparkles tossed into the quiet corners. */
+.pathlab-med-social__sparkle {
+  position: absolute;
+  color: #c43e1d;
+}
+
+.pathlab-med-social__sparkle--hero-l {
+  top: 38px;
+  left: 28px;
+  width: 14px;
+  transform: rotate(-12deg);
+}
+
+.pathlab-med-social__sparkle--hero-r {
+  top: 70px;
+  right: 28px;
+  width: 11px;
+  transform: rotate(9deg);
+  color: rgba(82, 71, 70, 0.55);
+}
+
+.pathlab-med-social__sparkle--days-r {
+  bottom: 132px;
+  right: 14px;
+  width: 12px;
+  transform: rotate(14deg);
+}
+
+/* Premium seal tucked into the top-right corner. */
+.pathlab-med-social__stamp {
+  position: absolute;
+  top: 30px;
+  right: 52px;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.8px solid rgba(196, 62, 29, 0.85);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 34% 30%,
+    rgba(196, 62, 29, 0.14),
+    rgba(196, 62, 29, 0.03) 58%
+  );
+  box-shadow:
+    inset 0 0 0 3px #fdf3e6,
+    inset 0 0 0 calc(3px + 1px) rgba(196, 62, 29, 0.55),
+    0 1.5px 4px rgba(82, 71, 70, 0.18);
+  transform: rotate(-9deg);
+}
+
+.pathlab-med-social__stamp::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px dashed rgba(196, 62, 29, 0.65);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.pathlab-med-social__stamp span {
+  max-width: 42px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+  letter-spacing: 0.02em;
+  color: #c43e1d;
+}
+
+.pathlab-med-social__stamp span::before,
+.pathlab-med-social__stamp span::after {
+  display: block;
+  font-size: 6px;
+  line-height: 1.4;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  color: rgba(196, 62, 29, 0.75);
+}
+
+.pathlab-med-social__stamp span::before {
+  content: "★ ★";
+  margin-bottom: 0.5px;
+}
+
+.pathlab-med-social__stamp span::after {
+  content: "★ ★";
+  margin-top: 0.5px;
+}
+
+/* Hero column on the left. */
+.pathlab-med-social__hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  margin-top: 8px;
+}
+
+.pathlab-med-social__lockup-logo {
+  height: 32px;
+  width: auto;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.pathlab-med-social__kicker {
+  margin: 0;
+  color: #c43e1d;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.pathlab-med-social__title {
+  margin: 6px 0 0;
+  color: #c43e1d;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 56px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.pathlab-med-social__note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.pathlab-med-social__lead {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 700;
+  color: #524746;
+}
+
+/* Zigzag island trail — the same vocabulary PathlabJourneyMap uses
+   on /pathlab. Five rows of 80px sprites + day chip + title,
+   matching the A4 sibling's trail. */
+.pathlab-med-social__trail {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin-top: 0;
+  min-width: 0;
+}
+
+.pathlab-med-social__trail-eyebrow {
+  margin: 0 0 4px;
+  font-size: 11px;
+  color: rgba(82, 71, 70, 0.85);
+}
+
+.pathlab-med-social__trail-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  margin-right: 4px;
+  background: #c43e1d;
+  color: #fdf3e6;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
+}
+
+.pathlab-med-social__trail-canvas {
+  position: relative;
+  margin: 0;
+  width: 100%;
+}
+
+.pathlab-med-social__trail-path {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.pathlab-med-social__stop {
+  position: absolute;
+  z-index: 5;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 5.5rem;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.pathlab-med-social__stop-sprite {
+  display: block;
+  width: 60px;
+  height: 60px;
+  filter: drop-shadow(0 8px 12px rgba(82, 71, 70, 0.28));
+}
+
+.pathlab-med-social__stop-chip {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(82, 71, 70, 0.88);
+  color: #fdf3e6;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 8.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.pathlab-med-social__stop-title {
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #524746;
+  text-align: center;
+  text-wrap: balance;
+  max-width: 7rem;
+}
+
+.pathlab-med-social__trail-hint {
+  margin: 6px 0 0;
+  font-size: 10px;
+  text-align: center;
+}
+
+/* Featured deal band spanning the full width. */
+.pathlab-med-social__deal {
+  grid-column: 1 / -1;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 24px;
+  align-items: center;
+  padding: 14px 22px;
+  background: #524746;
+  border-radius: 14px;
+  color: #fdf3e6;
+  background-image: linear-gradient(
+      180deg,
+      rgba(196, 62, 29, 0.18),
+      rgba(196, 62, 29, 0) 16px
+    ),
+    radial-gradient(
+      ellipse at 92% 0%,
+      rgba(255, 213, 97, 0.12),
+      rgba(255, 213, 97, 0) 60%
+    );
+}
+
+.pathlab-med-social__deal-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pathlab-med-social__deal-price {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.pathlab-med-social__deal-currency {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-weight: 700;
+  margin-right: 1px;
+}
+
+.pathlab-med-social__deal-original {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: rgba(253, 243, 230, 0.55);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: rgba(253, 243, 230, 0.6);
+}
+
+.pathlab-med-social__deal-arrow {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+  color: rgba(253, 243, 230, 0.7);
+}
+
+.pathlab-med-social__deal-promo {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fdf3e6;
+  letter-spacing: -0.02em;
+}
+
+.pathlab-med-social__deal-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pathlab-med-social__deal-discount {
+  display: inline-block;
+  padding: 3px 10px;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #c43e1d;
+  background: #fdf3e6;
+  border-radius: 255px 18px 225px 18px / 18px 225px 18px 255px;
+  transform: rotate(-1.5deg);
+}
+
+.pathlab-med-social__deal-unit {
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(253, 243, 230, 0.82);
+}
+
+.pathlab-med-social__perks {
+  display: grid;
+  grid-template-columns: 1fr;
+  row-gap: 4px;
+  list-style: none;
+  padding: 0 0 0 16px;
+  margin: 0;
+  border-left: 1.5px dashed rgba(253, 243, 230, 0.25);
+  min-width: 0;
+}
+
+.pathlab-med-social__perk {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #fdf3e6;
+}
+
+.pathlab-med-social__perk span:last-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pathlab-med-social__check {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: #6fa86b;
+  color: #fdf3e6;
+}
+
+.pathlab-med-social__check svg {
+  width: 78%;
+  height: 78%;
+}
+
+.pathlab-med-social__schedule {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 0 0;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffd561;
+  text-align: center;
+}
+
+.pathlab-med-social__schedule-lead {
+  color: rgba(82, 71, 70, 0.7);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pathlab-med-social__schedule-dates {
+  font-size: 13px;
+}
+
+.pathlab-med-social__footer {
+  grid-column: 1 / -1;
+  margin: 0;
+  text-align: center;
+  color: #c43e1d;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
 
 .pathlab-fields {
   padding: 0 clamp(1.25rem, 5vw, 4rem) clamp(5rem, 12vw, 9rem);
@@ -15185,7 +17151,13 @@ a.pathlab-fields__button {
 .pathlab-ig__field-img {
   display: block;
   width: 100%;
-  height: auto;
+  /* Fixed height so all four field photos render the same size on the IG
+     poster row regardless of source aspect ratio (some are 876x1171
+     portrait, Web Dev is 1600x1067, Game Dev is 1200x675). object-fit
+     crops to fill. The square/story variants override this slightly to
+     match their own card proportions. */
+  height: 96px;
+  object-fit: cover;
   border-radius: 10px;
   box-shadow: 0 3px 10px rgba(82, 71, 70, 0.18);
 }

@@ -1,0 +1,12 @@
+-- Enable pg_cron before the migrations that schedule jobs with it.
+--
+-- Hosted Supabase projects have this extension enabled through the dashboard,
+-- so the migrations that call cron.schedule() (competitions, meta webhook,
+-- deno backfill) were written assuming it already exists. A local `db reset`
+-- has no such setup step, so those migrations failed with
+-- `schema "cron" does not exist`.
+--
+-- pg_cron is already in shared_preload_libraries on both the local container
+-- and hosted projects; only the CREATE EXTENSION step was missing. Guarded so
+-- it is a no-op where the extension is already installed.
+CREATE EXTENSION IF NOT EXISTS pg_cron;

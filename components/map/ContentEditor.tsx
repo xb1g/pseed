@@ -47,6 +47,14 @@ import {
   RichTextEditor,
   RichTextEditorHandle,
 } from "@/components/map/RichTextEditor";
+import {
+  sliceAndUploadWebtoon,
+  parseWebtoonBody,
+  serializeWebtoonBody,
+  WebtoonSliceError,
+  type SliceProgress,
+} from "@/lib/utils/webtoon-slice";
+import type { WebtoonPanel } from "@/types/map";
 
 // Content type configurations
 const CONTENT_TYPE_CONFIG = {
@@ -91,6 +99,12 @@ const CONTENT_TYPE_CONFIG = {
     icon: "🧩",
     placeholder: "",
     hint: "",
+  },
+  webtoon: {
+    label: "Webtoon",
+    icon: "📜",
+    placeholder: "",
+    hint: "Upload one long vertical image, students scroll it like a webtoon",
   },
 } as const;
 
@@ -185,6 +199,12 @@ const validateContentForm = (
     errors.push("Description is required for resource links");
   }
 
+  if (contentType === "webtoon") {
+    if (parseWebtoonBody(contentBody).panels.length === 0) {
+      errors.push("Please upload a webtoon image");
+    }
+  }
+
   if (contentType === "order_code") {
     let blocks: string[] = [];
     try {
@@ -257,6 +277,10 @@ const getContentLabel = (item: NodeContent): string => {
     }
     case "canva_slide":
       return "Canva deck";
+    case "webtoon": {
+      const count = parseWebtoonBody(item.content_body).panels.length;
+      return count ? `Webtoon · ${count} panels` : "Webtoon";
+    }
     case "resource_link":
       return getUrlHost(item.content_url) || "Resource link";
     case "order_code": {
@@ -577,6 +601,13 @@ const ContentForm = ({
     }
     return [""];
   });
+  // Webtoon panels, hydrated from the saved JSON body when editing.
+  const [webtoonPanels, setWebtoonPanels] = useState<WebtoonPanel[]>(() =>
+    existingContent?.content_type === "webtoon"
+      ? parseWebtoonBody(existingContent.content_body).panels
+      : [],
+  );
+  const [sliceProgress, setSliceProgress] = useState<SliceProgress | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
@@ -672,7 +703,9 @@ const ContentForm = ({
       const validationErrors = validateContentForm(
         contentType,
         contentUrl,
-        contentBody,
+        contentType === "webtoon"
+          ? serializeWebtoonBody(webtoonPanels)
+          : contentBody,
       );
 
       if (validationErrors.length > 0) {
@@ -693,13 +726,19 @@ const ContentForm = ({
           "pdf",
         ].includes(contentType)
           ? contentUrl.trim()
-          : null,
+          : // Keep the first panel in content_url so existing preview and
+            // thumbnail code that only reads content_url still has an image.
+            contentType === "webtoon"
+            ? (webtoonPanels[0]?.url ?? null)
+            : null,
         content_body:
           contentType === "text" || contentType === "resource_link"
             ? contentBody.trim()
             : contentType === "order_code"
               ? JSON.stringify(codeBlocks.filter((b) => b.trim()))
-              : null,
+              : contentType === "webtoon"
+                ? serializeWebtoonBody(webtoonPanels)
+                : null,
         display_order: existingContent?.display_order ?? contentCount,
         created_at: existingContent?.created_at || new Date().toISOString(),
       };
@@ -717,6 +756,7 @@ const ContentForm = ({
       contentUrl,
       contentBody,
       codeBlocks,
+      webtoonPanels,
       existingContent,
       nodeId,
       onSave,
@@ -736,6 +776,39 @@ const ContentForm = ({
   const handleFileUploadError = useCallback((error: string) => {
     setErrors([error]);
   }, []);
+
+  // One long image in, many ordered panels out. Appends rather than replaces so
+  // an author can build a chapter from several strips.
+  const handleWebtoonFile = useCallback(
+    async (file: File) => {
+      clearErrors();
+      setIsUploading(true);
+      setSliceProgress(null);
+
+      try {
+        const panels = await sliceAndUploadWebtoon({
+          file,
+          nodeId,
+          onProgress: setSliceProgress,
+        });
+        setWebtoonPanels((prev) => [...prev, ...panels]);
+        toast({
+          title: `Webtoon ready`,
+          description: `${panels.length} panel${panels.length === 1 ? "" : "s"} uploaded.`,
+        });
+      } catch (error) {
+        setErrors([
+          error instanceof WebtoonSliceError
+            ? error.message
+            : "Could not process that webtoon image. Please try again.",
+        ]);
+      } finally {
+        setIsUploading(false);
+        setSliceProgress(null);
+      }
+    },
+    [nodeId, clearErrors, toast],
+  );
 
   const handleUploadStateChange = useCallback((uploading: boolean) => {
     setIsUploading(uploading);
@@ -925,6 +998,95 @@ const ContentForm = ({
           <p className="truncate text-[11px] text-muted-foreground">
             A clear description beats a bare URL.
           </p>
+        </div>
+      )}
+
+      {/* Webtoon: drop one long strip, we slice and upload it as panels */}
+      {contentType === "webtoon" && (
+        <div className="space-y-2">
+          <label
+            className={`flex cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed border-white/15 bg-white/[0.03] px-3 py-4 text-center transition-colors hover:border-white/30 ${
+              isUploading ? "pointer-events-none opacity-60" : ""
+            }`}
+          >
+            <input
+              type="file"
+              accept=".jpg,.jpeg,.png,.webp"
+              className="sr-only"
+              disabled={isUploading}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                // Reset so picking the same file twice still fires onChange.
+                e.target.value = "";
+                if (file) void handleWebtoonFile(file);
+              }}
+            />
+            {isUploading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin text-amber-300" />
+                <span className="text-[11px] text-stone-300">
+                  {sliceProgress
+                    ? `${sliceProgress.stage === "slicing" ? "Slicing" : "Uploading"} panel ${sliceProgress.current} of ${sliceProgress.total}`
+                    : "Reading image…"}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="text-lg leading-none" aria-hidden>
+                  📜
+                </span>
+                <span className="text-xs font-medium text-stone-200">
+                  {webtoonPanels.length ? "Add another strip" : "Choose your webtoon image"}
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  {config.hint}
+                </span>
+              </>
+            )}
+          </label>
+
+          {webtoonPanels.length > 0 && (
+            <div className="space-y-1.5 rounded-md border border-white/10 bg-black/20 p-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-emerald-300">
+                  ✓ {webtoonPanels.length} panel
+                  {webtoonPanels.length === 1 ? "" : "s"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWebtoonPanels([]);
+                    clearErrors();
+                  }}
+                  className="text-[11px] text-stone-400 hover:text-stone-200"
+                >
+                  Clear all
+                </button>
+              </div>
+              {/* Horizontal filmstrip: a compact way to confirm order and
+                  spot a panel that landed out of place. */}
+              <div className="flex gap-1 overflow-x-auto pb-1">
+                {webtoonPanels.map((panel, index) => (
+                  <div
+                    key={`${panel.url}-${index}`}
+                    className="relative h-16 w-10 shrink-0 overflow-hidden rounded border border-white/10"
+                  >
+                    <img
+                      src={panel.url}
+                      alt={`Panel ${index + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                    <span className="absolute bottom-0 right-0 bg-black/70 px-1 text-[9px] text-stone-300">
+                      {index + 1}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                Panels display top to bottom in this order, with no gaps.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -1265,6 +1427,28 @@ const ContentPreview = ({ item }: { item: NodeContent }) => {
           )}
         </div>
       );
+
+    case "webtoon": {
+      const { panels } = parseWebtoonBody(item.content_body);
+      if (!panels.length) return <MissingPreview />;
+      return (
+        <div className="flex gap-1 overflow-x-auto">
+          {panels.slice(0, 8).map((panel, i) => (
+            <img
+              key={`${panel.url}-${i}`}
+              src={panel.url}
+              alt={`Panel ${i + 1}`}
+              className="h-14 w-9 shrink-0 rounded border border-white/10 object-cover"
+            />
+          ))}
+          {panels.length > 8 && (
+            <span className="self-center pl-1 text-[11px] text-stone-400">
+              +{panels.length - 8}
+            </span>
+          )}
+        </div>
+      );
+    }
 
     case "order_code": {
       let blocks: string[] = [];

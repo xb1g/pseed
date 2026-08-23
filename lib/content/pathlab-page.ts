@@ -479,6 +479,72 @@ export const POSTER_HOW = {
   ctaHandle: "IG: @passion_seed.th",
 } as const;
 
+/**
+ * Poster-only copy for /pathlab/poster/med and its social sibling. Mirrors
+ * the editorial rule of POSTER/POSTER_HOW: wording lives here so the sheet
+ * is dated, but the deal panel and field labels stay shared with the rest
+ * of the site. Medical doesn't have a published `detail.days` block yet,
+ * so a representative 5-day arc lives here as a teaser of what running a
+ * Med round looks like.
+ */
+export const POSTER_MED = {
+  /** The big Tier 1 title on the A4 sheet. */
+  title: "เรียนยังไง?",
+  /** The Tier 2 promise under the title. */
+  promise:
+    "ทำงานจริงทีละวัน เริ่มจากคนไข้จำลอง แล้วเดินต่อจนได้ของที่ใช้ในสายแพทย์ได้จริง",
+  /** Big Tier 3 headline under the marker note. */
+  headline: "หาว่าสายแพทย์ใช่เราไหม ผ่านการทำงานจริง",
+  /** Smaller Tier 4 subline. */
+  subline: "5 วัน เลือก 1 สายที่อยากลองทำงาน",
+  /** Single margin note tucked into a top corner. */
+  note: "แผนที่นี้คือตัวอย่าง 5 วันจากสายแพทย์ที่น้อง ๆ จะได้เดิน",
+  /** Rubber-stamp badge beside the hero: the number-one worry, answered. */
+  stamp: "ไม่ต้องมี พื้นฐาน",
+  /** Section eyebrow over the day map. */
+  daysEyebrow: "ตัวอย่าง 5 วันจากสายแพทย์",
+  daysHint: "แต่ละวันคือขั้นที่น้อง ๆ จะเดินผ่าน",
+  /** Five representative days that show the arc of a Med round: setup →
+      first patient encounter → analysis → research → presentation. The
+      component reads these directly so the wording is the only source of
+      truth on the print sheet. */
+  days: [
+    {
+      title: "ตั้งเครื่องมือ + ทบทวนพื้นฐาน",
+      doing:
+        "อ่านเคสผู้ป่วยจำลอง ทบทวน anatomy เบื้องต้น ลงเครื่องมือวัดสัญญาณชีพและฝึกใช้",
+      gets: "ชุดเครื่องมือพร้อมใช้",
+    },
+    {
+      title: "เจอคนไข้ตัวจริง",
+      doing:
+        "นั่งฟังอาการจากคนไข้จำลอง ถามประวัติ ตรวจร่างกายเบื้องต้น จดบันทึกอาการสำคัญ",
+      gets: "ประวัติคนไข้ 1 เคส",
+    },
+    {
+      title: "วิเคราะห์อาการ",
+      doing:
+        "รวบอาการ + ผลตรวจ ตั้งสมมติฐานโรคที่เป็นไปได้ เทียบกับเกณฑ์วินิจฉัย เลือกแนวทางตรวจเพิ่ม",
+      gets: "แผนวิเคราะห์ 1 เคส",
+    },
+    {
+      title: "ค้นงานวิจัยจริง",
+      doing:
+        "ค้นงานวิจัยจาก PubMed เทียบวิธีรักษา เลือกแนวทางที่หลักฐานหนุน สรุปเป็นสไลด์สั้น ๆ",
+      gets: "Evidence-based plan",
+    },
+    {
+      title: "นำเสนอแผนรักษา",
+      doing:
+        "นำเสนอแผนรักษาต่อแพทย์ที่ปรึกษา รับฟีดแบ็ก แก้ตามที่ได้ยิน แล้วส่งต่อให้คนไข้จำลองดูจริง",
+      gets: "แผนรักษาที่ส่งต่อได้",
+    },
+  ] as const,
+  /** Footer CTA on the sheet. */
+  ctaEyebrow: "อยากลองเดินเอง",
+  ctaHandle: "IG: @passion_seed.th",
+} as const;
+
 export interface PriceTier {
   /** Who it is for / tier name. */
   label: string;

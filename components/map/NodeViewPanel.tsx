@@ -1049,6 +1049,7 @@ export function NodeViewPanel({
               <LearningContentView
                 nodeContent={memoizedNodeContent}
                 nodeTitle={selectedNode.data.title}
+                hasAssessment={!!assessment}
               />
 
               {/* Assessment Section */}
@@ -1067,6 +1068,10 @@ export function NodeViewPanel({
                   onSubmit={handleSubmitAssessment}
                   submissionsWithGrades={submissionsWithGrades}
                   progressStatus={progress?.status}
+                  onAIChatComplete={async () => {
+                    await loadProgress();
+                    onProgressUpdate?.();
+                  }}
                 />
               )}
             </div>
@@ -1142,6 +1147,7 @@ export function NodeViewPanel({
                 <LearningContentView
                   nodeContent={memoizedNodeContent}
                   nodeTitle={selectedNode.data.title}
+                  hasAssessment={!!assessment}
                 />
 
                 {/* Mark as Complete Button for nodes without assessments */}
@@ -1209,6 +1215,10 @@ export function NodeViewPanel({
                     onSubmit={handleSubmitAssessment}
                     submissionsWithGrades={submissionsWithGrades}
                     progressStatus={progress?.status}
+                    onAIChatComplete={async () => {
+                      await loadProgress();
+                      onProgressUpdate?.();
+                    }}
                   />
                 )}
               </>

@@ -27,6 +27,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { SubmissionWithDetails } from "@/lib/supabase/grading";
+import { AIChatTranscriptReview } from "@/components/map/AIChatTranscriptReview";
 
 // Type guard to ensure submission has all required data
 type ValidSubmissionWithDetails = SubmissionWithDetails & {
@@ -222,6 +223,12 @@ export function ViewSubmissionDialog({
                 <CardTitle className="text-lg">Submission Content</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {submission.node_assessments.assessment_type === "ai_chat" &&
+                  submission.metadata?.ai_chat_session_id && (
+                    <AIChatTranscriptReview
+                      sessionId={submission.metadata.ai_chat_session_id as string}
+                    />
+                  )}
                 {submission.text_answer && (
                   <div className="space-y-2">
                     <h4 className="font-medium text-sm text-muted-foreground">

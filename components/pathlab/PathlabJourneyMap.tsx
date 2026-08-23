@@ -51,11 +51,18 @@ export default function PathlabJourneyMap() {
     let cancelled = false;
     fetch(`/api/maps/public-preview/${DEMO_MAP_ID}`)
       .then((res) => {
+        // The live preview is optional: local/dev databases may not have the
+        // allowlisted demo map yet. In that case keep the authored screenshot
+        // fallback without turning an expected 404 into a console error.
+        if (res.status === 404) {
+          if (!cancelled) setFailed(true);
+          return null;
+        }
         if (!res.ok) throw new Error(`preview ${res.status}`);
         return res.json();
       })
-      .then((data: JourneyPreview) => {
-        if (!cancelled) setPreview(data);
+      .then((data: JourneyPreview | null) => {
+        if (data && !cancelled) setPreview(data);
       })
       .catch((err) => {
         console.error("journey preview failed:", err);

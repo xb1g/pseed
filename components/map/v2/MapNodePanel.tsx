@@ -8,6 +8,8 @@ import type {
   QuizQuestion,
   ProgressStatus,
 } from "@/types/map";
+import { WebtoonReader } from "@/components/map/WebtoonReader";
+import { parseWebtoonBody } from "@/lib/utils/webtoon-slice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -94,6 +96,14 @@ export default function MapNodePanel({ node, progress, onClose, onProgressUpdate
         return <div className="whitespace-pre-wrap text-sm text-slate-300" dangerouslySetInnerHTML={{ __html: c.content_body || "" }} />;
       case "image":
         return <img src={c.content_url || ""} alt={c.content_title || "Node image"} className="max-h-80 rounded-lg object-contain" />;
+      case "webtoon":
+        // The panel is a narrow side rail, so cap the strip's height and let it
+        // scroll inside itself rather than stretching the whole panel.
+        return (
+          <div className="max-h-[70vh] overflow-y-auto rounded-lg">
+            <WebtoonReader panels={parseWebtoonBody(c.content_body).panels} title={c.content_title} />
+          </div>
+        );
       case "pdf":
       case "resource_link":
         return (
