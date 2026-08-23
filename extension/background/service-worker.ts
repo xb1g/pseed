@@ -155,3 +155,44 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   }
   return false;
 });
+
+const DM_TAB_PATTERN = "https://www.instagram.com/direct/*";
+
+/**
+ * Puts the content scripts into DM tabs that Chrome will not inject on its own.
+ *
+ * Two cases, both of which used to require the operator to reload something:
+ * installing or updating the extension leaves already-open tabs scriptless,
+ * and Instagram's client-side routing into /direct/ is not a navigation, so
+ * the manifest match never fires. Both scripts are idempotent.
+ */
+async function injectInto(tabId: number): Promise<void> {
+  try {
+    await chrome.scripting.insertCSS({ target: { tabId }, files: ["content/style.css"] });
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ["content/instagram.js", "content/copilot.js"],
+    });
+  } catch {
+    /* tab closed, or a page we are not allowed on */
+  }
+}
+
+async function injectIntoOpenThreads(): Promise<void> {
+  const tabs = await chrome.tabs.query({ url: DM_TAB_PATTERN });
+  await Promise.all(tabs.map((tab) => (tab.id === undefined ? null : injectInto(tab.id))));
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  void injectIntoOpenThreads();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  void injectIntoOpenThreads();
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status !== "complete") return;
+  if (!tab.url?.startsWith("https://www.instagram.com/direct/")) return;
+  void injectInto(tabId);
+});

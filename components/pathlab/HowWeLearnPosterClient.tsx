@@ -15,16 +15,23 @@ import {
   type JourneyPreview,
   type TrailStop,
 } from "@/components/pathlab/journey-map-utils";
+import { PosterScaler } from "@/components/plans/PosterScaler";
 import { SocialCardDownload } from "@/components/pathlab/SocialCardDownload";
 
 /**
- * "เรียนยังไง?", the print-poster sibling that explains how a Pathlab runs.
+ * "เรียนยังไง?" — IG Feed variant, 4:5 (1080×1350).
  *
- * A4 portrait, fixed-canvas (same hand-markered cream paper as
- * /pathlab/poster but a quieter, three-band layout). Centerpiece is a live
- * zigzag trail of island sprites fetched from /api/maps/public-preview,
- * so the islands are real PathLab nodes rather than a hand-illustration:
- * the print artifact can never drift away from the product.
+ * Same hand-markered cream paper as /pathlab/poster/teachers, reflowed into
+ * a fixed 1080×1350 px canvas so the export lands directly as an IG-ready
+ * PNG. The mm-based A4 layout from /pathlab/poster's siblings lives behind
+ * `.pathlab-how--ig` overrides in globals.css — those overrides assert the
+ * pixel canvas and re-size type/spacing so the island trail + three example
+ * days still fit.
+ *
+ * Centerpiece is a live zigzag trail of island sprites fetched from
+ * /api/maps/public-preview, so the islands are real PathLab nodes rather
+ * than a hand-illustration: the IG artefact can never drift away from the
+ * product.
  *
  * Below the trail, three example days from the Web Dev path show what
  * "ทำ Project จริง" actually looks like day by day. The days are pulled
@@ -72,11 +79,24 @@ function IslandTrail({
     () => (preview ? toTrailStops(preview) : []),
     [preview],
   );
-  const pathD = useMemo(() => (stops.length > 0 ? trailPathD(stops) : ""), [
-    stops,
-  ]);
 
-  if (failed || !preview || stops.length === 0) {
+  /* On the IG canvas the trail needs to fit inside 1080×1350 alongside the
+     title, three stacked day cards, and the CTA footer. Six zigzag rows
+     would overflow vertically, so we cap the IG variant at four rows —
+     enough to read the path shape (setup → first working → mid → late)
+     without crowding the rest of the layout. The fallback path (no
+     preview fetched) is unaffected. */
+  const igMaxStops = 4;
+  const stopsForRender = useMemo(
+    () => (preview ? stops.slice(0, igMaxStops) : []),
+    [preview, stops],
+  );
+  const pathD = useMemo(
+    () => (stopsForRender.length > 0 ? trailPathD(stopsForRender) : ""),
+    [stopsForRender],
+  );
+
+  if (failed || !preview || stopsForRender.length === 0) {
     /* Same image as PathlabJourney's fallback: a real PathLab screenshot,
        so even the print export stays truthful. */
     return (
@@ -91,7 +111,7 @@ function IslandTrail({
     );
   }
 
-  const height = stops.length * TRAIL_ROW_PX;
+  const height = stopsForRender.length * TRAIL_ROW_PX;
 
   return (
     <div
@@ -101,7 +121,7 @@ function IslandTrail({
     >
       <svg
         className="pathlab-how__trail-path"
-        viewBox={`0 0 100 ${stops.length * 12}`}
+        viewBox={`0 0 100 ${stopsForRender.length * 12}`}
         preserveAspectRatio="none"
         aria-hidden="true"
       >
@@ -114,7 +134,7 @@ function IslandTrail({
           vectorEffect="non-scaling-stroke"
         />
       </svg>
-      {stops.map((stop) => (
+      {stopsForRender.map((stop) => (
         <div
           key={stop.id}
           className="pathlab-how__stop"
@@ -198,13 +218,14 @@ export function HowWeLearnPosterClient() {
         </Link>
       </nav>
 
-      <article
-        id="pathlab-how-sheet"
-        className="pathlab-how"
-        aria-label="โปสเตอร์ Pathlab เรียนยังไง"
-      >
-        {/* Tier 4 brand row: quiet confirmation of who made the sheet. */}
-        <header className="pathlab-how__brand">
+      <PosterScaler designWidth={1080}>
+        <article
+          id="pathlab-how-sheet"
+          className="pathlab-how pathlab-how--ig"
+          aria-label="โปสเตอร์ Pathlab เรียนยังไง (4:5 IG)"
+        >
+          {/* Tier 4 brand row: quiet confirmation of who made the sheet. */}
+          <header className="pathlab-how__brand">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/passion-seed-logo.png"
@@ -285,14 +306,18 @@ export function HowWeLearnPosterClient() {
           </span>
         </footer>
       </article>
+    </PosterScaler>
 
-      {/* Captured at 2x so the A4 sheet is usable in print, not just on
-          screen. Never inside the article, so it cannot leak into the PNG. */}
+      {/* Captured at 1× because the canvas is already a fixed 1080×1350 px
+          grid — no need to multiply. Never inside the article, so it cannot
+          leak into the PNG. */}
       <SocialCardDownload
         targetId="pathlab-how-sheet"
-        fileName="pathlab-how-we-learn-a4"
-        scale={2}
-        label="ดาวน์โหลด PNG (A4)"
+        fileName="pathlab-how-we-learn-ig-1080x1350"
+        width={1080}
+        height={1350}
+        scale={1}
+        label="ดาวน์โหลด PNG (1080×1350)"
       />
     </main>
   );

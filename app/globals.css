@@ -15860,6 +15860,196 @@ a.pathlab-fields__button {
 }
 
 /* ==================================================================
+   /pathlab/poster/how-we-learn — 4:5 IG variant (1080×1350)
+
+   The A4 mm layout above is the print artefact. The same component on
+   /pathlab/poster/how-we-learn adds `.pathlab-how--ig` to the article,
+   which is captured at 1080×1350 px and exported as a fixed-pixel PNG
+   sized for the Instagram feed. The overrides below assert the pixel
+   canvas and re-size type/spacing so the island trail + three example
+   days still fit on one 1350px frame.
+
+   At 1080×1350 the day cards can't sit side-by-side (three at the same
+   A4 width would each get ~70mm = 360px which is fine, but at 4:5 the
+   title + trail + footer share vertical real estate, so we stack the
+   three days vertically in narrow rows instead).
+   ================================================================== */
+
+.pathlab-how--ig {
+  width: 1080px;
+  min-height: 1350px;
+  gap: 16px;
+  padding: 36px 56px 32px;
+}
+
+/* The mm-based hand-drawn frame on ::before remaps to px so the border
+   proportions still feel hand-drawn at the larger canvas. */
+.pathlab-how--ig::before {
+  inset: 20px;
+  border-width: 2px;
+  border-radius: 24px 30px 20px 30px / 28px 20px 30px 24px;
+}
+
+.pathlab-how--ig .pathlab-how__brand {
+  gap: 14px;
+}
+
+.pathlab-how--ig .pathlab-how__logo {
+  height: 38px;
+  width: auto;
+}
+
+.pathlab-how--ig .pathlab-how__brand-name {
+  font-size: 22px;
+}
+
+.pathlab-how--ig .pathlab-how__brand-path {
+  font-size: 18px;
+}
+
+/* Tier 1 title — bumped from 92px to 120px so the headline still
+   dominates the IG feed thumb at 1080 wide. */
+.pathlab-how--ig .pathlab-how__title {
+  margin-top: 8px;
+  font-size: 120px;
+}
+
+/* Tier 2 promise — bumped from 15px to 22px. */
+.pathlab-how--ig .pathlab-how__promise {
+  max-width: 880px;
+  font-size: 22px;
+  line-height: 1.5;
+}
+
+/* Margin note in the top-right corner, sized for the wider canvas. */
+.pathlab-how--ig .pathlab-how__note {
+  top: 56px;
+  right: 76px;
+  max-width: 240px;
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+/* Tier 3 island trail — the IG variant caps the trail at 4 stops (see
+   HowWeLearnPosterClient.tsx) so the natural box is 4 × 160 = 640px.
+   We tighten the box to 520px so the section shares the 4:5 canvas
+   with title, three day cards, and the CTA footer. The 4th row's sprite
+   peeks past the box (overflow: visible) but doesn't change layout. */
+.pathlab-how--ig .pathlab-how__trail {
+  height: 520px !important;
+  max-height: 520px;
+}
+
+.pathlab-how--ig .pathlab-how__fallback {
+  width: 760px;
+  max-width: 100%;
+}
+
+/* Tighten the trail's surrounding vertical rhythm. */
+.pathlab-how--ig .pathlab-how__islands {
+  margin-top: 4px;
+}
+
+.pathlab-how--ig .pathlab-how__hint {
+  margin-top: 0;
+  font-size: 16px;
+}
+.pathlab-how--ig .pathlab-how__islands {
+  margin-top: 4px;
+}
+
+.pathlab-how--ig .pathlab-how__eyebrow {
+  margin-bottom: 10px;
+  font-size: 22px;
+}
+
+.pathlab-how--ig .pathlab-how__eyebrow-chip {
+  padding: 3px 14px;
+  margin-right: 10px;
+  font-size: 18px;
+}
+
+/* Tier 4 days: at 4:5 (1080 wide) three stacked cards run ~270px each
+   and overflow the canvas. Switch to a 3-column row so each card is
+   wider but shorter — the "doing" text wraps to ~3 lines instead of 5
+   and the whole block fits in ~330px. */
+.pathlab-how--ig .pathlab-how__days {
+  margin-top: 8px;
+}
+
+.pathlab-how--ig .pathlab-how__days-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.pathlab-how--ig .pathlab-how__day {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 14px;
+}
+
+/* Slight tilts preserved so the rows still feel hand-markered, not
+   stamped. Same tilt family as A4, kept subtle. */
+.pathlab-how--ig .pathlab-how__day:nth-child(1) {
+  transform: rotate(-0.6deg);
+}
+.pathlab-how--ig .pathlab-how__day:nth-child(2) {
+  transform: rotate(0.4deg) translateY(2px);
+}
+.pathlab-how--ig .pathlab-how__day:nth-child(3) {
+  transform: rotate(-0.4deg);
+}
+
+.pathlab-how--ig .pathlab-how__day-number {
+  font-size: 14px;
+}
+
+.pathlab-how--ig .pathlab-how__day-title {
+  margin: 0 0 4px;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.pathlab-how--ig .pathlab-how__day-doing {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.pathlab-how--ig .pathlab-how__day-gets {
+  align-self: flex-start;
+  padding: 4px 12px;
+  font-size: 14px;
+}
+
+/* Tier 5 footer. */
+.pathlab-how--ig .pathlab-how__cta {
+  padding-top: 12px;
+}
+
+.pathlab-how--ig .pathlab-how__cta-eyebrow {
+  font-size: 18px;
+}
+
+.pathlab-how--ig .pathlab-how__cta-handle {
+  font-size: 34px;
+}
+
+/* Hint note under the trail. */
+.pathlab-how--ig .pathlab-how__hint {
+  margin-top: 6px;
+  font-size: 16px;
+}
+
+/* Mobile preview: at 1080 design width, PosterScaler already handles
+   the responsive shrink via transform — no `zoom` override needed
+   for the IG variant. */
+
+/* ==================================================================
    /pathlab/poster/teachers — A4 sheet that names the experts behind each
    PathLab brief. Lives next to /pathlab/poster (sell) and
    /pathlab/poster/how-we-learn (mechanic). Same dark stage, same
@@ -16200,6 +16390,177 @@ a.pathlab-fields__button {
     display: none;
   }
 }
+
+/* ==================================================================
+   /pathlab/poster/teachers — 4:5 IG variant (1080×1350)
+
+   The A4 mm layout above is the print artefact. The same component on
+   /pathlab/poster/teachers adds `.pathlab-teachers--ig` to the article,
+   which is captured at 1080×1350 px and exported as a fixed-pixel PNG
+   sized for the Instagram feed. The overrides below assert the pixel
+   canvas and re-size type/spacing so the 2x2 expert grid still fits.
+
+   A4 → 4:5 px-per-mm scale is 5.143. The original font sizes are
+   bumped by ~1.55× and the gap/padding by ~5× so the four expert
+   tiles fill the canvas without crowding.
+   ================================================================== */
+
+.pathlab-teachers--ig {
+  width: 1080px;
+  min-height: 1350px;
+  gap: 14px;
+  padding: 36px 56px 32px;
+}
+
+/* The mm-based hand-drawn frame on ::before remaps to px so the border
+   proportions still feel hand-drawn at the larger canvas. */
+.pathlab-teachers--ig::before {
+  inset: 20px;
+  border-width: 2px;
+  border-radius: 24px 18px 26px 18px / 18px 26px 18px 22px;
+}
+
+.pathlab-teachers--ig .pathlab-teachers__brand {
+  gap: 14px;
+}
+
+.pathlab-teachers--ig .pathlab-teachers__logo {
+  height: 38px;
+  width: auto;
+}
+
+.pathlab-teachers--ig .pathlab-teachers__brand-name {
+  font-size: 22px;
+}
+
+.pathlab-teachers--ig .pathlab-teachers__brand-path {
+  font-size: 18px;
+}
+
+/* Tier 1 title — the room-reading line. Bumped from 92px to 110px so
+   the headline still dominates at 1080 wide, without pushing the grid
+   past the 1350 footer. */
+.pathlab-teachers--ig .pathlab-teachers__title {
+  margin-top: 8px;
+  font-size: 110px;
+}
+
+/* Tier 2 promise — bumped from 15px to 20px. */
+.pathlab-teachers--ig .pathlab-teachers__promise {
+  max-width: 880px;
+  font-size: 20px;
+  line-height: 1.5;
+}
+
+/* Margin note in the top-right corner, sized for the wider canvas. */
+.pathlab-teachers--ig .pathlab-teachers__note {
+  top: 56px;
+  right: 76px;
+  max-width: 240px;
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+/* Tier 3 grid: 2 columns stay (still 4 experts), but gap grows and
+   the tile padding expands so each tile gets proper room. */
+.pathlab-teachers--ig .pathlab-teachers__grid {
+  margin-top: 6px;
+}
+
+.pathlab-teachers--ig .pathlab-teachers__eyebrow {
+  margin-bottom: 10px;
+  font-size: 20px;
+}
+
+.pathlab-teachers--ig .pathlab-teachers__eyebrow-chip {
+  padding: 3px 14px;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+}
+
+.pathlab-teachers--ig .pathlab-teachers__grid-list {
+  gap: 16px;
+}
+
+/* Each tile: portrait box 140×140px (was 36mm square), body text scales
+   up ~1.3× so the names still read at thumb's length while the four
+   tiles fit inside 1350 minus the title/promise/legend/footer rows. */
+.pathlab-teachers--ig .pathlab-teachers__tile {
+  grid-template-columns: 140px 1fr;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 14px;
+}
+
+.pathlab-teachers--ig .pathlab-teachers__portrait {
+  width: 140px;
+  height: 140px;
+  border-radius: 14px;
+  box-shadow: 0 8px 16px rgba(82, 71, 70, 0.18);
+}
+
+.pathlab-teachers--ig .pathlab-teachers__tile-body {
+  gap: 4px;
+}
+
+.pathlab-teachers--ig .pathlab-teachers__tile-name {
+  font-size: 22px;
+}
+
+.pathlab-teachers--ig .pathlab-teachers__tile-role {
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.pathlab-teachers--ig .pathlab-teachers__tile-insight {
+  font-size: 16px;
+  line-height: 1.45;
+  margin-bottom: 8px;
+}
+
+.pathlab-teachers--ig .pathlab-teachers__contribution {
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.pathlab-teachers--ig .pathlab-teachers__contribution-mode {
+  margin-top: 4px;
+  font-size: 14px;
+}
+
+/* Tier 4 legend: keep the four modes on a single row so they fit
+   at 1080 wide without wrapping twice. */
+.pathlab-teachers--ig .pathlab-teachers__legend {
+  margin-top: 4px;
+}
+
+.pathlab-teachers--ig .pathlab-teachers__legend-list {
+  flex-wrap: nowrap;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.pathlab-teachers--ig .pathlab-teachers__legend-item {
+  padding: 4px 14px;
+  font-size: 16px;
+}
+
+/* Tier 5 footer. */
+.pathlab-teachers--ig .pathlab-teachers__cta {
+  padding-top: 12px;
+}
+
+.pathlab-teachers--ig .pathlab-teachers__cta-eyebrow {
+  font-size: 18px;
+}
+
+.pathlab-teachers--ig .pathlab-teachers__cta-handle {
+  font-size: 34px;
+}
+
+/* Mobile preview: at 1080 design width, PosterScaler already handles
+   the responsive shrink via transform — no `zoom` override needed
+   for the IG variant. */
 
 /* ==================================================================
    /pathlab/poster/instagram-hero — 10x rebuild of the A4 poster for

@@ -34,7 +34,8 @@
         color: var(--muted);
         margin-bottom: 4px;
       }
-      input {
+      input,
+      select {
         width: 100%;
         box-sizing: border-box;
         padding: 6px 8px;
@@ -44,9 +45,13 @@
         color: var(--text);
         font: inherit;
       }
-      input:focus {
+      input:focus,
+      select:focus {
         outline: none;
         border-color: var(--accent);
+      }
+      select option {
+        background: var(--bg);
       }
       .row {
         margin-bottom: 10px;
@@ -93,7 +98,10 @@
     </div>
     <div class="row">
       <label for="api">API base</label>
-      <input id="api" type="text" placeholder="https://www.passionseed.org" />
+      <select id="api">
+        <option value="https://www.passionseed.org">prod · www.passionseed.org</option>
+        <option value="http://localhost:3000">dev · localhost:3000</option>
+      </select>
     </div>
     <div style="display: flex; gap: 8px">
       <button id="save">Save</button>

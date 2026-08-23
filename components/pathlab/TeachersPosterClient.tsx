@@ -7,23 +7,26 @@ import {
   CONTRIBUTION_MODE_LABELS,
   type Teacher,
 } from "@/lib/content/pathlab-teachers";
+import { PosterScaler } from "@/components/plans/PosterScaler";
 import { SocialCardDownload } from "@/components/pathlab/SocialCardDownload";
 
 /**
- * "ใครออกแบบ PathLab?", the print-poster sibling that names the experts
- * who co-designed each PathLab brief.
+ * "ใครออกแบบ PathLab?" — IG Feed variant, 4:5 (1080×1350).
  *
- * A4 portrait, same hand-markered cream paper as /pathlab/poster/how-we-learn
- * and /pathlab/poster. Centerpiece is a 2x2 grid of named experts, each
- * paired with one field via the "ออกแบบโจทย์ร่วมกับ" attribution that
- * /pathlab-page FIELDS use in their detail block. Because the attribution
- * row matches the existing product copy verbatim, the poster never drifts
- * away from the brief an actual reader sees on the website.
+ * Same hand-markered cream paper as /pathlab/poster/how-we-learn but reflowed
+ * into a fixed 1080×1350 px canvas so the export lands directly as an IG-ready
+ * PNG. The mm-based A4 layout from /pathlab/poster's siblings lives behind
+ * `.pathlab-teachers--ig` overrides in globals.css — those overrides assert
+ * the pixel canvas and re-size the type so the grid still fits.
+ *
+ * Centerpiece is a 2x2 grid of named experts, each paired with one field
+ * via the "ออกแบบโจทย์ร่วมกับ" attribution that /pathlab-page FIELDS use in
+ * their detail block. Because the attribution row matches the existing
+ * product copy verbatim, the poster never drifts away from the brief an
+ * actual reader sees on the website.
  *
  * Each portrait is a hand-drawn SVG avatar tile (initials + eyebrow + role
- * mark), so no stock photo has to live in /public. The eyebrow text is
- * short enough to fit inside a 34mm round-corner square and reads as a
- * "label on the photograph" rather than a UI heading.
+ * mark), so no stock photo has to live in /public.
  *
  * Falls back to GRID_TILTS rotation so the four tiles never look stamped
  * from a mould, matching the .pathlab-how__day alternating tilts.
@@ -138,7 +141,7 @@ function ContributionRow({ teacher }: { teacher: Teacher }) {
         {teacher.name}
       </span>{" "}
       <span className="pathlab-teachers__contribution-field">
-        u00b7 {field}
+        · {field}
       </span>
       <span className="pathlab-teachers__contribution-mode">
         {CONTRIBUTION_MODE_LABELS[teacher.contributionMode]}
@@ -177,13 +180,14 @@ export function TeachersPosterClient() {
         </Link>
       </nav>
 
-      <article
-        id="pathlab-teachers-sheet"
-        className="pathlab-teachers"
-        aria-label="โปสเตอร์ Pathlab ใครออกแบบ PathLab"
-      >
-        {/* Tier 4 brand row, same construction as /pathlab/poster/how-we-learn. */}
-        <header className="pathlab-teachers__brand">
+      <PosterScaler designWidth={1080}>
+        <article
+          id="pathlab-teachers-sheet"
+          className="pathlab-teachers pathlab-teachers--ig"
+          aria-label="โปสเตอร์ Pathlab ใครออกแบบ PathLab (4:5 IG)"
+        >
+          {/* Tier 4 brand row, same construction as /pathlab/poster/how-we-learn. */}
+          <header className="pathlab-teachers__brand">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/passion-seed-logo.png"
@@ -276,14 +280,18 @@ export function TeachersPosterClient() {
           </span>
         </footer>
       </article>
+    </PosterScaler>
 
-      {/* Captured at 2x so the A4 sheet is usable in print, not just on
-          screen. Never inside the article, so it cannot leak into the PNG. */}
+      {/* Captured at 1× because the canvas is already a fixed 1080×1350 px
+          grid — no need to multiply. Never inside the article, so it cannot
+          leak into the PNG. */}
       <SocialCardDownload
         targetId="pathlab-teachers-sheet"
-        fileName="pathlab-teachers-a4"
-        scale={2}
-        label="ดาวน์โหลด PNG (A4)"
+        fileName="pathlab-teachers-ig-1080x1350"
+        width={1080}
+        height={1350}
+        scale={1}
+        label="ดาวน์โหลด PNG (1080×1350)"
       />
     </main>
   );

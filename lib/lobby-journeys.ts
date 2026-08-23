@@ -80,7 +80,7 @@ const STARTUP_JOURNEY: JourneyDay[] = [
     stops: [
       {
         id: "su-1",
-        title: "ล่าปัญหา & Spot the Problem",
+        title: "สำรวจปัญหา & Survey the Problem",
         sprite_url: "/islands/launchpad/day1.png",
         difficulty: 1,
         node_type: "learning",

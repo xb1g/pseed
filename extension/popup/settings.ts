@@ -7,18 +7,9 @@ const STORAGE_KEY_TOKEN = "psdmlp.copilot.token";
 const STORAGE_KEY_API = "psdmlp.copilot.apiBase";
 const DEFAULT_API_BASE = "https://www.passionseed.org";
 
-/**
- * The API base must be https in production. We also allow a loopback origin so
- * the extension can be pointed at `pnpm dev` before the routes ship.
- */
-function isAllowedApiBase(value: string): boolean {
-  if (value.startsWith("https://")) return true;
-  return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(value.replace(/\/$/, ""));
-}
-
 
 const tokenEl = document.getElementById("token") as HTMLInputElement;
-const apiEl = document.getElementById("api") as HTMLInputElement;
+const apiEl = document.getElementById("api") as HTMLSelectElement;
 const saveBtn = document.getElementById("save") as HTMLButtonElement;
 const testBtn = document.getElementById("test") as HTMLButtonElement;
 const clearBtn = document.getElementById("clear") as HTMLButtonElement;
@@ -34,21 +25,18 @@ function setStatus(message: string, kind: "ok" | "bad"): void {
 async function loadFromStorage(): Promise<void> {
   const stored = await chrome.storage.local.get([STORAGE_KEY_TOKEN, STORAGE_KEY_API]);
   tokenEl.value = typeof stored[STORAGE_KEY_TOKEN] === "string" ? stored[STORAGE_KEY_TOKEN] : "";
-  apiEl.value =
-    typeof stored[STORAGE_KEY_API] === "string" && stored[STORAGE_KEY_API]
-      ? stored[STORAGE_KEY_API]
-      : DEFAULT_API_BASE;
+  // An unrecognised stored value (an old hand-typed base) falls back to prod
+  // rather than leaving the select showing something it cannot represent.
+  const savedBase = stored[STORAGE_KEY_API];
+  const known = Array.from(apiEl.options).some((option) => option.value === savedBase);
+  apiEl.value = known ? (savedBase as string) : DEFAULT_API_BASE;
 }
 
 saveBtn.addEventListener("click", async () => {
   const token = tokenEl.value.trim();
-  const apiBase = apiEl.value.trim() || DEFAULT_API_BASE;
+  const apiBase = apiEl.value || DEFAULT_API_BASE;
   if (!token.startsWith("psdmlp_")) {
     setStatus("token ต้องขึ้นต้นด้วย psdmlp_", "bad");
-    return;
-  }
-  if (!isAllowedApiBase(apiBase)) {
-    setStatus("API base ต้องเป็น https:// (หรือ http://localhost สำหรับ dev)", "bad");
     return;
   }
   await chrome.storage.local.set({
@@ -76,11 +64,7 @@ function explainReason(reason: string): string {
  */
 testBtn.addEventListener("click", async () => {
   const token = tokenEl.value.trim();
-  const apiBase = (apiEl.value.trim() || DEFAULT_API_BASE).replace(/\/$/, "");
-  if (!isAllowedApiBase(apiBase)) {
-    setStatus("API base ต้องเป็น https:// (หรือ http://localhost สำหรับ dev)", "bad");
-    return;
-  }
+  const apiBase = (apiEl.value || DEFAULT_API_BASE).replace(/\/$/, "");
   setStatus("testing…", "ok");
   try {
     const res = await fetch(`${apiBase}/api/copilot/ping`, {

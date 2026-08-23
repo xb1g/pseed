@@ -9,7 +9,7 @@
  * own page scripts never see what we scrape.
  */
 
-import { getBus, debugLog } from "./bus";
+import { getBus, debugLog, isContextAlive } from "./bus";
 
 interface ParsedMessage {
   direction: "inbound" | "outbound";
@@ -42,7 +42,7 @@ function findComposeBox(doc: Document): HTMLElement | null {
   // aria-label drifts across builds; we look for any contenteditable with role
   // textbox or an empty state, then narrow.
   const candidates = doc.querySelectorAll<HTMLElement>(
-    'div[contenteditable="true"][role="textbox"], div[contenteditable="true"][aria-label*="essage" i]'
+    `${COMPOSER_PAGELET} div[contenteditable="true"][role="textbox"], div[contenteditable="true"][role="textbox"]`
   );
   for (const node of candidates) {
     if (node.offsetParent !== null) return node;
@@ -58,116 +58,97 @@ const RESERVED_HANDLES = new Set([
   "stories",
   "accounts",
   "p",
-  "your_activity",
-  "legal",
   "about",
-  "emails",
+  "legal",
+  "privacy",
 ]);
 
 function handleFromPath(href: string): string | null {
   const match = href.match(/^\/([A-Za-z0-9._]{1,30})\/?$/);
-  if (!match?.[1]) return null;
-  const handle = match[1].toLowerCase();
-  return RESERVED_HANDLES.has(handle) ? null : handle;
+  if (!match) return null;
+  const handle = match[1];
+  if (RESERVED_HANDLES.has(handle.toLowerCase())) return null;
+  return handle;
 }
 
 /**
- * Instagram's profile-picture alt text carries the handle in every locale we
- * have seen: "kit_okarun's profile picture", "รูปโปรไฟล์ของ kit_okarun".
- * The handle is the only token that can't contain a space.
+ * Instagram hashes every class name per build, but it labels its major panes
+ * with `data-pagelet` and marks each message row with ARIA. Those two survive
+ * the churn, so the whole reader is built on them and nothing else.
  */
-function handleFromAlt(alt: string): string | null {
-  const possessive = alt.match(/^([A-Za-z0-9._]{1,30})'s\s/);
-  if (possessive?.[1]) return possessive[1].toLowerCase();
-  const trailing = alt.match(/([A-Za-z0-9._]{2,30})\s*$/);
-  if (trailing?.[1] && /[a-z0-9._]/i.test(trailing[1]) && !trailing[1].includes(" ")) {
-    return trailing[1].toLowerCase();
-  }
-  return null;
+const MESSAGE_LIST = '[data-pagelet="IGDMessagesList"]';
+const COMPOSER_PAGELET = '[data-pagelet="IGDComposerForCannes"]';
+/** Only inbound rows carry the lead's avatar link. This is the direction tell. */
+const AVATAR_LINK = 'a[aria-label^="Open the profile page of"]';
+/** The message body itself, as opposed to a reply quote or a timestamp. */
+const MESSAGE_BODY = 'span[dir="auto"] > div[dir="auto"]';
+
+function findMessageList(doc: Document): HTMLElement | null {
+  return doc.querySelector<HTMLElement>(MESSAGE_LIST);
 }
 
 /**
  * Resolves the lead's @handle from the open thread.
  *
- * IG's markup drifts constantly and the thread header is not a <header>
- * element, so this tries several independent reads in order of reliability
- * rather than trusting one selector. When every strategy fails it dumps the
- * candidates it saw to the DevTools panel, which is the only way to fix a
- * selector against a DOM we cannot see.
+ * Every inbound row repeats the handle in the avatar link's aria-label, so we
+ * read it from the message list rather than the header: the header re-renders
+ * on its own schedule and was blank half the time.
  */
 function findPartnerHandle(doc: Document): { username: string | null; displayName: string | null } {
-  // 1. A profile link anywhere in the upper strip of the thread pane. The
-  //    header link is the topmost one; message-body mentions sit far lower.
-  const anchors = Array.from(doc.querySelectorAll<HTMLAnchorElement>('a[href^="/"]'));
-  const topAnchors = anchors
-    .map((a) => ({ a, top: a.getBoundingClientRect().top }))
-    .filter(({ a, top }) => top >= 0 && top < 140 && handleFromPath(a.getAttribute("href") ?? ""))
-    .sort((x, y) => x.top - y.top);
-  if (topAnchors.length > 0) {
-    const winner = topAnchors[0].a;
-    return {
-      username: handleFromPath(winner.getAttribute("href") ?? ""),
-      displayName: textOf(winner) || null,
-    };
+  const displayName = doc.querySelector("h2 span[title]")?.getAttribute("title")?.trim() || null;
+
+  const avatar = doc.querySelector<HTMLAnchorElement>(`${MESSAGE_LIST} ${AVATAR_LINK}`);
+  if (avatar) {
+    const label = (avatar.getAttribute("aria-label") ?? "").replace(
+      /^Open the profile page of\s*/i,
+      ""
+    );
+    const username = handleFromPath(avatar.getAttribute("href") ?? "") ?? (label || null);
+    if (username) return { username, displayName };
   }
 
-  // 2. The profile picture's alt text, which survives layouts where the
-  //    header is a button rather than a link.
-  const images = Array.from(doc.querySelectorAll<HTMLImageElement>("img[alt]"));
-  for (const img of images) {
-    const alt = img.getAttribute("alt") ?? "";
-    if (!/profile picture|รูปโปรไฟล์/i.test(alt)) continue;
-    if (img.getBoundingClientRect().top > 140) continue;
-    const handle = handleFromAlt(alt);
-    if (handle) return { username: handle, displayName: null };
-  }
-
-  // 3. Any profile link at all, if there is exactly one distinct candidate.
-  const distinct = new Set(
-    anchors.map((a) => handleFromPath(a.getAttribute("href") ?? "")).filter((h): h is string => Boolean(h))
-  );
-  if (distinct.size === 1) {
-    const only = [...distinct][0];
-    return { username: only, displayName: null };
-  }
+  // Header fallback: the "View profile" link next to the thread title.
+  const headerLink = Array.from(doc.querySelectorAll<HTMLAnchorElement>('a[href^="/"][role="link"]'))
+    .map((a) => handleFromPath(a.getAttribute("href") ?? ""))
+    .find((handle): handle is string => Boolean(handle));
+  if (headerLink) return { username: headerLink, displayName };
 
   debugLog("warn", "username_lookup_failed", {
-    topAnchorCount: topAnchors.length,
-    distinctHandles: [...distinct].slice(0, 10),
-    profileImgAlts: images
-      .map((img) => img.getAttribute("alt") ?? "")
-      .filter((alt) => alt.length > 0 && alt.length < 120)
-      .slice(0, 10),
-    topAnchorHrefs: anchors
-      .filter((a) => a.getBoundingClientRect().top < 140)
-      .map((a) => a.getAttribute("href") ?? "")
-      .slice(0, 15),
+    hasMessageList: Boolean(findMessageList(doc)),
+    displayName,
   });
-  return { username: null, displayName: null };
+  return { username: null, displayName };
 }
 
+/**
+ * Reads the rendered conversation.
+ *
+ * One `div[role="group"]` per message. Direction comes from the presence of
+ * the lead's avatar link, which Instagram renders only beside their own
+ * messages: geometry used to decide this, and it flipped whenever the pane
+ * resized. System banners ("Auto-detected outcome") and timestamps live
+ * outside the groups, so they never enter the transcript.
+ */
 function findMessages(doc: Document): ParsedMessage[] {
-  // Each message lives inside a div with one of these roles. The text container
-  // exposes its direction via the surrounding data-testid attribute on newer
-  // builds and via position on older ones.
-  const bubbles = Array.from(
-    doc.querySelectorAll<HTMLElement>(
-      '[data-testid="message-bubble"], div[role="row"] div[dir="auto"]'
-    )
-  );
+  const list = findMessageList(doc);
+  if (!list) {
+    debugLog("warn", "message_list_not_found", { pathname: location.pathname });
+    return [];
+  }
+
   const out: ParsedMessage[] = [];
-  for (const bubble of bubbles) {
-    const text = (bubble.textContent ?? "").trim();
-    if (!text) continue;
-    // Outbound messages appear right-aligned in a flex column; we read the
-    // computed alignment to decide direction. Cheap and version-tolerant.
-    const rect = bubble.getBoundingClientRect();
-    const parent = bubble.parentElement;
-    const parentWidth = parent?.getBoundingClientRect().width ?? window.innerWidth;
-    const alignment = rect.left > parentWidth / 2 ? "outbound" : "inbound";
+  for (const row of Array.from(list.querySelectorAll<HTMLElement>('div[role="group"]'))) {
+    // Reply quotes sit in the same row but have no `span[dir=auto]` wrapper,
+    // which is what keeps the quoted text out of the body.
+    const body = Array.from(row.querySelectorAll<HTMLElement>(MESSAGE_BODY))
+      .map((node) => textOf(node))
+      .filter(Boolean)
+      .join("\n")
+      .trim();
+    if (!body) continue;
     out.push({
-      direction: alignment,
-      body: text.slice(0, 4000),
+      direction: row.querySelector(AVATAR_LINK) ? "inbound" : "outbound",
+      body: body.slice(0, 4000),
       sent_at: new Date().toISOString(),
     });
   }
@@ -228,8 +209,7 @@ export function pasteIntoCompose(doc: Document, text: string): boolean {
  * overflow rather than guessing at a class name.
  */
 function findScrollContainer(doc: Document): HTMLElement | null {
-  const bubble = doc.querySelector<HTMLElement>('div[role="row"], [data-testid="message-bubble"]');
-  let node: HTMLElement | null = bubble?.parentElement ?? null;
+  let node: HTMLElement | null = findMessageList(doc);
   while (node && node !== doc.body) {
     const style = getComputedStyle(node);
     const scrollable = /(auto|scroll)/.test(`${style.overflowY}${style.overflow}`);
@@ -304,10 +284,36 @@ function tick(force = false) {
 if (!getBus().ready.instagram) {
   getBus().ready.instagram = true;
 
-  const observer = new MutationObserver(() => tick());
+  const observer = new MutationObserver(() => scheduleTick());
+  let pending: number | null = null;
+
+  /**
+   * Instagram mutates the DOM continuously, and a scan walks every
+   * `span > div` on the page. Coalesce a burst into one read, and shut the
+   * whole thing down once the extension has been reloaded out from under us:
+   * an orphaned observer would keep scanning this tab forever.
+   */
+  function scheduleTick(): void {
+    if (!isContextAlive()) {
+      observer.disconnect();
+      if (pending !== null) clearTimeout(pending);
+      getBus().ready.instagram = false;
+      getBus().ready.tray = false;
+      return;
+    }
+    if (pending !== null) return;
+    pending = window.setTimeout(() => {
+      pending = null;
+      tick();
+    }, 600);
+  }
+
   observer.observe(document.body, { childList: true, subtree: true });
-  window.addEventListener("popstate", () => tick());
-  window.addEventListener("hashchange", () => tick());
+  window.addEventListener("popstate", () => scheduleTick());
+  window.addEventListener("hashchange", () => scheduleTick());
+  // Heartbeat. Mutations are the fast path, but IG can settle into a state
+  // where nothing mutates and we never noticed the thread finished loading.
+  setInterval(() => scheduleTick(), 3000);
 
   // The DevTools panel can force a re-read when IG's DOM settled after our
   // last mutation batch.

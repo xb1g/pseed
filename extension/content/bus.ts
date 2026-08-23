@@ -65,6 +65,19 @@ export function getBus(): CopilotBus {
   return window.__psdmlpCopilot;
 }
 
+/**
+ * False once the extension has been reloaded/updated while this tab kept the
+ * old content script alive. Every `chrome.*` call then throws
+ * "Extension context invalidated", so all of them are gated on this.
+ */
+export function isContextAlive(): boolean {
+  try {
+    return Boolean(chrome.runtime?.id);
+  } catch {
+    return false;
+  }
+}
+
 /** Debug event types the DevTools panel renders. */
 export type DebugLevel = "info" | "warn" | "error";
 
@@ -74,8 +87,11 @@ export type DebugLevel = "info" | "warn" | "error";
  * this must never break the tray.
  */
 export function debugLog(level: DebugLevel, event: string, detail?: unknown): void {
+  if (!isContextAlive()) return;
   try {
-    chrome.runtime.sendMessage({
+    // MV3 sendMessage returns a promise when no callback is passed; an
+    // unhandled rejection here surfaces in the page console as a red error.
+    const sent = chrome.runtime.sendMessage({
       type: "copilot.debug",
       entry: {
         at: new Date().toISOString(),
@@ -85,6 +101,9 @@ export function debugLog(level: DebugLevel, event: string, detail?: unknown): vo
         url: location.href,
       },
     });
+    // A rejection means the worker was gone by the time it landed. Swallow it:
+    // an unhandled rejection would surface as a red error in IG's console.
+    if (sent && typeof sent.catch === "function") sent.catch(() => {});
   } catch {
     /* service worker asleep or context invalidated — nothing to do */
   }

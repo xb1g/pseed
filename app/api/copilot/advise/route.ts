@@ -54,6 +54,8 @@ interface AdviseBody {
   messages?: RawMessage[];
   /** Optional client-side guess; ignored if a conversation row matches. */
   partnerDisplayName?: string | null;
+  /** Run the LLM drafter. Off by default so chips return without waiting. */
+  includeDrafts?: boolean;
 }
 
 const ADVISE_REJECT = (reason: string, status = 401) => {
@@ -205,7 +207,11 @@ export async function POST(request: NextRequest) {
   // Free-form drafts read the actual conversation, so they can answer a
   // question the ladder has no chip for. Additive: the deterministic chips
   // above stand on their own if this returns nothing.
-  const aiDrafts = await draftFromThread({
+  //
+  // Opt-in, because the model call is the slowest part of this route by an
+  // order of magnitude. The tray asks for chips first and drafts in a second
+  // request, so nothing waits on the LLM to render.
+  const aiDrafts = body.includeDrafts === true ? await draftFromThread({
     messages,
     bucketLabel: BUCKET_META[bucket].label,
     coverageOffer: COVERAGE_OFFER[coverage],
@@ -217,7 +223,7 @@ export async function POST(request: NextRequest) {
       gradeLevel: conversation?.grade_level ?? null,
       interests: conversation?.interests ?? [],
     },
-  });
+  }) : [];
 
   await touchCopilotToken({ supabase: supabase as unknown as SupabaseUpdateClient, tokenId: verified.token.id });
   await supabase.from("dm_copilot_audit_log").insert({
