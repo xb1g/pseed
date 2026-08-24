@@ -63,3 +63,41 @@ export function getTranslationNode(
 export function filterPrimaryNodes(nodes: MapNode[]): MapNode[] {
   return nodes.filter((node) => !isTranslationNode(node));
 }
+
+/**
+ * A map from translation node ID -> the primary node ID it translates.
+ *
+ * The inverse of `buildTranslationMap`, used to rewrite edges that were
+ * authored against a translation node so they apply to the primary.
+ */
+export type PrimaryIdMap = Record<string, string>;
+
+/**
+ * Build a lookup from translation node ID -> primary node ID.
+ */
+export function buildPrimaryIdMap(nodes: MapNode[]): PrimaryIdMap {
+  const map: PrimaryIdMap = {};
+  for (const node of nodes) {
+    const translationOf = (node.metadata as any)?.translation_of;
+    if (isTranslationNode(node) && translationOf) {
+      map[node.id] = translationOf;
+    }
+  }
+  return map;
+}
+
+/**
+ * Resolve a node ID to the node the canvas actually renders.
+ *
+ * Prerequisite edges may be authored on either language track. Since only
+ * primary nodes reach the canvas, an edge endpoint on a translation node
+ * would otherwise disappear, leaving its primary with no prerequisites and
+ * collapsing it onto depth 0 of the trail. Mapping the endpoint back to the
+ * primary keeps the chain intact whichever track the edge was drawn on.
+ */
+export function resolvePrimaryId(
+  nodeId: string,
+  primaryIdMap: PrimaryIdMap
+): string {
+  return primaryIdMap[nodeId] ?? nodeId;
+}

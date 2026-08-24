@@ -78,9 +78,11 @@ import { useMapViewMode } from "./map-view-mode";
 import { updateNode, deleteNode } from "@/lib/supabase/nodes";
 import { useToast } from "@/components/ui/use-toast";
 import {
+  buildPrimaryIdMap,
   buildTranslationMap,
   filterPrimaryNodes,
   isTranslationNode,
+  resolvePrimaryId,
   type TranslationMap,
 } from "@/lib/utils/bilingual-nodes";
 
@@ -188,6 +190,8 @@ function computeTrailLayout(
   amplitude: number = TRAIL_ZIGZAG_AMPLITUDE,
   levelGap: number = TRAIL_LEVEL_GAP,
 ): TrailLayout {
+  // isTrailStepNode already drops translation nodes, so this is the same set
+  // of primaries the viewer renders.
   const trailNodes = map.map_nodes.filter(isTrailStepNode);
   const positions = new Map<string, { x: number; y: number }>();
   const orderedIds: string[] = [];
@@ -195,14 +199,26 @@ function computeTrailLayout(
 
   const zigzag = trailZigzag(amplitude);
 
-  const edges = trailNodes.flatMap((node) =>
-    (node.node_paths_source ?? [])
-      .filter((path) => path.destination_node_id)
-      .map((path) => ({
-        source: path.source_node_id,
-        target: path.destination_node_id!,
-      })),
-  );
+  // Prerequisites may be authored on either language track. Resolve every
+  // endpoint to its primary so a chain drawn on the translation nodes still
+  // orders the primaries, then drop self/dangling edges the remap creates.
+  const primaryIdMap = buildPrimaryIdMap(map.map_nodes);
+  const trailNodeIds = new Set(trailNodes.map((node) => node.id));
+  const edges = map.map_nodes
+    .flatMap((node) =>
+      (node.node_paths_source ?? [])
+        .filter((path) => path.destination_node_id)
+        .map((path) => ({
+          source: resolvePrimaryId(path.source_node_id, primaryIdMap),
+          target: resolvePrimaryId(path.destination_node_id!, primaryIdMap),
+        })),
+    )
+    .filter(
+      (edge) =>
+        edge.source !== edge.target &&
+        trailNodeIds.has(edge.source) &&
+        trailNodeIds.has(edge.target),
+    );
 
   let depth: Map<string, number>;
   if (edges.length === 0) {
@@ -941,14 +957,26 @@ export function MapViewer({
       prereqMap.set(node.id, []);
     });
 
-    // Populate prerequisites based on paths
+    // Populate prerequisites based on paths. Endpoints resolve to their
+    // primary so a prerequisite authored on a translation node gates the
+    // primary the student actually opens.
+    const prereqPrimaryIdMap = buildPrimaryIdMap(map.map_nodes);
+    const nodesById = new Map(map.map_nodes.map((node) => [node.id, node]));
     map.map_nodes.forEach((node) => {
       if (node.node_paths_source && node.node_paths_source.length > 0) {
         node.node_paths_source.forEach((path) => {
           if (path.destination_node_id) {
-            const prereqs = prereqMap.get(path.destination_node_id) || [];
-            prereqs.push(node);
-            prereqMap.set(path.destination_node_id, prereqs);
+            const targetId = resolvePrimaryId(
+              path.destination_node_id,
+              prereqPrimaryIdMap,
+            );
+            const sourceId = resolvePrimaryId(node.id, prereqPrimaryIdMap);
+            if (sourceId === targetId) return;
+            const sourceNode = nodesById.get(sourceId) ?? node;
+            const prereqs = prereqMap.get(targetId) || [];
+            if (prereqs.some((prereq) => prereq.id === sourceNode.id)) return;
+            prereqs.push(sourceNode);
+            prereqMap.set(targetId, prereqs);
           }
         });
       }
@@ -1573,19 +1601,30 @@ export function MapViewer({
     });
 
     const transformedEdges: Edge[] = [];
+    // Prerequisites may be authored on either language track, but only
+    // primaries render. Remap each endpoint to its primary so a chain drawn
+    // on the translation nodes still connects the islands on screen.
+    const edgePrimaryIdMap = buildPrimaryIdMap(map.map_nodes as any[]);
+    const seenEdgeKeys = new Set<string>();
     map.map_nodes.forEach((node) => {
-      // Skip translation nodes and deleted nodes for edges
-      if (deletedSet.has(node.id) || isTranslationNode(node as any)) return;
+      if (deletedSet.has(node.id)) return;
       node.node_paths_source.forEach((path) => {
         if (path.destination_node_id && deletedSet.has(path.destination_node_id))
           return;
-        // Skip edges that point to translation nodes
-        const destNode = map.map_nodes.find((n) => n.id === path.destination_node_id);
-        if (destNode && isTranslationNode(destNode as any)) return;
+        const source = resolvePrimaryId(path.source_node_id, edgePrimaryIdMap);
+        const target = path.destination_node_id
+          ? resolvePrimaryId(path.destination_node_id, edgePrimaryIdMap)
+          : path.destination_node_id;
+        // A chain authored on both tracks collapses to the same primary pair;
+        // keep one edge per pair and drop self-loops from the remap.
+        if (!target || source === target) return;
+        const edgeKey = `${source}->${target}`;
+        if (seenEdgeKeys.has(edgeKey)) return;
+        seenEdgeKeys.add(edgeKey);
         // Add visual indicators for path states. Trail mode: only PASSED
         // sources get the active (green) path; in-progress/submitted stay
         // dim so completed progress reads at a glance.
-        const sourceProgress = progressMap[path.source_node_id];
+        const sourceProgress = progressMap[source];
         const isPassed = sourceProgress?.status === "passed";
         const isPathActive = trailMode
           ? isPassed
@@ -1596,8 +1635,8 @@ export function MapViewer({
         transformedEdges.push({
           id: path.id,
           type: "floating",
-          source: path.source_node_id,
-          target: path.destination_node_id,
+          source,
+          target,
           animated: isPathActive,
           // FloatingEdge draws its own rope-bridge colors; tell it when the
           // source node is passed so the bridge turns green (trail mode).
