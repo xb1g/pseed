@@ -41,6 +41,7 @@ export function FullscreenImageViewer({
                    data-[state=open]:animate-in data-[state=closed]:animate-out
                    flex items-center justify-center"
       >
+        {/* eslint-disable-next-line @next/next/no-img-element -- fullscreen viewer renders whatever URL the author uploaded; next/image would require pre-known dimensions per src */}
         <img
           src={src}
           alt={alt}
