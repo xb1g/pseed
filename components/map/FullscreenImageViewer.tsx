@@ -6,6 +6,8 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogTitle,
+  VisuallyHidden,
 } from "@/components/ui/dialog";
 
 export interface FullscreenImageViewerProps {
@@ -58,6 +60,9 @@ export function FullscreenImageViewer({
             {caption}
           </p>
         ) : null}
+        <VisuallyHidden.Root>
+          <DialogTitle>{caption ?? alt}</DialogTitle>
+        </VisuallyHidden.Root>
         <DialogClose
           aria-label="Close image viewer"
           className="absolute top-4 right-4 z-10 rounded-full p-2

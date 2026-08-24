@@ -25,7 +25,13 @@ describe("FullscreenImageViewer", () => {
         onClose={jest.fn()}
       />
     );
-    expect(screen.getByText("Figure 3: pipeline")).toBeInTheDocument();
+    // Caption appears in two places: the visible <p> and the screen-reader
+    // DialogTitle. Both should reflect the caption text.
+    const matches = screen.getAllByText("Figure 3: pipeline");
+    expect(matches.length).toBeGreaterThanOrEqual(1);
+    // The visible caption is the <p>; the DialogTitle lives inside a
+    // VisuallyHidden wrapper.
+    expect(screen.getByText("Figure 3: pipeline", { selector: "p" })).toBeInTheDocument();
   });
 
   test("omits the caption when not provided", () => {
