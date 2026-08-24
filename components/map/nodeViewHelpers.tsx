@@ -227,6 +227,7 @@ TextContent.displayName = "TextContent";
 export const renderContent = (
   content: NodeContent,
   nodeTitle?: string | null,
+  onOpenImage?: (img: { src: string; alt: string; caption?: string }) => void,
 ) => {
   const contentUrl = content.content_url;
   const contentType = content.content_type;
@@ -291,7 +292,11 @@ export const renderContent = (
       return (
         <div key={contentKey}>
           {TitleSection}
-          <ImageContent contentUrl={contentUrl} />
+          <ImageContent
+            contentUrl={contentUrl}
+            contentTitle={contentTitle}
+            onOpenImage={onOpenImage}
+          />
         </div>
       );
 
