@@ -7544,6 +7544,50 @@ summary:focus-visible .radar-expand-indicator {
   }
 }
 
+/* Thin progress bar that appears at the top of the grading panel during
+   background refreshes. Only `transform: scaleX` animates — no width, no
+   left/right shifts, so no layout cost while the panel is mid-fetch. */
+.grading-refresh-bar {
+  position: relative;
+  height: 2px;
+  background: rgba(254, 217, 92, 0.1);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.grading-refresh-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(254, 217, 92, 0.7) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%) scaleX(2);
+  transform-origin: left center;
+  animation: grading-refresh-sweep 1200ms var(--ease-snap, cubic-bezier(0.4, 0, 0.2, 1)) infinite;
+  will-change: transform;
+}
+
+@keyframes grading-refresh-sweep {
+  0% {
+    transform: translateX(-100%) scaleX(2);
+  }
+  100% {
+    transform: translateX(100%) scaleX(2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grading-refresh-bar::after {
+    animation: none;
+    transform: translateX(0);
+    opacity: 0.5;
+  }
+}
+
 /* ── My Path: Dawn journey home ──────────────────────────────────────────
  * `.ei-card` keeps its shared material and motion structure. The scoped
  * modifier below replaces Dusk amber with the student/parent Dawn palette.
@@ -16046,6 +16090,11 @@ a.pathlab-fields__button {
   border-radius: 0.5rem;
   box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
   margin: 1.25rem 0;
+  cursor: zoom-in;
+  transition: box-shadow 200ms ease-out;
+}
+.learning-content-text img:hover {
+  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.18);
 }
 .learning-content-text hr {
   border-color: rgb(68 64 60);

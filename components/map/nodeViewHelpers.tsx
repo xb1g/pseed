@@ -254,22 +254,45 @@ const ImageContent = memo(
 ImageContent.displayName = "ImageContent";
 
 // Text Content Component - memoized with markdown support
-const TextContent = memo(({ contentBody }: { contentBody: string }) => {
-  console.log("📝 TextContent rendering, content length:", contentBody?.length || 0);
+const TextContent = memo(
+  ({
+    contentBody,
+    onOpenImage,
+  }: {
+    contentBody: string;
+    onOpenImage?: (img: {
+      src: string;
+      alt: string;
+      caption?: string;
+    }) => void;
+  }) => {
+    console.log("📝 TextContent rendering, content length:", contentBody?.length || 0);
 
-  const processedContent = useMemo(() => {
-    return processTextContent(contentBody || "");
-  }, [contentBody]);
+    const processedContent = useMemo(() => {
+      return processTextContent(contentBody || "");
+    }, [contentBody]);
 
-  return (
-    <div className="px-2 py-1">
-      <div
-        className="learning-content-text"
-        dangerouslySetInnerHTML={{ __html: processedContent }}
-      />
-    </div>
-  );
-});
+    return (
+      <div className="px-2 py-1">
+        <div
+          className="learning-content-text"
+          dangerouslySetInnerHTML={{ __html: processedContent }}
+          onClick={
+            onOpenImage
+              ? (e) => {
+                  const target = e.target as HTMLElement | null;
+                  if (target && target.tagName === "IMG") {
+                    const img = target as HTMLImageElement;
+                    onOpenImage({ src: img.src, alt: img.alt });
+                  }
+                }
+              : undefined
+          }
+        />
+      </div>
+    );
+  }
+);
 TextContent.displayName = "TextContent";
 
 // Move renderContent here and optimize it
@@ -308,7 +331,10 @@ export const renderContent = (
     return (
       <div key={contentKey}>
         {TitleSection}
-        <TextContent contentBody={content.content_body || ""} />
+        <TextContent
+          contentBody={content.content_body || ""}
+          onOpenImage={onOpenImage}
+        />
       </div>
     );
   }
@@ -330,7 +356,10 @@ export const renderContent = (
       return (
         <div key={contentKey}>
           {TitleSection}
-          <TextContent contentBody={content.content_body || ""} />
+          <TextContent
+            contentBody={content.content_body || ""}
+            onOpenImage={onOpenImage}
+          />
         </div>
       );
 
