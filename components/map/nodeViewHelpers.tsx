@@ -186,22 +186,71 @@ const VideoEmbed = memo(({ contentUrl }: { contentUrl: string }) => {
 VideoEmbed.displayName = "VideoEmbed";
 
 // Image Component - memoized
-const ImageContent = memo(({ contentUrl }: { contentUrl: string }) => {
-  console.log("🖼️ ImageContent rendering for URL:", contentUrl);
+const ImageContent = memo(
+  ({
+    contentUrl,
+    contentTitle,
+    onOpenImage,
+  }: {
+    contentUrl: string;
+    contentTitle?: string | null;
+    onOpenImage?: (img: {
+      src: string;
+      alt: string;
+      caption?: string;
+    }) => void;
+  }) => {
+    console.log("🖼️ ImageContent rendering for URL:", contentUrl);
 
-  return (
-    <div className="w-full">
-      <div className="relative rounded-lg shadow-lg bg-white overflow-hidden">
-        <img
-          src={contentUrl}
-          alt="Uploaded image content"
-          className="w-full h-auto object-contain"
-          style={{ maxWidth: "100%" }}
-        />
+    const altText = contentTitle ?? "Uploaded image content";
+
+    if (!onOpenImage) {
+      // Defensive fallback: if the parent didn't wire the viewer, render the
+      // original plain image so behavior is unchanged.
+      return (
+        <div className="w-full">
+          <div className="relative rounded-lg shadow-lg bg-white overflow-hidden">
+            <img
+              src={contentUrl}
+              alt={altText}
+              className="w-full h-auto object-contain"
+              style={{ maxWidth: "100%" }}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="w-full">
+        <button
+          type="button"
+          onClick={() =>
+            onOpenImage({
+              src: contentUrl,
+              alt: altText,
+              caption: contentTitle ?? undefined,
+            })
+          }
+          className="block w-full text-left cursor-zoom-in rounded-lg transition
+                     hover:ring-2 hover:ring-black/10
+                     focus-visible:outline-none focus-visible:ring-2
+                     focus-visible:ring-black/30"
+          aria-label={`Expand image: ${altText}`}
+        >
+          <div className="relative rounded-lg shadow-lg bg-white overflow-hidden">
+            <img
+              src={contentUrl}
+              alt={altText}
+              className="w-full h-auto object-contain"
+              style={{ maxWidth: "100%" }}
+            />
+          </div>
+        </button>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 ImageContent.displayName = "ImageContent";
 
 // Text Content Component - memoized with markdown support
