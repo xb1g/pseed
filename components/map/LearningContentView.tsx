@@ -1,8 +1,9 @@
 // app/components/NodeViewPanel/LearningContentView.tsx
-import { memo } from "react";
+import { memo, useCallback, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { FileText } from "lucide-react";
 import { NodeContent } from "@/types/map";
+import { FullscreenImageViewer } from "./FullscreenImageViewer";
 import { renderContent } from "./nodeViewHelpers";
 
 interface LearningContentViewProps {
@@ -17,42 +18,69 @@ interface LearningContentViewProps {
   hasAssessment?: boolean;
 }
 
-// Memoized component to prevent unnecessary re-renders
-const LearningContentView = memo(({ nodeContent, nodeTitle, hasAssessment = false }: LearningContentViewProps) => {
-  console.log("📚 LearningContentView rendering with", nodeContent.length, "content items");
+interface OpenImage {
+  src: string;
+  alt: string;
+  caption?: string;
+}
 
-  if (!nodeContent?.length) {
-    // Nothing to show, and the assessment below carries the node on its own.
-    if (hasAssessment) return null;
+// Memoized component to prevent unnecessary re-renders
+const LearningContentView = memo(
+  ({ nodeContent, nodeTitle, hasAssessment = false }: LearningContentViewProps) => {
+    console.log("📚 LearningContentView rendering with", nodeContent.length, "content items");
+
+    const [openImage, setOpenImage] = useState<OpenImage | null>(null);
+    const handleOpenImage = useCallback((img: OpenImage) => setOpenImage(img), []);
+    const handleCloseImage = useCallback(() => setOpenImage(null), []);
+
+    if (!nodeContent?.length) {
+      // Nothing to show, and the assessment below carries the node on its own.
+      if (hasAssessment) return null;
+
+      return (
+        <Card className="border-dashed">
+          <CardContent className="p-8 text-center">
+            <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+            <p className="text-muted-foreground">
+              No learning content available yet.
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Content will be added soon.
+            </p>
+          </CardContent>
+        </Card>
+      );
+    }
 
     return (
-      <Card className="border-dashed">
-        <CardContent className="p-8 text-center">
-          <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-          <p className="text-muted-foreground">
-            No learning content available yet.
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Content will be added soon.
-          </p>
-        </CardContent>
-      </Card>
+      <>
+        <div className="space-y-6">
+          {nodeContent.map((content) => (
+            <div key={content.id}>
+              {renderContent(content, nodeTitle, handleOpenImage)}
+            </div>
+          ))}
+        </div>
+        {openImage ? (
+          <FullscreenImageViewer
+            src={openImage.src}
+            alt={openImage.alt}
+            caption={openImage.caption}
+            onClose={handleCloseImage}
+          />
+        ) : null}
+      </>
     );
   }
-
-  return (
-    <div className="space-y-6">
-      {nodeContent.map((content) => (
-        <div key={content.id}>{renderContent(content, nodeTitle)}</div>
-      ))}
-    </div>
-  );
-});
+);
 
 LearningContentView.displayName = "LearningContentView";
 
 // Custom equality check to prevent re-renders when content hasn't actually changed
-const areEqual = (prevProps: LearningContentViewProps, nextProps: LearningContentViewProps) => {
+const areEqual = (
+  prevProps: LearningContentViewProps,
+  nextProps: LearningContentViewProps
+) => {
   // Title affects per-item heading dedupe
   if (prevProps.nodeTitle !== nextProps.nodeTitle) {
     return false;
@@ -66,7 +94,7 @@ const areEqual = (prevProps: LearningContentViewProps, nextProps: LearningConten
     console.log("🔄 LearningContentView: Content length changed:", prevProps.nodeContent.length, "->", nextProps.nodeContent.length);
     return false;
   }
-  
+
   // Deep comparison of content IDs and essential fields that affect rendering
   for (let i = 0; i < prevProps.nodeContent.length; i++) {
     const prev = prevProps.nodeContent[i];
@@ -92,7 +120,7 @@ const areEqual = (prevProps: LearningContentViewProps, nextProps: LearningConten
       return false;
     }
   }
-  
+
   console.log("✅ LearningContentView: Content unchanged, skipping re-render");
   return true;
 };
