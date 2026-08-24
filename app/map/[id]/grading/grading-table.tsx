@@ -49,6 +49,9 @@ interface GradingTableProps {
   assignmentId?: string;
   /** user_id -> lobby (room) name, for grouping and sorting by room. */
   roomByUserId?: Record<string, string>;
+  /** Maps translation node ID -> primary (English) node title.
+   *  Used to normalize Thai node titles in the table and filter dropdown. */
+  translationTitleMap?: Record<string, string>;
 }
 
 type SortKey = "student" | "room" | "node" | "submitted" | "status";
@@ -66,6 +69,7 @@ export function GradingTable({
   mapId,
   assignmentId,
   roomByUserId = {},
+  translationTitleMap = {},
 }: GradingTableProps) {
   const router = useRouter();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -80,6 +84,14 @@ export function GradingTable({
   const roomOf = (submission: SubmissionWithDetails): string | null =>
     roomByUserId[submission.student_node_progress.profiles.id] ?? null;
 
+  // Normalize a node title: if the submission is against a translation node,
+  // show the primary (English) title so the teacher sees one consistent label.
+  const nodeTitleOf = (submission: SubmissionWithDetails): string => {
+    const nodeId = submission.node_assessments?.map_nodes?.id;
+    const rawTitle = submission.node_assessments?.map_nodes?.title ?? "";
+    return translationTitleMap[nodeId ?? ""] ?? rawTitle;
+  };
+
   // Filter out submissions that do not belong to the current map
   const validSubmissions = submissions.filter(
     (s) =>
@@ -90,9 +102,9 @@ export function GradingTable({
       (!mapId || s.node_assessments.map_nodes.map_id === mapId)
   );
 
-  // Get unique nodes for filtering
+  // Get unique nodes for filtering (normalized so Thai nodes merge with English)
   const uniqueNodes = Array.from(
-    new Set(validSubmissions.map((s) => s.node_assessments.map_nodes.title))
+    new Set(validSubmissions.map((s) => nodeTitleOf(s)))
   );
 
   // Rooms present among these submissions, with pending counts for the chips.
@@ -136,10 +148,7 @@ export function GradingTable({
         submission.submission_grades[0]?.grade === "fail");
 
     const matchesNode =
-      nodeFilter === "all" ||
-      (submission.node_assessments &&
-        submission.node_assessments.map_nodes &&
-        submission.node_assessments.map_nodes.title === nodeFilter);
+      nodeFilter === "all" || nodeTitleOf(submission) === nodeFilter;
 
     const room = roomOf(submission);
     const matchesRoom =
@@ -173,9 +182,8 @@ export function GradingTable({
         case "node":
           return (
             dir *
-              (a.node_assessments?.map_nodes?.title ?? "").localeCompare(
-                b.node_assessments?.map_nodes?.title ?? ""
-              ) || newestFirst(a, b)
+              nodeTitleOf(a).localeCompare(nodeTitleOf(b)) ||
+            newestFirst(a, b)
           );
         case "submitted":
           return dir * -newestFirst(a, b);
@@ -476,8 +484,7 @@ export function GradingTable({
                       )}
                     </TableCell>
                     <TableCell>
-                      {submission.node_assessments?.map_nodes?.title ||
-                        "Unknown Node"}
+                      {nodeTitleOf(submission) || "Unknown Node"}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="capitalize">

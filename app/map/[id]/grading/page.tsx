@@ -4,6 +4,7 @@ import { getSubmissionsForMapServer } from "@/lib/supabase/grading-server";
 import { getLobbyMembershipsForMap } from "@/lib/supabase/lobbies";
 import { createClient } from "@/utils/supabase/server";
 import { isInstructor } from "@/lib/supabase/roles";
+import { buildTranslationMap } from "@/lib/utils/bilingual-nodes";
 import { GradingTable } from "./grading-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -87,6 +88,20 @@ export default async function GradingPage({
     // TODO: Add assignment filtering logic here
     // For now, we'll show all submissions but could filter by assignment_enrollments
     console.log("Filtering submissions for assignment:", assignmentId);
+  }
+
+  // Build a map from translation node ID -> primary (English) node title,
+  // so the grading table can show "Day 1: Spot the Problem" instead of the
+  // Thai title for submissions made against Thai translation nodes.
+  const translationMap = buildTranslationMap(
+    (map.map_nodes ?? []) as any[],
+  );
+  const translationTitleMap: Record<string, string> = {};
+  for (const [primaryId, translationNode] of Object.entries(translationMap)) {
+    const primaryNode = map.map_nodes?.find((n) => n.id === primaryId);
+    if (primaryNode) {
+      translationTitleMap[translationNode.id] = primaryNode.title;
+    }
   }
 
   // Calculate statistics - exclude auto-graded submissions from pending count
@@ -290,6 +305,7 @@ export default async function GradingPage({
             roomByUserId={Object.fromEntries(
               lobbyMemberships.map((m) => [m.user_id, m.lobby_name])
             )}
+            translationTitleMap={translationTitleMap}
           />
         </CardContent>
       </Card>

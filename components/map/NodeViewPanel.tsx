@@ -1,10 +1,17 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  type ReactNode,
+  type UIEvent,
+} from "react";
 import { Node } from "@xyflow/react";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
-import { Clock, Play, Upload, Lock, CheckSquare, CheckCircle } from "lucide-react";
+import { Clock, Play, Upload, Lock, CheckSquare, CheckCircle, Languages } from "lucide-react";
 import { TextNode } from "@/components/map/MapEditor/components/TextNode";
 import {
   MapNode,
@@ -44,6 +51,7 @@ import {
   getTranslationNode,
   type TranslationMap,
 } from "@/lib/utils/bilingual-nodes";
+import { createThaiTranslation } from "@/lib/supabase/thai-translation";
 import { LanguageToggle } from "./LanguageToggle";
 
 interface NodeViewPanelProps {
@@ -67,11 +75,39 @@ interface NodeViewPanelProps {
   // Edit-mode persistence handlers, supplied by the viewer.
   onNodeDataChange?: (nodeId: string, data: Partial<MapNode>) => void;
   onNodeDelete?: (nodeId: string) => void;
+  // Bilingual support: map from primary node ID to Thai translation node.
+  translationMap?: TranslationMap;
 }
 
 interface SubmissionWithGrade {
   submission: AssessmentSubmission;
   grade: SubmissionGrade | null;
+}
+
+function EditLanguageBar({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex-shrink-0 dawn-panel__header flex items-center gap-2 px-4 py-2 pr-12">
+      <span className="text-[11px] font-medium uppercase tracking-wide text-stone-500">
+        Language
+      </span>
+      {children}
+    </div>
+  );
+}
+
+function useCompactOnScroll(resetKey?: string) {
+  const [compact, setCompact] = useState(false);
+
+  useEffect(() => {
+    setCompact(false);
+  }, [resetKey]);
+
+  const onScroll = useCallback((event: UIEvent<HTMLElement>) => {
+    const top = event.currentTarget.scrollTop;
+    setCompact((was) => (was ? top > 10 : top > 36));
+  }, []);
+
+  return { compact, onScroll };
 }
 
 export function NodeViewPanel({
@@ -87,7 +123,67 @@ export function NodeViewPanel({
   canGrade = false,
   onNodeDataChange,
   onNodeDelete,
+  translationMap,
 }: NodeViewPanelProps) {
+  // Bilingual language toggle: "en" shows primary node content, "th" shows
+  // the Thai translation node's content. All progress/submissions stay on
+  // the primary node regardless of the display language.
+  const [displayLang, setDisplayLang] = useState<"en" | "th">("en");
+  const translationNode = selectedNode
+    ? getTranslationNode(selectedNode.id, translationMap ?? {})
+    : null;
+
+  const languageToggle = (
+    <LanguageToggle
+      lang={displayLang}
+      onChange={setDisplayLang}
+      thAvailable={!!translationNode}
+    />
+  );
+  const editorLanguageToggle = (
+    <LanguageToggle
+      lang={displayLang}
+      onChange={setDisplayLang}
+      thAvailable={!!translationNode}
+      forceShow
+    />
+  );
+
+  const { compact: headerCompact, onScroll: onPanelScroll } =
+    useCompactOnScroll(`${selectedNode?.id ?? ""}:${viewMode}`);
+
+  // Reset to English when node selection changes
+  useEffect(() => {
+    setDisplayLang("en");
+  }, [selectedNode?.id]);
+
+  const [isCreatingThai, setIsCreatingThai] = useState(false);
+
+  const handleCreateThai = async () => {
+    if (!selectedNode) return;
+    setIsCreatingThai(true);
+    try {
+      await createThaiTranslation(selectedNode.data as MapNode, mapId);
+      toast({
+        title: "Thai translation created",
+        description: "Edit the Thai content below. English text is shown as placeholder.",
+      });
+      // Trigger a map refresh so the new Thai node appears in the translation map
+      window.dispatchEvent(new CustomEvent("map_node_updated"));
+      // Brief delay for the event to propagate, then reload
+      setTimeout(() => window.location.reload(), 500);
+    } catch (err) {
+      console.error("Failed to create Thai translation:", err);
+      toast({
+        title: "Could not create Thai translation",
+        description: err instanceof Error ? err.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingThai(false);
+    }
+  };
+
   const [progress, setProgress] = useState<StudentProgress | null>(null);
   const [submissionsWithGrades, setSubmissionsWithGrades] = useState<
     SubmissionWithGrade[]
@@ -107,12 +203,47 @@ export function NodeViewPanel({
   const [editableNodeData, setEditableNodeData] = useState<MapNode | null>(
     nodeData || null
   );
-  const assessment = nodeData?.node_assessments?.[0];
+
+  // Bilingual display: when displayLang is "th" and a translation node exists,
+  // show the translation's content/instructions/assessment prompt while
+  // keeping the primary node's IDs for progress and submissions.
+  const showTranslation = displayLang === "th" && !!translationNode;
+  const displayNodeData = showTranslation
+    ? {
+        ...nodeData,
+        title: translationNode!.title,
+        instructions: translationNode!.instructions,
+        node_content: translationNode!.node_content,
+      }
+    : nodeData;
+
+  // Assessment: keep the primary node's assessment ID for submissions, but
+  // swap the prompt/question metadata to the translation's text when toggled.
+  const primaryAssessment = nodeData?.node_assessments?.[0];
+  const translationAssessment = showTranslation
+    ? translationNode!.node_assessments?.[0]
+    : null;
+  const assessment = primaryAssessment
+    ? showTranslation && translationAssessment
+      ? {
+          ...primaryAssessment,
+          metadata: {
+            ...primaryAssessment.metadata,
+            prompt:
+              translationAssessment.metadata?.prompt ??
+              primaryAssessment.metadata?.prompt,
+            question:
+              translationAssessment.metadata?.question ??
+              primaryAssessment.metadata?.question,
+          },
+        }
+      : primaryAssessment
+    : undefined;
 
   // Memoize nodeContent to prevent unnecessary re-renders of LearningContentView
   const memoizedNodeContent = useMemo(() => {
-    return nodeData?.node_content || [];
-  }, [nodeData?.node_content]);
+    return displayNodeData?.node_content || [];
+  }, [displayNodeData?.node_content]);
 
   // Handle progress state more comprehensively
   const hasStarted = progress !== null && progress?.status !== "not_started";
@@ -909,12 +1040,47 @@ export function NodeViewPanel({
         );
       }
 
-      // Edit mode: inline node editor
+      // Edit mode: inline node editor (team context)
       if (viewMode === "edit" && canUseEditMode) {
+        // Thai mode without a translation node: show create button
+        if (displayLang === "th" && !translationNode) {
+          return (
+            <div className="h-full flex flex-col dawn-panel overflow-hidden">
+              <EditLanguageBar>{editorLanguageToggle}</EditLanguageBar>
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                <Languages className="h-12 w-12 text-amber-300/60 mb-4" />
+                <h3 className="text-lg font-semibold text-slate-200 mb-2">
+                  No Thai translation yet
+                </h3>
+                <p className="text-sm text-slate-400 max-w-sm mb-6">
+                  Create a Thai version of this node. The English content will be
+                  copied as placeholder for you to translate.
+                </p>
+                <Button
+                  onClick={handleCreateThai}
+                  disabled={isCreatingThai}
+                  className="ei-button-dusk"
+                >
+                  {isCreatingThai ? (
+                    <Clock className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Languages className="h-4 w-4 mr-2" />
+                  )}
+                  {isCreatingThai ? "Creating..." : "Create Thai Translation"}
+                </Button>
+              </div>
+            </div>
+          );
+        }
+        const teamEditNode =
+          displayLang === "th" && translationNode
+            ? ({ ...selectedNode, id: translationNode.id, data: translationNode } as any)
+            : (selectedNode as any);
         return (
           <div className="h-full flex flex-col dawn-panel overflow-hidden">
+            <EditLanguageBar>{editorLanguageToggle}</EditLanguageBar>
             <NodeEditorPanel
-              selectedNode={selectedNode as any}
+              selectedNode={teamEditNode}
               onNodeDataChange={(nodeId, data) =>
                 onNodeDataChange?.(nodeId, data)
               }
@@ -1009,17 +1175,55 @@ export function NodeViewPanel({
             selectedNode={selectedNode}
             userId={currentUser?.id || ""}
             onGradingComplete={onProgressUpdate}
+            translationNodeIds={translationNode ? [translationNode.id] : []}
           />
         </div>
       );
     }
 
-    // Edit mode: inline node editor, persisted by the viewer
+    // Edit mode: inline node editor, persisted by the viewer.
+    // When a translation node exists, a language toggle lets the teacher
+    // edit the Thai version directly (it saves to the translation node's ID).
     if (viewMode === "edit" && canUseEditMode) {
+      // Thai mode without a translation node: show create button
+      if (displayLang === "th" && !translationNode) {
+        return (
+          <div className="h-full flex flex-col dawn-panel overflow-hidden">
+            <EditLanguageBar>{editorLanguageToggle}</EditLanguageBar>
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+              <Languages className="h-12 w-12 text-amber-300/60 mb-4" />
+              <h3 className="text-lg font-semibold text-slate-200 mb-2">
+                No Thai translation yet
+              </h3>
+              <p className="text-sm text-slate-400 max-w-sm mb-6">
+                Create a Thai version of this node. The English content will be
+                copied as placeholder for you to translate.
+              </p>
+              <Button
+                onClick={handleCreateThai}
+                disabled={isCreatingThai}
+                className="ei-button-dusk"
+              >
+                {isCreatingThai ? (
+                  <Clock className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Languages className="h-4 w-4 mr-2" />
+                )}
+                {isCreatingThai ? "Creating..." : "Create Thai Translation"}
+              </Button>
+            </div>
+          </div>
+        );
+      }
+      const editNode =
+        displayLang === "th" && translationNode
+          ? ({ ...selectedNode, id: translationNode.id, data: translationNode } as any)
+          : (selectedNode as any);
       return (
         <div className="h-full flex flex-col dawn-panel overflow-hidden">
+          <EditLanguageBar>{editorLanguageToggle}</EditLanguageBar>
           <NodeEditorPanel
-            selectedNode={selectedNode as any}
+            selectedNode={editNode}
             onNodeDataChange={(nodeId, data) =>
               onNodeDataChange?.(nodeId, data)
             }
@@ -1035,25 +1239,31 @@ export function NodeViewPanel({
     if (isInstructorOrTA) {
       return (
         <div className="h-full flex flex-col dawn-panel overflow-hidden">
-          {/* Header Section - Fixed */}
-          <div className="flex-shrink-0 dawn-panel__header">
+          <div
+            className="flex-shrink-0 dawn-panel__header"
+            data-compact={headerCompact ? "true" : "false"}
+          >
             <NodeHeaderView
-              nodeData={nodeData}
+              nodeData={displayNodeData}
               progress={progress as any}
               currentUser={currentUser}
               hasStarted={!!hasStarted}
               isStarting={isStarting}
               onStartNode={handleStartNode}
+              languageToggle={languageToggle}
+              compact={headerCompact}
             />
           </div>
 
-          {/* Content Section - Scrollable */}
-          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+          <div
+            className="flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-white/15 scrollbar-track-transparent"
+            onScroll={onPanelScroll}
+          >
             <div className="p-4 space-y-6 min-h-full">
               {/* Learning Content */}
               <LearningContentView
                 nodeContent={memoizedNodeContent}
-                nodeTitle={selectedNode.data.title}
+                nodeTitle={displayNodeData?.title ?? selectedNode.data.title}
                 hasAssessment={!!assessment}
               />
 
@@ -1089,20 +1299,26 @@ export function NodeViewPanel({
   // Regular student view (or text/comment nodes for instructors)
   return (
     <div className="h-full flex flex-col dawn-panel overflow-hidden">
-      {/* Header Section - Fixed */}
-      <div className="flex-shrink-0 dawn-panel__header">
+      <div
+        className="flex-shrink-0 dawn-panel__header"
+        data-compact={headerCompact ? "true" : "false"}
+      >
         <NodeHeaderView
-          nodeData={nodeData}
+          nodeData={displayNodeData}
           progress={progress as any} // Type conversion - StudentProgress compatible with StudentNodeProgress
           currentUser={currentUser}
           hasStarted={!!hasStarted}
           isStarting={isStarting}
           onStartNode={handleStartNode}
+          languageToggle={languageToggle}
+          compact={headerCompact}
         />
       </div>
 
-      {/* Content Section - Scrollable */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+      <div
+        className="flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-thumb-white/15 scrollbar-track-transparent"
+        onScroll={onPanelScroll}
+      >
         {hasStarted ||
           nodeData?.node_type === "text" ||
           nodeData?.node_type === "comment" ? (
@@ -1151,7 +1367,7 @@ export function NodeViewPanel({
                 {/* Learning Content */}
                 <LearningContentView
                   nodeContent={memoizedNodeContent}
-                  nodeTitle={selectedNode.data.title}
+                  nodeTitle={displayNodeData?.title ?? selectedNode.data.title}
                   hasAssessment={!!assessment}
                 />
 

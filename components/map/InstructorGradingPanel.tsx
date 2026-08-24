@@ -19,15 +19,12 @@ import {
   AlertTriangle,
   GraduationCap,
   Users,
-  User,
   RefreshCw,
-  Eye,
   MessageSquare,
   Users2,
   Send,
   MessageCircle,
 } from "lucide-react";
-import { MapNode, SubmissionGrade } from "@/types/map";
 import {
   getSubmissionsForMap,
   SubmissionWithDetails,
@@ -52,6 +49,9 @@ interface InstructorGradingPanelProps {
   selectedNode?: any;
   userId: string;
   onGradingComplete?: () => void;
+  /** IDs of translation nodes linked to the selected primary node.
+   *  Submissions against these nodes are merged into the grading queue. */
+  translationNodeIds?: string[];
 }
 
 export function InstructorGradingPanel({
@@ -59,6 +59,7 @@ export function InstructorGradingPanel({
   selectedNode,
   userId,
   onGradingComplete,
+  translationNodeIds = [],
 }: InstructorGradingPanelProps) {
   const [submissions, setSubmissions] = useState<SubmissionWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,10 +72,13 @@ export function InstructorGradingPanel({
   const [savingFor, setSavingFor] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Filter submissions by selected node and team filter
+  // Filter submissions by selected node (including translation nodes) and team filter
   const filteredSubmissions = submissions.filter((sub) => {
+    const submissionNodeId = sub.node_assessments?.map_nodes?.id;
     const matchesNode =
-      !selectedNode || sub.node_assessments?.map_nodes?.id === selectedNode.id;
+      !selectedNode ||
+      submissionNodeId === selectedNode.id ||
+      translationNodeIds.includes(submissionNodeId);
     const isTeamSubmission = sub.metadata?.team_id !== undefined;
 
     const matchesTeam =
@@ -192,10 +196,10 @@ export function InstructorGradingPanel({
         submission.id,
         grade,
         commentText,
-        rating,
+        rating ?? null,
         userId,
         submission.student_node_progress.id,
-        pointsAwarded
+        pointsAwarded ?? null
       );
 
       toast({
@@ -286,7 +290,7 @@ export function InstructorGradingPanel({
   const getStatusBadge = (submission: SubmissionWithDetails) => {
     if (submission.submission_grades.length === 0) {
       return (
-        <Badge variant="outline" className="text-orange-600 border-orange-300">
+        <Badge variant="outline" className="text-amber-300/80 border-amber-300/30 bg-amber-300/5">
           <Clock className="h-3 w-3 mr-1" />
           Pending
         </Badge>
@@ -295,14 +299,14 @@ export function InstructorGradingPanel({
     const grade = submission.submission_grades[0];
     if (grade.grade === "pass") {
       return (
-        <Badge variant="default" className="bg-green-600">
+        <Badge className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
           <CheckCircle className="h-3 w-3 mr-1" />
           Passed
         </Badge>
       );
     }
     return (
-      <Badge variant="destructive">
+      <Badge className="bg-red-500/20 text-red-300 border border-red-400/30">
         <XCircle className="h-3 w-3 mr-1" />
         Failed
       </Badge>
@@ -335,48 +339,47 @@ export function InstructorGradingPanel({
       && (submission.quiz_answers || submission.node_assessments?.quiz_questions?.length);
 
     return (
-      <Card className="mb-4 hover:shadow-md transition-shadow">
-        <CardHeader className="pb-3">
+      <div className="ei-card mb-4 p-0 overflow-hidden">
+        <div className="px-5 pt-4 pb-3 border-b border-white/5">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <Avatar className="h-10 w-10">
+              <Avatar className="h-10 w-10 ring-1 ring-white/10">
                 <AvatarImage src={""} />
-                <AvatarFallback>
+                <AvatarFallback className="bg-white/5 text-amber-200/80">
                   {submission.student_node_progress.profiles.username
                     .charAt(0)
                     .toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <CardTitle className="text-base flex items-center gap-2">
+                <h4 className="text-base font-semibold text-amber-50 flex items-center gap-2">
                   {submission.student_node_progress.profiles.username}
                   {isTeamSubmission && (
-                    <Users className="h-4 w-4 text-blue-500" />
+                    <Users className="h-4 w-4 text-blue-400" />
                   )}
-                </CardTitle>
-                <CardDescription className="text-sm">
+                </h4>
+                <p className="text-sm text-muted-foreground">
                   {submission.node_assessments?.map_nodes?.title ||
                     "Unknown Node"}{" "}
                   • {new Date(submission.submitted_at).toLocaleDateString()}
                   {isTeamSubmission && (
-                    <div className="flex items-center gap-1 mt-1 text-blue-600">
+                    <span className="flex items-center gap-1 mt-0.5 text-blue-400/80">
                       <Users2 className="h-3 w-3" />
                       <span className="text-xs">{teamName}</span>
-                    </div>
+                    </span>
                   )}
-                </CardDescription>
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {getStatusBadge(submission)}
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        </div>
+        <div className="p-5 space-y-4">
             {/* Assessment Type */}
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="capitalize">
+              <Badge variant="outline" className="capitalize border-amber-300/20 bg-amber-300/5 text-amber-200/70">
                 {submission.node_assessments.assessment_type.replace("_", " ")}
               </Badge>
               {submission.node_assessments?.quiz_questions?.length ? (
@@ -390,7 +393,7 @@ export function InstructorGradingPanel({
                  required: instructors need to see everything to grade. === */}
             {hasText && (
               <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
+                <div className="text-xs uppercase tracking-wider text-muted-foreground/70 mb-1">
                   Written answer
                 </div>
                 <TextAnswer text={submission.text_answer!} />
@@ -416,10 +419,11 @@ export function InstructorGradingPanel({
 
             {/* === Previous grade, if any === */}
             {grade && (
-              <div className="border-t pt-3">
+              <div className="border-t border-white/5 pt-3">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <strong>Previous Grade:</strong> {grade.grade.toUpperCase()}
+                  <div className="text-sm">
+                    <strong className="text-amber-100">Previous Grade:</strong>{" "}
+                    {grade.grade.toUpperCase()}
                     {grade.rating && <span> ({grade.rating}/5 stars)</span>}
                     {grade.points_awarded && (
                       <span> - {grade.points_awarded} points</span>
@@ -430,8 +434,8 @@ export function InstructorGradingPanel({
                   </div>
                 </div>
                 {grade.comments && (
-                  <div className="mt-2 text-sm bg-muted/50 p-2 rounded">
-                    <MessageSquare className="h-4 w-4 inline mr-1 align-text-bottom" />
+                  <div className="mt-2 text-sm bg-white/5 p-3 rounded-lg border border-white/5">
+                    <MessageSquare className="h-4 w-4 inline mr-1 align-text-bottom text-amber-300/60" />
                     {grade.comments}
                   </div>
                 )}
@@ -439,10 +443,10 @@ export function InstructorGradingPanel({
             )}
 
             {/* === Comment + grading controls === */}
-            <div className="border-t pt-3 space-y-2">
+            <div className="border-t border-white/5 pt-3 space-y-2">
               <div className="flex items-center gap-2">
-                <MessageCircle className="h-4 w-4 text-blue-500" />
-                <label className="text-sm font-medium">
+                <MessageCircle className="h-4 w-4 text-amber-300/60" />
+                <label className="text-sm font-medium text-amber-50">
                   Comment for {submission.student_node_progress.profiles.username}
                 </label>
               </div>
@@ -452,7 +456,7 @@ export function InstructorGradingPanel({
                   value={commentValue}
                   onChange={(e) => onCommentChange(e.target.value)}
                   rows={3}
-                  className="text-sm flex-1"
+                  className="text-sm flex-1 bg-white/5 border-white/10 text-amber-50 placeholder:text-muted-foreground/50 focus:border-amber-300/30"
                 />
                 <Button
                   size="sm"
@@ -460,6 +464,7 @@ export function InstructorGradingPanel({
                   onClick={onCommentSubmit}
                   disabled={!commentValue.trim() || isSaving}
                   title="Save comment without grading"
+                  className="border-white/10 bg-white/5 hover:bg-white/10 text-amber-100"
                 >
                   {isSaving ? (
                     <Clock className="h-3 w-3 mr-1 animate-spin" />
@@ -469,7 +474,7 @@ export function InstructorGradingPanel({
                   Save
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground/60">
                 Pass and Fail both save this comment with the grade. Write
                 it once, then click the grade.
               </p>
@@ -478,27 +483,25 @@ export function InstructorGradingPanel({
             <div className="flex gap-2 pt-1">
               <Button
                 size="sm"
-                variant="default"
-                className="bg-green-600 hover:bg-green-700"
                 onClick={() => onGrade("pass")}
                 disabled={isSaving}
+                className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 hover:bg-emerald-500/30 hover:text-emerald-200"
               >
                 <CheckCircle className="h-4 w-4 mr-1" />
                 Pass
               </Button>
               <Button
                 size="sm"
-                variant="destructive"
                 onClick={() => onGrade("fail")}
                 disabled={isSaving}
+                className="bg-red-500/20 text-red-300 border border-red-400/30 hover:bg-red-500/30 hover:text-red-200"
               >
                 <XCircle className="h-4 w-4 mr-1" />
                 Fail
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
     );
   };
 
@@ -512,11 +515,11 @@ export function InstructorGradingPanel({
   if (isInitialLoad) {
     return (
       <div className="h-full flex flex-col dawn-panel">
-        <div className="flex-shrink-0 border-b p-4">
+        <div className="flex-shrink-0 dawn-panel__header p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5 text-blue-600" />
-              <h3 className="font-semibold">
+              <GraduationCap className="h-5 w-5 text-amber-300/80" />
+              <h3 className="font-semibold text-amber-50">
                 {selectedNode
                   ? `Grading: ${selectedNode.data.title}`
                   : "Map Grading"}
@@ -547,30 +550,35 @@ export function InstructorGradingPanel({
         />
       )}
       {/* Header */}
-      <div className="flex-shrink-0 border-b p-4">
+      <div className="flex-shrink-0 dawn-panel__header p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <GraduationCap className="h-5 w-5 text-blue-600" />
-            <h3 className="font-semibold">
+            <GraduationCap className="h-5 w-5 text-amber-300/80" />
+            <h3 className="font-semibold text-amber-50">
               {selectedNode
                 ? `Grading: ${selectedNode.data.title}`
                 : "Map Grading"}
             </h3>
           </div>
-          <Button size="sm" variant="outline" onClick={loadSubmissions}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={loadSubmissions}
+            className="border-white/10 bg-white/5 hover:bg-white/10 text-amber-100"
+          >
             <RefreshCw className="h-4 w-4 mr-1" />
             Refresh
           </Button>
         </div>
 
         {/* Stats */}
-        <div className="flex gap-4 mt-3 text-sm">
+        <div className="flex gap-4 mt-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
-            <Clock className="h-4 w-4 text-orange-500" />
+            <Clock className="h-4 w-4 text-amber-400/70" />
             <span>{pendingSubmissions.length} Pending</span>
           </div>
           <div className="flex items-center gap-1">
-            <CheckCircle className="h-4 w-4 text-green-500" />
+            <CheckCircle className="h-4 w-4 text-emerald-400/70" />
             <span>
               {
                 gradedSubmissions.filter(
@@ -581,7 +589,7 @@ export function InstructorGradingPanel({
             </span>
           </div>
           <div className="flex items-center gap-1">
-            <XCircle className="h-4 w-4 text-red-500" />
+            <XCircle className="h-4 w-4 text-red-400/70" />
             <span>
               {
                 gradedSubmissions.filter(
@@ -689,5 +697,168 @@ export function InstructorGradingPanel({
         </Tabs>
       </div>
     </div>
+  );
+}
+
+/**
+ * Renders a student's text answer with light markdown-style preservation.
+ * Unlike the student-facing SubmissionList, we keep paragraph breaks and
+ * basic inline emphasis so the instructor can read what was actually
+ * written. HTML is escaped first to prevent stored XSS via pasted markup.
+ */
+function TextAnswer({ text }: { text: string }) {
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  // Preserve paragraphs (blank-line splits), then convert **bold** and
+  // *italic* inside each paragraph. Newlines within a paragraph become
+  // <br> so a single-paragraph essay with hard wraps still reads cleanly.
+  const paragraphs = escaped
+    .split(/\n{2,}/)
+    .map((p) =>
+      p
+        .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+        .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>")
+        .replace(/\n/g, "<br />")
+    );
+  return (
+    <div className="grading-text-answer text-sm leading-relaxed text-foreground/90">
+      {paragraphs.map((html, i) => (
+        <p
+          key={i}
+          className={i > 0 ? "mt-3" : undefined}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Renders a student's quiz responses alongside the question text and a
+ * correctness indicator when the correct option is known.
+ *
+ * Two shapes are supported for `quiz_answers`:
+ *   - keyed by question id (newer schema) — preferred, exact match.
+ *   - keyed by 1-based index string — fallback for older submissions.
+ *
+ * If questions are not loaded (relation absent or empty), we still render
+ * the raw answer map so the instructor sees what was submitted rather than
+ * a useless count.
+ */
+function QuizAnswersView({
+  answers,
+  questions,
+}: {
+  answers: Record<string, string>;
+  questions: {
+    id: string;
+    question_text: string;
+    options: unknown | null;
+    correct_option: string | null;
+  }[];
+}) {
+  if (questions.length === 0) {
+    // Fallback: questions not loaded. Show the answer map as raw key/value
+    // pairs so the instructor still gets something to grade against.
+    const entries = Object.entries(answers);
+    if (entries.length === 0) {
+      return (
+        <p className="text-sm text-muted-foreground italic">
+          No quiz answers recorded.
+        </p>
+      );
+    }
+    return (
+      <ul className="space-y-2 text-sm">
+        {entries.map(([key, value]) => (
+          <li key={key} className="border-l-2 border-border pl-3">
+            <div className="text-xs text-muted-foreground">Question {key}</div>
+            <div>{value}</div>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  // Some older submissions key `quiz_answers` by numeric index instead of
+  // question id. Detect which one we're dealing with: if any question id
+  // appears in the answers keys, prefer id-based lookup.
+  const usesIndexKeys = questions.every((q) => !(q.id in answers));
+  const lookup = (questionId: string, index: number): string | undefined => {
+    if (usesIndexKeys) return answers[String(index + 1)];
+    return answers[questionId];
+  };
+
+  return (
+    <ol className="space-y-3">
+      {questions.map((q, i) => {
+        const studentAnswer = lookup(q.id, i);
+        const correct = q.correct_option;
+        const optionsList = Array.isArray(q.options)
+          ? (q.options as Array<{ option?: string; text?: string; value?: string }>)
+          : [];
+        const normalisedStudent = studentAnswer?.trim().toLowerCase();
+        const isCorrect =
+          correct !== null &&
+          correct !== undefined &&
+          normalisedStudent !== undefined &&
+          correct.toLowerCase() === normalisedStudent;
+
+        return (
+          <li
+            key={q.id}
+            className="border rounded-md p-3 bg-muted/30"
+          >
+            <div className="text-sm font-medium mb-2">
+              <span className="text-muted-foreground mr-2">Q{i + 1}.</span>
+              {q.question_text}
+            </div>
+            <div className="text-sm">
+              <span className="text-muted-foreground">Answer: </span>
+              <span
+                className={
+                  correct
+                    ? isCorrect
+                      ? "text-green-600 font-medium"
+                      : "text-red-600 font-medium"
+                    : ""
+                }
+              >
+                {studentAnswer ?? <em className="text-muted-foreground">no answer</em>}
+              </span>
+              {correct && (
+                <span className="text-xs text-muted-foreground ml-2">
+                  (correct: {correct})
+                </span>
+              )}
+            </div>
+            {optionsList.length > 0 && (
+              <ul className="mt-2 text-xs text-muted-foreground space-y-0.5">
+                {optionsList.map((opt, oi) => {
+                  const optKey = opt.option ?? opt.value ?? String(oi);
+                  const optText = opt.text ?? opt.option ?? String(opt);
+                  const isStudentChoice = normalisedStudent === String(optKey).toLowerCase();
+                  return (
+                    <li
+                      key={oi}
+                      className={
+                        isStudentChoice
+                          ? "text-foreground"
+                          : ""
+                      }
+                    >
+                      {isStudentChoice ? "› " : "  "}
+                      {optKey}. {optText}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </li>
+        );
+      })}
+    </ol>
   );
 }

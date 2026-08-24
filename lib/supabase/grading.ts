@@ -119,6 +119,7 @@ export const getSubmissionsForMap = async (
     // Polling and remounts (React StrictMode, Fast Refresh, parent re-renders)
     // frequently cancel the in-flight Supabase request. Treat those as a
     // no-op rather than a user-visible "Could not fetch submissions" error.
+    // Matches the convention used in lib/supabase/auth-client.ts.
     if (isAbortError(error)) {
       console.warn("[grading] Submissions fetch aborted:", error);
       return [];

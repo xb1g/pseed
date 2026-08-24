@@ -29,6 +29,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { uploadImage } from "@/lib/utils/upload-image";
 
 // WYSIWYG text editor (TipTap) that reads and writes markdown, so storage and
 // the student view renderer stay exactly as they are. Notion-style: markdown
@@ -50,6 +51,13 @@ interface RichTextEditorProps {
   saving?: boolean;
   autoFocus?: boolean;
   placeholder?: string;
+  /**
+   * Document-style editing: save the current markdown whenever the editor
+   * loses focus, so clicking away returns the block to its rendered preview.
+   * Blurs that land on the editor's own action row are ignored so Cancel
+   * still cancels and Save still saves exactly once.
+   */
+  saveOnBlur?: boolean;
 }
 
 // Accept bare domains ("example.com/x") as link hrefs, not just full URLs.
@@ -252,6 +260,7 @@ export const RichTextEditor = forwardRef<
     saving = false,
     autoFocus = false,
     placeholder = "Write… select text to format, paste an image to embed",
+    saveOnBlur = false,
   },
   ref,
 ) {
@@ -265,23 +274,8 @@ export const RichTextEditor = forwardRef<
       if (!editor) return;
       setUploading(true);
       try {
-        const formData = new FormData();
-        const ext = file.type.split("/")[1] || "png";
-        formData.append("file", file, `pasted-image-${Date.now()}.${ext}`);
-        formData.append("nodeId", nodeId);
-
-        const res = await fetch("/api/upload/images", {
-          method: "POST",
-          body: formData,
-        });
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error || `Upload failed (${res.status})`);
-        }
-        const data = await res.json();
-        if (data.fileUrl) {
-          editor.chain().focus().setImage({ src: data.fileUrl }).run();
-        }
+        const { fileUrl } = await uploadImage(file, nodeId);
+        editor.chain().focus().setImage({ src: fileUrl }).run();
       } catch (err: any) {
         console.error("Image paste failed:", err);
         toast({
@@ -356,6 +350,14 @@ export const RichTextEditor = forwardRef<
     onUpdate: ({ editor: e }) => {
       onChange?.(getMd(e));
     },
+    onBlur: ({ event }) => {
+      if (!saveOnBlur || !onSave) return;
+      // Clicks on the editor's own Save/Cancel row should not double as a
+      // blur-save; those buttons run their own handler.
+      const next = event.relatedTarget as HTMLElement | null;
+      if (next?.closest?.("[data-rte-actions]")) return;
+      onSave(getMd(editorRef.current));
+    },
   });
 
   editorRef.current = editor;
@@ -374,41 +376,50 @@ export const RichTextEditor = forwardRef<
   return (
     <div className="ce-rte min-w-0 flex-1">
       <style jsx global>{`
+        /* Mirrors .learning-content-text in app/globals.css so editing a text
+           block looks exactly like the student reading view. */
         .ce-rte .ProseMirror {
           outline: none;
-          font-size: 13px;
-          line-height: 1.7;
-          color: rgb(214 211 209);
+          font-size: 1.0625rem;
+          line-height: 1.8;
+          letter-spacing: 0.003em;
+          color: rgb(231 229 228);
+          max-width: 65ch;
           min-height: 64px;
-          max-height: 288px;
+          max-height: 320px;
           overflow-y: auto;
           padding: 6px 8px;
         }
         .ce-rte .ProseMirror p {
-          margin-bottom: 0.625rem;
+          margin-bottom: 1.125rem;
+          line-height: 1.8;
         }
         .ce-rte .ProseMirror p:last-child {
           margin-bottom: 0;
         }
         .ce-rte .ProseMirror h2,
         .ce-rte .ProseMirror h3 {
-          color: rgb(245 245 244);
+          color: rgb(250 250 249);
           font-weight: 600;
+          letter-spacing: -0.02em;
           line-height: 1.3;
-          margin: 0.75rem 0 0.375rem;
-        }
-        .ce-rte .ProseMirror h2:first-child,
-        .ce-rte .ProseMirror h3:first-child {
-          margin-top: 0;
         }
         .ce-rte .ProseMirror h2 {
-          font-size: 1.125rem;
+          font-size: 1.5rem;
+          margin: 0 0 0.75rem;
+        }
+        .ce-rte .ProseMirror h2:not(:first-child) {
+          margin-top: 1.5rem;
         }
         .ce-rte .ProseMirror h3 {
-          font-size: 1rem;
+          font-size: 1.25rem;
+          margin: 0 0 0.5rem;
+        }
+        .ce-rte .ProseMirror h3:not(:first-child) {
+          margin-top: 1.25rem;
         }
         .ce-rte .ProseMirror strong {
-          color: rgb(231 229 228);
+          color: rgb(245 245 244);
           font-weight: 600;
         }
         .ce-rte .ProseMirror a {
@@ -416,11 +427,16 @@ export const RichTextEditor = forwardRef<
           text-decoration: underline;
           text-decoration-color: rgb(252 211 77 / 0.35);
           text-underline-offset: 3px;
+          font-weight: 500;
         }
         .ce-rte .ProseMirror ul,
         .ce-rte .ProseMirror ol {
-          margin: 0.5rem 0;
-          padding-left: 1.25rem;
+          margin: 1.25rem 0;
+          padding-left: 1.5rem;
+        }
+        .ce-rte .ProseMirror ul:first-child,
+        .ce-rte .ProseMirror ol:first-child {
+          margin-top: 0;
         }
         .ce-rte .ProseMirror ul {
           list-style: disc;
@@ -429,42 +445,56 @@ export const RichTextEditor = forwardRef<
           list-style: decimal;
         }
         .ce-rte .ProseMirror li {
-          margin-bottom: 0.25rem;
+          margin-bottom: 0.5rem;
+          line-height: 1.7;
+        }
+        .ce-rte .ProseMirror li::marker {
+          color: rgb(252 211 77 / 0.55);
+        }
+        .ce-rte .ProseMirror li:last-child {
+          margin-bottom: 0;
         }
         .ce-rte .ProseMirror code {
-          background: rgb(28 25 23);
+          background-color: rgb(28 25 23);
+          color: rgb(253 230 138);
           border: 1px solid rgb(68 64 60);
           border-radius: 0.25rem;
-          padding: 0.1rem 0.35rem;
-          font-size: 11px;
+          padding: 0.15rem 0.4rem;
+          font-size: 0.85em;
+          font-family: 'Monaco', 'Courier New', monospace;
         }
         .ce-rte .ProseMirror pre {
-          background: rgb(12 10 9);
-          border: 1px solid rgb(68 64 60);
-          border-radius: 0.375rem;
-          padding: 0.625rem;
+          background-color: rgb(12 10 9);
+          border: 1px solid rgb(41 37 36);
+          border-radius: 0.5rem;
+          padding: 1rem;
+          margin: 1.25rem 0;
           overflow-x: auto;
-          margin: 0.5rem 0;
         }
         .ce-rte .ProseMirror pre code {
           background: transparent;
           border: none;
           padding: 0;
+          color: rgb(231 229 228);
         }
         .ce-rte .ProseMirror blockquote {
-          border-left: 3px solid rgb(252 211 77 / 0.4);
-          padding-left: 0.75rem;
-          margin: 0.5rem 0;
+          border-left: 3px solid rgb(252 211 77 / 0.35);
+          padding-left: 1rem;
+          margin: 1.25rem 0;
           font-style: italic;
-          color: rgb(168 162 158);
+          color: rgb(214 211 209);
         }
         .ce-rte .ProseMirror img {
-          border-radius: 0.375rem;
-          margin: 0.5rem 0;
-          max-height: 240px;
+          border-radius: 0.5rem;
+          box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+          margin: 1.25rem 0;
         }
         .ce-rte .ProseMirror img.ProseMirror-selectednode {
           outline: 2px solid rgb(252 211 77 / 0.6);
+        }
+        .ce-rte .ProseMirror hr {
+          border-color: rgb(68 64 60);
+          margin: 2rem 0;
         }
         .ce-rte .ProseMirror p.is-editor-empty:first-child::before {
           content: attr(data-placeholder);
@@ -504,7 +534,7 @@ export const RichTextEditor = forwardRef<
       </div>
 
       {showActions && (
-        <div className="mt-1 flex items-center justify-between">
+        <div className="mt-1 flex items-center justify-between" data-rte-actions>
           <p className="text-[10px] text-muted-foreground">
             Cmd+Enter saves · Esc cancels
           </p>

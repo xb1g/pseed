@@ -77,6 +77,12 @@ import type { LobbyPresenceEntry } from "@/types/lobby";
 import { useMapViewMode } from "./map-view-mode";
 import { updateNode, deleteNode } from "@/lib/supabase/nodes";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  buildTranslationMap,
+  filterPrimaryNodes,
+  isTranslationNode,
+  type TranslationMap,
+} from "@/lib/utils/bilingual-nodes";
 
 interface MapViewerProps {
   map: FullLearningMap;
@@ -164,6 +170,9 @@ interface TrailLayout {
 // and keep their stored metadata.position.
 function isTrailStepNode(node: MapNode): boolean {
   const nodeType = (node as any)?.node_type;
+  // Exclude translation nodes from the trail — they're shown via a
+  // language toggle in the NodeViewPanel, not as separate islands.
+  if (isTranslationNode(node)) return false;
   return nodeType !== "text" && nodeType !== "comment";
 }
 
@@ -520,6 +529,11 @@ export function MapViewer({
   const rightPanelRef = useRef<ImperativePanelHandle>(null);
   const leftPanelRef = useRef<ImperativePanelHandle>(null);
 
+  // Bilingual support: map primary node ID -> Thai translation node
+  const translationMap = useMemo<TranslationMap>(() => {
+    return buildTranslationMap(map.map_nodes as any[]);
+  }, [map.id, map.map_nodes]);
+
   // Toggle panel minimize/maximize
   const togglePanelSize = useCallback(() => {
     if (!rightPanelRef.current || !leftPanelRef.current) return;
@@ -664,9 +678,10 @@ export function MapViewer({
 
   // Function to navigate to adjacent unlocked nodes
   const navigateToAdjacentNode = (direction: 1 | -1) => {
-    // Only navigate through learning nodes, not text nodes
+    // Only navigate through primary learning nodes, not text or translation nodes
     const learningNodes = map.map_nodes.filter(
-      (node) => (node as any)?.node_type !== "text",
+      (node) =>
+        (node as any)?.node_type !== "text" && !isTranslationNode(node as any),
     );
     const unlockedNodes = learningNodes.filter((node) =>
       isNodeUnlocked(node.id),
@@ -1007,13 +1022,16 @@ export function MapViewer({
       singleRequirement: { completed: 0, total: 0 },
       allRequirement: { completed: 0, total: 0 },
       totalCompleted: 0,
-      totalNodes: map.map_nodes.filter((n) => (n as any)?.node_type !== "text")
-        .length,
+      totalNodes: map.map_nodes.filter(
+        (n) =>
+          (n as any)?.node_type !== "text" && !isTranslationNode(n as any),
+      ).length,
     };
 
     map.map_nodes.forEach((node) => {
-      // Skip text nodes
+      // Skip text nodes and translation nodes
       if ((node as any)?.node_type === "text") return;
+      if (isTranslationNode(node as any)) return;
 
       const requirement = getSubmissionRequirement(node.id);
       const progress = progressMap[node.id];
@@ -1498,7 +1516,7 @@ export function MapViewer({
     // server-fetched map data.
     const deletedSet = new Set(deletedNodeIds);
 
-    const transformedNodes = map.map_nodes
+    const transformedNodes = filterPrimaryNodes(map.map_nodes as any[])
       .filter((node) => !deletedSet.has(node.id))
       .map((node) => {
       const mergedNode = { ...node, ...(nodeOverrides[node.id] ?? {}) };
@@ -1556,10 +1574,14 @@ export function MapViewer({
 
     const transformedEdges: Edge[] = [];
     map.map_nodes.forEach((node) => {
-      if (deletedSet.has(node.id)) return;
+      // Skip translation nodes and deleted nodes for edges
+      if (deletedSet.has(node.id) || isTranslationNode(node as any)) return;
       node.node_paths_source.forEach((path) => {
         if (path.destination_node_id && deletedSet.has(path.destination_node_id))
           return;
+        // Skip edges that point to translation nodes
+        const destNode = map.map_nodes.find((n) => n.id === path.destination_node_id);
+        if (destNode && isTranslationNode(destNode as any)) return;
         // Add visual indicators for path states. Trail mode: only PASSED
         // sources get the active (green) path; in-progress/submitted stay
         // dim so completed progress reads at a glance.
@@ -1921,6 +1943,7 @@ export function MapViewer({
                 canGrade={canGrade && !forceStudentView}
                 onNodeDataChange={handleNodeDataChange}
                 onNodeDelete={handleNodeDelete}
+                translationMap={translationMap}
               />
             </div>
           </div>
@@ -2241,6 +2264,7 @@ export function MapViewer({
                 canGrade={canGrade && !forceStudentView}
                 onNodeDataChange={handleNodeDataChange}
                 onNodeDelete={handleNodeDelete}
+                translationMap={translationMap}
               />
             )}
           </div>

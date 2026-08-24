@@ -1,53 +1,44 @@
-// app/components/NodeViewPanel/NodeHeaderView.tsx
-import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import {
   CheckCircle,
-  FileText,
-  Film,
-  Image as ImageIcon,
-  Pencil,
-  Play,
   Clock,
   CheckSquare,
-  Upload,
   Star,
-  MessageCircle,
   Trophy,
   AlertCircle,
 } from "lucide-react";
 import { MapNode, StudentNodeProgress } from "@/types/map";
+import { cn } from "@/lib/utils";
+
+type NodeHeaderData = Pick<
+  MapNode,
+  "title" | "instructions" | "difficulty" | "sprite_url"
+>;
 
 interface NodeHeaderViewProps {
-  nodeData: MapNode | undefined;
+  nodeData: NodeHeaderData | undefined;
   progress: StudentNodeProgress | null;
   currentUser: any;
   hasStarted: boolean;
   isStarting: boolean;
   onStartNode: () => void;
+  /** Compact EN/ไทย control, sits on the title row. */
+  languageToggle?: ReactNode;
+  /** Scroll-compressed: title + lang only. */
+  compact?: boolean;
 }
 
 const getStatusBadgeVariant = (status: string) => {
   switch (status) {
     case "passed":
-      return "default"; // Default is green
+      return "default";
     case "failed":
-      return "destructive"; // Destructive is red
+      return "destructive";
     case "submitted":
-      return "secondary"; // Secondary is yellow
+      return "secondary";
     case "in_progress":
-      return "outline"; // Outline is blue
+      return "outline";
     default:
       return "outline";
   }
@@ -68,70 +59,103 @@ const getStatusIcon = (status: string) => {
   }
 };
 
+function statusTone(status: string) {
+  switch (status) {
+    case "passed":
+      return "border-emerald-400/25 bg-emerald-400/15 text-emerald-200";
+    case "failed":
+      return "border-red-400/25 bg-red-400/15 text-red-200";
+    case "submitted":
+      return "border-amber-200/25 bg-amber-200/10 text-amber-200";
+    case "in_progress":
+      return "border-sky-400/25 bg-sky-400/10 text-sky-200";
+    default:
+      return "border-white/10 bg-white/5 text-stone-300";
+  }
+}
+
 export function NodeHeaderView({
   nodeData,
   progress,
-  currentUser,
-  hasStarted,
-  isStarting,
-  onStartNode,
+  languageToggle,
+  compact = false,
 }: NodeHeaderViewProps) {
   if (!nodeData) return null;
 
   return (
-    <div className="p-4 border-b bg-gradient-to-r from-primary/5 to-secondary/5">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex-1">
-          <div className="flex items-center flex-wrap gap-2 mb-1">
-            <h2 className="text-xl font-bold text-foreground">
-              {nodeData.title}
-            </h2>
-            <Badge variant="outline" className="font-medium">
-              <Star className="h-3 w-3 mr-1" />
-              Level {nodeData.difficulty}
-            </Badge>
-            {nodeData.sprite_url && (
-              <Badge
-                variant="secondary"
-                className="bg-purple-100 text-purple-700 border-purple-200"
-              >
-                <Trophy className="h-3 w-3 mr-1" />
-                Boss Node
-              </Badge>
-            )}
-            {progress && (
-              <Badge
-                variant={getStatusBadgeVariant(progress.status)}
-                className={`font-medium ${
-                  progress.status === "passed"
-                    ? "bg-green-100 text-green-700 border-green-200"
-                    : progress.status === "failed"
-                      ? "bg-red-100 text-red-700 border-red-200"
-                      : progress.status === "submitted"
-                        ? "bg-yellow-100 text-yellow-800 border-yellow-200"
-                        : progress.status === "in_progress"
-                          ? "bg-blue-100 text-blue-700 border-blue-200"
-                          : ""
-                }`}
-              >
-                {getStatusIcon(progress.status)}
-                {progress.status.replace("_", " ").toUpperCase()}
-              </Badge>
-            )}
-          </div>
-          {nodeData.instructions && (
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {nodeData.instructions}
-            </p>
-          )}
-        </div>
-        {nodeData.sprite_url && (
+    <div
+      className={cn(
+        "node-panel-header pl-4 pr-12 transition-[padding] duration-200 ease-[cubic-bezier(0.05,0.7,0.35,0.99)] motion-reduce:transition-none",
+        compact ? "py-2" : "pt-4 pb-3",
+      )}
+    >
+      <div className={cn("flex gap-2.5", compact ? "items-center" : "items-start")}>
+        {nodeData.sprite_url && !compact && (
           <img
             src={nodeData.sprite_url}
-            alt={nodeData.title}
-            className="w-12 h-12 object-contain ml-3 opacity-80"
+            alt=""
+            className="mt-0.5 h-9 w-9 shrink-0 object-contain opacity-80"
           />
         )}
+
+        <div className="min-w-0 flex-1">
+          <div className={cn("flex gap-2", compact ? "items-center" : "items-start")}>
+            <h2
+              className={cn(
+                "min-w-0 flex-1 font-semibold text-foreground",
+                compact
+                  ? "truncate text-sm"
+                  : "text-base leading-snug line-clamp-2",
+              )}
+            >
+              {nodeData.title}
+            </h2>
+            {languageToggle}
+          </div>
+
+          <div
+            className={cn(
+              "grid transition-[grid-template-rows,opacity] duration-200 ease-[cubic-bezier(0.05,0.7,0.35,0.99)] motion-reduce:transition-none",
+              compact ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100",
+            )}
+            aria-hidden={compact}
+          >
+            <div className="min-h-0 overflow-hidden">
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                <Badge
+                  variant="outline"
+                  className="border-white/10 bg-white/5 font-medium text-stone-300"
+                >
+                  <Star className="mr-1 h-3 w-3" />
+                  Level {nodeData.difficulty}
+                </Badge>
+                {nodeData.sprite_url && (
+                  <Badge
+                    variant="secondary"
+                    className="border-amber-200/25 bg-amber-200/10 font-medium text-amber-200"
+                  >
+                    <Trophy className="mr-1 h-3 w-3" />
+                    Boss Node
+                  </Badge>
+                )}
+                {progress && (
+                  <Badge
+                    variant={getStatusBadgeVariant(progress.status)}
+                    className={cn("font-medium", statusTone(progress.status))}
+                  >
+                    {getStatusIcon(progress.status)}
+                    {progress.status.replace("_", " ").toUpperCase()}
+                  </Badge>
+                )}
+              </div>
+              {nodeData.instructions && (
+                <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                  {nodeData.instructions}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
