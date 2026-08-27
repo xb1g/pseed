@@ -19367,3 +19367,230 @@ a.pathlab-fields__button {
   font-size: 22px;
 }
 
+
+/* ── Techseed Certificate of Completion ── */
+
+.pathlab-certificate-stage {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+  background: #1a0f1a;
+}
+
+.pathlab-certificate-scaler {
+  width: 100%;
+  max-width: 1400px;
+}
+
+.pathlab-certificate {
+  position: relative;
+  width: 2100px;
+  height: 1500px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 28% 42%, #ff5e22 0%, #e62e0d 25%, #9a1208 55%, #2a0718 100%);
+  color: #fff;
+  font-family: var(--font-bai-jamjuree), "Bai Jamjuree", sans-serif;
+  text-align: center;
+}
+
+/* Diagonal translucent bands that mimic the original gradient geometry. */
+.pathlab-certificate__band {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.pathlab-certificate__band--1 {
+  background: linear-gradient(
+    135deg,
+    rgba(50, 10, 20, 0.55) 0%,
+    transparent 35%,
+    transparent 65%,
+    rgba(30, 5, 35, 0.6) 100%
+  );
+}
+
+.pathlab-certificate__band--2 {
+  background: linear-gradient(
+    45deg,
+    transparent 20%,
+    rgba(120, 25, 15, 0.25) 45%,
+    transparent 70%
+  );
+}
+
+.pathlab-certificate__band--3 {
+  background: linear-gradient(
+    160deg,
+    transparent 55%,
+    rgba(20, 5, 40, 0.75) 100%
+  );
+}
+
+/* Top-center brand lockup: flame icon inside a dark circular badge. */
+.pathlab-certificate__brand {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 110px;
+}
+
+.pathlab-certificate__logo-ring {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #4a0e1f, #2a0718);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.pathlab-certificate__logo {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+}
+
+.pathlab-certificate__wordmark {
+  margin-top: 22px;
+  font-size: 92px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.pathlab-certificate__wordmark-bold {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-weight: 700;
+}
+
+.pathlab-certificate__wordmark-light {
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+  font-weight: 300;
+  opacity: 0.92;
+}
+
+/* Program name */
+.pathlab-certificate__program {
+  position: relative;
+  z-index: 1;
+  margin-top: 36px;
+  font-size: 82px;
+  line-height: 1;
+  font-family: var(--font-kodchasan), var(--font-bai-jamjuree), sans-serif;
+}
+
+.pathlab-certificate__program-tech {
+  font-weight: 700;
+}
+
+.pathlab-certificate__program-seed {
+  font-weight: 300;
+  opacity: 0.92;
+}
+
+.pathlab-certificate__program-batch {
+  margin-left: 8px;
+  font-weight: 500;
+  color: #4dd9c8;
+}
+
+/* Certificate title */
+.pathlab-certificate__title {
+  position: relative;
+  z-index: 1;
+  margin-top: 28px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 86px;
+  font-style: italic;
+  font-weight: 500;
+  color: #ffd98c;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.25);
+}
+
+/* Intro text */
+.pathlab-certificate__intro {
+  position: relative;
+  z-index: 1;
+  margin-top: 90px;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Recipient */
+.pathlab-certificate__recipient {
+  position: relative;
+  z-index: 1;
+  margin-top: 28px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 110px;
+  font-weight: 400;
+  color: #fff;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Body */
+.pathlab-certificate__body {
+  position: relative;
+  z-index: 1;
+  margin: 42px auto 0;
+  max-width: 1400px;
+  font-size: 22px;
+  line-height: 1.55;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+/* Signatures */
+.pathlab-certificate__signatures {
+  position: absolute;
+  bottom: 110px;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 220px;
+}
+
+.pathlab-certificate__signature {
+  text-align: center;
+  min-width: 420px;
+}
+
+.pathlab-certificate__signature-mark {
+  font-family: "Brush Script MT", "Segoe Script", cursive;
+  font-size: 64px;
+  line-height: 1.1;
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 8px;
+}
+
+.pathlab-certificate__signature-line {
+  width: 320px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.45);
+  margin: 0 auto 14px;
+}
+
+.pathlab-certificate__signature-title {
+  font-size: 22px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.pathlab-certificate__signature-org {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.65);
+}

@@ -116,6 +116,9 @@ export default function TechPosterPage() {
         <Link href="/pathlab/poster/social/tech" className="pathlab-ig-nav__link">
           Tech Social
         </Link>
+        <Link href="/pathlab/poster/certificate" className="pathlab-ig-nav__link">
+          Certificate
+        </Link>
       </nav>
 
       <article

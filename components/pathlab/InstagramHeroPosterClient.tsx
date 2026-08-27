@@ -129,6 +129,9 @@ export function InstagramHeroPosterClient() {
         <Link href="/pathlab/poster/social" className="pathlab-ig-nav__link">
           Social Card
         </Link>
+        <Link href="/pathlab/poster/certificate" className="pathlab-ig-nav__link">
+          Certificate
+        </Link>
       </nav>
 
       <PosterScaler designWidth={1080} className="pathlab-ig-hero-scaler">

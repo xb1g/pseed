@@ -156,6 +156,9 @@ export function InstagramPosterClient() {
         <Link href="/pathlab/poster/social" className="pathlab-ig-nav__link">
           1200×630
         </Link>
+        <Link href="/pathlab/poster/certificate" className="pathlab-ig-nav__link">
+          Certificate
+        </Link>
       </nav>
 
       {/* Canvas Wrapper */}

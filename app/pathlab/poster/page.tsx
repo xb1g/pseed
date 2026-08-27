@@ -151,6 +151,9 @@ export default function PathlabPosterPage() {
         <Link href="/pathlab/poster/social" className="pathlab-ig-nav__link">
           Social Card (1200×630)
         </Link>
+        <Link href="/pathlab/poster/certificate" className="pathlab-ig-nav__link">
+          Certificate
+        </Link>
       </nav>
 
       <article

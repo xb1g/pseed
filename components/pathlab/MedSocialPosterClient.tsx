@@ -137,6 +137,9 @@ export function MedSocialPosterClient({
         <Link href="/pathlab/poster/social" className="pathlab-ig-nav__link">
           Social เดิม
         </Link>
+        <Link href="/pathlab/poster/certificate" className="pathlab-ig-nav__link">
+          Certificate
+        </Link>
       </nav>
 
       <PosterScaler designWidth={1200} className="pathlab-med-social-scaler">

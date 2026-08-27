@@ -162,6 +162,9 @@ export function MedPosterClient({
         >
           Med Social
         </Link>
+        <Link href="/pathlab/poster/certificate" className="pathlab-ig-nav__link">
+          Certificate
+        </Link>
       </nav>
 
       <article

@@ -128,6 +128,9 @@ export default function PathlabSocialCardPage() {
         <Link href="/pathlab/poster" className="pathlab-ig-nav__link">
           A4 Print
         </Link>
+        <Link href="/pathlab/poster/certificate" className="pathlab-ig-nav__link">
+          Certificate
+        </Link>
       </nav>
 
       <PosterScaler designWidth={1200} className="pathlab-social-scaler">
