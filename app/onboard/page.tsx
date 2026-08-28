@@ -70,6 +70,7 @@ export default async function OnboardPage({
 
   return (
     <OnboardClient
+      user={user}
       userId={user.id}
       isAnonymous={isAnonymousUser(user)}
       oauthName={oauthName}

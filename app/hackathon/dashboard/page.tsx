@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import gsap from "gsap";
-import { Bell, ClipboardList, Users, Check, Sparkles, BookOpen, Home, ArrowRight, Search, Settings, ExternalLink, Loader2, QrCode, Trophy, Target, Zap, BarChart3, BrainCircuit, Activity } from "lucide-react";
+import { Bell, Users, Check, Sparkles, BookOpen, Home, ArrowRight, Search, Settings, ExternalLink, Loader2, QrCode, Trophy, Target, Zap, BarChart3, BrainCircuit, Activity } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import type { HackathonParticipant } from "@/lib/hackathon/db";
 import { FeedbackInvitationCard } from "@/components/hackathon/FeedbackInvitationCard";
@@ -56,7 +56,6 @@ const QUADRANT: Record<string, { label: string; color: string; emoji: string; de
   disengaged: { label: "ยังไม่เข้าร่วมเต็มที่", color: "#9ca3af", emoji: "😐", desc: "มีโอกาสพัฒนาการมีส่วนร่วม" },
 };
 
-const ONBOARDING_NUDGE_KEY = "hackathon_onboarding_nudge_dismissed";
 
 const TRACKS = [
   "นักเรียนมัธยมปลาย หรือเทียบเท่า",
@@ -88,8 +87,6 @@ export default function HackathonDashboardPage() {
   const router = useRouter();
   const contentRef = useRef<HTMLDivElement>(null);
   const [participant, setParticipant] = useState<HackathonParticipant | null>(null);
-  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
-  const [showOnboardingNudge, setShowOnboardingNudge] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [settingsForm, setSettingsForm] = useState({
     name: "",
@@ -122,59 +119,14 @@ export default function HackathonDashboardPage() {
         .then((r) => r.json())
         .then((data) => {
           if (data.participant) {
-            if (data.participant.is_admin) {
-              setOnboardingComplete(true);
-              setParticipant(data.participant);
-              if (contentRef.current) {
-                gsap.fromTo(
-                  contentRef.current,
-                  { opacity: 0, y: 20 },
-                  { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }
-                );
-              }
-              return;
+            setParticipant(data.participant);
+            if (contentRef.current) {
+              gsap.fromTo(
+                contentRef.current,
+                { opacity: 0, y: 20 },
+                { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }
+              );
             }
-
-            fetch("/api/hackathon/pre-questionnaire")
-              .then((r) => r.json())
-              .then((questionnaireData) => {
-                const complete = questionnaireData.data != null;
-                setOnboardingComplete(complete);
-                setParticipant(data.participant);
-
-                if (
-                  !complete &&
-                  typeof window !== "undefined" &&
-                  sessionStorage.getItem(ONBOARDING_NUDGE_KEY) !== "1"
-                ) {
-                  setShowOnboardingNudge(true);
-                }
-
-                if (contentRef.current) {
-                  gsap.fromTo(
-                    contentRef.current,
-                    { opacity: 0, y: 20 },
-                    { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }
-                  );
-                }
-              })
-              .catch(() => {
-                setOnboardingComplete(false);
-                setParticipant(data.participant);
-                if (
-                  typeof window !== "undefined" &&
-                  sessionStorage.getItem(ONBOARDING_NUDGE_KEY) !== "1"
-                ) {
-                  setShowOnboardingNudge(true);
-                }
-                if (contentRef.current) {
-                  gsap.fromTo(
-                    contentRef.current,
-                    { opacity: 0, y: 20 },
-                    { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }
-                  );
-                }
-              });
           } else if (++attempts < maxAttempts) {
             setTimeout(check, 500);
           } else {
@@ -225,18 +177,6 @@ export default function HackathonDashboardPage() {
       .then((data) => setGalleryProduct(data.product ?? null))
       .catch(() => setGalleryProduct(null));
   }, [participant?.id, participant?.is_admin]);
-
-  const dismissOnboardingNudge = () => {
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem(ONBOARDING_NUDGE_KEY, "1");
-    }
-    setShowOnboardingNudge(false);
-  };
-
-  const goToOnboarding = () => {
-    dismissOnboardingNudge();
-    router.push("/hackathon/onboarding?returnTo=/hackathon/dashboard");
-  };
 
   const handleLogout = async () => {
     await fetch("/api/hackathon/logout", { method: "POST" });
@@ -329,39 +269,6 @@ export default function HackathonDashboardPage() {
   return (
     <div className="min-h-screen text-white relative overflow-hidden flex items-center justify-center font-[family-name:var(--font-mitr)]">
       <FractalGlassBackground />
-      <Dialog
-        open={showOnboardingNudge}
-        onOpenChange={(open) => {
-          if (!open) dismissOnboardingNudge();
-        }}
-      >
-        <DialogContent className="border-[#91C4E3]/25 bg-[#0d1219] text-white sm:max-w-md font-[family-name:var(--font-mitr)]">
-          <DialogHeader>
-            <DialogTitle className="text-xl text-white">ทำแบบสอบถามให้เสร็จสมบูรณ์</DialogTitle>
-            <DialogDescription className="text-gray-400 text-left mt-2 text-sm leading-relaxed">
-              แบบสอบถามสั้นๆ จะช่วยให้เราเข้าใจเป้าหมายของคุณ และจับคู่คุณกับโจทย์แฮกกาธอนและเพื่อนร่วมทีม คุณสามารถเริ่มทำได้เลย หรือทำเมื่อไหร่ก็ได้จากแดชบอร์ดของคุณ
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0 flex-col sm:flex-row mt-4">
-            <Button
-              type="button"
-              variant="ghost"
-              className="text-gray-400 hover:text-white hover:bg-white/5 font-[family-name:var(--font-mitr)]"
-              onClick={dismissOnboardingNudge}
-            >
-              ไว้ทีหลัง
-            </Button>
-            <Button
-              type="button"
-              className="bg-gradient-to-r from-[#8b7a9a] to-[#7b6a8a] hover:from-[#b5a4ca] hover:to-[#a594ba] text-white border border-[#b5a4ca]/30 shadow-[0_0_15px_rgba(139,122,154,0.4)] transition-all font-[family-name:var(--font-mitr)]"
-              onClick={goToOnboarding}
-            >
-              เริ่มทำแบบสอบถาม
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
         <DialogContent className="border-[#4a6b82]/30 bg-[#0d1219] text-white sm:max-w-md font-[family-name:var(--font-mitr)] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -528,47 +435,6 @@ export default function HackathonDashboardPage() {
               </h1>
               <p className="text-gray-300 font-medium">The Next Decade Hackathon 2026</p>
             </div>
-
-            {onboardingComplete === false && (
-              <div className="bg-gradient-to-br from-amber-950/60 to-amber-900/40 backdrop-blur-md border border-amber-500/30 rounded-2xl p-5 text-left shadow-[0_0_30px_rgba(245,158,11,0.15)]">
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 rounded-xl bg-amber-500/20 p-2.5 text-amber-400 border border-amber-500/30">
-                    <ClipboardList className="h-5 w-5" aria-hidden />
-                  </div>
-                  <div className="flex-1 space-y-3 min-w-0">
-                    <div>
-                      <p className="text-amber-300 font-medium text-sm">
-                        ยังทำแบบสอบถามไม่เสร็จ
-                      </p>
-                      <p className="text-gray-200 text-sm mt-1 leading-relaxed">
-                        ทำแบบสอบถามสั้นๆ ให้เสร็จเมื่อคุณพร้อม ข้อมูลนี้จะช่วยในการเลือกปัญหาและจับคู่ทีม
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      onClick={() =>
-                        router.push("/hackathon/onboarding?returnTo=/hackathon/dashboard")
-                      }
-                      className="w-full sm:w-auto bg-amber-600 hover:bg-amber-500 text-white border border-amber-400/50 shadow-[0_0_15px_rgba(245,158,11,0.3)] transition-all duration-300 font-[family-name:var(--font-mitr)]"
-                    >
-                      เริ่มทำแบบสอบถาม
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {onboardingComplete === true && (
-              <div className="bg-gradient-to-br from-emerald-950/40 to-emerald-900/20 backdrop-blur-md border border-emerald-500/30 rounded-2xl px-5 py-4 text-left shadow-[0_0_20px_rgba(16,185,129,0.1)] flex items-center gap-3">
-                <div className="rounded-full bg-emerald-500/20 p-1.5 text-emerald-400 border border-emerald-500/30">
-                  <Check className="h-4 w-4" />
-                </div>
-                <div>
-                  <p className="text-emerald-300 text-sm font-medium">ทำแบบสอบถามเสร็จสิ้น</p>
-                  <p className="text-emerald-100/70 text-xs mt-0.5">ขอบคุณ — ระบบได้บันทึกคำตอบของคุณแล้ว</p>
-                </div>
-              </div>
-            )}
 
             {!participant.is_admin && (
               <FeedbackInvitationCard status={feedbackStatus} />
@@ -788,17 +654,15 @@ export default function HackathonDashboardPage() {
               </div>
             )}
 
-            {onboardingComplete === true && (
-              <Button
-                asChild
-                className="w-full bg-gradient-to-r from-[#8b7a9a] to-[#7b6a8a] hover:from-[#b5a4ca] hover:to-[#a594ba] text-white font-medium py-6 rounded-xl transition-all duration-300 shadow-[0_0_25px_rgba(139,122,154,0.35)] hover:shadow-[0_0_40px_rgba(181,164,202,0.45)] hover:scale-[1.02] border border-[#b5a4ca]/30 font-[family-name:var(--font-mitr)]"
-              >
-                <Link href="/hackathon/team-matching" className="inline-flex items-center justify-center gap-2 text-lg">
-                  <Search className="h-5 w-5" aria-hidden />
-                  ค้นหาและจัดอันดับทีมเมต
-                </Link>
-              </Button>
-            )}
+            <Button
+              asChild
+              className="w-full bg-gradient-to-r from-[#8b7a9a] to-[#7b6a8a] hover:from-[#b5a4ca] hover:to-[#a594ba] text-white font-medium py-6 rounded-xl transition-all duration-300 shadow-[0_0_25px_rgba(139,122,154,0.35)] hover:shadow-[0_0_40px_rgba(181,164,202,0.45)] hover:scale-[1.02] border border-[#b5a4ca]/30 font-[family-name:var(--font-mitr)]"
+            >
+              <Link href="/hackathon/team-matching" className="inline-flex items-center justify-center gap-2 text-lg">
+                <Search className="h-5 w-5" aria-hidden />
+                ค้นหาและจัดอันดับทีมเมต
+              </Link>
+            </Button>
 
             <div className="grid grid-cols-3 gap-4">
               <Button

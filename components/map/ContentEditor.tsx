@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,11 +9,8 @@ import {
   Trash2,
   PlusCircle,
   Plus,
-  Edit,
   Check,
   AlertCircle,
-  ChevronRight,
-  GripVertical,
   Loader2,
 } from "lucide-react";
 import {
@@ -29,10 +26,8 @@ import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
-  useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FileUpload } from "@/components/ui/file-upload";
 import {
@@ -41,12 +36,18 @@ import {
   deleteNodeContent,
 } from "@/lib/supabase/nodes";
 import { useToast } from "@/components/ui/use-toast";
-import { marked } from "marked";
-import { sanitizeHtml } from "@/lib/security/sanitize-html";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { uploadImage } from "@/lib/utils/upload-image";
 import {
   RichTextEditor,
   RichTextEditorHandle,
 } from "@/components/map/RichTextEditor";
+import { ContentBlockPreview } from "@/components/map/ContentBlockPreview";
 import {
   sliceAndUploadWebtoon,
   parseWebtoonBody,
@@ -230,15 +231,6 @@ const generateTempId = (): string =>
   `temp_content_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
 // Display helpers
-const getUrlHost = (url?: string | null): string => {
-  if (!url) return "";
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return "";
-  }
-};
-
 const getFileName = (url?: string | null): string => {
   if (!url) return "";
   const raw = url.split("/").pop() || "";
@@ -246,82 +238,6 @@ const getFileName = (url?: string | null): string => {
     return decodeURIComponent(raw);
   } catch {
     return raw;
-  }
-};
-
-// A short, human label for a content row: the title if set, otherwise the
-// most recognizable thing we can derive from the content itself.
-const getContentLabel = (item: NodeContent): string => {
-  if (item.content_title?.trim()) return item.content_title.trim();
-
-  switch (item.content_type) {
-    case "text": {
-      const plain = (item.content_body || "")
-        .replace(/<[^>]*>/g, " ")
-        .replace(/[#*>`_\[\]()!-]/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
-      return plain
-        ? plain.length > 60
-          ? `${plain.slice(0, 60)}…`
-          : plain
-        : "Untitled text";
-    }
-    case "image":
-      return getFileName(item.content_url) || "Image";
-    case "pdf":
-      return getFileName(item.content_url) || "PDF document";
-    case "video": {
-      const host = getUrlHost(item.content_url);
-      return host ? `Video · ${host}` : "Video";
-    }
-    case "canva_slide":
-      return "Canva deck";
-    case "webtoon": {
-      const count = parseWebtoonBody(item.content_body).panels.length;
-      return count ? `Webtoon · ${count} panels` : "Webtoon";
-    }
-    case "resource_link":
-      return getUrlHost(item.content_url) || "Resource link";
-    case "order_code": {
-      try {
-        const blocks = JSON.parse(item.content_body || "[]");
-        return `${blocks.length} code blocks`;
-      } catch {
-        return "Order code";
-      }
-    }
-    default:
-      return item.content_type;
-  }
-};
-
-// Get embed URL for video platforms
-const getEmbedUrl = (url: string): string | null => {
-  try {
-    // YouTube
-    if (url.includes("youtube.com") || url.includes("youtu.be")) {
-      const videoId = url.match(
-        /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/,
-      )?.[1];
-      return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
-    }
-    // Vimeo
-    if (url.includes("vimeo.com")) {
-      const videoId = url.match(/vimeo\.com\/(\d+)/)?.[1];
-      return videoId ? `https://player.vimeo.com/video/${videoId}` : null;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-};
-
-const renderMarkdown = (text: string): string => {
-  try {
-    return sanitizeHtml(marked(text) as string);
-  } catch {
-    return sanitizeHtml(`<p>${text.replace(/\n/g, "</p><p>")}</p>`);
   }
 };
 
@@ -504,13 +420,21 @@ const QuickAddRow = ({
   </div>
 );
 
-// Hover seam between two rows. Clicking it turns the seam into a quick
-// capture input that inserts at exactly that position.
-const InsertSeam = ({ onClick }: { onClick: () => void }) => (
+// Hover seam between two blocks. Hovering it marks the insertion point for
+// pasted/dropped images; clicking it turns the seam into a quick capture
+// input that inserts at exactly that position.
+const InsertSeam = ({
+  onClick,
+  onHover,
+}: {
+  onClick: () => void;
+  onHover?: () => void;
+}) => (
   <div
     role="button"
     aria-label="Insert content here"
     onClick={onClick}
+    onMouseEnter={onHover}
     className="group/seam relative h-2 cursor-pointer"
   >
     <div className="absolute inset-x-1 top-1/2 flex -translate-y-1/2 items-center gap-1.5 opacity-0 transition-opacity duration-150 group-hover/seam:opacity-100">
@@ -1202,444 +1126,6 @@ const ContentForm = ({
   );
 };
 
-// Empty preview placeholder
-const MissingPreview = () => (
-  <p className="py-1 text-[11px] italic text-red-300/80">
-    Nothing to preview yet. Edit to add content.
-  </p>
-);
-
-// Expanded, on-demand preview. Heavy embeds (video, Canva) only mount while
-// the row is expanded, so a long list stays fast. Previews are unboxed: the
-// thread line on the left provides the structure, not another nested card.
-const ContentPreview = ({ item }: { item: NodeContent }) => {
-  const url = item.content_url;
-
-  switch (item.content_type) {
-    case "image":
-      if (!url) return <MissingPreview />;
-      return (
-        <img
-          src={url}
-          alt={item.content_title || "Image content"}
-          className="max-h-56 max-w-full rounded-md object-contain"
-          loading="lazy"
-        />
-      );
-
-    case "video": {
-      if (!url) return <MissingPreview />;
-      const embedUrl = getEmbedUrl(url);
-      if (!embedUrl) {
-        return (
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block truncate text-xs text-amber-300 hover:underline"
-          >
-            📹 Open video: {url}
-          </a>
-        );
-      }
-      return (
-        <iframe
-          src={embedUrl}
-          allowFullScreen
-          className="aspect-video w-full rounded-md bg-black/30"
-          title={item.content_title || "Video preview"}
-          loading="lazy"
-        />
-      );
-    }
-
-    case "canva_slide":
-      if (!url) return <MissingPreview />;
-      return (
-        <iframe
-          src={url}
-          allowFullScreen
-          className="aspect-video w-full rounded-md bg-black/30"
-          title={item.content_title || "Canva preview"}
-          loading="lazy"
-        />
-      );
-
-    case "text":
-      if (!item.content_body) return <MissingPreview />;
-      return (
-        <div className="max-h-72 overflow-y-auto pr-1">
-          <style jsx global>{`
-            .ce-md {
-              font-size: 13px;
-              line-height: 1.7;
-              color: rgb(214 211 209);
-            }
-            .ce-md h1,
-            .ce-md h2,
-            .ce-md h3,
-            .ce-md h4 {
-              color: rgb(245 245 244);
-              font-weight: 600;
-              line-height: 1.3;
-              margin: 0.75rem 0 0.375rem;
-            }
-            .ce-md h1:first-child,
-            .ce-md h2:first-child,
-            .ce-md h3:first-child,
-            .ce-md h4:first-child {
-              margin-top: 0;
-            }
-            .ce-md h1 {
-              font-size: 1.25rem;
-            }
-            .ce-md h2 {
-              font-size: 1.125rem;
-            }
-            .ce-md h3,
-            .ce-md h4 {
-              font-size: 1rem;
-            }
-            .ce-md p {
-              margin-bottom: 0.625rem;
-            }
-            .ce-md p:last-child {
-              margin-bottom: 0;
-            }
-            .ce-md strong {
-              color: rgb(231 229 228);
-              font-weight: 600;
-            }
-            .ce-md a {
-              color: rgb(252 211 77);
-              text-decoration: underline;
-              text-decoration-color: rgb(252 211 77 / 0.35);
-              text-underline-offset: 3px;
-            }
-            .ce-md ul,
-            .ce-md ol {
-              margin: 0.5rem 0;
-              padding-left: 1.25rem;
-            }
-            .ce-md ul {
-              list-style: disc;
-            }
-            .ce-md ol {
-              list-style: decimal;
-            }
-            .ce-md li {
-              margin-bottom: 0.25rem;
-            }
-            .ce-md code {
-              background: rgb(28 25 23);
-              border: 1px solid rgb(68 64 60);
-              border-radius: 0.25rem;
-              padding: 0.1rem 0.35rem;
-              font-size: 11px;
-            }
-            .ce-md pre {
-              background: rgb(12 10 9);
-              border: 1px solid rgb(68 64 60);
-              border-radius: 0.375rem;
-              padding: 0.625rem;
-              overflow-x: auto;
-              margin: 0.5rem 0;
-            }
-            .ce-md pre code {
-              background: transparent;
-              border: none;
-              padding: 0;
-            }
-            .ce-md blockquote {
-              border-left: 3px solid rgb(252 211 77 / 0.4);
-              padding-left: 0.75rem;
-              margin: 0.5rem 0;
-              font-style: italic;
-              color: rgb(168 162 158);
-            }
-            .ce-md img {
-              border-radius: 0.375rem;
-              margin: 0.5rem 0;
-              max-height: 240px;
-            }
-            .ce-md hr {
-              border-color: rgb(68 64 60);
-              margin: 0.75rem 0;
-            }
-          `}</style>
-          <div
-            className="ce-md"
-            dangerouslySetInnerHTML={{
-              __html: renderMarkdown(item.content_body),
-            }}
-          />
-        </div>
-      );
-
-    case "pdf": {
-      if (!url) return <MissingPreview />;
-      return (
-        <div className="flex items-center gap-2.5 rounded-md bg-white/[0.04] p-2.5">
-          <span
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-red-500/15 text-base"
-            aria-hidden
-          >
-            📄
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-[13px] font-medium text-stone-200">
-              {getFileName(url)}
-            </span>
-            <span className="block text-[11px] text-muted-foreground">
-              PDF document
-            </span>
-          </span>
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0 text-xs text-amber-300 hover:underline"
-          >
-            Open
-          </a>
-        </div>
-      );
-    }
-
-    case "resource_link":
-      if (!url && !item.content_body) return <MissingPreview />;
-      return (
-        <div className="space-y-1.5 py-0.5">
-          {item.content_body && (
-            <p className="text-[13px] leading-relaxed text-stone-300">
-              {item.content_body}
-            </p>
-          )}
-          {url && (
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block truncate text-xs text-amber-300 hover:underline"
-            >
-              🔗 {url}
-            </a>
-          )}
-        </div>
-      );
-
-    case "webtoon": {
-      const { panels } = parseWebtoonBody(item.content_body);
-      if (!panels.length) return <MissingPreview />;
-      return (
-        <div className="flex gap-1 overflow-x-auto">
-          {panels.slice(0, 8).map((panel, i) => (
-            <img
-              key={`${panel.url}-${i}`}
-              src={panel.url}
-              alt={`Panel ${i + 1}`}
-              className="h-14 w-9 shrink-0 rounded border border-white/10 object-cover"
-            />
-          ))}
-          {panels.length > 8 && (
-            <span className="self-center pl-1 text-[11px] text-stone-400">
-              +{panels.length - 8}
-            </span>
-          )}
-        </div>
-      );
-    }
-
-    case "order_code": {
-      let blocks: string[] = [];
-      try {
-        blocks = JSON.parse(item.content_body || "[]");
-      } catch {
-        blocks = [];
-      }
-      if (!blocks.length) return <MissingPreview />;
-      return (
-        <div className="space-y-1">
-          {blocks.map((block, i) => (
-            <div
-              key={i}
-              className="flex items-start gap-2 rounded bg-[#171310] px-2 py-1"
-            >
-              <span className="mt-0.5 font-mono text-[10px] text-stone-500">
-                {i + 1}
-              </span>
-              <code className="min-w-0 flex-1 truncate font-mono text-[11px] text-stone-300">
-                {block.split("\n")[0] || "(empty block)"}
-              </code>
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    default:
-      return null;
-  }
-};
-
-// One flat row per content item: drag handle, thumbnail/icon, single-line
-// label, actions. Expanding shows the preview beside a Reddit-style thread
-// line; clicking the line collapses. Text rows edit inline, in place.
-const SortableContentRow = ({
-  item,
-  nodeId,
-  disabled,
-  expanded,
-  inlineEditing,
-  onToggleExpand,
-  onEdit,
-  onDelete,
-  onInlineSave,
-  onInlineCancel,
-}: {
-  item: NodeContent;
-  nodeId: string;
-  disabled: boolean;
-  expanded: boolean;
-  inlineEditing: boolean;
-  onToggleExpand: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  onInlineSave: (item: NodeContent, draft: string) => void;
-  onInlineCancel: () => void;
-}) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: item.id, disabled });
-
-  const cfg = CONTENT_TYPE_CONFIG[item.content_type];
-  const missing = !item.content_url && !item.content_body;
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-      }}
-      className={isDragging ? "relative z-10 opacity-70" : undefined}
-    >
-      {/* Header row */}
-      <div className="flex items-center gap-0.5 py-1.5">
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          disabled={disabled}
-          aria-label="Drag to reorder"
-          className="shrink-0 cursor-grab touch-none rounded p-1 text-stone-600 hover:text-stone-300 active:cursor-grabbing disabled:pointer-events-none disabled:opacity-25"
-        >
-          <GripVertical className="h-3.5 w-3.5" />
-        </button>
-
-        {inlineEditing ? (
-          <div className="min-w-0 flex-1 px-1 py-0.5">
-            <RichTextEditor
-              nodeId={nodeId}
-              content={item.content_body || ""}
-              onSave={(md) => onInlineSave(item, md)}
-              onCancel={onInlineCancel}
-              showActions
-              autoFocus
-            />
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={onToggleExpand}
-            aria-expanded={expanded}
-            className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-md px-1 py-0.5 text-left transition-colors hover:bg-white/5"
-          >
-            {item.content_type === "image" && item.content_url ? (
-              <img
-                src={item.content_url}
-                alt=""
-                loading="lazy"
-                className="h-8 w-8 shrink-0 rounded border border-white/10 object-cover"
-              />
-            ) : (
-              <span
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-white/10 bg-white/5 text-sm"
-                aria-hidden
-              >
-                {cfg.icon}
-              </span>
-            )}
-            <span className="min-w-0 flex-1">
-              <span className="block truncate whitespace-nowrap text-[13px] font-medium text-stone-200">
-                {getContentLabel(item)}
-              </span>
-              <span className="block truncate whitespace-nowrap text-[11px] text-muted-foreground">
-                {cfg.label}
-                {missing && (
-                  <span className="text-red-300"> · missing content</span>
-                )}
-              </span>
-            </span>
-            <ChevronRight
-              className={`h-3.5 w-3.5 shrink-0 text-stone-500 transition-transform duration-150 ${
-                expanded ? "rotate-90" : ""
-              }`}
-            />
-          </button>
-        )}
-
-        <div className="flex shrink-0 items-center">
-          <button
-            type="button"
-            onClick={onEdit}
-            disabled={disabled}
-            aria-label="Edit content"
-            title={
-              item.content_type === "text" ? "Edit inline" : "Edit content"
-            }
-            className="rounded p-1.5 text-stone-400 hover:bg-white/10 hover:text-stone-100 disabled:pointer-events-none disabled:opacity-25"
-          >
-            <Edit className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            disabled={disabled}
-            aria-label="Delete content"
-            className="rounded p-1.5 text-stone-400 hover:bg-red-400/10 hover:text-red-300 disabled:pointer-events-none disabled:opacity-25"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Expanded preview with a Reddit-style thread line collapse rail */}
-      {expanded && !inlineEditing && (
-        <div className="flex">
-          <button
-            type="button"
-            onClick={onToggleExpand}
-            aria-label="Collapse preview"
-            title="Collapse"
-            className="group/thread w-6 shrink-0 self-stretch"
-          >
-            <span className="mx-auto block h-full w-px bg-white/15 transition-colors duration-150 group-hover/thread:bg-amber-200/70" />
-          </button>
-          <div className="min-w-0 flex-1 pb-2.5 pr-1">
-            <ContentPreview item={item} />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
 // Main component
 export function ContentEditor({
   nodeId,
@@ -1649,10 +1135,17 @@ export function ContentEditor({
   const { toast } = useToast();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [inlineEditId, setInlineEditId] = useState<string | null>(null);
   const [insertAt, setInsertAt] = useState<number | null>(null);
   const [quickUploading, setQuickUploading] = useState(false);
+  // Where a pasted/dropped image lands: the last seam the author hovered,
+  // else the end of the document. A ref so hover does not re-render.
+  const insertPointRef = useRef<number | null>(null);
+  // Latest content for async upload completions (props are stale by then).
+  const contentRef = useRef(content);
+  useEffect(() => {
+    contentRef.current = content;
+  }, [content]);
 
   const isFormActive = isAdding || editingId;
   // While any editing surface is open, freeze the list's drag/actions so a
@@ -1747,9 +1240,6 @@ export function ContentEditor({
           toast({ title: "Content added successfully!" });
 
           signalSaveFinish();
-
-          // Reveal the new item so the author sees what students will see
-          setExpandedId(finalContent.id);
         }
 
         // Reset form state
@@ -1779,7 +1269,6 @@ export function ContentEditor({
 
         // Update local state
         onContentChange(content.filter((c) => c.id !== id));
-        if (expandedId === id) setExpandedId(null);
         toast({ title: "Content deleted successfully!" });
 
         signalSaveFinish();
@@ -1792,11 +1281,10 @@ export function ContentEditor({
         });
       }
     },
-    [content, onContentChange, toast, expandedId],
+    [content, onContentChange, toast],
   );
 
   const handleEdit = useCallback((id: string) => {
-    setExpandedId(null);
     setEditingId(id);
   }, []);
 
@@ -1903,7 +1391,6 @@ export function ContentEditor({
 
         onContentChange(next);
         setInsertAt(null);
-        setExpandedId(created.id);
         toast({ title: `${CONTENT_TYPE_CONFIG[draft.type].label} added` });
 
         signalSaveFinish();
@@ -1934,28 +1421,11 @@ export function ContentEditor({
       toast({ title: "Uploading image…" });
 
       try {
-        const formData = new FormData();
-        const ext = file.type.split("/")[1] || "png";
-        formData.append("file", file, `pasted-image-${Date.now()}.${ext}`);
-        formData.append("nodeId", nodeId);
-
-        const res = await fetch("/api/upload/images", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error || `Upload failed (${res.status})`);
-        }
-
-        const data = await res.json();
-        if (data.fileUrl) {
-          await handleQuickCreate(
-            { type: "image", url: data.fileUrl, body: null },
-            atIndex,
-          );
-        }
+        const { fileUrl } = await uploadImage(file, nodeId);
+        await handleQuickCreate(
+          { type: "image", url: fileUrl, body: null },
+          atIndex,
+        );
       } catch (error) {
         console.error("Image paste failed:", error);
         toast({
@@ -1969,6 +1439,143 @@ export function ContentEditor({
     },
     [nodeId, handleQuickCreate, toast],
   );
+
+  // Document-level image paste/drop: each file becomes an image block at the
+  // current insertion point, shown immediately as an optimistic placeholder
+  // (blob URL) while the real upload runs in the background.
+  const handleImageFiles = useCallback(
+    async (files: File[]) => {
+      if (!files.length) return;
+
+      const before = [...contentRef.current].sort(
+        (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0),
+      );
+      const at = Math.min(
+        Math.max(insertPointRef.current ?? before.length, 0),
+        before.length,
+      );
+
+      const placeholders: NodeContent[] = files.map((file, i) => ({
+        id: generateTempId(),
+        node_id: nodeId,
+        content_type: "image",
+        content_title: null,
+        content_url: URL.createObjectURL(file),
+        content_body: null,
+        display_order: at + i,
+        created_at: new Date().toISOString(),
+      }));
+
+      const withPlaceholders = [...before];
+      withPlaceholders.splice(at, 0, ...placeholders);
+      const renumbered = withPlaceholders.map((item, idx) => ({
+        ...item,
+        display_order: idx,
+      }));
+      onContentChange(renumbered);
+
+      // Persist the order shift of everything below the insertion point.
+      const shifted = renumbered.filter((item) => {
+        if (item.id.startsWith("temp_")) return false;
+        const prev = before.find((b) => b.id === item.id);
+        return !!prev && prev.display_order !== item.display_order;
+      });
+      Promise.all(
+        shifted.map((item) =>
+          updateNodeContent(item.id, { display_order: item.display_order }),
+        ),
+      ).catch((e) => console.error("Failed to persist shifted order:", e));
+
+      await Promise.all(
+        placeholders.map(async (placeholder, i) => {
+          const blobUrl = placeholder.content_url;
+          try {
+            const { fileUrl } = await uploadImage(files[i], nodeId);
+            const created = await createNodeContent({
+              node_id: nodeId,
+              content_type: "image",
+              content_title: null,
+              content_url: fileUrl,
+              content_body: null,
+              display_order: placeholder.display_order,
+            });
+
+            const current = contentRef.current;
+            if (!current.some((c) => c.id === placeholder.id)) {
+              // Placeholder was deleted while uploading; don't leave an
+              // orphan row behind.
+              deleteNodeContent(created.id).catch(() => {});
+              return;
+            }
+            onContentChange(
+              current.map((c) => (c.id === placeholder.id ? created : c)),
+            );
+          } catch (error) {
+            console.error("Image upload failed:", error);
+            onContentChange(
+              contentRef.current.filter((c) => c.id !== placeholder.id),
+            );
+            toast({
+              title: "Image upload failed",
+              description: `${(error as Error).message || "Unknown error"}. Paste or drop the image again to retry.`,
+              variant: "destructive",
+            });
+          } finally {
+            if (blobUrl) URL.revokeObjectURL(blobUrl);
+          }
+        }),
+      );
+    },
+    [nodeId, onContentChange, toast],
+  );
+
+  // Pasting anywhere in the document (outside inputs, forms, and the rich
+  // text editor, which handle their own paste) turns clipboard images into
+  // image blocks.
+  const handleDocumentPaste = useCallback(
+    (e: React.ClipboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target.closest?.(
+          'input, textarea, form, [contenteditable="true"], .ProseMirror',
+        )
+      ) {
+        return;
+      }
+
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      const files: File[] = [];
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith("image/")) {
+          const file = items[i].getAsFile();
+          if (file) files.push(file);
+        }
+      }
+      if (!files.length) return;
+
+      e.preventDefault();
+      void handleImageFiles(files);
+    },
+    [handleImageFiles],
+  );
+
+  const handleDocumentDrop = useCallback(
+    (e: React.DragEvent) => {
+      const files = Array.from(e.dataTransfer?.files ?? []).filter((f) =>
+        f.type.startsWith("image/"),
+      );
+      if (!files.length) return;
+      e.preventDefault();
+      void handleImageFiles(files);
+    },
+    [handleImageFiles],
+  );
+
+  const handleDocumentDragOver = useCallback((e: React.DragEvent) => {
+    if (e.dataTransfer?.types?.includes("Files")) e.preventDefault();
+  }, []);
 
   // Inline text edit commits through the same save path as the full form.
   const handleInlineSave = useCallback(
@@ -1989,11 +1596,29 @@ export function ContentEditor({
     [handleSave, toast],
   );
 
+  // The non-text block currently open in the edit dialog.
+  const editingItem = editingId
+    ? (sortedContent.find((c) => c.id === editingId) ?? null)
+    : null;
+
   return (
-    <div className="w-full">
-      {/* Seam above the first row */}
+    <div
+      className="w-full"
+      onPaste={handleDocumentPaste}
+      onDrop={handleDocumentDrop}
+      onDragOver={handleDocumentDragOver}
+    >
+      {/* Seam above the first block */}
       {content.length > 0 && !listBusy && insertAt !== 0 && (
-        <InsertSeam onClick={() => setInsertAt(0)} />
+        <InsertSeam
+          onClick={() => {
+            insertPointRef.current = 0;
+            setInsertAt(0);
+          }}
+          onHover={() => {
+            insertPointRef.current = 0;
+          }}
+        />
       )}
       {insertAt === 0 && (
         <div className="pb-1.5">
@@ -2007,7 +1632,8 @@ export function ContentEditor({
         </div>
       )}
 
-      {/* Content list: flat rows separated by hairlines, drag to reorder */}
+      {/* Document body: each block renders exactly like students see it,
+          with hover controls for drag, edit, and delete */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -2017,12 +1643,20 @@ export function ContentEditor({
           items={sortedIds}
           strategy={verticalListSortingStrategy}
         >
-          <div className="divide-y divide-white/[0.06]">
+          <div>
             {sortedContent.map((item, index) => (
               <div key={item.id}>
-                {/* Insert seam between rows */}
+                {/* Insert seam between blocks */}
                 {index > 0 && !listBusy && insertAt !== index && (
-                  <InsertSeam onClick={() => setInsertAt(index)} />
+                  <InsertSeam
+                    onClick={() => {
+                      insertPointRef.current = index;
+                      setInsertAt(index);
+                    }}
+                    onHover={() => {
+                      insertPointRef.current = index;
+                    }}
+                  />
                 )}
                 {insertAt === index && (
                   <div className="py-1.5">
@@ -2036,39 +1670,40 @@ export function ContentEditor({
                   </div>
                 )}
 
-                {editingId === item.id ? (
-                  <div className="py-1.5">
-                    <ContentForm
-                      nodeId={nodeId}
-                      existingContent={item}
-                      contentCount={content.length}
-                      onSave={handleSave}
-                      onCancel={handleCancelForm}
-                    />
-                  </div>
-                ) : (
-                  <SortableContentRow
-                    item={item}
-                    nodeId={nodeId}
-                    disabled={listBusy}
-                    expanded={expandedId === item.id}
-                    inlineEditing={inlineEditId === item.id}
-                    onToggleExpand={() =>
-                      setExpandedId(expandedId === item.id ? null : item.id)
+                <ContentBlockPreview
+                  item={item}
+                  disabled={listBusy}
+                  uploading={
+                    item.id.startsWith("temp_") &&
+                    !!item.content_url?.startsWith("blob:")
+                  }
+                  onEdit={() => {
+                    if (item.content_type === "text") {
+                      setInlineEditId(item.id);
+                    } else {
+                      handleEdit(item.id);
                     }
-                    onEdit={() => {
-                      if (item.content_type === "text") {
-                        setExpandedId(null);
-                        setInlineEditId(item.id);
-                      } else {
-                        handleEdit(item.id);
-                      }
-                    }}
-                    onDelete={() => confirmDelete(item.id)}
-                    onInlineSave={handleInlineSave}
-                    onInlineCancel={() => setInlineEditId(null)}
-                  />
-                )}
+                  }}
+                  onDelete={() => confirmDelete(item.id)}
+                  onPreviewClick={
+                    item.content_type === "text" && !listBusy
+                      ? () => setInlineEditId(item.id)
+                      : undefined
+                  }
+                  editor={
+                    inlineEditId === item.id ? (
+                      <RichTextEditor
+                        nodeId={nodeId}
+                        content={item.content_body || ""}
+                        onSave={(md) => handleInlineSave(item, md)}
+                        onCancel={() => setInlineEditId(null)}
+                        saveOnBlur
+                        showActions
+                        autoFocus
+                      />
+                    ) : undefined
+                  }
+                />
               </div>
             ))}
           </div>
@@ -2079,7 +1714,7 @@ export function ContentEditor({
       {content.length === 0 && !isAdding && (
         <div className="py-1.5">
           <p className="mb-2 text-center text-[11px] text-muted-foreground">
-            No materials yet
+            No materials yet. Paste an image or link to start.
           </p>
           <QuickAddRow
             uploading={quickUploading}
@@ -2115,6 +1750,32 @@ export function ContentEditor({
           />
         </div>
       )}
+
+      {/* Non-text blocks edit through the existing form, in a dialog so the
+          document keeps its shape behind it */}
+      <Dialog
+        open={!!editingItem}
+        onOpenChange={(open) => {
+          if (!open) setEditingId(null);
+        }}
+      >
+        <DialogContent className="max-w-xl border-white/10 bg-stone-950 text-stone-200">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-medium text-stone-200">
+              Edit content
+            </DialogTitle>
+          </DialogHeader>
+          {editingItem && (
+            <ContentForm
+              nodeId={nodeId}
+              existingContent={editingItem}
+              contentCount={content.length}
+              onSave={handleSave}
+              onCancel={handleCancelForm}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

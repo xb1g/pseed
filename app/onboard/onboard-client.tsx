@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 import type {
   CollectedData,
   OnboardingState,
@@ -13,8 +14,10 @@ import { InterestPhase } from "./phases/interest";
 import { AssessmentWizardPhase } from "./phases/assessment-wizard";
 import { ResultsPhase } from "./phases/results";
 import { AccountPhase, type AccountPrefill } from "./phases/account";
+import { UserNav } from "@/components/user-nav";
 
 interface OnboardClientProps {
+  user: SupabaseUser;
   userId: string;
   isAnonymous: boolean;
   oauthName: string | null;
@@ -37,6 +40,7 @@ const HEADER_CHIP =
   "inline-flex min-h-11 items-center rounded-full border border-white/10 bg-white/[0.03] px-3.5 text-xs font-medium text-white/70 sm:min-h-0 sm:py-1.5 sm:text-white/60";
 
 export function OnboardClient({
+  user,
   userId,
   isAnonymous,
   oauthName,
@@ -157,6 +161,7 @@ export function OnboardClient({
               >
                 {language === "en" ? "TH" : "EN"}
               </button>
+              <UserNav user={user} />
             </div>
           </div>
         </header>
