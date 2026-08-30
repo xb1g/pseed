@@ -3,7 +3,7 @@
  *
  * Holds the bearer token (chrome.storage.local), wraps fetch with the right
  * Authorization header, and persists last_used_at to /api/copilot/advise +
- * /api/copilot/log responses (the API touches the row server-side; this layer
+ * copilot API responses (the API touches the row server-side; this layer
  * exists so the UI never sees the token in a tab it can screenshot).
  *
  * MV3 service workers are event-driven and short-lived, so we keep no state
@@ -24,7 +24,11 @@ function isAllowedApiBase(value: string): boolean {
 }
 
 
-type ApiPath = "/api/copilot/advise" | "/api/copilot/log" | "/api/copilot/ping";
+type ApiPath =
+  | "/api/copilot/advise"
+  | "/api/copilot/backfill"
+  | "/api/copilot/log"
+  | "/api/copilot/ping";
 
 interface ApiResult<T> {
   ok: boolean;
@@ -136,6 +140,10 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (!msg || typeof msg !== "object") return false;
   if (msg.type === "copilot.advise") {
     apiCall("/api/copilot/advise", msg.body).then(sendResponse);
+    return true;
+  }
+  if (msg.type === "copilot.backfill") {
+    apiCall("/api/copilot/backfill", msg.body).then(sendResponse);
     return true;
   }
   if (msg.type === "copilot.log") {

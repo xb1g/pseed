@@ -63,7 +63,7 @@ export async function runDmConversationBackfillBatch(deadlineMs: number): Promis
         if (!msg.message) continue;
 
         const direction = msg.from?.id === igUserId ? "outbound" : "inbound";
-        conversationId = await recordBackfilledMessage({
+        const stored = await recordBackfilledMessage({
           platform: "instagram",
           platformThreadId: participant.id,
           platformUserId: participant.id,
@@ -74,6 +74,7 @@ export async function runDmConversationBackfillBatch(deadlineMs: number): Promis
           platformMessageId: msg.id,
           sentAt: msg.created_time,
         });
+        conversationId = stored.conversationId;
         if (direction === "inbound") inboundBodies.push(msg.message);
       }
 

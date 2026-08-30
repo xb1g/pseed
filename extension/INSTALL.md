@@ -2,8 +2,9 @@
 
 Internal Chrome extension for the PassionSeed team. It reads the open Instagram
 DM thread, asks `/api/copilot/advise` for the playbook bucket + drafts, and
-pastes the chosen reply into IG's compose box. **It never sends a message on
-your behalf** — you press send in IG, exactly as you do today.
+pastes the chosen reply into IG's compose box. It can also sync the open thread
+from Meta Graph API into the DM database. **It never sends a message on your
+behalf**. You press send in IG, exactly as you do today.
 
 ## One-time setup
 
@@ -68,10 +69,14 @@ once per machine.
    thread itself, for the questions the ladder has no chip for. They obey the
    same guardrails (no invented dates, prices, or links) and disappear
    silently when the model is unreachable.
-   The lead's @handle is optional. Without it the playbook still runs off the
-   messages; what you lose is stored lead context and the outbound log.
-4. `/api/copilot/log` writes the outbound to `dm_messages` so the playbook log
-   in `/admin/dm-leads` stays correct.
+   The lead's @handle is optional for advice. Syncing needs either a matched
+   stored conversation or the visible handle.
+4. Click **ซิงก์แชทเข้า DB** when the open thread needs refreshing. The
+   extension sends only thread identity. Production pulls exact IDs,
+   timestamps, attachments, and message bodies from Meta Graph API.
+5. Pasting a suggested reply does not write a database row. The real outbound
+   is recorded by the Meta webhook only after Instagram sends it. Clicking
+   sync also recovers an outbound if its webhook was missed.
 
 ## Debugging: the DevTools panel
 
@@ -98,6 +103,10 @@ with the browser session. It holds metadata only, never message bodies.
 - It does not introduce new copy. The chips and scripts come from the same
   `lib/dm-leads/playbook.ts` and `lib/dm-leads/scripts.ts` modules the admin
   inbox uses.
+- It does not persist DOM-scraped messages. Sync always imports the
+  authoritative thread from Meta Graph API.
+- It does not bulk-sync threads in the background. You choose the open thread
+  and click sync explicitly.
 - It does not see any thread you don't have open in IG. Cold threads the lead
   never replied to do not appear unless you open them.
 

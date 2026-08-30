@@ -73,6 +73,59 @@
   color: var(--psdmlp-bad);
 }
 
+.psdmlp-sync-row {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 8px;
+}
+
+.psdmlp-sync {
+  min-height: 44px;
+  min-width: 136px;
+  padding: 8px 12px;
+  border: 1px solid rgba(251, 146, 60, 0.42);
+  border-radius: 11px;
+  background: linear-gradient(135deg, #21153b 0%, #3a235e 52%, #6a352c 100%);
+  color: #fff7ed;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+  transition: transform 120ms ease-out, border-color 120ms ease-out, opacity 120ms ease-out;
+}
+
+.psdmlp-sync:hover:not(:disabled) {
+  border-color: rgba(251, 146, 60, 0.82);
+  transform: translateY(-1px);
+}
+
+.psdmlp-sync:focus-visible {
+  outline: 3px solid var(--psdmlp-accent);
+  outline-offset: 2px;
+}
+
+.psdmlp-sync:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
+.psdmlp-sync-status {
+  flex: 1;
+  min-width: 0;
+  color: var(--psdmlp-text-muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.psdmlp-sync-status--success {
+  color: var(--psdmlp-ok);
+}
+
+.psdmlp-sync-status--error {
+  color: var(--psdmlp-bad);
+}
+
 .psdmlp-chips {
   display: flex;
   flex-wrap: wrap;
@@ -211,4 +264,10 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .psdmlp-sync {
+    transition-duration: 0.01ms;
+  }
 }

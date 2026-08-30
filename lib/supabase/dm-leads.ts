@@ -197,7 +197,7 @@ export async function recordBackfilledMessage(params: {
   sentAt: string;
   messageType?: DmMessageType;
   attachments?: InboundAttachmentInput[];
-}): Promise<string> {
+}): Promise<{ conversationId: string; outcome: "created" | "duplicate" }> {
   const supabase = createAdminClient();
 
   const { data: conversation, error: conversationError } = await supabase
@@ -247,7 +247,20 @@ export async function recordBackfilledMessage(params: {
     throw new Error("Failed to record message");
   }
 
-  const messageId = msgData?.id;
+  let messageId = msgData?.id;
+  if (!messageId && params.attachments && params.attachments.length > 0) {
+    const { data: existingMessage, error: existingMessageError } = await supabase
+      .from("dm_messages")
+      .select("id")
+      .eq("platform_message_id", params.platformMessageId)
+      .single();
+    if (existingMessageError) {
+      console.error("Error loading duplicate dm_message attachments (backfill):", existingMessageError);
+      throw new Error("Failed to update backfilled message attachments");
+    }
+    messageId = existingMessage.id;
+  }
+
   if (messageId && params.attachments && params.attachments.length > 0) {
     const { error: attError } = await supabase.from("dm_message_attachments").upsert(
       params.attachments.map((attachment, position) => ({
@@ -265,7 +278,10 @@ export async function recordBackfilledMessage(params: {
     }
   }
 
-  return conversation.id;
+  return {
+    conversationId: conversation.id,
+    outcome: msgData ? "created" : "duplicate",
+  };
 }
 
 export async function updateConversationUsername(

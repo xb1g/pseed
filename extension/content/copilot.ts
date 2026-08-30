@@ -3,8 +3,8 @@
  *
  * Subscribes to the snapshot bus from instagram.ts, calls /api/copilot/advise,
  * and renders the returned chips. A click pastes the body into IG's compose
- * box via the helper from instagram.ts. After the operator hits send in IG,
- * we POST to /api/copilot/log so the playbook log stays in sync.
+ * box via the helper from instagram.ts. An explicit sync asks the server to
+ * import the authoritative Graph thread into the database.
  */
 
 import { getBus, debugLog, isContextAlive, type ThreadSnapshot as Snapshot } from "./bus";
@@ -27,10 +27,21 @@ interface AdviseResponse {
   quickReplies: { id: string; label: string; tone: string; body: string }[];
 }
 
-interface LogResponse {
+interface BackfillResponse {
   ok: boolean;
-  messageId: string | null;
+  conversationId: string;
+  username: string | null;
+  messagesFetched: number;
+  messagesImported: number;
+  duplicatesSkipped: number;
+  latestMessageAt: string | null;
 }
+
+type BackfillState =
+  | { kind: "idle" }
+  | { kind: "loading"; message: string }
+  | { kind: "success"; message: string }
+  | { kind: "error"; message: string };
 
 const TRAY_ID = "psdmlp-copilot-tray";
 // Reuse an existing tray so a manual re-injection does not stack two of them.
@@ -43,6 +54,7 @@ if (!tray.isConnected) document.body.appendChild(tray);
 let latestSnapshot: Snapshot | null = null;
 let latestAdvise: AdviseResponse | null = null;
 let loadingAdvise = false;
+let backfillState: BackfillState = { kind: "idle" };
 
 function escapeHtml(input: string): string {
   return input
@@ -76,6 +88,7 @@ function renderEmpty(reason: string): void {
 function renderAdvise(data: AdviseResponse): void {
   showTray();
   const win = windowLabel(data.windowMode);
+  const syncMessage = backfillState.kind === "idle" ? "" : backfillState.message;
   const chips = data.quickReplies
     .slice(0, 4)
     .map(
@@ -89,6 +102,19 @@ function renderAdvise(data: AdviseResponse): void {
       <span class="psdmlp-coverage">${escapeHtml(data.coverageOffer)}</span>
       <span class="psdmlp-window ${win.cls}">${escapeHtml(win.text)}</span>
     </header>
+    <div class="psdmlp-sync-row">
+      <button
+        type="button"
+        class="psdmlp-sync"
+        aria-label="Sync this Instagram thread into the PassionSeed database"
+        ${backfillState.kind === "loading" ? "disabled" : ""}
+      >${backfillState.kind === "loading" ? "กำลังซิงก์…" : "↻ ซิงก์แชทเข้า DB"}</button>
+      <span
+        class="psdmlp-sync-status psdmlp-sync-status--${backfillState.kind}"
+        role="status"
+        aria-live="polite"
+      >${escapeHtml(syncMessage)}</span>
+    </div>
     <div class="psdmlp-chips">${chips}</div>
     ${
       data.aiDrafts?.length
@@ -120,19 +146,23 @@ function renderAdvise(data: AdviseResponse): void {
   `;
   tray.style.display = "block";
 
+  tray.querySelector<HTMLButtonElement>(".psdmlp-sync")?.addEventListener("click", () => {
+    void backfillOpenThread(data);
+  });
+
   tray.querySelectorAll<HTMLButtonElement>(".psdmlp-chip").forEach((button) => {
     button.addEventListener("click", () => {
       const id = button.dataset.replyId;
       const reply = data.quickReplies.find((c) => c.id === id);
       if (!reply) return;
-      pasteAndMaybeLog(reply.body, data);
+      pasteReply(reply.body);
     });
   });
   tray.querySelectorAll<HTMLButtonElement>(".psdmlp-ai-draft").forEach((button) => {
     button.addEventListener("click", () => {
       const draft = data.aiDrafts.find((d) => d.id === button.dataset.aiId);
       if (!draft) return;
-      pasteAndMaybeLog(draft.body, data);
+      pasteReply(draft.body);
     });
   });
   tray.querySelectorAll<HTMLButtonElement>(".psdmlp-scripts button").forEach((button) => {
@@ -140,12 +170,12 @@ function renderAdvise(data: AdviseResponse): void {
       const id = button.dataset.scriptId;
       const script = data.scripts.find((s) => s.id === id);
       if (!script) return;
-      pasteAndMaybeLog(script.body, data);
+      pasteReply(script.body);
     });
   });
 }
 
-function pasteAndMaybeLog(body: string, advise: AdviseResponse): void {
+function pasteReply(body: string): void {
   if (!isContextAlive()) {
     renderEmpty("extension ถูก reload — refresh หน้า IG หนึ่งครั้ง");
     return;
@@ -154,19 +184,6 @@ function pasteAndMaybeLog(body: string, advise: AdviseResponse): void {
     renderEmpty("Compose box ไม่พร้อม — รอ IG โหลดแชทให้เสร็จก่อน");
     return;
   }
-  if (!advise.conversationId) {
-    // Unknown lead — paste works, but we can't log into the playbook.
-    return;
-  }
-  chrome.runtime.sendMessage(
-    { type: "copilot.log", body: { conversationId: advise.conversationId, body, sentAt: new Date().toISOString() } },
-    (response: LogResponse | undefined) => {
-      if (chrome.runtime.lastError) return;
-      if (!response?.ok) {
-        console.warn("[copilot] log failed", response?.messageId);
-      }
-    }
-  );
 }
 
 type AdviseEnvelope = { ok?: boolean; status?: number; error?: string; data?: unknown };
@@ -177,6 +194,64 @@ async function sendAdvise(snapshot: Snapshot, includeDrafts: boolean): Promise<A
     body: { ...snapshot, includeDrafts },
   })) as AdviseEnvelope | undefined;
   return response ?? null;
+}
+
+type BackfillEnvelope = { ok?: boolean; status?: number; error?: string; data?: unknown };
+
+async function backfillOpenThread(advise: AdviseResponse): Promise<void> {
+  if (!isContextAlive() || !latestSnapshot || backfillState.kind === "loading") return;
+
+  const requestedPath = location.pathname;
+  backfillState = { kind: "loading", message: "กำลังดึงประวัติจาก Meta" };
+  renderAdvise(advise);
+
+  try {
+    const response = (await chrome.runtime.sendMessage({
+      type: "copilot.backfill",
+      body: {
+        conversationId: advise.conversationId,
+        username: advise.username ?? latestSnapshot.username,
+      },
+    })) as BackfillEnvelope | undefined;
+
+    if (location.pathname !== requestedPath) return;
+
+    if (!response?.ok) {
+      const body = response?.data as { error?: string } | null;
+      const reason = body?.error ?? response?.error ?? "no_response";
+      backfillState = { kind: "error", message: `ซิงก์ไม่สำเร็จ: ${reason}` };
+      debugLog("error", "backfill_rejected", { status: response?.status ?? 0, reason });
+      renderAdvise(advise);
+      return;
+    }
+
+    const result = response.data as BackfillResponse;
+    backfillState = {
+      kind: "success",
+      message: `เพิ่ม ${result.messagesImported} · ข้ามซ้ำ ${result.duplicatesSkipped}`,
+    };
+    latestAdvise = {
+      ...advise,
+      conversationId: result.conversationId,
+      username: result.username ?? advise.username,
+    };
+    debugLog("info", "backfill_ok", {
+      conversationId: result.conversationId,
+      fetched: result.messagesFetched,
+      imported: result.messagesImported,
+      duplicates: result.duplicatesSkipped,
+    });
+    renderAdvise(latestAdvise);
+
+    advisedSignature = "";
+    await requestAdvise(latestSnapshot);
+  } catch (error) {
+    if (location.pathname !== requestedPath) return;
+    const reason = error instanceof Error ? error.message : "backfill_failed";
+    backfillState = { kind: "error", message: `ซิงก์ไม่สำเร็จ: ${reason}` };
+    debugLog("error", "backfill_failed", { reason });
+    renderAdvise(advise);
+  }
 }
 
 /**
@@ -287,6 +362,7 @@ function handleSnapshot(snapshot: Snapshot): void {
     advisedPath = "";
     advisedSignature = "";
     latestAdvise = null;
+    backfillState = { kind: "idle" };
   }
 
   if (!snapshot.messages.length) {
