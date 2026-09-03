@@ -2,12 +2,21 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { TechseedSignup } from "@/components/techseed/techseed-signup";
+import gallery from "@/lib/content/techseed-gallery.json";
 
 export const metadata: Metadata = {
   title: "TechSeed รุ่น 6 | PassionSeed",
   description:
     "ค่ายออนไลน์หลายสัปดาห์: ทีม (squad) + แผนการเรียนส่วนตัว (plan) + คอมมูนิตี้ ทำโปรเจกต์จริง มีพี่ ๆ ดูแล ชวนเพื่อน 1 คนลด 150฿",
 };
+
+// Curate a spread of final projects so the marquee stays light: at most 18
+// tiles sampled evenly across every cohort.
+const images = gallery.filter((g) => g.kind === "image");
+const sampleStep = Math.max(1, Math.floor(images.length / 18));
+const curated = images.filter((_, i) => i % sampleStep === 0).slice(0, 18);
+const columns = [0, 1, 2].map((c) => curated.filter((_, i) => i % 3 === c));
+const columnDuration = ["61s", "83s", "71s"]; // prime-ish, never sync
 
 export default function TechseedPage() {
   return (
@@ -60,6 +69,56 @@ export default function TechseedPage() {
           <TechseedSignup />
         </Suspense>
       </main>
+
+      {/* Student work gallery: slow vertical marquee, tall on purpose */}
+      <section className="relative z-10 mx-auto w-full max-w-6xl px-4 pb-28 sm:px-6">
+        <div className="text-center">
+          <p className="dawn-eyebrow">Proof of Work</p>
+          <h2 className="font-kodchasan mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            ชิ้นงานจริงจากรุ่นพี่ TechSeed
+          </h2>
+          <p className="mx-auto mt-4 max-w-xl text-slate-300/80">
+            ทุกชิ้นคือ final project ที่น้องลงมือทำเองและปล่อยสู่โลกจริงภายใน 5
+            วัน ตั้งแต่เกม 3D model ไปจนถึง AI
+          </p>
+        </div>
+
+        <div className="ts-marquee mt-12 grid h-[110vh] grid-cols-2 gap-4 overflow-hidden sm:grid-cols-3 [mask-image:linear-gradient(to_bottom,transparent,black_8%,black_92%,transparent)]">
+          {columns.map((col, c) => (
+            <div
+              key={c}
+              className={`ts-marquee__col ${c === 1 ? "ts-marquee__col--reverse" : ""}`}
+              style={
+                { "--ts-marquee-duration": columnDuration[c] } as React.CSSProperties
+              }
+            >
+              {/* duplicated once so the -50% loop is seamless */}
+              {[...col, ...col].map((item, i) => (
+                <figure
+                  key={`${item.url}-${i}`}
+                  className="relative overflow-hidden rounded-xl border border-white/10 bg-white/[0.02]"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  {/* no lazy loading: the reverse-animated column confuses
+                      Chrome's lazy-load intersection check and never loads */}
+                  <img
+                    src={item.url}
+                    alt={`TechSeed #${item.cohort} final project`}
+                    className="w-full"
+                  />
+                  <figcaption className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.15em] text-amber-200 backdrop-blur-sm">
+                    TechSeed #{item.cohort}
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        <p className="mt-8 text-center font-mono text-[11px] uppercase tracking-[0.18em] text-slate-400">
+          Final Projects · TechSeed #3, #4 & #5 · Shared with student permission
+        </p>
+      </section>
     </div>
   );
 }

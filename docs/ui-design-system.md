@@ -1919,3 +1919,40 @@ Minimum touch target size: **44x44px** (iOS HIG) or **48x48px** (Material Design
 - [ ] Meets WCAG AA contrast requirements
 - [ ] Respects `prefers-reduced-motion`
 - [ ] Documented with CSS + usage example
+
+---
+
+## SHIFT Theme (Program Landing Pages)
+
+Added 2026-09-01 for `/shift`; restyled 2026-09-02 to the dawn-gradient identity
+from the SHIFT[0] poster. SHIFT is a distinct program brand (R&D sandbox), so it
+carries its own palette instead of Dawn/Dusk — but the sky follows the Dawn
+doctrine: near-black overhead (`#05010d`), the violet lift held back until the
+last ~25% of the page, and sunrise warmth (`#ff7a2a`) delivered only by the
+blurred horizon glow, never by the base gradient. Warm amber/gold accents,
+violet glass cards, and an iridescent wordmark carry the poster identity.
+
+Tokens and classes live in the `SHIFT — R&D Sandbox landing` block at the end
+of `app/globals.css`:
+
+- `--shift-bg`, `--shift-surface` (violet glass), `--shift-hazard` (warm amber
+  `#ffc84d`), `--shift-hazard-soft`, `--shift-hazard-line`, `--shift-accent-hot`
+  (sunrise orange `#ff7a2a`), `--shift-accent-magenta` (`#e04fa0`),
+  `--shift-card-line` (purple-tinted border), `--shift-text`, `--shift-text-dim`
+  (lavender)
+- `.shift-scene` (+ `__grid`, `__glow-a`, `__glow-b`) — full-page dawn gradient
+  backdrop; magenta and orange ambient glows pulse on prime durations
+  (4231ms / 5711ms); the blueprint grid is kept faint and masked to the top
+- `.shift-eyebrow` — Space Mono micro-caps section label, amber with a soft glow
+- `.shift-card` — violet glass card; same motion contract as `.ei-card`
+  (hover-in tension charge, snap-out base transition, clip-path + opacity +
+  filter animate together, reduced-motion safe) with a warm orange hover glow
+- `.shift-button` — primary CTA (sunrise orange → amber gradient, dark text)
+- `.shift-gradient-text` — warm amber → orange gradient fill for Thai headline
+  accent spans (Kodchasan bold)
+- `.shift-wordmark` — Libre Franklin italic 600, -4.08deg tilt, iridescent
+  gradient fill via `background-clip: text`; the hard offset shadow uses
+  `drop-shadow` so it renders around the clipped glyphs
+
+Typography follows the global scale: Kodchasan headlines, Bai Jamjuree body,
+Space Mono for lab-style micro-labels (`BATCH #00`, `VERIFIED FEEDBACK`).
